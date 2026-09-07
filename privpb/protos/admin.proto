@@ -1,0 +1,38 @@
+syntax = "proto3";
+package privpb;
+
+option go_package = "github.com/effective-security/trustyca/privpb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "es/api/annotations.proto";
+import "types.proto";
+import "orgs.proto";
+
+service Admin {
+    rpc ListOrgs(ListOrgsRequest) returns (pb.OrgsResponse) {
+        option (google.api.http) = {
+            post: "/privpb.Admin/ListOrgs",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "admin org list";
+    }
+}
+
+// ListOrgsRequest specifies list orgs request
+message ListOrgsRequest {
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 1 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination.
+    // Which is limited to 10000.
+    // To paginate for large number of records, use cursor-based pagination
+    // instead.
+    uint32 Offset = 2 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    string Cursor = 3 [json_name = "Cursor"];
+    // Status specifies on optional status of the item to filter by.
+    // If not specified, all items will be listed.
+    pb.ItemStatus.Enum Status = 4 [json_name = "Status"];
+}

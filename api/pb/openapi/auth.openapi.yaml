@@ -1,0 +1,274 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: Auth API
+    version: 0.0.1
+paths:
+    /pb.Auth/Caller:
+        post:
+            tags:
+                - Auth
+            description: Caller returns the caller status.
+            operationId: Auth_Caller
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CallerStatusResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/ExchangeCode:
+        post:
+            tags:
+                - Auth
+            description: |-
+                ExchangeCode exchanges the one-time code for a token.
+                 The returned token only contains the Access Token.
+                 The client should call GetUserToken for full info.
+            operationId: Auth_ExchangeCode
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExchangeCodeRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Token'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/GetProviders:
+        post:
+            tags:
+                - Auth
+            description: GetProviders returns the list of supported providers
+            operationId: Auth_GetProviders
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthProvidersRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthProvidersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/GetUserToken:
+        post:
+            tags:
+                - Auth
+            description: GetUserToken returns the user token info
+            operationId: Auth_GetUserToken
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/RevokeToken:
+        post:
+            tags:
+                - Auth
+            description: RevokeToken revokes the user token
+            operationId: Auth_RevokeToken
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        AuthProvidersRequest:
+            type: object
+            properties:
+                Email:
+                    type: string
+                    description: Email specifies optional email to use for login
+            description: AuthProvidersRequest specifies request to get list of supported IDP
+        AuthProvidersResponse:
+            type: object
+            properties:
+                AuthURL:
+                    type: string
+                    description: AuthURL specifies URL to start authentication flow
+                Providers:
+                    type: array
+                    items:
+                        type: integer
+                        format: enum
+                    description: Providers specifies the list of supported IDPs
+                ProviderNames:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        ProviderNames specifies the list of supported IDP names,
+                         this can be used to display the list of supported IDPs to the user,
+                         or for REST clients that are not aware of enum values.
+            description: AuthProvidersResponse provides list of supported IDP
+        CallerStatusResponse:
+            type: object
+            properties:
+                Subject:
+                    type: string
+                    description: Subject of the caller.
+                Role:
+                    type: string
+                    description: |-
+                        Role is the application of the caller.
+                         The role of a specific Org can be found in Claims.
+                Claims:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/KVPair'
+                    description: Claims from the token, converted to KVPair.
+            description: CallerStatusResponse returns the caller information
+        ExchangeCodeRequest:
+            type: object
+            properties:
+                Code:
+                    type: string
+                    description: Code is the code to be exchanged for a token
+                Verifier:
+                    type: string
+                    description: Verifier is the code verifier for the code_challenge
+            description: |-
+                ExchangeCodeRequest exchanges the one-time code for a token.
+                 The Code is returned as part of OAuth flow and valid for 30 seconds.
+                 It must be exchanged to Access Token following code_challenge verification.
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        KVPair:
+            type: object
+            properties:
+                Key:
+                    type: string
+                    description: Key is a key of the pair
+                Value:
+                    type: string
+                    description: Value is a value of the pair
+            description: KVPair provides generic key-value pair
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        Token:
+            type: object
+            properties:
+                TokenType:
+                    type: string
+                AccessToken:
+                    type: string
+                Jkt:
+                    type: string
+                ExpiresAt:
+                    type: string
+                    description: ExpiresAt returns time in RFC3339 format
+                IssuedAt:
+                    type: string
+                    description: IssuedAt returns time in RFC3339 format
+                Issuer:
+                    type: string
+                Audience:
+                    type: string
+                Provider:
+                    type: integer
+                    format: enum
+                ExpiresIn:
+                    type: integer
+                    format: uint32
+            description: Token is returned to the client
+        UserInfo:
+            type: object
+            properties:
+                ID:
+                    type: string
+                Name:
+                    type: string
+                Email:
+                    type: string
+                EmailVerified:
+                    type: boolean
+                Role:
+                    type: string
+                    description: |-
+                        Role is the role of the user in the application.
+                         For most of the users, the role is "user".
+            description: UserInfo provides basic info about user
+        UserTokenResponse:
+            type: object
+            properties:
+                Token:
+                    $ref: '#/components/schemas/Token'
+                UserInfo:
+                    $ref: '#/components/schemas/UserInfo'
+            description: UserTokenResponse provides response with Token and UserInfo
+tags:
+    - name: Auth

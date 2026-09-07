@@ -1,0 +1,8 @@
+---
+common_name: trustyca-client
+san:
+  - spiffe://trustyca/client
+names:
+  - C: US
+    L: WA
+    O: Tbilicode

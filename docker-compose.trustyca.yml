@@ -1,0 +1,82 @@
+networks:
+  private:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 168.139.55.0/24
+
+services:
+  localstack:
+    image: localstack/localstack:4.14.0
+    networks:
+      private:
+        ipv4_address: 168.139.55.99
+    ports:
+      - "127.0.0.1:54566:4566" # LocalStack Gateway
+    environment:
+      # https://docs.localstack.cloud/references/configuration/
+      - SERVICES=iam,sts,sns,sqs,s3,events,kms,opensearch,ses,secretsmanager,ec2
+      - DEBUG=0
+      - PERSISTENCE=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - OPENSEARCH_ENDPOINT_STRATEGY=path
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - /var/run/docker_cyros.sock:/var/run/docker.sock
+
+  sql:
+    image: effectivesecurity/postgres15:sha-d151f03
+    platform: linux/amd64
+    networks:
+      private:
+        ipv4_address: 168.139.55.20
+    volumes:
+      # Mounts the volumes from build container to the container in test
+      # docker-compose command runs with ./sql as CWD,
+      # the source path in the volume definitions are relative to ./sql
+      - ./sql:/trustyca_sql
+    ports:
+      - "127.0.0.1:55432:55432" # SQL
+    environment:
+      - POSTGRES_PORT=55432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    entrypoint:
+      - /bin/bash
+      - -c
+      - /start_postgres.sh
+
+  kms:
+    image: nsmithuk/local-kms
+    networks:
+      private:
+        ipv4_address: 168.139.55.21
+    ports:
+      - "54551:54551" # KMS
+    environment:
+      - PORT=54551
+
+  redis:
+    image: redis:8.2
+    networks:
+      private:
+        ipv4_address: 168.139.55.22
+    ports:
+      - "127.0.0.1:56379:6379" # Redis
+    volumes:
+      - ${PROJ_DATA_DIR}//redis:/trustyca
+    command:
+      [
+        "--port 0",
+        "--tls-port 6379",
+        "--tls-cert-file /trustyca/trustyca_peer.pem",
+        "--tls-key-file /trustyca/trustyca_peer.key",
+        "--tls-ca-cert-file /trustyca/trusty_root_ca.pem",
+        "--tls-auth-clients no",
+        "--requirepass redis",
+      ]
+
+volumes:
+  localstack-data:
+  sql-dev-data:

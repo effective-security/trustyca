@@ -1,0 +1,181 @@
+- TestRpc/TestUserTokenCmd/txt:
+{
+	"Token": {
+		"TokenType": "test",
+		"AccessToken": "at",
+		"Jkt": "dpop"
+	},
+	"UserInfo": {
+		"Email": "denis@ekspand.onmicrosoft.com"
+	}
+}
+
+- TestRpc/Test_InviteDeleteCmd/json:
+{}
+
+- TestRpc/Test_InviteDeleteCmd/txt:
+{}
+
+- TestRpc/Test_MemberAddCmd/json:
+{
+	"Invite": {
+		"ID": "1",
+		"Email": "test@example.com",
+		"Role": 4
+	}
+}
+
+- TestRpc/Test_MemberAddCmd/txt:
+{
+	"Invite": {
+		"ID": "1",
+		"Email": "test@example.com",
+		"Role": 4
+	}
+}
+
+- TestRpc/Test_MemberChangeRoleCmd/json:
+{
+	"ID": "1",
+	"Name": "Test Member",
+	"Email": "test@example.com",
+	"Role": 4
+}
+
+- TestRpc/Test_MemberChangeRoleCmd/txt:
+ ID        │ 1                
+ Org       │                  
+ Org Alias │                  
+ Org Name  │                  
+ Role      │ Admin            
+ User      │                  
+ Name      │ Test Member      
+ Email     │ test@example.com 
+ Created   │                  
+
+
+- TestRpc/Test_MemberDeleteCmd/json:
+{}
+
+- TestRpc/Test_MemberDeleteCmd/txt:
+{}
+
+- TestRpc/Test_MembersListCmd/json:
+{
+	"Memberships": [
+		{
+			"ID": "1",
+			"Name": "Test Member",
+			"Email": "test@example.com",
+			"Role": 4
+		}
+	],
+	"Invites": [
+		{
+			"ID": "2",
+			"Email": "test@example.com",
+			"Role": 4
+		}
+	]
+}
+
+- TestRpc/Test_MembersListCmd/txt:
+Memberships:
+┌────────┬───────┬─────┬───────┬──────┬─────────────┬──────────────────┬─────────┐
+│ ORG ID │ ALIAS │ ORG │ ROLE  │ USER │    NAME     │      EMAIL       │ CREATED │
+├────────┼───────┼─────┼───────┼──────┼─────────────┼──────────────────┼─────────┤
+│        │       │     │ Admin │      │ Test Member │ test@example.com │         │
+└────────┴───────┴─────┴───────┴──────┴─────────────┴──────────────────┴─────────┘
+
+Invites:
+┌────┬──────────────────┬───────┬─────────┐
+│ ID │      EMAIL       │ ROLE  │ CREATED │
+├────┼──────────────────┼───────┼─────────┤
+│ 2  │ test@example.com │ Admin │         │
+└────┴──────────────────┴───────┴─────────┘
+
+
+- TestRpc/Test_OrgCreateCmd/json:
+{
+	"ID": "1",
+	"Name": "Test Org",
+	"Description": "Test Description",
+	"Status": 2
+}
+
+- TestRpc/Test_OrgCreateCmd/txt:
+ ID      │ 1        
+ Name    │ Test Org 
+ Alias   │          
+ Status  │ Active   
+ Created │          
+
+
+- TestRpc/Test_OrgDeleteCmd/json:
+{
+	"ID": "1",
+	"Name": "Test Org",
+	"Description": "Test Description",
+	"Status": 1
+}
+
+- TestRpc/Test_OrgDeleteCmd/txt:
+ ID      │ 1        
+ Name    │ Test Org 
+ Alias   │          
+ Status  │ Inactive 
+ Created │          
+
+
+- TestRpc/Test_OrgGetCmd/json:
+{
+	"ID": "1",
+	"Name": "Test Org",
+	"Description": "Test Description",
+	"Status": 1
+}
+
+- TestRpc/Test_OrgGetCmd/txt:
+ ID      │ 1        
+ Name    │ Test Org 
+ Alias   │          
+ Status  │ Inactive 
+ Created │          
+
+
+- TestRpc/Test_OrgListCmd/json:
+{
+	"Memberships": [
+		{
+			"ID": "1",
+			"OrgID": "1",
+			"OrgName": "Test Org",
+			"Role": 4
+		}
+	]
+}
+
+- TestRpc/Test_OrgListCmd/txt:
+┌────────┬───────┬──────────┬───────┬──────┬──────┬───────┬─────────┐
+│ ORG ID │ ALIAS │   ORG    │ ROLE  │ USER │ NAME │ EMAIL │ CREATED │
+├────────┼───────┼──────────┼───────┼──────┼──────┼───────┼─────────┤
+│ 1      │       │ Test Org │ Admin │      │      │       │         │
+└────────┴───────┴──────────┴───────┴──────┴──────┴───────┴─────────┘
+
+
+- TestRpc/Test_OrgUpdateCmd/json:
+{
+	"ID": "1",
+	"Name": "Test Org",
+	"Description": "Test Description",
+	"Status": 2
+}
+
+- TestRpc/Test_OrgUpdateCmd/txt:
+ ID      │ 1        
+ Name    │ Test Org 
+ Alias   │          
+ Status  │ Active   
+ Created │          
+
+

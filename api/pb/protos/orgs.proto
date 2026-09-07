@@ -1,0 +1,242 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "github.com/effective-security/trustyca/api/pb";
+import "google/api/annotations.proto";
+import "es/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "types.proto";
+
+service Orgs {
+    // RegisterOrg registers a new org
+    rpc RegisterOrg(RegisterOrgRequest) returns (Org) {
+        option (google.api.http) = {
+            post: "/pb.Orgs/RegisterOrg",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org register";
+    }
+    // UpdateOrg updates an org
+    rpc UpdateOrg(UpdateOrgRequest) returns (Org) {
+        option (es.api.allowed_roles) = "Admin,Support";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/UpdateOrg",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org update";
+    }
+    // GetOrg returns an org by ID
+    rpc GetOrg(GetOrgRequest) returns (Org) {
+        option (es.api.allowed_roles) = "Admin,Support";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/GetOrg",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org get";
+    }
+    // DeleteProject deletes a project
+    rpc DeleteOrg(DeleteOrgRequest) returns (Org) {
+        option (es.api.allowed_roles) = "Admin";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/DeleteOrg",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org delete";
+    }
+
+    // GetUserMemberships returns list of calling user orgs
+    rpc GetUserMemberships(google.protobuf.Empty) returns (UserMemberships) {
+        option (google.api.http) = {
+            post: "/pb.Orgs/GetUserMemberships",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org list";
+    }
+    // GetMembers returns list of membership info for the org by org ID
+    rpc GetMembers(GetMembersRequest) returns (MembersResponse) {
+        option (es.api.allowed_roles) = "Admin,Support";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/GetMembers",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "member list";
+    };
+    // AddMember adds a user to Org
+    rpc AddMember(AddMemberRequest) returns (AddMemberResponse) {
+        option (es.api.allowed_roles) = "Admin,Support";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/AddMember",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "member add";
+    };
+    // ChangeMemberRole changes user role
+    rpc ChangeMemberRole(ChangeMemberRoleRequest) returns (Membership) {
+        option (es.api.allowed_roles) = "Admin,Support";
+        option (google.api.http)      = {
+            get: "/pb.Orgs/ChangeMemberRole",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "member role";
+    };
+    // DeleteMember removes user from the project
+    rpc DeleteMember(DeleteMemberRequest) returns (google.protobuf.Empty) {
+        option (es.api.allowed_roles) = "Admin,Support";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/DeleteMember",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "member delete";
+    };
+    // DeleteInvite removes user invite
+    rpc DeleteInvite(DeleteInviteRequest) returns (google.protobuf.Empty) {
+        option (es.api.allowed_roles) = "Admin,Support";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/DeleteInvite",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "member invite delete";
+    };
+}
+
+message Role {
+    enum Enum {
+        // None specifies no role
+        None   = 0;
+        APIKey = 1 [(es.api.enum_display) = "API Key"];
+        // User specifies name for User role
+        User = 2;
+        // Support specifies name for Support role
+        Support = 3;
+        // Admin specifies name for Admin role
+        Admin = 4;
+        // Owner specifies name for Owner role
+        Owner = 5;
+    }
+}
+
+message Org {
+    string ID              = 1 [json_name = "ID"];
+    string Alias           = 2 [json_name = "Alias"];
+    string Name            = 3 [json_name = "Name"];
+    string Description     = 4 [json_name = "Description"];
+    string CreatedAt       = 5 [json_name = "CreatedAt"];
+    ItemStatus.Enum Status = 6 [json_name = "Status"];
+}
+
+message OrgsResponse {
+    repeated Org Orgs = 1 [json_name = "Orgs"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+// Membership provides Org membership information for a user
+message Membership {
+    string ID        = 1 [json_name = "ID"];
+    string OrgID     = 2 [json_name = "OrgID"];
+    string OrgAlias  = 3 [json_name = "OrgAlias"];
+    string OrgName   = 4 [json_name = "OrgName"];
+    string UserID    = 5 [json_name = "UserID"];
+    string Name      = 6 [json_name = "Name"];
+    string Email     = 7 [json_name = "Email"];
+    Role.Enum Role   = 8 [json_name = "Role"];
+    string CreatedAt = 9 [json_name = "CreatedAt"];
+}
+
+// Invite provides Project invite
+message Invite {
+    string ID        = 1 [json_name = "ID"];
+    string OrgID     = 2 [json_name = "OrgID"];
+    string InviterID = 3 [json_name = "InviterID"];
+    string Email     = 4 [json_name = "Email"];
+    string CreatedAt = 6 [json_name = "CreatedAt"];
+    Role.Enum Role   = 7 [json_name = "Role"];
+}
+
+message GetMembersRequest {
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+}
+
+// MembersResponse provides list of Org members and invites
+message MembersResponse {
+    repeated Membership Memberships = 1 [json_name = "Memberships"];
+    repeated Invite Invites         = 2 [json_name = "Invites"];
+}
+
+// UserMemberships provides list of Org memberships
+message UserMemberships {
+    repeated Membership Memberships = 1 [json_name = "Memberships"];
+}
+
+// AddMemberRequest specifies request to add user to project
+message AddMemberRequest {
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // Email specifies user email to search.
+    // The user must exists.
+    string Email = 2
+        [json_name = "Email", (es.api.required) = true, (es.api.max) = 160];
+    // Role specifies user role to add.
+    // Only Owner can add another Owner role.
+    Role.Enum Role = 3 [json_name = "Role", (es.api.required) = true];
+}
+
+// AddMemberResponse provides iresponse for AddMember request.
+// If a user already exists, the Membership is returned.
+// If a user is invited, the Invite is returned.
+message AddMemberResponse {
+    Invite Invite         = 1 [json_name = "Invite"];
+    Membership Membership = 2 [json_name = "Membership"];
+}
+
+// ChangeMemberRoleRequest specifies request to change user role
+message ChangeMemberRoleRequest {
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // UserID specifies user ID, if Email is empty
+    string UserID = 2 [json_name = "UserID", (es.api.required) = true];
+    // Email specifies user email, if UserID is empty
+    string Email = 3
+        [json_name = "Email", (es.api.required) = true, (es.api.max) = 160];
+    Role.Enum Role = 4 [json_name = "Role", (es.api.required) = true];
+}
+
+// DeleteMemberRequest specifies request to remove user from project
+message DeleteMemberRequest {
+    string OrgID  = 1 [json_name = "OrgID", (es.api.required) = true];
+    string UserID = 2 [json_name = "UserID", (es.api.required) = true];
+}
+
+// DeleteInviteRequest specifies request to remove user invite
+message DeleteInviteRequest {
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    string Email = 2 [json_name = "Email", (es.api.required) = true];
+}
+
+message RegisterOrgRequest {
+    string Name = 1
+        [json_name = "Name", (es.api.required) = true, (es.api.max) = 64];
+    string Description = 2 [json_name = "Description"];
+}
+
+message UpdateOrgRequest {
+    string OrgID       = 1 [json_name = "OrgID", (es.api.required) = true];
+    string Name        = 2 [json_name = "Name", (es.api.max) = 64];
+    string Description = 3 [json_name = "Description"];
+}
+
+message GetOrgRequest {
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+}
+
+message DeleteOrgRequest {
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+}
+
+// EventsResponse returns list of Event
+message EventsResponse {
+    // Events is the list of events
+    repeated Event Events = 1 [json_name = "Events"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}

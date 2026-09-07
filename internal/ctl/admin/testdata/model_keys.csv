@@ -1,0 +1,5 @@
+Provider,ModelName,Secret,Status
+OpenAI_Azure,gpt-5,sk_1234567890,Active
+OpenAI_Bedrock,gpt-5,sk_1234567891,Active
+OpenAI,gpt-5,sk_1234567892,Inactive
+OpenAI,gpt-6,sk_1234567893,Active

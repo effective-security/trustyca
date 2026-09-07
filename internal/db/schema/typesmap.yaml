@@ -1,0 +1,26 @@
+---
+tables:
+  trustyca.vw_membership_info: MembershipInfo
+fields:
+  trustyca.event.ref_id: ReferenceID
+types:
+  # define mapping here as
+  # column_name: type
+  # schema.db_name.column_name: type
+  count: uint32
+  _count: uint32
+  metadata: xdb.Metadata
+  # keep sorted by name
+  trustyca.event.type: pb.EventType_Enum
+  trustyca.invite.role: pb.Role_Enum
+  trustyca.login.provider: pb.IDP_Enum
+  trustyca.membership.role: pb.Role_Enum
+  trustyca.org.status: pb.ItemStatus_Enum
+  trustyca.vw_membership_info.email: string
+  trustyca.vw_membership_info.name: string
+  trustyca.vw_membership_info.org_alias: string
+  trustyca.vw_membership_info.org_name: string
+  trustyca.vw_membership_info.role: pb.Role_Enum
+
+# add cached props to the model
+with_cached_props:

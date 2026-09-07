@@ -1,0 +1,444 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: Orgs API
+    version: 0.0.1
+paths:
+    /pb.Orgs/AddMember:
+        post:
+            tags:
+                - Orgs
+            description: AddMember adds a user to Org
+            operationId: Orgs_AddMember
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddMemberRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AddMemberResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/ChangeMemberRole:
+        get:
+            tags:
+                - Orgs
+            description: ChangeMemberRole changes user role
+            operationId: Orgs_ChangeMemberRole
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ChangeMemberRoleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Membership'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/DeleteInvite:
+        post:
+            tags:
+                - Orgs
+            description: DeleteInvite removes user invite
+            operationId: Orgs_DeleteInvite
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeleteInviteRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/DeleteMember:
+        post:
+            tags:
+                - Orgs
+            description: DeleteMember removes user from the project
+            operationId: Orgs_DeleteMember
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeleteMemberRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/DeleteOrg:
+        post:
+            tags:
+                - Orgs
+            description: DeleteProject deletes a project
+            operationId: Orgs_DeleteOrg
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeleteOrgRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Org'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/GetMembers:
+        post:
+            tags:
+                - Orgs
+            description: GetMembers returns list of membership info for the org by org ID
+            operationId: Orgs_GetMembers
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetMembersRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MembersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/GetOrg:
+        post:
+            tags:
+                - Orgs
+            description: GetOrg returns an org by ID
+            operationId: Orgs_GetOrg
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetOrgRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Org'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/GetUserMemberships:
+        post:
+            tags:
+                - Orgs
+            description: GetUserMemberships returns list of calling user orgs
+            operationId: Orgs_GetUserMemberships
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserMemberships'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/RegisterOrg:
+        post:
+            tags:
+                - Orgs
+            description: RegisterOrg registers a new org
+            operationId: Orgs_RegisterOrg
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RegisterOrgRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Org'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/UpdateOrg:
+        post:
+            tags:
+                - Orgs
+            description: UpdateOrg updates an org
+            operationId: Orgs_UpdateOrg
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateOrgRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Org'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        AddMemberRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                Email:
+                    type: string
+                    description: |-
+                        Email specifies user email to search.
+                         The user must exists.
+                Role:
+                    type: integer
+                    description: |-
+                        Role specifies user role to add.
+                         Only Owner can add another Owner role.
+                    format: enum
+            description: AddMemberRequest specifies request to add user to project
+        AddMemberResponse:
+            type: object
+            properties:
+                Invite:
+                    $ref: '#/components/schemas/Invite'
+                Membership:
+                    $ref: '#/components/schemas/Membership'
+            description: |-
+                AddMemberResponse provides iresponse for AddMember request.
+                 If a user already exists, the Membership is returned.
+                 If a user is invited, the Invite is returned.
+        ChangeMemberRoleRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                UserID:
+                    type: string
+                    description: UserID specifies user ID, if Email is empty
+                Email:
+                    type: string
+                    description: Email specifies user email, if UserID is empty
+                Role:
+                    type: integer
+                    format: enum
+            description: ChangeMemberRoleRequest specifies request to change user role
+        DeleteInviteRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                Email:
+                    type: string
+            description: DeleteInviteRequest specifies request to remove user invite
+        DeleteMemberRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                UserID:
+                    type: string
+            description: DeleteMemberRequest specifies request to remove user from project
+        DeleteOrgRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+        GetMembersRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+        GetOrgRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        Invite:
+            type: object
+            properties:
+                ID:
+                    type: string
+                OrgID:
+                    type: string
+                InviterID:
+                    type: string
+                Email:
+                    type: string
+                CreatedAt:
+                    type: string
+                Role:
+                    type: integer
+                    format: enum
+            description: Invite provides Project invite
+        MembersResponse:
+            type: object
+            properties:
+                Memberships:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Membership'
+                Invites:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Invite'
+            description: MembersResponse provides list of Org members and invites
+        Membership:
+            type: object
+            properties:
+                ID:
+                    type: string
+                OrgID:
+                    type: string
+                OrgAlias:
+                    type: string
+                OrgName:
+                    type: string
+                UserID:
+                    type: string
+                Name:
+                    type: string
+                Email:
+                    type: string
+                Role:
+                    type: integer
+                    format: enum
+                CreatedAt:
+                    type: string
+            description: Membership provides Org membership information for a user
+        Org:
+            type: object
+            properties:
+                ID:
+                    type: string
+                Alias:
+                    type: string
+                Name:
+                    type: string
+                Description:
+                    type: string
+                CreatedAt:
+                    type: string
+                Status:
+                    type: integer
+                    format: enum
+        RegisterOrgRequest:
+            type: object
+            properties:
+                Name:
+                    type: string
+                Description:
+                    type: string
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        UpdateOrgRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                Name:
+                    type: string
+                Description:
+                    type: string
+        UserMemberships:
+            type: object
+            properties:
+                Memberships:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Membership'
+            description: UserMemberships provides list of Org memberships
+tags:
+    - name: Orgs

@@ -1,0 +1,13 @@
+{
+  "Token": {
+    "TokenType": "Bearer",
+    "AccessToken": "pat.s6_TKffgn6rPvckrEYwGaIaeNLY6P12lKJSqbytSb6QuF6iPtxJfMD6BU9q3jWcZjznqdcoBlr0Mt_cE9FN8JIMWWjEgmNhgmmzHBl5mvxUOgphkGrJGme9pMoOR1lx0WOQicoM4CknjYCiFrvmBjJ912TTFNW8MEe6xZuTPTA4Lbyh9RsUP1GNHWjDpBETPFCDNo0CQ9T1qCchZf9H5aH_HnweOPu0Mvtg8pHU8vzQ7P0YQrBCK13oKnHESNY_IsfRMcM0uObkMVsgGcbFhsBtLhcayDmQ8BkMgnkXY4sf6nRd3X_-kyiMO662jDxZ1dFWg2lVaBl5VwhVtaPq-ZjyERRJakYrwxvEWERRA2tDh7cyJoAx_ilW-FrV5Yr-XwIukrJ9bfEPX_0CudRdJK11fNpOh1sfbhx5Tca5V2h7Rl4cz1-6jkEzkqJWNtOutkcNMnbqgpBpv9CcHCXaHJsRisAdUW6ZUgJBi9Y9JlcRBqeFu2g2kVpZ1S186fhd1UqpnswuimztmXJQi8MqzgR7Twt6ah7ZKvdM4UluJIhKg3bdF6JN6eHOR",
+    "ExpiresAt": "2022-12-17T09:50:47Z",
+    "IssuedAt": "2022-12-10T09:50:47Z"
+  },
+  "UserInfo": {
+    "ID": "254652412885729559",
+    "Name": "Denis Issoupov",
+    "Email": "denis@ekspand.onmicrosoft.com"
+  }
+}

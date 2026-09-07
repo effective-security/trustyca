@@ -1,0 +1,142 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "github.com/effective-security/trustyca/api/pb";
+
+import "google/protobuf/descriptor.proto";
+import "es/api/annotations.proto";
+
+// KVPair provides generic key-value pair
+message KVPair {
+    option (es.api.generate_meta) = true;
+
+    // Key is a key of the pair
+    string Key = 1 [
+        json_name         = "Key",
+        (es.api.search)   = "keyword,facet,store",
+        (es.api.required) = true
+    ];
+    // Value is a value of the pair
+    string Value = 2 [
+        json_name         = "Value",
+        (es.api.search)   = "keyword,store,hide",
+        (es.api.required) = true
+    ];
+}
+
+// KVSet provides groupped values under a common key
+message KVSet {
+    option (es.api.generate_meta) = true;
+
+    // Key is a key of the set
+    string Key = 1 [
+        json_name         = "Key",
+        (es.api.search)   = "keyword,facet,store",
+        (es.api.required) = true
+    ];
+    // Values is a list of values under the key
+    repeated string Values = 2 [
+        json_name          = "Values",
+        (es.api.search)    = "keyword,store,hide",
+        (es.api.required)  = true,
+        (es.api.min_count) = 1
+    ];
+}
+
+// NextPage specifies pagination information, if there are more pages to fetch.
+message NextPage {
+    // Offset is the offset of the next page for offset-based pagination.
+    // Offset is limited to 10000.
+    // To paginate for large number of records, use cursor-based pagination
+    // instead.
+    uint32 Offset = 1 [json_name = "Offset"];
+    // Cursor is the cursor of the next page for cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // this response.
+    string Cursor = 2 [json_name = "Cursor"];
+}
+
+// RecordsResult provides the number of created, updated and deleted records
+message RecordsResult {
+    int64 Created = 1 [json_name = "Created"];
+    int64 Updated = 2 [json_name = "Updated"];
+    int64 Deleted = 3 [json_name = "Deleted"];
+}
+
+message ItemStatus {
+    // ItemStatus defines status constants for items
+    enum Enum {
+        // Unknown indicates that the status is unknown
+        Unknown = 0;
+        // Inactive indicates that the item is inactive or pending deletion
+        Inactive = 0x1;
+        // Active indicates that the item is active and ready to use
+        Active = 0x2;
+        // Invalid indicates that the item is invalid and needs an action to be
+        // taken
+        Invalid = 0x4;
+    }
+}
+
+message PermissionsScope {
+    // PermissionsScope defines virtual key scopes
+    enum Enum {
+        option (es.api.is_bitmask) = true;
+
+        // None indicates that the permissions scope is none
+        None = 0x0;
+        // ReadOnly indicates that the permissions scope is read only
+        ReadOnly = 0x1;
+        // Restricted indicates that the permissions scope is restricted
+        Restricted = 0x2;
+        // All is the bitmask for all permissions scopes
+        All = 0x7fffffff;
+    }
+}
+
+message EventType {
+    // EventType defines event types
+    enum Enum {
+        // Unknown indicates that the event type is unknown
+        Unknown = 0;
+        // OrgCreated indicates that an org was created
+        OrgCreated = 1;
+        // OrgUpdated indicates that an org was updated
+        OrgUpdated = 2;
+        // OrgDeleted indicates that an org was deleted
+        OrgDeleted = 3;
+        // OrgMemberAdded indicates that an org member was added
+        OrgMemberAdded = 4;
+        // OrgMemberRemoved indicates that an org member was removed
+        OrgMemberRemoved = 5;
+        // OrgMemberRoleChanged indicates that an org member role was
+        // changed
+        OrgMemberRoleChanged = 6;
+        // OrgMemberInvited indicates that an org member was invited
+        OrgMemberInvited = 7;
+        // OrgMemberAccepted indicates that an org member accepted an
+        // invitation
+        OrgMemberAccepted = 8;
+    }
+}
+
+// Event describes event
+message Event {
+    // ID is the event ID
+    string ID = 1 [json_name = "ID"];
+    // OrgID is the org ID if the event is related to a org.
+    string OrgID        = 2 [json_name = "OrgID"];
+    EventType.Enum Type = 3 [json_name = "Type"];
+    string Title        = 4 [json_name = "Title"];
+    string Description  = 5 [json_name = "Description"];
+    // ReferenceID is the ID of the referenced entity.
+    string ReferenceID = 6 [json_name = "ReferenceID"];
+    // Email is the email of the user who performed the action, optional
+    string Email = 7 [json_name = "Email"];
+    // Source is the source of the event, optional
+    string Source = 8 [json_name = "Source"];
+    // Metadata is a list of internal metadata associated with the event
+    repeated KVPair Metadata = 9 [json_name = "Metadata"];
+    // CreatedAt is the timestamp of the event creation in RFC3339 format.
+    string CreatedAt = 10 [json_name = "CreatedAt"];
+}

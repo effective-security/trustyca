@@ -1,0 +1,64 @@
+{{template "header" .}}
+<h1 id="title">Done.</h1>
+<p id="message">You are authenticated and can close this window.</p>
+<div id="status" class="status error" hidden></div>
+<details id="details" hidden>
+  <summary>Token details</summary>
+  <pre id="token"></pre>
+</details>
+<div class="row"><button type="button" id="close">Close window</button></div>
+<script>
+  (function () {
+    "use strict";
+
+    // the server returns the result either in the fragment (response_mode=fragment)
+    // or in the query string (response_mode=query)
+    var params = new URLSearchParams(window.location.hash.slice(1));
+    new URLSearchParams(window.location.search).forEach(function (v, k) {
+      if (!params.has(k)) {
+        params.set(k, v);
+      }
+    });
+
+    var error = params.get("error");
+    if (error) {
+      document.getElementById("title").textContent = "Login failed";
+      document.getElementById("message").textContent =
+        "The server did not authenticate you.";
+      var statusEl = document.getElementById("status");
+      statusEl.textContent =
+        error +
+        (params.get("error_description")
+          ? ": " + params.get("error_description")
+          : "");
+      statusEl.hidden = false;
+    } else {
+      var lines = [];
+      if (params.get("token")) {
+        lines.push("export TRUSTYCA_AUTH_TOKEN=" + params.get("token"));
+      }
+      if (params.get("code")) {
+        lines.push("authorization code: " + params.get("code"));
+      }
+      if (params.get("cookie_set") === "true") {
+        lines.push("session cookie set");
+      }
+      if (params.get("expires_in")) {
+        lines.push("expires in: " + params.get("expires_in") + "s");
+      }
+      if (lines.length > 0) {
+        document.getElementById("token").textContent = lines.join("\n");
+        document.getElementById("details").hidden = false;
+      }
+      // keep the token out of the address bar and browser history
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+
+    document.getElementById("close").addEventListener("click", function () {
+      window.close();
+    });
+  })();
+</script>
+{{template "footer" .}}

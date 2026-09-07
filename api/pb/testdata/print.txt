@@ -1,0 +1,128 @@
+
+- AddMemberResponse:
+
+{
+	"Invite": {
+		"ID": "2",
+		"Email": "test@example.com",
+		"Role": 4
+	},
+	"Membership": {
+		"ID": "1",
+		"UserID": "3",
+		"Role": 4
+	}
+}
+
+
+- CallerStatusResponse:
+
+ Subject │ test  
+ Role    │ Admin 
+
+┌───────┬───────┐
+│ CLAIM │ VALUE │
+├───────┼───────┤
+│ test  │ test  │
+│ test2 │ test2 │
+└───────┴───────┘
+
+
+
+- Invite:
+
+ ID      │ 2                
+ Email   │ test@example.com 
+ Role    │ Admin            
+ Created │                  
+
+
+
+- KVPair:
+
+{
+	"Key": "test",
+	"Value": "test"
+}
+
+
+- LoginInfo:
+
+{
+	"ID": "1",
+	"Name": "Test User",
+	"Email": "test@example.com"
+}
+
+
+- MembersResponse:
+
+Memberships:
+┌────────┬───────┬─────┬───────┬──────┬──────┬───────┬─────────┐
+│ ORG ID │ ALIAS │ ORG │ ROLE  │ USER │ NAME │ EMAIL │ CREATED │
+├────────┼───────┼─────┼───────┼──────┼──────┼───────┼─────────┤
+│        │       │     │ Admin │ 3    │      │       │         │
+└────────┴───────┴─────┴───────┴──────┴──────┴───────┴─────────┘
+
+Invites:
+┌────┬──────────────────┬───────┬─────────┐
+│ ID │      EMAIL       │ ROLE  │ CREATED │
+├────┼──────────────────┼───────┼─────────┤
+│ 2  │ test@example.com │ Admin │         │
+└────┴──────────────────┴───────┴─────────┘
+
+
+
+- Membership:
+
+ ID        │ 1     
+ Org       │       
+ Org Alias │       
+ Org Name  │       
+ Role      │ Admin 
+ User      │ 3     
+ Name      │       
+ Email     │       
+ Created   │       
+
+
+
+- Org:
+
+ ID      │ 1        
+ Name    │ Test Org 
+ Alias   │          
+ Status  │ Active   
+ Created │          
+
+
+
+- OrgsResponse:
+
+┌────┬───────┬──────────┬────────┬─────────┐
+│ ID │ ALIAS │   NAME   │ STATUS │ CREATED │
+├────┼───────┼──────────┼────────┼─────────┤
+│ 1  │       │ Test Org │ Active │         │
+└────┴───────┴──────────┴────────┴─────────┘
+
+
+
+- UserMemberships:
+
+┌────────┬───────┬─────┬───────┬──────┬──────┬───────┬─────────┐
+│ ORG ID │ ALIAS │ ORG │ ROLE  │ USER │ NAME │ EMAIL │ CREATED │
+├────────┼───────┼─────┼───────┼──────┼──────┼───────┼─────────┤
+│        │       │     │ Admin │ 3    │      │       │         │
+└────────┴───────┴─────┴───────┴──────┴──────┴───────┴─────────┘
+
+
+
+- []LoginInfo:
+
+┌────┬───────────┬──────────────────┬──────────┬───────────┬────────┬────────────┐
+│ ID │   NAME    │      EMAIL       │ EXTERNAL │ PROVIDER  │ LOGINS │ LAST LOGIN │
+├────┼───────────┼──────────────────┼──────────┼───────────┼────────┼────────────┤
+│ 1  │ Test User │ test@example.com │          │ undefined │ 0      │            │
+└────┴───────────┴──────────────────┴──────────┴───────────┴────────┴────────────┘
+
+

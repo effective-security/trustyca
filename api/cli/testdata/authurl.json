@@ -1,0 +1,4 @@
+{
+  "AuthURL": "https://localhost:18443/v1/auth/authorize",
+  "Providers": [1, 2]
+}

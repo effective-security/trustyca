@@ -1,0 +1,32 @@
+{
+  "/v1/auth/providers": {
+    "file": "authurl"
+  },
+  "/login/oauth/access_token": {
+    "file": "token"
+  },
+  "/user": {
+    "file": "user"
+  },
+  "/v1/auth/userinfo": {
+    "file": "userinfo"
+  },
+  "/v1/auth/caller": {
+    "file": "caller"
+  },
+  "/pb.Auth/Caller": {
+    "file": "caller"
+  },
+  "/pb.Auth/GetUserToken": {
+    "file": "usertoken"
+  },
+  "post:/pb.Auth/SelectTenant": {
+    "file": "usertoken"
+  },    
+  "/pb.Status/Server": {
+    "file": "server"
+  },
+  "/pb.Status/Version": {
+    "file": "version"
+  }
+}
