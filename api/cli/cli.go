@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -34,7 +35,7 @@ var (
 	DefaultStoragePath = "~/.config/trustyca"
 
 	ServerAlias = map[string]string{
-		"local": "https://localhost:7880",
+		"local": "https://localhost:8880",
 		"dev":   "https://wfe.dev.trustyca.io",
 		"prod":  "https://wfe.prod.trustyca.io",
 	}
@@ -47,7 +48,7 @@ type Cli struct {
 	Version ctl.VersionFlag `name:"version" help:"Print version information and quit" hidden:""`
 	O       string          `help:"Print output format: json|yaml"`
 	Cfg     string          `help:"Configuration file" default:"~/.config/trustyca/config.yaml"`
-	Storage string          `help:"flag specifies to override default location: ~/.config/trustyca. Use TRUSTYCA_STORAGE environment to override"`
+	Storage string          `help:"flag specifies to override default location: ~/.trustyca. Use TRUSTYCA_STORAGE environment to override"`
 	HTTP    bool            `short:"H" help:"Use HTTP client"`
 
 	TimeFormat string `name:"time" help:"Print time format: utc|local|ago" hidden:"" default:"utc"`
@@ -148,6 +149,67 @@ func (c *Cli) AfterApply(app *kong.Kong, vars kong.Vars) error {
 	return nil
 }
 
+const defaultConfig = `
+---
+clients:
+  local_wfe:
+    host: https://localhost:8880
+    tls:
+      trusted_ca: ~/.trustyca/certs/trusty_root_ca.pem
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca
+  remote_wfe_dev:
+    host: https://wfe.dev.trustyca.io
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca
+  remote_wfe_prod:
+    host: https://wfe.prod.trustyca.io
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca
+`
+
+func (c *Cli) configFileName() string {
+	cfg := c.Cfg
+	if cfg == "" {
+		storage := values.StringsCoalesce(
+			c.Storage,
+			os.Getenv("TRUSTYCA_STORAGE"),
+			DefaultStoragePath,
+		)
+		cfg = filepath.Join(storage, "config.yaml")
+	}
+	return resolve.ExpandPath(cfg)
+}
+
+func (c *Cli) ensureConfigFile() (string, error) {
+	fn := c.configFileName()
+	fi, err := os.Stat(fn)
+	if err != nil {
+		// if not found, create it
+		if os.IsNotExist(err) {
+			dir := filepath.Dir(fn)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fn, errors.WithMessagef(err, "unable to create config directory: %s", dir)
+			}
+			err = os.WriteFile(fn, []byte(defaultConfig), 0644)
+			if err != nil {
+				return fn, errors.WithMessagef(err, "unable to create config file: %s", fn)
+			}
+		}
+		return fn, err
+	}
+	if fi.IsDir() {
+		return fn, errors.Newf("config file %s is a directory", fn)
+	}
+	return fn, nil
+}
+
 // RPCClient returns gRPC client
 func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 	if c.rpcClient != nil {
@@ -166,7 +228,6 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 		os.Getenv("TRUSTYCA_STORAGE"),
 		DefaultStoragePath,
 	)
-
 	timeout := time.Duration(c.Timeout) * time.Second
 	clientCfg := &rpcclient.Config{
 		DialTimeout:          timeout,
@@ -179,7 +240,12 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 
 	if strings.HasPrefix(host, "https://") {
 		ca := resolve.ExpandPath(c.TrustedCA)
-		cfg := resolve.ExpandPath(c.Cfg)
+
+		cfg, err := c.ensureConfigFile()
+		if err != nil {
+			return nil, err
+		}
+
 		f, err := retriable.LoadFactory(cfg)
 		if err == nil {
 			rc := f.ConfigForHost(host)
@@ -193,7 +259,7 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 				clientCfg.StorageFolder, _ = homedir.Expand(storage)
 
 				if rc.TLS != nil {
-					ca = values.StringsCoalesce(ca, rc.TLS.TrustedCAFile)
+					ca = resolve.ExpandPath(values.StringsCoalesce(ca, rc.TLS.TrustedCAFile))
 				}
 
 				if !skipAuth {
@@ -238,7 +304,10 @@ func (c *Cli) HTTPClient(skipAuth bool) (*retriable.Client, error) {
 		return nil, errors.New("no server specified. Use -s flag or TRUSTYCA_SERVER env var")
 	}
 
-	cfg := resolve.ExpandPath(c.Cfg)
+	cfg, err := c.ensureConfigFile()
+	if err != nil {
+		return nil, err
+	}
 
 	client, err := retriable.NewForHost(cfg, server)
 	if err != nil {

@@ -41,7 +41,7 @@ metrics:
     addr: "127.0.0.1:29090"
 
 auth:
-  auth_url: https://localhost:7880/v1/auth/authorize
+  auth_url: https://localhost:8880/v1/auth/authorize
   jwt_provider: ${TRUSTYCA_CONFIG_DIR}/jwt-provider.yaml
   oauth2_clients: ${TRUSTYCA_CONFIG_DIR}/oauth2_clients.yaml
   allowed_domains:
@@ -85,6 +85,9 @@ cache:
     client_tls:
       trusted_ca: ${HOME}/.trustyca/certs/trusty_root_ca.pem
 
+orgs:
+  default_org_name: Default
+  default_project_name: Default
 
 tasks:
   # - name: health_check
@@ -95,7 +98,7 @@ servers:
     description: Web Front End service
     disabled: false
     listen_urls:
-      - https://0.0.0.0:7880
+      - https://0.0.0.0:8880
     server_tls:
       cert: ${HOME}/.trustyca/certs/trustyca_server.pem
       key: ${HOME}/.trustyca/certs/trustyca_server.key
@@ -189,16 +192,16 @@ servers:
         domain: .local.trustyca.io
       jwt:
         enabled: true
-        issuer: https://localhost:7880
-        audience: https://localhost:7880
+        issuer: https://localhost:8880
+        audience: https://localhost:8880
         default_authenticated_role: user
         subject_claim: sub
         tenant_claim: org
         role_claim: email
       jwt_dpop:
         enabled: true
-        issuer: https://localhost:7880
-        audience: https://localhost:7880
+        issuer: https://localhost:8880
+        audience: https://localhost:8880
         default_authenticated_role: user
         subject_claim: sub
         tenant_claim: org
@@ -213,7 +216,7 @@ servers:
     description: Backend service
     disabled: false
     listen_urls:
-      - https://0.0.0.0:7881
+      - https://0.0.0.0:8881
     server_tls:
       cert: ${HOME}/.trustyca/certs/trustyca_peer.pem
       key: ${HOME}/.trustyca/certs/trustyca_peer.key
@@ -268,9 +271,8 @@ client:
     key: ${HOME}/.trustyca/certs/trustyca_client.key
     trusted_ca: ${HOME}/.trustyca/certs/trusty_root_ca.pem
   server_url:
-    router: http://localhost:8888
-    wfe: http://localhost:7880
-    backend: http://localhost:7881
+    wfe: http://localhost:8880
+    backend: http://localhost:8881
   dial_timeout: 30s
   dial_keep_alive_time: 300s
   dial_keep_alive_timeout: 30s

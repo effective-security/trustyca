@@ -1,0 +1,494 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: CIS API
+    description: |-
+        CIS is the Certificate Information Service.
+         It is a read-only, publicly exposable gRPC andREST service that serves
+         trust anchors, issuer chains, certificate information and revocation
+         status. It never holds CA private keys.
+
+         In addition to the JSON API below, CIS registers binary endpoints that
+         are referenced from issued certificates (AIA and CDP extensions):
+
+           GET  /v1/cert/{ikid}          application/pkix-cert   issuer certificate
+           GET  /v1/crl/{ikid}           application/pkix-crl    current CRL (DER)
+           GET  /v1/ocsp/{ikid}/{req}    application/ocsp-response
+           POST /v1/ocsp/{ikid}          application/ocsp-response
+           POST /v1/ocsp                 application/ocsp-response (issuer by KID)
+
+         OCSP requests are forwarded to CA.SignOCSP over gRPC and cached until
+         the response NextUpdate.
+    version: 0.0.1
+paths:
+    /pb.CIS/GetCRL:
+        post:
+            tags:
+                - CIS
+            description: GetCRL returns the current CRL of the issuer in PEM format
+            operationId: CIS_GetCRL
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetCrlRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CrlResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.CIS/GetCertificate:
+        post:
+            tags:
+                - CIS
+            description: |-
+                GetCertificate returns the certificate by ID, SKID, Sha256 or issuer
+                 and serial number
+            operationId: CIS_GetCertificate
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetCertificateInfoRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CertificateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.CIS/GetCertificateStatus:
+        post:
+            tags:
+                - CIS
+            description: GetCertificateStatus returns the revocation status of a certificate
+            operationId: CIS_GetCertificateStatus
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetCertificateInfoRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CertificateStatusResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.CIS/GetIssuer:
+        post:
+            tags:
+                - CIS
+            description: GetIssuer returns the issuer chain and status by IKID
+            operationId: CIS_GetIssuer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetIssuerInfoRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IssuerInfo'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.CIS/GetRoots:
+        post:
+            tags:
+                - CIS
+            description: GetRoots returns the published trust anchors
+            operationId: CIS_GetRoots
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ListRootsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RootsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        Certificate:
+            type: object
+            properties:
+                ID:
+                    type: string
+                    description: ID of the certificate
+                OrgID:
+                    type: string
+                    description: OrgID of the owning org
+                ProjectID:
+                    type: string
+                    description: ProjectID of the owning project; empty for org-wide certificates
+                SKID:
+                    type: string
+                    description: SKID provides Subject Key Identifier
+                IKID:
+                    type: string
+                    description: IKID provides Issuer Key Identifier
+                SerialNumber:
+                    type: string
+                    description: SerialNumber provides Serial Number
+                NotBefore:
+                    type: string
+                    description: NotBefore is the time when the validity period starts in RFC3339 format
+                NotAfter:
+                    type: string
+                    description: NotAfter is the time when the validity period ends in RFC3339 format
+                Subject:
+                    type: string
+                    description: Subject name
+                Issuer:
+                    type: string
+                    description: Issuer name
+                Sha256:
+                    type: string
+                    description: Sha256 thumbprint of the cert
+                Profile:
+                    type: string
+                    description: Profile used to issue the certificate
+                Pem:
+                    type: string
+                    description: Pem encoded certificate
+                IssuersPem:
+                    type: string
+                    description: IssuersPem provides PEM encoded issuers chain
+                Locations:
+                    type: array
+                    items:
+                        type: string
+                    description: Locations of the published certificate
+                Label:
+                    type: string
+                    description: Label of the certificate provided by the client
+                Metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: Metadata of the certificate provided by the client
+                Status:
+                    type: integer
+                    description: Status of the certificate
+                    format: enum
+                CreatedAt:
+                    type: string
+                    description: CreatedAt is the issuance time in RFC3339 format
+            description: Certificate provides X509 Certificate information
+        CertificateResponse:
+            type: object
+            properties:
+                Certificate:
+                    $ref: '#/components/schemas/Certificate'
+            description: CertificateResponse returns Certificate
+        CertificateStatusResponse:
+            type: object
+            properties:
+                IKID:
+                    type: string
+                    description: IKID provides Issuer Key Identifier
+                SerialNumber:
+                    type: string
+                    description: SerialNumber provides Serial Number
+                Status:
+                    type: integer
+                    description: Status of the certificate
+                    format: enum
+                NotAfter:
+                    type: string
+                    description: NotAfter in RFC3339 format
+                RevokedAt:
+                    type: string
+                    description: RevokedAt in RFC3339 format, when revoked
+                Reason:
+                    type: integer
+                    description: Reason of the revocation, when revoked
+                    format: enum
+            description: CertificateStatusResponse returns the revocation status of a certificate
+        Crl:
+            type: object
+            properties:
+                ID:
+                    type: string
+                    description: ID of the CRL
+                OrgID:
+                    type: string
+                    description: OrgID of the issuer's org
+                IssuerID:
+                    type: string
+                    description: IssuerID of the issuer
+                IKID:
+                    type: string
+                    description: IKID provides Issuer Key Identifier
+                Number:
+                    type: string
+                    description: Number is the monotonic CRL number
+                ThisUpdate:
+                    type: string
+                    description: ThisUpdate is the time when the CRL was issued in RFC3339 format
+                NextUpdate:
+                    type: string
+                    description: NextUpdate is the time for the next update in RFC3339 format
+                Issuer:
+                    type: string
+                    description: Issuer name
+                Pem:
+                    type: string
+                    description: Pem encoded CRL
+                Locations:
+                    type: array
+                    items:
+                        type: string
+                    description: Locations of the published CRL
+            description: Crl provides X509 CRL information
+        CrlResponse:
+            type: object
+            properties:
+                Crl:
+                    $ref: '#/components/schemas/Crl'
+            description: CrlResponse returns CRL
+        GetCertificateInfoRequest:
+            type: object
+            properties:
+                ID:
+                    type: string
+                    description: ID specifies certificate ID
+                SKID:
+                    type: string
+                    description: SKID specifies Subject Key ID to search
+                Sha256:
+                    type: string
+                    description: Sha256 specifies the certificate thumbprint to search
+                IssuerSerial:
+                    allOf:
+                        - $ref: '#/components/schemas/IssuerSerial'
+                    description: IssuerSerial specifies Issuer Key ID and certificate serial number
+            description: |-
+                GetCertificateInfoRequest specifies a certificate by ID, SKID, Sha256 or
+                 issuer and serial number
+        GetCrlRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                    description: OrgID of the owning org; empty allows lookup across orgs for CIS
+                IKID:
+                    type: string
+                    description: IKID specifies Issuer Key ID
+            description: GetCrlRequest specifies CRL request by IKID
+        GetIssuerInfoRequest:
+            type: object
+            properties:
+                IKID:
+                    type: string
+                    description: IKID specifies Issuer Key ID
+            description: GetIssuerInfoRequest specifies an issuer by IKID
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        IssuerInfo:
+            type: object
+            properties:
+                Label:
+                    type: string
+                    description: Label of the issuer
+                Type:
+                    type: integer
+                    description: Type of the authority
+                    format: enum
+                Status:
+                    type: integer
+                    description: Status of the issuer
+                    format: enum
+                SKID:
+                    type: string
+                    description: SKID provides Subject Key Identifier
+                Subject:
+                    type: string
+                    description: Subject name
+                NotBefore:
+                    type: string
+                    description: NotBefore in RFC3339 format
+                NotAfter:
+                    type: string
+                    description: NotAfter in RFC3339 format
+                Certificate:
+                    type: string
+                    description: Certificate provides the issuer certificate in PEM format
+                Intermediates:
+                    type: string
+                    description: Intermediates provides the intermediate CA certificates in PEM format
+                Root:
+                    type: string
+                    description: Root provides the Root CA certificate in PEM format
+                CrlURL:
+                    type: string
+                    description: CrlURL is the CRL Distribution Point
+                OcspURL:
+                    type: string
+                    description: OcspURL is the OCSP responder URL
+                AiaURL:
+                    type: string
+                    description: AiaURL is the AIA issuer certificate URL
+            description: IssuerInfo provides the public view of an issuer
+        IssuerSerial:
+            type: object
+            properties:
+                IKID:
+                    type: string
+                    description: IKID provides Issuer Key Identifier
+                SerialNumber:
+                    type: string
+                    description: SerialNumber provides certificate's serial number
+            description: IssuerSerial identifies a certificate by its issuer and serial number
+        ListRootsRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                    description: OrgID of the owning org; empty for platform roots
+                Limit:
+                    type: integer
+                    description: Limit specifies maximum number of records to return
+                    format: uint32
+                Offset:
+                    type: integer
+                    description: Offset specifies offset for the offset-based pagination
+                    format: uint32
+                Cursor:
+                    type: string
+                    description: Cursor specifies cursor for the cursor-based pagination
+            description: ListRootsRequest specifies a list of trust anchors
+        NextPage:
+            type: object
+            properties:
+                Offset:
+                    type: integer
+                    description: |-
+                        Offset is the offset of the next page for offset-based pagination.
+                         Offset is limited to 10000.
+                         To paginate for large number of records, use cursor-based pagination
+                         instead.
+                    format: uint32
+                Cursor:
+                    type: string
+                    description: |-
+                        Cursor is the cursor of the next page for cursor-based pagination.
+                         Use "initial" to start the pagination or pass the cursor returned from
+                         this response.
+            description: NextPage specifies pagination information, if there are more pages to fetch.
+        RootCertificate:
+            type: object
+            properties:
+                ID:
+                    type: string
+                    description: ID of the root certificate
+                OrgID:
+                    type: string
+                    description: OrgID of the owning org; empty for platform roots
+                SKID:
+                    type: string
+                    description: SKID provides Subject Key Identifier
+                NotBefore:
+                    type: string
+                    description: NotBefore is the time when the validity period starts in RFC3339 format
+                NotAfter:
+                    type: string
+                    description: NotAfter is the time when the validity period ends in RFC3339 format
+                Subject:
+                    type: string
+                    description: Subject name
+                Sha256:
+                    type: string
+                    description: Sha256 thumbprint of the cert
+                Trust:
+                    type: integer
+                    description: Trust scope
+                    format: enum
+                Pem:
+                    type: string
+                    description: Pem encoded certificate
+                CreatedAt:
+                    type: string
+                    description: CreatedAt is the registration time in RFC3339 format
+            description: RootCertificate provides X509 Root Certificate information
+        RootsResponse:
+            type: object
+            properties:
+                Roots:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RootCertificate'
+                NextPage:
+                    allOf:
+                        - $ref: '#/components/schemas/NextPage'
+                    description: |-
+                        NextPage specifies pagination information, if there are more pages to
+                         fetch. If there are no more pages to fetch, NextPage will be empty.
+            description: RootsResponse returns Root Certificates
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+tags:
+    - name: CIS

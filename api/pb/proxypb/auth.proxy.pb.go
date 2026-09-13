@@ -224,3 +224,162 @@ func (s *postproxyAuthClient) ExchangeCode(ctx context.Context, req *pb.Exchange
 	}
 	return &res, nil
 }
+
+// SelectOrg verifies the caller's access to the org and returns a new
+// token scoped to it. This is the only tenant request that carries OrgID.
+func (s *proxyAuthServer) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest, opts ...grpc.CallOption) (*pb.UserTokenResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.SelectOrg(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// SelectOrg verifies the caller's access to the org and returns a new
+// token scoped to it. This is the only tenant request that carries OrgID.
+func (s *proxyAuthClient) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.UserTokenResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.SelectOrg(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// SelectOrg verifies the caller's access to the org and returns a new
+// token scoped to it. This is the only tenant request that carries OrgID.
+func (s *postproxyAuthClient) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.UserTokenResponse, error) {
+	var res pb.UserTokenResponse
+	path := pb.Auth_SelectOrg_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// AuthenticateAPIKey returns the user token info.
+// The caller must include the API key in the Authorization header
+// with HMAC SHA256 signature of the request, using API key secret.
+//
+// Date: RFC3339 timestamp
+// Authorization: APIKey {KeyID}:{signature}
+// signature = Base64(HMAC-SHA256(secret, method + timestamp))
+func (s *proxyAuthServer) AuthenticateAPIKey(ctx context.Context, req *emptypb.Empty, opts ...grpc.CallOption) (*pb.UserTokenResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.AuthenticateAPIKey(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// AuthenticateAPIKey returns the user token info.
+// The caller must include the API key in the Authorization header
+// with HMAC SHA256 signature of the request, using API key secret.
+//
+// Date: RFC3339 timestamp
+// Authorization: APIKey {KeyID}:{signature}
+// signature = Base64(HMAC-SHA256(secret, method + timestamp))
+func (s *proxyAuthClient) AuthenticateAPIKey(ctx context.Context, req *emptypb.Empty) (*pb.UserTokenResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.AuthenticateAPIKey(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// AuthenticateAPIKey returns the user token info.
+// The caller must include the API key in the Authorization header
+// with HMAC SHA256 signature of the request, using API key secret.
+//
+// Date: RFC3339 timestamp
+// Authorization: APIKey {KeyID}:{signature}
+// signature = Base64(HMAC-SHA256(secret, method + timestamp))
+func (s *postproxyAuthClient) AuthenticateAPIKey(ctx context.Context, req *emptypb.Empty) (*pb.UserTokenResponse, error) {
+	var res pb.UserTokenResponse
+	path := pb.Auth_AuthenticateAPIKey_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// GetAllowedMethods returns the allowed methods for the caller
+func (s *proxyAuthServer) GetAllowedMethods(ctx context.Context, req *emptypb.Empty, opts ...grpc.CallOption) (*pb.ServiceAccessInfo, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetAllowedMethods(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetAllowedMethods returns the allowed methods for the caller
+func (s *proxyAuthClient) GetAllowedMethods(ctx context.Context, req *emptypb.Empty) (*pb.ServiceAccessInfo, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetAllowedMethods(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetAllowedMethods returns the allowed methods for the caller
+func (s *postproxyAuthClient) GetAllowedMethods(ctx context.Context, req *emptypb.Empty) (*pb.ServiceAccessInfo, error) {
+	var res pb.ServiceAccessInfo
+	path := pb.Auth_GetAllowedMethods_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// GetCallerScope returns the caller's resolved scope in the selected org:
+// the org role, project roles, token scopes, and per method the roles
+// and scopes it requires.
+func (s *proxyAuthServer) GetCallerScope(ctx context.Context, req *emptypb.Empty, opts ...grpc.CallOption) (*pb.CallerScope, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetCallerScope(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetCallerScope returns the caller's resolved scope in the selected org:
+// the org role, project roles, token scopes, and per method the roles
+// and scopes it requires.
+func (s *proxyAuthClient) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.CallerScope, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetCallerScope(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetCallerScope returns the caller's resolved scope in the selected org:
+// the org role, project roles, token scopes, and per method the roles
+// and scopes it requires.
+func (s *postproxyAuthClient) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.CallerScope, error) {
+	var res pb.CallerScope
+	path := pb.Auth_GetCallerScope_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}

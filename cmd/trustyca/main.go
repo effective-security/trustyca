@@ -17,8 +17,11 @@ type app struct {
 	Auth       command.AuthCmd       `cmd:"" help:"authentication commands"`
 	Caller     command.CallerCmd     `cmd:"" help:"print caller info"`
 	CallerPing command.CallerPingCmd `cmd:"" help:"ping caller info for duration with intervals"`
-	Member     command.MemberCmd     `cmd:"" help:"member commands"`
+	Member     command.MemberCmd     `cmd:"" help:"org scope member commands"`
+	Org        command.OrgCmd        `cmd:"" help:"org commands"`
 	Server     command.ServerCmd     `cmd:"" help:"print remote server status"`
+	Project    command.ProjectCmd    `cmd:"" help:"project commands"`
+	APIKey     command.APIKeyCmd     `cmd:"" name:"api-key" help:"API key commands"`
 	Version    command.VersionCmd    `cmd:"" help:"print remote server version"`
 }
 

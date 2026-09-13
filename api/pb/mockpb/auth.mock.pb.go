@@ -95,3 +95,48 @@ func (m *MockAuthServer) ExchangeCode(ctx context.Context, req *pb.ExchangeCodeR
 	}
 	return m.next().(*pb.Token), nil
 }
+
+// SelectOrg verifies the caller's access to the org and returns a new
+// token scoped to it. This is the only tenant request that carries OrgID.
+
+func (m *MockAuthServer) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.UserTokenResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.UserTokenResponse), nil
+}
+
+// AuthenticateAPIKey returns the user token info.
+// The caller must include the API key in the Authorization header
+// with HMAC SHA256 signature of the request, using API key secret.
+//
+// Date: RFC3339 timestamp
+// Authorization: APIKey {KeyID}:{signature}
+// signature = Base64(HMAC-SHA256(secret, method + timestamp))
+
+func (m *MockAuthServer) AuthenticateAPIKey(ctx context.Context, req *emptypb.Empty) (*pb.UserTokenResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.UserTokenResponse), nil
+}
+
+// GetAllowedMethods returns the allowed methods for the caller
+
+func (m *MockAuthServer) GetAllowedMethods(ctx context.Context, req *emptypb.Empty) (*pb.ServiceAccessInfo, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.ServiceAccessInfo), nil
+}
+
+// GetCallerScope returns the caller's resolved scope in the selected org:
+// the org role, project roles, token scopes, and per method the roles
+// and scopes it requires.
+
+func (m *MockAuthServer) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.CallerScope, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.CallerScope), nil
+}

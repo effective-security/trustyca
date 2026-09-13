@@ -16,7 +16,7 @@ func TestFactory(t *testing.T) {
 	require.NotEmpty(t, homeDir, "HOME is not set")
 	f := NewFactory(Config{
 		ServerURL: map[string]string{
-			"local": "https://localhost:7880",
+			"local": "https://localhost:8880",
 		},
 		ClientTLS: gserver.TLSInfo{
 			CertFile:      homeDir + "/.trustyca/certs/trustyca_client.pem",
@@ -43,7 +43,7 @@ func TestFactoryCNA(t *testing.T) {
 
 	f := NewFactory(Config{
 		ServerURL: map[string]string{
-			"local": "https://localhost:7880",
+			"local": "https://localhost:8880",
 		},
 		EnableCNA: true,
 	}, WithCallerIdentity(ci))
@@ -51,7 +51,7 @@ func TestFactoryCNA(t *testing.T) {
 
 	f = NewFactory(Config{
 		ServerURL: map[string]string{
-			"local": "https://localhost:7880",
+			"local": "https://localhost:8880",
 		},
 		EnableCNA: true,
 	})

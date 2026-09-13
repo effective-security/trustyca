@@ -352,6 +352,7 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 	metricskey.LoginCount.IncrCounter(1, ui.Email)
 
 	claims["sub"] = u.ID.String()
+
 	if login.Count == 1 {
 		// ctx2 := xlog.ContextWithKV(context.Background(), xlog.ContextEntries(ctx)...)
 		// go func() {
@@ -372,30 +373,11 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 		} else if count > 0 {
 			logger.KV(xlog.INFO, "reason", "AcceptInvites", "count", count)
 		}
-
-		// if s.cfg.Trustyca.CreateDefaultOrgs {
-		// 	memberships, err := s.db.ListMemberships(ctx, &query.ListMembershipsRequest{UserID: u.ID.UInt64(), OrgStatus: pb.ItemStatus_Active})
-		// 	if err != nil {
-		// 		logger.KV(xlog.ERROR, "reason", "ListMemberships", "err", err.Error())
-		// 	} else if len(memberships) == 0 {
-		// 		org, err := s.db.RegisterOrg(ctx, &model.Org{
-		// 			Name:        "Default",
-		// 			Description: "Default org",
-		// 			Status:      pb.ItemStatus_Active,
-		// 		}, u.ID.UInt64())
-		// 		if err != nil {
-		// 			logger.KV(xlog.ERROR, "reason", "CreateDefaultProjects", "err", err.Error())
-		// 		} else {
-		// 			logger.ContextKV(ctx, xlog.INFO,
-		// 				"status", "CreateDefaultProjects",
-		// 				"name", org.Name,
-		// 				"alias", org.Alias,
-		// 				"owner_id", u.ID.UInt64(),
-		// 			)
-		// 		}
-		// 	}
-		// }
 	}
+
+	// select the initial org for the session; the token carries the org and
+	// the resolved role, permissions are resolved from grants at request time
+	s.initialOrg(ctx, u).setOrgClaims(claims)
 
 	tokenStr, err := s.JwtSigner.Sign(ctx, claims)
 	if err != nil {
@@ -425,7 +407,7 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 			CodeChallenge:       st.CodeChallenge,
 			CodeChallengeMethod: st.CodeChallengeMethod,
 		}
-		data, err := dataprotection.ProtectObject(ctx, s.dp, &protectedToken)
+		data, err := dataprotection.ProtectObject(ctx, s.dataprotection, &protectedToken)
 		if err != nil {
 			marshal.WriteJSON(w, r, httperror.Unexpected("failed to protect Access Token").WithCause(err))
 			return
@@ -730,7 +712,7 @@ func (s *Service) ExchangeCode(ctx context.Context, req *pb.ExchangeCodeRequest)
 	}
 
 	var protectedToken OTCState
-	err = dataprotection.UnprotectObject(ctx, s.dp, string(data), &protectedToken)
+	err = dataprotection.UnprotectObject(ctx, s.dataprotection, string(data), &protectedToken)
 	if err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "invalid otc")
 	}

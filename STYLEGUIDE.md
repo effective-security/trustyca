@@ -130,6 +130,7 @@ and performance.
   prefixes/suffixes unless they are part of the product contract.
 - Keep CLI command annotations and public RPC naming aligned with existing CLI
   hierarchy.
+- For parsing Enums use .Parse method on enum, for example: `if req.Type = pb.EventType_Unknown.Parse(a.Type); req.Type == pb.EventType_Unknown { return errors.Errorf("invalid event type: %s", a.Type) }`
 
 ---
 

@@ -2,6 +2,7 @@ package pgsql
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,7 +14,12 @@ import (
 	"github.com/effective-security/xlog"
 )
 
+// DefaultInviteExpiry is the validity of an invite when the caller does not
+// set ExpiresAt
+const DefaultInviteExpiry = 14 * 24 * time.Hour
+
 // CreateInvite creates or updates an invite for a user to join an org
+// (empty ProjectID) or a project
 func (p *Provider) CreateInvite(ctx context.Context, invite *model.Invite) (*model.Invite, error) {
 	id := invite.ID
 	if id.UInt64() == 0 {
@@ -22,6 +28,9 @@ func (p *Provider) CreateInvite(ctx context.Context, invite *model.Invite) (*mod
 
 	inv := *invite
 	inv.Email = strings.ToLower(inv.Email)
+	if inv.ExpiresAt.IsZero() {
+		inv.ExpiresAt = xdb.Time(time.Now().Add(DefaultInviteExpiry))
+	}
 
 	err := xdb.Validate(&inv)
 	if err != nil {
@@ -35,9 +44,11 @@ func (p *Provider) CreateInvite(ctx context.Context, invite *model.Invite) (*mod
 		q,
 		id.UInt64(),
 		inv.OrgID,
+		inv.ProjectID,
 		inv.InviterID,
 		inv.Email,
 		inv.Role,
+		inv.ExpiresAt,
 	)
 	if err != nil {
 		p.CheckErrIDConflict(ctx, err, id.UInt64())
@@ -58,20 +69,26 @@ func (p *Provider) GetInvite(ctx context.Context, id uint64) (*model.Invite, err
 	return res, nil
 }
 
-// GetInviteByOrgAndEmail returns an invite by org and email
-func (p *Provider) GetInviteByOrgAndEmail(ctx context.Context, orgID uint64, email string) (*model.Invite, error) {
-	q, name := query.GetInviteByOrgAndEmail()
+// GetInviteByOrgAndEmail returns an invite by org, scope and email.
+// projectID 0 returns the Org scope invite.
+func (p *Provider) GetInviteByOrgAndEmail(ctx context.Context, orgID, projectID uint64, email string) (*model.Invite, error) {
+	req := &query.GetInviteRequest{
+		OrgID:     orgID,
+		ProjectID: projectID,
+		Email:     strings.ToLower(email),
+	}
+	qp := req.QueryParams()
+	q, name := query.GetInvite(qp)
 	defer DbMeasureQuerySince(name, time.Now())
 
-	email = strings.ToLower(email)
-	res, err := xdb.QueryRow[model.Invite](ctx, p, q, orgID, email)
+	res, err := xdb.QueryRow[model.Invite](ctx, p, q, qp.Args()...)
 	if err != nil {
-		return nil, xdb.CheckNotFoundError(err, schema.InviteTableInfo.Name, email)
+		return nil, xdb.CheckNotFoundError(err, schema.InviteTableInfo.Name, fmt.Sprintf("%d/%d/%s", orgID, projectID, req.Email))
 	}
 	return res, nil
 }
 
-// GetOrgInvites returns invites for an org
+// GetOrgInvites returns invites of all scopes for an org
 func (p *Provider) GetOrgInvites(ctx context.Context, orgID uint64) (model.InviteSlice, error) {
 	q, name := query.GetOrgInvites()
 	defer DbMeasureQuerySince(name, time.Now())
@@ -98,7 +115,7 @@ func (p *Provider) GetUserInvites(ctx context.Context, email string) (model.Invi
 	return rs.Rows, nil
 }
 
-// DeleteInvite deletes an invite from an org
+// DeleteInviteByID deletes an invite by ID
 func (p *Provider) DeleteInviteByID(ctx context.Context, id uint64) (int64, error) {
 	q, name := query.DeleteRowByID(&schema.InviteTableInfo)
 	defer DbMeasureQuerySince(name, time.Now())
@@ -110,13 +127,15 @@ func (p *Provider) DeleteInviteByID(ctx context.Context, id uint64) (int64, erro
 	return res.RowsAffected()
 }
 
-// DeleteInvite deletes an invite from an org
+// DeleteInvite deletes invites at the requested scope
 func (p *Provider) DeleteInvite(ctx context.Context, r *query.DeleteInviteRequest) (int64, error) {
 	if r.OrgID == 0 && r.Email == "" {
 		return 0, errors.New("orgID or email is required")
 	}
-	qp := r.QueryParams()
-	q, name := query.DeleteInvite(r.QueryParams())
+	req := *r
+	req.Email = strings.ToLower(req.Email)
+	qp := req.QueryParams()
+	q, name := query.DeleteInvite(qp)
 	defer DbMeasureQuerySince(name, time.Now())
 
 	res, err := p.ExecContext(ctx, q, qp.Args()...)
@@ -126,8 +145,8 @@ func (p *Provider) DeleteInvite(ctx context.Context, r *query.DeleteInviteReques
 	return res.RowsAffected()
 }
 
-// AcceptInvite accepts an org invite for a user, adds the user as an org
-// member with the invited role, and removes the invite.
+// AcceptInvite accepts an invite for a user, adds the user as a member at
+// the invite's scope with the invited role, and removes the invite.
 func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*model.Membership, error) {
 	defer DbMeasureSince(time.Now())
 
@@ -144,6 +163,9 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 	if !strings.EqualFold(user.Email, invite.Email) {
 		return nil, errors.Errorf("invite email does not match user email")
 	}
+	if invite.IsExpired(time.Now()) {
+		return nil, errors.Errorf("invite expired")
+	}
 
 	tx, err := p.BeginTx(ctx, nil)
 	if err != nil {
@@ -158,18 +180,16 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 
 	txProvider := tx.(*Provider)
 	membership, err := txProvider.AddMember(ctx, &model.Membership{
-		OrgID:  invite.OrgID,
-		UserID: user.ID,
-		Role:   invite.Role,
+		OrgID:     invite.OrgID,
+		ProjectID: invite.ProjectID,
+		UserID:    user.ID,
+		Role:      invite.Role,
 	})
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to add member")
 	}
 
-	_, err = txProvider.DeleteInvite(ctx, &query.DeleteInviteRequest{
-		OrgID: invite.OrgID.UInt64(),
-		Email: invite.Email,
-	})
+	_, err = txProvider.DeleteInviteByID(ctx, invite.ID.UInt64())
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to delete invite")
 	}
@@ -181,7 +201,7 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 	return membership, nil
 }
 
-// AcceptInvites moves invites to membership
+// AcceptInvites moves invites to memberships at the invites' scopes
 func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (int64, error) {
 	invites, err := p.GetUserInvites(ctx, user.Email)
 	if err != nil {
@@ -194,9 +214,10 @@ func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (int64, 
 
 	for _, inv := range invites {
 		_, err = p.AddMember(ctx, &model.Membership{
-			OrgID:  inv.OrgID,
-			UserID: user.ID,
-			Role:   inv.Role,
+			OrgID:     inv.OrgID,
+			ProjectID: inv.ProjectID,
+			UserID:    user.ID,
+			Role:      inv.Role,
 		})
 		if err != nil {
 			logger.ContextKV(ctx, xlog.ERROR, "role", inv.Role, "user", user.ID.UnderscoreString(), "err", err.Error())

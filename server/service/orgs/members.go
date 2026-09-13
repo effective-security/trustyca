@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/effective-security/porto/xhttp/httperror"
@@ -15,76 +16,151 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// GetUserMemberships returns list of calling user memberships
-func (s *Service) GetUserMemberships(ctx context.Context, req *emptypb.Empty) (*pb.UserMemberships, error) {
-	idn := authctx.FromContext(ctx)
-	userID := idn.UserID()
+// orgAccess builds the resolved org access from the user's grants,
+// with the org alias and name taken from the membership rows
+func orgAccess(rows model.MembershipInfoSlice, orgID, userID xdb.ID) *pb.OrgAccess {
+	grants := authctx.GrantsFromMemberships(rows, orgID, userID)
+	access := grants.OrgAccess()
+	for _, m := range rows {
+		if m.OrgID.UInt64() == orgID.UInt64() {
+			access.OrgAlias = m.OrgAlias
+			access.OrgName = m.OrgName
+			break
+		}
+	}
+	return access
+}
+
+// GetUserOrgs returns the orgs the caller can select, each once, with the
+// resolved org role. A user with project grants only sees the org as a
+// derived Viewer.
+func (s *Service) GetUserOrgs(ctx context.Context, _ *emptypb.Empty) (*pb.UserOrgsResponse, error) {
+	userID := authctx.FromContext(ctx).UserID()
+	if userID.UInt64() == 0 {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.Unauthenticated, "user is required")
+	}
+
+	memberships, err := s.db.GetUserMemberships(ctx, userID.UInt64())
+	if err != nil {
+		return nil, httperror.WrapWithCtx(ctx, err, "failed to get memberships")
+	}
+	res := &pb.UserOrgsResponse{}
+	for _, orgID := range memberships.OrgIDs() {
+		res.Orgs = append(res.Orgs, orgAccess(memberships, orgID, userID))
+	}
+	return res, nil
+}
+
+// GetUserMemberships returns the caller's resolved access to the org
+// selected in the token and the caller's explicit grants in that org
+func (s *Service) GetUserMemberships(ctx context.Context, _ *emptypb.Empty) (*pb.UserMemberships, error) {
+	orgID, err := tokenOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+	userID := authctx.FromContext(ctx).UserID()
 
 	memberships, err := s.db.ListMemberships(ctx, &query.ListMembershipsRequest{
+		OrgID:     orgID.UInt64(),
 		UserID:    userID.UInt64(),
 		OrgStatus: pb.ItemStatus_Active,
 	})
 	if err != nil {
-		return nil, err
+		return nil, httperror.WrapWithCtx(ctx, err, "failed to get memberships")
 	}
-	res := &pb.UserMemberships{
+	return &pb.UserMemberships{
+		Org:         orgAccess(memberships, orgID, userID),
 		Memberships: memberships.Pb(),
-	}
-	return res, nil
+	}, nil
 }
 
-// GetMembers returns list of membership info for the org by org ID
+// GetMembers returns grants and invites of the org selected in the token.
+// With ProjectID only the project's grants are returned;
+// with Scope Org only the org-wide grants are returned.
 func (s *Service) GetMembers(ctx context.Context, req *pb.GetMembersRequest) (*pb.MembersResponse, error) {
-	id, err := xdb.ParseID(req.OrgID)
+	orgID, err := tokenOrg(ctx)
 	if err != nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid org ID")
+		return nil, err
 	}
-
+	projectID, err := parseOptionalID(ctx, req.ProjectID, "project ID")
+	if err != nil {
+		return nil, err
+	}
 	memberships, err := s.db.ListMemberships(ctx, &query.ListMembershipsRequest{
-		OrgID: id.UInt64(),
-		//OrgStatus: pb.ItemStatus_Active,
+		OrgID:     orgID.UInt64(),
+		ProjectID: projectID.UInt64(),
+		Scope:     req.Scope,
 	})
 	if err != nil {
-		return nil, err
+		return nil, httperror.WrapWithCtx(ctx, err, "request failed")
 	}
-	invites, err := s.db.GetOrgInvites(ctx, id.UInt64())
+	invites, err := s.db.GetOrgInvites(ctx, orgID.UInt64())
 	if err != nil {
-		return nil, err
+		return nil, httperror.WrapWithCtx(ctx, err, "request failed")
 	}
-	res := &pb.MembersResponse{
+	if projectID.UInt64() != 0 {
+		invites = invites.FilterByProject(projectID.UInt64())
+	} else if req.Scope == pb.Scope_Org {
+		invites = invites.FilterByProject(0)
+	}
+
+	return &pb.MembersResponse{
 		Memberships: memberships.Pb(),
 		Invites:     invites.Pb(),
-	}
-
-	return res, nil
+	}, nil
 }
 
-// AddMember adds a user to Org
-func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.AddMemberResponse, error) {
-	orgID, err := xdb.ParseID(req.OrgID)
+// checkGrantable verifies that the caller may grant (or revoke) the role at
+// the scope and returns the caller's grants
+func (s *Service) checkGrantable(ctx context.Context, orgID, projectID xdb.ID, role pb.Role_Enum) (*authctx.Grants, error) {
+	callerID := authctx.FromContext(ctx).UserID()
+	grants, err := s.authorizer.Grants(ctx, orgID, callerID)
 	if err != nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid org ID")
+		return nil, httperror.WrapWithCtx(ctx, err, "failed to resolve access")
+	}
+	if projectID.UInt64() == 0 {
+		if !grants.CanGrantOrgRole(role) {
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "not allowed to grant role %s org-wide", role.String())
+		}
+	} else if !grants.CanGrantProjectRole(projectID.UInt64(), role) {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "not allowed to grant role %s in the project", role.String())
+	}
+	return grants, nil
+}
+
+// AddMember grants a role org-wide (empty ProjectID) or in a project.
+// If the user does not exist yet, an invite is created at the same scope.
+func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.AddMemberResponse, error) {
+	orgID, err := tokenOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+	projectID, err := parseOptionalID(ctx, req.ProjectID, "project ID")
+	if err != nil {
+		return nil, err
 	}
 	emailAddr := strings.ToLower(strings.TrimSpace(req.Email))
 	if emailAddr == "" {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "email is required")
 	}
+	if req.Role == pb.Role_None {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "role is required")
+	}
 
 	trustycaCtx := authctx.FromContext(ctx)
 	callerID := trustycaCtx.UserID()
 
-	callerRole := authctx.FindCallerRole(trustycaCtx, orgID.String())
-	// only owner can add owner
-	if req.Role == pb.Role_Owner && callerRole != pb.Role_Owner {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "owner role required")
-	}
-
-	org, err := s.db.GetOrg(ctx, orgID.UInt64())
+	_, err = s.checkGrantable(ctx, orgID, projectID, req.Role)
 	if err != nil {
-		return nil, httperror.WrapWithCtx(ctx, err, "unable to find org")
+		return nil, err
 	}
-	if org.Status == pb.ItemStatus_Inactive {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.FailedPrecondition, "org is deleted")
+	org, err := s.getActiveOrg(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	project, err := s.getProject(ctx, orgID, projectID)
+	if err != nil {
+		return nil, err
 	}
 
 	var res pb.AddMemberResponse
@@ -92,14 +168,14 @@ func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.
 	user, err := s.db.GetUserByEmail(ctx, emailAddr)
 	if err == nil {
 		list, err := s.db.ListMemberships(ctx, &query.ListMembershipsRequest{
-			OrgID: orgID.UInt64(),
-			//OrgStatus: pb.ItemStatus_Active,
+			OrgID:  orgID.UInt64(),
+			UserID: user.ID.UInt64(),
 		})
 		if err != nil {
 			return nil, httperror.WrapWithCtx(ctx, err, "request failed")
 		}
 
-		if member := list.FindMemberByUserID(user.ID.UInt64()); member != nil {
+		if member := list.FindMemberByUserID(user.ID.UInt64(), projectID.UInt64()); member != nil {
 			if member.Role == req.Role {
 				res.Membership = member.Pb()
 				return &res, nil
@@ -108,31 +184,25 @@ func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.
 		}
 
 		member, err := s.db.AddMember(ctx, &model.Membership{
-			OrgID:  orgID,
-			UserID: user.ID,
-			Role:   req.Role,
+			OrgID:     orgID,
+			ProjectID: projectID,
+			UserID:    user.ID,
+			Role:      req.Role,
 		})
 		if err != nil {
 			return nil, httperror.WrapWithCtx(ctx, err, "request failed")
 		}
-		res.Membership = member.Pb(org, user)
+		res.Membership = member.Pb(org, project, user)
 
-		s.roleChecker.InvalidateCache(ctx, user.ID.String())
+		s.authorizer.InvalidateUser(ctx, user.ID.String())
 		logger.ContextKV(ctx, xlog.NOTICE,
 			"org", orgID.UnderscoreString(),
+			"project", projectID.UnderscoreString(),
 			"invitee", emailAddr,
 			"existing_user", user.ID.UInt64(),
 			"role", member.Role.String())
-
-		// TODO: events
-		// s.db.TryCreateEvent(&model.Event{
-		// 	OrgID:   orgID,
-		// 	Type:        pb.EventType_MemberAdded,
-		// 	Email:       xdb.NULLString(trustycaCtx.Email()),
-		// 	Source:      xdb.NULLString(trustycaCtx.Target()),
-		// 	Title:       fmt.Sprintf("(%s) was added as %s", user.Email, member.Role.DisplayName()),
-		// 	Description: xdb.NULLString(fmt.Sprintf("Existing user %s (%s) was added as %s by %s", user.Name, user.Email, member.Role.DisplayName(), trustycaCtx.Email())),
-		// })
+		s.event(ctx, orgID, projectID, user.ID, memberEvent(projectID, pb.EventType_OrgMemberAdded, pb.EventType_ProjectMemberAdded),
+			fmt.Sprintf("%s was added as %s", user.Email, member.Role.String()))
 	} else {
 		if !xdb.IsNotFoundError(err) {
 			logger.ContextKV(ctx, xlog.WARNING,
@@ -143,6 +213,7 @@ func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.
 
 		invite, err := s.db.CreateInvite(ctx, &model.Invite{
 			OrgID:     orgID,
+			ProjectID: projectID,
 			InviterID: callerID,
 			Email:     emailAddr,
 			Role:      req.Role,
@@ -153,174 +224,209 @@ func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.
 		res.Invite = invite.Pb()
 		logger.ContextKV(ctx, xlog.NOTICE,
 			"org", orgID.UnderscoreString(),
+			"project", projectID.UnderscoreString(),
 			"invitee", emailAddr,
 			"role", invite.Role.DisplayName())
-		// TODO: emailer and events
-		/*
-			err = s.Emailer.SendHTMLTemplate(ctx,
-				[]string{emailAddr},
-				"Org invite",
-				"/emails/org_invite.html",
-				&templates.OrgInviteEmail{
-					InviterName:  trustycaCtx.Name(),
-					InviterEmail: trustycaCtx.Email(),
-					AppURL:       s.cfg.AppURL,
-					Org: org.Name,
-				},
-			)
-			if err != nil {
-				logger.ContextKV(ctx, xlog.ERROR,
-					"email", emailAddr,
-					"reason", "SendHTMLTemplate",
-					"err", err.Error())
-			}
-
-			s.db.TryCreateEvent(&model.Event{
-				OrgID:   orgID,
-				Type:        pb.EventType_MemberAdded,
-				Email:       xdb.NULLString(trustycaCtx.Email()),
-				Source:      xdb.NULLString(trustycaCtx.Target()),
-				Title:       fmt.Sprintf("%s was invited as %s", emailAddr, req.Role),
-				Description: xdb.NULLString(fmt.Sprintf("User %s was invited as %s by %s", emailAddr, req.Role, trustycaCtx.Email())),
-			})
-		*/
+		s.event(ctx, orgID, projectID, invite.ID, memberEvent(projectID, pb.EventType_OrgMemberInvited, pb.EventType_ProjectMemberInvited),
+			fmt.Sprintf("%s was invited as %s", emailAddr, invite.Role.String()))
+		// TODO: emailer
 	}
 
 	return &res, nil
 }
 
-// ChangeMemberRole changes the role of a user in the org
-func (s *Service) ChangeMemberRole(ctx context.Context, req *pb.ChangeMemberRoleRequest) (*pb.Membership, error) {
-	orgID, err := xdb.ParseID(req.OrgID)
-	if err != nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid org ID")
+// memberEvent selects the org or project event type for the scope
+func memberEvent(projectID xdb.ID, org, project pb.EventType_Enum) pb.EventType_Enum {
+	if projectID.UInt64() != 0 {
+		return project
 	}
+	return org
+}
 
-	trustycaCtx := authctx.FromContext(ctx)
-	callerRole := authctx.FindCallerRole(trustycaCtx, orgID.String())
-
-	if req.Role == pb.Role_Owner && callerRole != pb.Role_Owner {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "forbidden to change owner")
-	}
-
+// findMember finds the grant at the scope by user ID or email
+func (s *Service) findMember(ctx context.Context, orgID, projectID xdb.ID, userIDStr, email string) (*model.MembershipInfo, error) {
 	memberships, err := s.db.ListMemberships(ctx, &query.ListMembershipsRequest{
-		OrgID: orgID.UInt64(),
-		//OrgStatus: pb.ItemStatus_Active,
+		OrgID:     orgID.UInt64(),
+		ProjectID: projectID.UInt64(),
+		Scope:     model.ScopeOf(projectID),
 	})
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "request failed")
 	}
 
 	var member *model.MembershipInfo
-	if req.UserID != "" {
-		userID, err := xdb.ParseID(req.UserID)
+	if userIDStr != "" {
+		userID, err := xdb.ParseID(userIDStr)
 		if err != nil {
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid user ID")
 		}
-		member = memberships.FindMemberByUserID(userID.UInt64())
-	} else if req.Email != "" {
-		member = memberships.FindMemberByEmail(req.Email)
+		member = memberships.FindMemberByUserID(userID.UInt64(), projectID.UInt64())
+	} else if email != "" {
+		member = memberships.FindMemberByEmail(strings.ToLower(strings.TrimSpace(email)), projectID.UInt64())
+	} else {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "user ID or email is required")
 	}
 	if member == nil {
-		return nil, httperror.WrapWithCtx(ctx, err, "unable to find user")
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "unable to find member")
 	}
+	return member, nil
+}
 
-	if member.Role == pb.Role_Owner && callerRole != pb.Role_Owner {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "forbidden to change owner")
+// checkLastOwner refuses to remove or demote the last org Owner
+func (s *Service) checkLastOwner(ctx context.Context, orgID xdb.ID, member *model.MembershipInfo) error {
+	if member.ProjectID.UInt64() != 0 || member.Role != pb.Role_Owner {
+		return nil
 	}
-
-	org, err := s.db.GetOrg(ctx, orgID.UInt64())
+	owners, err := s.db.ListMemberships(ctx, &query.ListMembershipsRequest{
+		OrgID: orgID.UInt64(),
+		Scope: pb.Scope_Org,
+		Role:  pb.Role_Owner,
+	})
 	if err != nil {
-		return nil, httperror.WrapWithCtx(ctx, err, "unable to find org")
+		return httperror.WrapWithCtx(ctx, err, "request failed")
 	}
-	if org.Status == pb.ItemStatus_Inactive {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.FailedPrecondition, "org is deleted")
+	if owners.CountOrgRole(orgID.UInt64(), pb.Role_Owner) <= 1 {
+		return httperror.NewGrpcFromCtx(ctx, codes.FailedPrecondition, "the org must keep at least one owner")
+	}
+	return nil
+}
+
+// ChangeMemberRole changes the role of an existing grant at the requested
+// scope. The caller must be allowed to grant both the current and the new
+// role at that scope.
+func (s *Service) ChangeMemberRole(ctx context.Context, req *pb.ChangeMemberRoleRequest) (*pb.Membership, error) {
+	orgID, err := tokenOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+	projectID, err := parseOptionalID(ctx, req.ProjectID, "project ID")
+	if err != nil {
+		return nil, err
+	}
+	if req.Role == pb.Role_None {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "role is required")
+	}
+	_, err = s.checkGrantable(ctx, orgID, projectID, req.Role)
+	if err != nil {
+		return nil, err
+	}
+
+	member, err := s.findMember(ctx, orgID, projectID, req.UserID, req.Email)
+	if err != nil {
+		return nil, err
+	}
+	if member.Role == req.Role {
+		return member.Pb(), nil
+	}
+	_, err = s.checkGrantable(ctx, orgID, projectID, member.Role)
+	if err != nil {
+		return nil, err
+	}
+	err = s.checkLastOwner(ctx, orgID, member)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.getActiveOrg(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	project, err := s.getProject(ctx, orgID, projectID)
+	if err != nil {
+		return nil, err
 	}
 	user, err := s.db.GetUser(ctx, member.UserID.UInt64())
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "unable to find user")
 	}
 
-	m, err := s.db.UpdateMemberRole(ctx, orgID.UInt64(), member.UserID.UInt64(), req.Role)
-	if err != nil {
-		return nil, httperror.WrapWithCtx(ctx, err, "request failed")
-	}
-
-	s.roleChecker.InvalidateCache(ctx, user.ID.String())
-
-	// TODO: events
-	// s.db.TryCreateEvent(&model.Event{
-	// 	ProjectID:   projectID,
-	// 	Type:        pb.EventType_MemberAdded,
-	// 	Email:       xdb.NULLString(trustycaCtx.Email()),
-	// 	Source:      xdb.NULLString(trustycaCtx.Target()),
-	// 	Title:       fmt.Sprintf("%s (%s) was changed to %s", member.Email, member.Role.DisplayName(), req.Role.DisplayName()),
-	// 	Description: xdb.NULLString(fmt.Sprintf("User %s (%s) was changed to %s by %s", member.Name, member.Email, req.Role.DisplayName(), trustycaCtx.Email())),
-	// })
-
-	return m.Pb(org, user), nil
-}
-
-// DeleteMember deletes a user from the project
-func (s *Service) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest) (*emptypb.Empty, error) {
-	orgID, err := xdb.ParseID(req.OrgID)
-	if err != nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid org ID")
-	}
-	userID, err := xdb.ParseID(req.UserID)
-	if err != nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid user ID")
-	}
-
-	memberships, err := s.db.ListMemberships(ctx, &query.ListMembershipsRequest{
-		OrgID: orgID.UInt64(),
-		//ProjectStatus: pb.ItemStatus_Active,
+	m, err := s.db.UpdateMemberRole(ctx, &query.UpdateMemberRoleRequest{
+		OrgID:     orgID.UInt64(),
+		ProjectID: projectID.UInt64(),
+		UserID:    member.UserID.UInt64(),
+		Role:      req.Role,
 	})
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "request failed")
 	}
 
-	member := memberships.FindMemberByUserID(userID.UInt64())
-	if member == nil {
-		return nil, httperror.WrapWithCtx(ctx, err, "unable to find user")
+	s.authorizer.InvalidateUser(ctx, user.ID.String())
+	s.event(ctx, orgID, projectID, user.ID, memberEvent(projectID, pb.EventType_OrgMemberRoleChanged, pb.EventType_ProjectMemberRoleChanged),
+		fmt.Sprintf("%s role changed from %s to %s", user.Email, member.Role.String(), req.Role.String()))
+
+	return m.Pb(org, project, user), nil
+}
+
+// DeleteMember removes the grant at the requested scope:
+// the project grant with ProjectID, otherwise the org-wide grant.
+// The caller must be allowed to grant the member's role at that scope.
+func (s *Service) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest) (*emptypb.Empty, error) {
+	orgID, err := tokenOrg(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if member.Role == pb.Role_Owner {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "forbidden to delete owner")
+	if req.UserID == "" {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid user ID")
+	}
+	projectID, err := parseOptionalID(ctx, req.ProjectID, "project ID")
+	if err != nil {
+		return nil, err
+	}
+
+	member, err := s.findMember(ctx, orgID, projectID, req.UserID, "")
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.checkGrantable(ctx, orgID, projectID, member.Role)
+	if err != nil {
+		return nil, err
+	}
+	err = s.checkLastOwner(ctx, orgID, member)
+	if err != nil {
+		return nil, err
 	}
 
 	_, err = s.db.DeleteMember(ctx, &query.DeleteMemberRequest{
-		OrgID:  orgID.UInt64(),
-		UserID: member.UserID.UInt64(),
+		OrgID:     orgID.UInt64(),
+		ProjectID: projectID.UInt64(),
+		UserID:    member.UserID.UInt64(),
+		Scope:     model.ScopeOf(projectID),
 	})
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "request failed")
 	}
 
-	s.roleChecker.InvalidateCache(ctx, member.UserID.String())
-
-	// TODO: events
-	// if rows == 1 {
-	// }
+	s.authorizer.InvalidateUser(ctx, member.UserID.String())
+	s.event(ctx, orgID, projectID, member.UserID, memberEvent(projectID, pb.EventType_OrgMemberRemoved, pb.EventType_ProjectMemberRemoved),
+		fmt.Sprintf("%s (%s) was removed", member.Email, member.Role.String()))
 
 	return &emptypb.Empty{}, nil
 }
 
-// DeleteInvite deletes an invite from the project
+// DeleteInvite deletes the invite at the requested scope
 func (s *Service) DeleteInvite(ctx context.Context, req *pb.DeleteInviteRequest) (*emptypb.Empty, error) {
-	orgID, err := xdb.ParseID(req.OrgID)
+	orgID, err := tokenOrg(ctx)
 	if err != nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid org ID")
+		return nil, err
+	}
+	projectID, err := parseOptionalID(ctx, req.ProjectID, "project ID")
+	if err != nil {
+		return nil, err
+	}
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	if email == "" {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "email is required")
 	}
 
 	_, err = s.db.DeleteInvite(ctx, &query.DeleteInviteRequest{
-		OrgID: orgID.UInt64(),
-		Email: req.Email,
+		OrgID:     orgID.UInt64(),
+		ProjectID: projectID.UInt64(),
+		Email:     email,
+		Scope:     model.ScopeOf(projectID),
 	})
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "request failed")
 	}
-
-	// TODO: events
 
 	return &emptypb.Empty{}, nil
 }

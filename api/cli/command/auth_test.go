@@ -118,3 +118,29 @@ func (s *testSuiteRest) TestLoginCmd() {
 
 	// wg.Wait()
 }
+
+func (s *testSuiteGrpc) Test_ScopeCmd() {
+	s.MockAuth.SetResponse(&pb.CallerScope{
+		OrgID:        "100",
+		Role:         pb.Role_User,
+		RoleSource:   pb.RoleSource_Direct,
+		ProjectRoles: map[string]string{"201": "Admin"},
+		Methods: []*pb.MethodAccess{
+			{Method: "/pb.Orgs/CreateAPIKey", AllowedRoles: []string{"Admin"}},
+			{Method: "/pb.Orgs/GetOrg", AllowedRoles: []string{"Viewer", "APIKey"}, Scopes: []string{"org:read"}, Allowed: true},
+		},
+	})
+	a := command.ScopeCmd{}
+	s.Require().NoError(a.Run(s.Ctl))
+	s.CapturePrint()
+
+	s.Ctl.O = "json"
+	s.Out.Reset()
+	a = command.ScopeCmd{Methods: true}
+	s.Require().NoError(a.Run(s.Ctl))
+	s.CapturePrint()
+
+	s.MockAuth.Err = httperror.NewGrpc(codes.Unknown, "request failed")
+	err := a.Run(s.Ctl)
+	s.EqualError(err, "unexpected: request failed")
+}

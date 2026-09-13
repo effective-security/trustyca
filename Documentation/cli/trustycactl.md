@@ -1,3 +1,4 @@
+```bash
 Usage: trustycactl <command> [flags]
 
 CTL tool for trustyca service
@@ -28,3 +29,4 @@ Commands:
   project list     list orgs
 
 Run "trustycactl <command> --help" for more information on a command.
+```

@@ -33,6 +33,7 @@ func (v *Event) Pb() *pb.Event {
 	evt := &pb.Event{
 		ID:          v.ID.String(),
 		OrgID:       v.OrgID.String(),
+		ProjectID:   v.ProjectID.String(),
 		Type:        v.Type,
 		Title:       v.Title,
 		Description: string(v.Description),

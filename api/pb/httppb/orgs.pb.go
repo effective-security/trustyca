@@ -42,14 +42,17 @@ func GetOrgsHTTPHandler(s pb.OrgsServer, withAccessCheck pb.CheckAccessFunc) res
 		case pb.Orgs_RegisterOrg_FullMethodName:
 			res, err = s.RegisterOrg(ctx, req.(*pb.RegisterOrgRequest))
 
+		case pb.Orgs_GetOrg_FullMethodName:
+			res, err = s.GetOrg(ctx, req.(*emptypb.Empty))
+
 		case pb.Orgs_UpdateOrg_FullMethodName:
 			res, err = s.UpdateOrg(ctx, req.(*pb.UpdateOrgRequest))
 
-		case pb.Orgs_GetOrg_FullMethodName:
-			res, err = s.GetOrg(ctx, req.(*pb.GetOrgRequest))
-
 		case pb.Orgs_DeleteOrg_FullMethodName:
-			res, err = s.DeleteOrg(ctx, req.(*pb.DeleteOrgRequest))
+			res, err = s.DeleteOrg(ctx, req.(*emptypb.Empty))
+
+		case pb.Orgs_GetUserOrgs_FullMethodName:
+			res, err = s.GetUserOrgs(ctx, req.(*emptypb.Empty))
 
 		case pb.Orgs_GetUserMemberships_FullMethodName:
 			res, err = s.GetUserMemberships(ctx, req.(*emptypb.Empty))
@@ -68,6 +71,30 @@ func GetOrgsHTTPHandler(s pb.OrgsServer, withAccessCheck pb.CheckAccessFunc) res
 
 		case pb.Orgs_DeleteInvite_FullMethodName:
 			res, err = s.DeleteInvite(ctx, req.(*pb.DeleteInviteRequest))
+
+		case pb.Orgs_RegisterProject_FullMethodName:
+			res, err = s.RegisterProject(ctx, req.(*pb.RegisterProjectRequest))
+
+		case pb.Orgs_UpdateProject_FullMethodName:
+			res, err = s.UpdateProject(ctx, req.(*pb.UpdateProjectRequest))
+
+		case pb.Orgs_GetProject_FullMethodName:
+			res, err = s.GetProject(ctx, req.(*pb.GetProjectRequest))
+
+		case pb.Orgs_ListProjects_FullMethodName:
+			res, err = s.ListProjects(ctx, req.(*pb.ListProjectsRequest))
+
+		case pb.Orgs_DeleteProject_FullMethodName:
+			res, err = s.DeleteProject(ctx, req.(*pb.DeleteProjectRequest))
+
+		case pb.Orgs_CreateAPIKey_FullMethodName:
+			res, err = s.CreateAPIKey(ctx, req.(*pb.CreateAPIKeyRequest))
+
+		case pb.Orgs_ListAPIKeys_FullMethodName:
+			res, err = s.ListAPIKeys(ctx, req.(*pb.ListAPIKeysRequest))
+
+		case pb.Orgs_DeleteAPIKey_FullMethodName:
+			res, err = s.DeleteAPIKey(ctx, req.(*pb.APIKeyRequest))
 
 		default:
 			err = httperror.Malformed("invalid action: %s", action)

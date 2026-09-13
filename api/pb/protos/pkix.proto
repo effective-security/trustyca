@@ -1,0 +1,468 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "github.com/effective-security/trustyca/api/pb";
+
+import "google/protobuf/descriptor.proto";
+import "es/api/annotations.proto";
+import "types.proto";
+
+message Trust {
+    // Trust defines the trust scope of a root certificate
+    enum Enum {
+        // Any indicates any trust scope
+        Any = 0;
+        // Public indicates a publicly trusted root
+        Public = 1;
+        // Private indicates a private (enterprise) root
+        Private = 2;
+    }
+}
+
+message EncodingFormat {
+    enum Enum {
+        // PEM indicates that the encoding format is PEM
+        PEM = 0;
+        // DER indicates that the encoding format is DER
+        DER = 1;
+        // PKCS7 indicates that the encoding format is PKCS7
+        PKCS7 = 2;
+    }
+}
+
+// ReasonCode specifies Certificate Revocation Reason from RFC 5280
+// CRLReason ::= ENUMERATED {
+//        unspecified             (0),
+//        keyCompromise           (1),
+//        cACompromise            (2),
+//        affiliationChanged      (3),
+//        superseded              (4),
+//        cessationOfOperation    (5),
+//        certificateHold         (6),
+//             -- value 7 is not used
+//        removeFromCRL           (8),
+//        privilegeWithdrawn      (9),
+//        aACompromise           (10)
+// }
+message ReasonCode {
+    enum Enum {
+        // Unspecified indicates that the reason code is unspecified
+        Unspecified = 0;
+        // KeyCompromise indicates that the subject key is compromised
+        KeyCompromise = 1 [(es.api.enum_display) = "Key Compromise"];
+        // CACompromise indicates that the issuing CA is compromised
+        CACompromise = 2 [(es.api.enum_display) = "CA Compromise"];
+        // AffiliationChanged indicates that the subject affiliation changed
+        AffiliationChanged = 3 [(es.api.enum_display) = "Affiliation Changed"];
+        // Superseded indicates that the certificate is superseded
+        Superseded = 4 [(es.api.enum_display) = "Superseded"];
+        // CessationOfOperation indicates that the certificate is no longer in
+        // operation
+        CessationOfOperation = 5
+            [(es.api.enum_display) = "Cessation of Operation"];
+        // CertificateHold indicates that the certificate is on hold
+        CertificateHold = 6 [(es.api.enum_display) = "Certificate Hold"];
+        reserved 7;
+        // RemoveFromCRL indicates that the certificate is removed from the CRL
+        RemoveFromCRL = 8 [(es.api.enum_display) = "Remove From CRL"];
+        // PrivilegeWithdrawn indicates that the privilege is withdrawn
+        PrivilegeWithdrawn = 9 [(es.api.enum_display) = "Privilege Withdrawn"];
+        // AACompromise indicates that the attribute authority is compromised
+        AACompromise = 10 [(es.api.enum_display) = "AA Compromise"];
+    }
+}
+
+message CertificateStatus {
+    // CertificateStatus defines status constants for certificates
+    enum Enum {
+        // Unknown indicates that the certificate status is unknown
+        Unknown = 0;
+        // Active indicates that the certificate is active and ready to use
+        Active = 1;
+        // Expired indicates that the certificate is expired
+        Expired = 2;
+        // Revoked indicates that the certificate is revoked
+        Revoked = 3;
+    }
+}
+
+message IssuerStatus {
+    // IssuerStatus defines lifecycle status of an issuer
+    enum Enum {
+        // Unknown indicates that the issuer status is unknown
+        Unknown = 0;
+        // Pending indicates that the key is generated and the CSR is awaiting
+        // an externally signed certificate
+        Pending = 1;
+        // Active indicates that the issuer signs certificates
+        Active = 2;
+        // Archived indicates that the issuer does not sign new certificates,
+        // but still serves CRL and OCSP for the issued ones
+        Archived = 3;
+        // Destroyed indicates that the private key is destroyed;
+        // CRL and OCSP are no longer produced
+        Destroyed = 4;
+    }
+}
+
+message AuthorityType {
+    // AuthorityType defines type constants for authorities
+    enum Enum {
+        // Unknown indicates that the authority type is unknown
+        Unknown = 0;
+        // Root indicates a self-signed root authority
+        Root = 1;
+        // Intermediate indicates an intermediate authority that only signs
+        // subordinate CAs
+        Intermediate = 2;
+        // Issuing indicates an issuing authority for end-entity certificates
+        Issuing = 3;
+        // Shaken indicates a STIR/SHAKEN authority
+        Shaken = 4;
+        // ShakenDelegated indicates a STIR/SHAKEN Delegated authority
+        ShakenDelegated = 5;
+    }
+}
+
+// RootCertificate provides X509 Root Certificate information
+message RootCertificate {
+    // ID of the root certificate
+    string ID = 1 [json_name = "ID"];
+    // OrgID of the owning org; empty for platform roots
+    string OrgID = 2 [json_name = "OrgID"];
+    // SKID provides Subject Key Identifier
+    string SKID = 3 [json_name = "SKID"];
+    // NotBefore is the time when the validity period starts in RFC3339 format
+    string NotBefore = 4 [json_name = "NotBefore"];
+    // NotAfter is the time when the validity period ends in RFC3339 format
+    string NotAfter = 5 [json_name = "NotAfter"];
+    // Subject name
+    string Subject = 6 [json_name = "Subject"];
+    // Sha256 thumbprint of the cert
+    string Sha256 = 7 [json_name = "Sha256"];
+    // Trust scope
+    Trust.Enum Trust = 8 [json_name = "Trust"];
+    // Pem encoded certificate
+    string Pem = 9 [json_name = "Pem"];
+    // CreatedAt is the registration time in RFC3339 format
+    string CreatedAt = 10 [json_name = "CreatedAt"];
+}
+
+// Certificate provides X509 Certificate information
+message Certificate {
+    // ID of the certificate
+    string ID = 1 [json_name = "ID"];
+    // OrgID of the owning org
+    string OrgID = 2 [json_name = "OrgID"];
+    // ProjectID of the owning project; empty for org-wide certificates
+    string ProjectID = 3 [json_name = "ProjectID"];
+    // SKID provides Subject Key Identifier
+    string SKID = 4 [json_name = "SKID"];
+    // IKID provides Issuer Key Identifier
+    string IKID = 5 [json_name = "IKID"];
+    // SerialNumber provides Serial Number
+    string SerialNumber = 6 [json_name = "SerialNumber"];
+    // NotBefore is the time when the validity period starts in RFC3339 format
+    string NotBefore = 7 [json_name = "NotBefore"];
+    // NotAfter is the time when the validity period ends in RFC3339 format
+    string NotAfter = 8 [json_name = "NotAfter"];
+    // Subject name
+    string Subject = 9 [json_name = "Subject"];
+    // Issuer name
+    string Issuer = 10 [json_name = "Issuer"];
+    // Sha256 thumbprint of the cert
+    string Sha256 = 11 [json_name = "Sha256"];
+    // Profile used to issue the certificate
+    string Profile = 12 [json_name = "Profile"];
+    // Pem encoded certificate
+    string Pem = 13 [json_name = "Pem"];
+    // IssuersPem provides PEM encoded issuers chain
+    string IssuersPem = 14 [json_name = "IssuersPem"];
+    // Locations of the published certificate
+    repeated string Locations = 15 [json_name = "Locations"];
+    // Label of the certificate provided by the client
+    string Label = 16 [json_name = "Label"];
+    // Metadata of the certificate provided by the client
+    map<string, string> Metadata = 17 [json_name = "Metadata"];
+    // Status of the certificate
+    CertificateStatus.Enum Status = 18 [json_name = "Status"];
+    // CreatedAt is the issuance time in RFC3339 format
+    string CreatedAt = 19 [json_name = "CreatedAt"];
+}
+
+// RevokedCertificate provides revoked X509 Certificate information
+message RevokedCertificate {
+    // Certificate provides the revoked certificate
+    Certificate Certificate = 1 [json_name = "Certificate"];
+    // RevokedAt is the revocation time in RFC3339 format
+    string RevokedAt = 2 [json_name = "RevokedAt"];
+    // Reason of the revocation
+    ReasonCode.Enum Reason = 3 [json_name = "Reason"];
+    // ReasonText provides optional free-form revocation note
+    string ReasonText = 4 [json_name = "ReasonText"];
+}
+
+// Crl provides X509 CRL information
+message Crl {
+    // ID of the CRL
+    string ID = 1 [json_name = "ID"];
+    // OrgID of the issuer's org
+    string OrgID = 2 [json_name = "OrgID"];
+    // IssuerID of the issuer
+    string IssuerID = 3 [json_name = "IssuerID"];
+    // IKID provides Issuer Key Identifier
+    string IKID = 4 [json_name = "IKID"];
+    // Number is the monotonic CRL number
+    string Number = 5 [json_name = "Number"];
+    // ThisUpdate is the time when the CRL was issued in RFC3339 format
+    string ThisUpdate = 6 [json_name = "ThisUpdate"];
+    // NextUpdate is the time for the next update in RFC3339 format
+    string NextUpdate = 7 [json_name = "NextUpdate"];
+    // Issuer name
+    string Issuer = 8 [json_name = "Issuer"];
+    // Pem encoded CRL
+    string Pem = 9 [json_name = "Pem"];
+    // Locations of the published CRL
+    repeated string Locations = 10 [json_name = "Locations"];
+}
+
+// X509Name specifies X509 Name
+message X509Name {
+    string Country            = 1 [json_name = "Country"];
+    string State              = 2 [json_name = "State"];
+    string Locality           = 3 [json_name = "Locality"];
+    string Organisation       = 4 [json_name = "Organisation"];
+    string OrganisationalUnit = 5 [json_name = "OrganisationalUnit"];
+    string SerialNumber       = 6 [json_name = "SerialNumber"];
+}
+
+// X509Subject specifies X509 Subject
+message X509Subject {
+    string CommonName       = 1 [json_name = "CommonName"];
+    repeated X509Name Names = 2 [json_name = "Names"];
+    string SerialNumber     = 3 [json_name = "SerialNumber"];
+}
+
+// CAConstraint specifies various CA constraints on the signed certificate.
+// CAConstraint would verify against (and override) the CA
+// extensions in the given CSR.
+message CAConstraint {
+    bool IsCA        = 1 [json_name = "IsCA"];
+    int32 MaxPathLen = 2 [json_name = "MaxPathLen"];
+}
+
+// CSRAllowedFields specifies which fields may be copied from a CSR
+message CSRAllowedFields {
+    bool Subject = 1 [json_name = "Subject"];
+    bool Dns     = 2 [json_name = "Dns"];
+    bool Ip      = 3 [json_name = "Ip"];
+    bool Email   = 4 [json_name = "Email"];
+    bool Uri     = 5 [json_name = "Uri"];
+}
+
+// CertificatePolicyQualifier specifies a policy qualifier: id-qt-cps or
+// id-qt-unotice
+message CertificatePolicyQualifier {
+    string Type  = 1 [json_name = "Type"];
+    string Value = 2 [json_name = "Value"];
+}
+
+// CertificatePolicy specifies a Certificate Policy extension entry
+message CertificatePolicy {
+    // ID is OID of Certificate Policy
+    string ID                                      = 1 [json_name = "ID"];
+    repeated CertificatePolicyQualifier Qualifiers = 2
+        [json_name = "Qualifiers"];
+}
+
+// X509Extension represents a raw extension to be included in the certificate.
+message X509Extension {
+    // ID is the extension OID in dotted notation, e.g. 2.5.29.31
+    string ID = 1 [json_name = "ID"];
+    // Critical flag
+    bool Critical = 2 [json_name = "Critical"];
+    // Value is hex or base64 encoded DER value of the extension
+    string Value = 3 [json_name = "Value"];
+}
+
+// CertProfile provides certificate profile.
+// The shape matches the YAML profiles in ca-config files.
+message CertProfile {
+    // ID of the profile; empty for profiles loaded from files
+    string ID = 1 [json_name = "ID"];
+    // OrgID of the owning org; empty for platform profiles
+    string OrgID = 2 [json_name = "OrgID"];
+    // ProjectID of the owning project; empty for org-wide profiles
+    string ProjectID = 3 [json_name = "ProjectID"];
+    // Label is the profile name, unique per (Org, Project)
+    string Label = 4 [json_name = "Label"];
+    // IssuerLabel binds the profile to an issuer of the same org.
+    // "*" allows any issuer that lists the profile in AllowedProfiles.
+    string IssuerLabel = 5 [json_name = "IssuerLabel"];
+    // Description of the profile
+    string Description = 6 [json_name = "Description"];
+
+    // Usages provides a list of key usages and extended key usages
+    repeated string Usages = 7 [json_name = "Usages"];
+
+    // CAConstraint specifies the basic constraints for CA certificates
+    CAConstraint CAConstraint = 8 [json_name = "CAConstraint"];
+    // OcspNoCheck specifies to add id-pkix-ocsp-nocheck extension
+    bool OcspNoCheck = 9 [json_name = "OcspNoCheck"];
+
+    // Expiry specifies the validity duration, e.g. 168h
+    string Expiry = 10 [json_name = "Expiry"];
+    // Backdate specifies the NotBefore backdate duration, e.g. 30m
+    string Backdate = 11 [json_name = "Backdate"];
+
+    // Extensions specifies extensions to always add to the certificate
+    repeated X509Extension Extensions = 12 [json_name = "Extensions"];
+
+    // AllowedExtensions specifies OIDs of extensions allowed from the request
+    repeated string AllowedExtensions = 13 [json_name = "AllowedExtensions"];
+
+    // AllowedNames specifies a RegExp to check for allowed names.
+    // If not provided, then all values are allowed
+    string AllowedNames = 14 [json_name = "AllowedNames"];
+
+    // AllowedDns specifies a RegExp to check for allowed DNS.
+    // If not provided, then all values are allowed
+    string AllowedDns = 15 [json_name = "AllowedDns"];
+
+    // AllowedEmail specifies a RegExp to check for allowed email.
+    // If not provided, then all values are allowed
+    string AllowedEmail = 16 [json_name = "AllowedEmail"];
+
+    // AllowedUri specifies a RegExp to check for allowed URI.
+    // If not provided, then all values are allowed
+    string AllowedUri = 17 [json_name = "AllowedUri"];
+
+    // AllowedFields provides booleans for fields in the CSR.
+    // If AllowedFields is not present in a CertProfile,
+    // all of these fields may be copied from the CSR into the signed
+    // certificate. If AllowedFields *is* present in a CertProfile, only those
+    // fields with a `true` value in the AllowedFields may be copied from the
+    // CSR to the signed certificate. Note that some of these fields, like
+    // Subject, can be provided or partially provided through the API. Since API
+    // clients are expected to be trusted, but CSRs are not, fields provided
+    // through the API are not subject to validation through this mechanism.
+    CSRAllowedFields AllowedFields = 18 [json_name = "AllowedFields"];
+
+    // Policies specifies Certificate Policies to include
+    repeated CertificatePolicy Policies = 19 [json_name = "Policies"];
+
+    // PoliciesCritical specifies to mark Policies as Critical extension
+    bool PoliciesCritical = 20 [json_name = "PoliciesCritical"];
+
+    // AllowedRoles specifies caller roles allowed to request the profile
+    repeated string AllowedRoles = 21 [json_name = "AllowedRoles"];
+    // DeniedRoles specifies caller roles denied to request the profile
+    repeated string DeniedRoles = 22 [json_name = "DeniedRoles"];
+
+    // Status of the profile
+    ItemStatus.Enum Status = 23 [json_name = "Status"];
+    // CreatedAt in RFC3339 format
+    string CreatedAt = 24 [json_name = "CreatedAt"];
+    // UpdatedAt in RFC3339 format
+    string UpdatedAt = 25 [json_name = "UpdatedAt"];
+}
+
+// IssuerSerial identifies a certificate by its issuer and serial number
+message IssuerSerial {
+    // IKID provides Issuer Key Identifier
+    string IKID = 1 [json_name = "IKID"];
+
+    // SerialNumber provides certificate's serial number
+    string SerialNumber = 2 [json_name = "SerialNumber"];
+}
+
+// KeySpec specifies the key to generate for an issuer
+message KeySpec {
+    // Algo specifies the key algorithm: RSA|ECDSA
+    string Algo = 1 [json_name = "Algo"];
+    // Size specifies RSA key size in bits or ECDSA curve size: 256|384|521
+    int32 Size = 2 [json_name = "Size"];
+}
+
+// IssuerConfig provides runtime settings of an issuer.
+// The shape matches the `issuers[].aia` section of ca-config files.
+message IssuerConfig {
+    // AiaURL specifies a template for the AIA Issuer URL.
+    // The ${ISSUER_ID} variable is replaced with the issuer's SKID.
+    string AiaURL = 1 [json_name = "AiaURL"];
+    // OcspURL specifies a template for the OCSP URL
+    string OcspURL = 2 [json_name = "OcspURL"];
+    // CrlURL specifies a template for the CRL Distribution Point URL
+    string CrlURL = 3 [json_name = "CrlURL"];
+    // CrlExpiry specifies the duration of CRL validity, e.g. 48h
+    string CrlExpiry = 4 [json_name = "CrlExpiry"];
+    // CrlRenewal specifies how long before NextUpdate the CRL is renewed
+    string CrlRenewal = 5 [json_name = "CrlRenewal"];
+    // OcspExpiry specifies the duration of OCSP response validity
+    string OcspExpiry = 6 [json_name = "OcspExpiry"];
+    // DelegatedOcspProfile specifies the profile to issue a delegated OCSP
+    // responder certificate; empty to sign OCSP with the issuer key
+    string DelegatedOcspProfile = 7 [json_name = "DelegatedOcspProfile"];
+    // AllowedProfiles restricts the profiles the issuer may sign.
+    // Required for profiles with IssuerLabel "*".
+    repeated string AllowedProfiles = 8 [json_name = "AllowedProfiles"];
+    // OmitDisabledExtensions specifies to drop not allowed extensions
+    // instead of failing the request
+    bool OmitDisabledExtensions = 9 [json_name = "OmitDisabledExtensions"];
+}
+
+// Issuer provides issuing authority information.
+// Private key material is never returned.
+message Issuer {
+    // ID of the issuer
+    string ID = 1 [json_name = "ID"];
+    // OrgID of the owning org; empty for platform issuers
+    string OrgID = 2 [json_name = "OrgID"];
+    // ProjectID of the owning project; empty for org-wide issuers
+    string ProjectID = 3 [json_name = "ProjectID"];
+    // Label of the issuer, unique per (Org, Project)
+    string Label = 4 [json_name = "Label"];
+    // Type of the authority
+    AuthorityType.Enum Type = 5 [json_name = "Type"];
+    // Status of the issuer
+    IssuerStatus.Enum Status = 6 [json_name = "Status"];
+    // ParentID of the issuer that signed this one; empty for roots and
+    // externally signed issuers
+    string ParentID = 7 [json_name = "ParentID"];
+    // SKID provides Subject Key Identifier
+    string SKID = 8 [json_name = "SKID"];
+    // IKID provides Issuer Key Identifier
+    string IKID = 9 [json_name = "IKID"];
+    // SerialNumber of the issuer certificate
+    string SerialNumber = 10 [json_name = "SerialNumber"];
+    // Subject name
+    string Subject = 11 [json_name = "Subject"];
+    // Issuer name
+    string Issuer = 12 [json_name = "Issuer"];
+    // Sha256 thumbprint of the certificate
+    string Sha256 = 13 [json_name = "Sha256"];
+    // NotBefore in RFC3339 format
+    string NotBefore = 14 [json_name = "NotBefore"];
+    // NotAfter in RFC3339 format
+    string NotAfter = 15 [json_name = "NotAfter"];
+    // Certificate provides the issuer certificate in PEM format
+    string Certificate = 16 [json_name = "Certificate"];
+    // Intermediates provides the intermediate CA certificates in PEM format
+    string Intermediates = 17 [json_name = "Intermediates"];
+    // Root provides the Root CA certificate in PEM format
+    string Root = 18 [json_name = "Root"];
+    // Csr provides the PEM encoded CSR while the issuer is Pending
+    string Csr = 19 [json_name = "Csr"];
+    // KeyProvider is the crypto provider holding the private key
+    string KeyProvider = 20 [json_name = "KeyProvider"];
+    // Config provides runtime settings
+    IssuerConfig Config = 21 [json_name = "Config"];
+    // Profiles specifies the list of profile labels the issuer supports
+    repeated string Profiles = 22 [json_name = "Profiles"];
+    // CrlNumber is the last published CRL number
+    string CrlNumber = 23 [json_name = "CrlNumber"];
+    // CreatedAt in RFC3339 format
+    string CreatedAt = 24 [json_name = "CreatedAt"];
+    // UpdatedAt in RFC3339 format
+    string UpdatedAt = 25 [json_name = "UpdatedAt"];
+}

@@ -79,9 +79,8 @@ var methods = map[string]*MethodInfo{
 	},
 
 	Auth_RevokeToken_FullMethodName: {
-		Allocator:    func() any { return new(emptypb.Empty) },
-		CliCmd:       "auth revoke",
-		AllowedRoles: []string{"User", "APIKey"},
+		Allocator: func() any { return new(emptypb.Empty) },
+		CliCmd:    "auth revoke",
 	},
 
 	Auth_Caller_FullMethodName: {
@@ -93,62 +92,284 @@ var methods = map[string]*MethodInfo{
 		Allocator: func() any { return new(ExchangeCodeRequest) },
 	},
 
+	Auth_SelectOrg_FullMethodName: {
+		Allocator: func() any { return new(SelectOrgRequest) },
+		CliCmd:    "auth org",
+	},
+
+	Auth_AuthenticateAPIKey_FullMethodName: {
+		Allocator: func() any { return new(emptypb.Empty) },
+	},
+
+	Auth_GetAllowedMethods_FullMethodName: {
+		Allocator: func() any { return new(emptypb.Empty) },
+		CliCmd:    "auth allowed",
+	},
+
+	Auth_GetCallerScope_FullMethodName: {
+		Allocator: func() any { return new(emptypb.Empty) },
+		CliCmd:    "auth scope",
+	},
+
+	CA_RegisterIssuer_FullMethodName: {
+		Allocator:    func() any { return new(RegisterIssuerRequest) },
+		AllowedRoles: []string{"Admin"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CA_UpdateIssuer_FullMethodName: {
+		Allocator:    func() any { return new(UpdateIssuerRequest) },
+		AllowedRoles: []string{"Admin"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CA_ImportIssuer_FullMethodName: {
+		Allocator:    func() any { return new(ImportIssuerRequest) },
+		AllowedRoles: []string{"Admin"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CA_ActivateIssuer_FullMethodName: {
+		Allocator:    func() any { return new(ActivateIssuerRequest) },
+		AllowedRoles: []string{"Admin"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CA_GetIssuer_FullMethodName: {
+		Allocator:    func() any { return new(GetIssuerRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"ca:read"},
+	},
+
+	CA_ListIssuers_FullMethodName: {
+		Allocator:    func() any { return new(ListIssuersRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"ca:read"},
+	},
+
+	CA_RegisterRoot_FullMethodName: {
+		Allocator:    func() any { return new(RegisterRootRequest) },
+		AllowedRoles: []string{"Admin"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CA_ListRoots_FullMethodName: {
+		Allocator:    func() any { return new(ListRootsRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"ca:read"},
+	},
+
+	CA_RegisterProfile_FullMethodName: {
+		Allocator:    func() any { return new(RegisterProfileRequest) },
+		AllowedRoles: []string{"Admin"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CA_GetProfile_FullMethodName: {
+		Allocator:    func() any { return new(GetProfileRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"ca:read"},
+	},
+
+	CA_ListProfiles_FullMethodName: {
+		Allocator:    func() any { return new(ListProfilesRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"ca:read"},
+	},
+
+	CA_DeleteProfile_FullMethodName: {
+		Allocator:    func() any { return new(DeleteProfileRequest) },
+		AllowedRoles: []string{"Admin"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CA_SignCertificate_FullMethodName: {
+		Allocator:    func() any { return new(SignCertificateRequest) },
+		AllowedRoles: []string{"User", "APIKey"},
+		Scopes:       []string{"certs:issue"},
+	},
+
+	CA_GetCertificate_FullMethodName: {
+		Allocator:    func() any { return new(GetCertificateRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"certs:read"},
+	},
+
+	CA_ListCertificates_FullMethodName: {
+		Allocator:    func() any { return new(ListCertificatesRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"certs:read"},
+	},
+
+	CA_UpdateCertificateLabel_FullMethodName: {
+		Allocator:    func() any { return new(UpdateCertificateLabelRequest) },
+		AllowedRoles: []string{"User", "APIKey"},
+		Scopes:       []string{"certs:issue"},
+	},
+
+	CA_RevokeCertificate_FullMethodName: {
+		Allocator:    func() any { return new(RevokeCertificateRequest) },
+		AllowedRoles: []string{"User", "APIKey", "Security"},
+		Scopes:       []string{"certs:revoke"},
+	},
+
+	CA_ListRevokedCertificates_FullMethodName: {
+		Allocator:    func() any { return new(ListRevokedCertificatesRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"certs:read"},
+	},
+
+	CA_GetCRL_FullMethodName: {
+		Allocator:    func() any { return new(GetCrlRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"certs:read"},
+	},
+
+	CA_PublishCrls_FullMethodName: {
+		Allocator:    func() any { return new(PublishCrlsRequest) },
+		AllowedRoles: []string{"Admin", "Security"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CA_SignOCSP_FullMethodName: {
+		Allocator:    func() any { return new(OCSPRequest) },
+		AllowedRoles: []string{"Admin", "Security"},
+		Scopes:       []string{"ca:write"},
+	},
+
+	CIS_GetRoots_FullMethodName: {
+		Allocator: func() any { return new(ListRootsRequest) },
+	},
+
+	CIS_GetIssuer_FullMethodName: {
+		Allocator: func() any { return new(GetIssuerInfoRequest) },
+	},
+
+	CIS_GetCertificate_FullMethodName: {
+		Allocator: func() any { return new(GetCertificateInfoRequest) },
+	},
+
+	CIS_GetCertificateStatus_FullMethodName: {
+		Allocator: func() any { return new(GetCertificateInfoRequest) },
+	},
+
+	CIS_GetCRL_FullMethodName: {
+		Allocator: func() any { return new(GetCrlRequest) },
+	},
+
 	Orgs_RegisterOrg_FullMethodName: {
 		Allocator: func() any { return new(RegisterOrgRequest) },
 		CliCmd:    "org register",
 	},
 
+	Orgs_GetOrg_FullMethodName: {
+		Allocator:    func() any { return new(emptypb.Empty) },
+		CliCmd:       "org get",
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"org:read"},
+	},
+
 	Orgs_UpdateOrg_FullMethodName: {
 		Allocator:    func() any { return new(UpdateOrgRequest) },
 		CliCmd:       "org update",
-		AllowedRoles: []string{"Admin", "Support"},
-	},
-
-	Orgs_GetOrg_FullMethodName: {
-		Allocator:    func() any { return new(GetOrgRequest) },
-		CliCmd:       "org get",
-		AllowedRoles: []string{"Admin", "Support"},
-	},
-
-	Orgs_DeleteOrg_FullMethodName: {
-		Allocator:    func() any { return new(DeleteOrgRequest) },
-		CliCmd:       "org delete",
 		AllowedRoles: []string{"Admin"},
 	},
 
-	Orgs_GetUserMemberships_FullMethodName: {
+	Orgs_DeleteOrg_FullMethodName: {
+		Allocator:    func() any { return new(emptypb.Empty) },
+		CliCmd:       "org delete",
+		AllowedRoles: []string{"Owner"},
+	},
+
+	Orgs_GetUserOrgs_FullMethodName: {
 		Allocator: func() any { return new(emptypb.Empty) },
 		CliCmd:    "org list",
+	},
+
+	Orgs_GetUserMemberships_FullMethodName: {
+		Allocator:    func() any { return new(emptypb.Empty) },
+		CliCmd:       "org access",
+		AllowedRoles: []string{"Viewer"},
 	},
 
 	Orgs_GetMembers_FullMethodName: {
 		Allocator:    func() any { return new(GetMembersRequest) },
 		CliCmd:       "member list",
-		AllowedRoles: []string{"Admin", "Support"},
+		AllowedRoles: []string{"Support", "Security"},
 	},
 
 	Orgs_AddMember_FullMethodName: {
 		Allocator:    func() any { return new(AddMemberRequest) },
 		CliCmd:       "member add",
-		AllowedRoles: []string{"Admin", "Support"},
+		AllowedRoles: []string{"Admin"},
 	},
 
 	Orgs_ChangeMemberRole_FullMethodName: {
 		Allocator:    func() any { return new(ChangeMemberRoleRequest) },
 		CliCmd:       "member role",
-		AllowedRoles: []string{"Admin", "Support"},
+		AllowedRoles: []string{"Admin"},
 	},
 
 	Orgs_DeleteMember_FullMethodName: {
 		Allocator:    func() any { return new(DeleteMemberRequest) },
 		CliCmd:       "member delete",
-		AllowedRoles: []string{"Admin", "Support"},
+		AllowedRoles: []string{"Admin"},
 	},
 
 	Orgs_DeleteInvite_FullMethodName: {
 		Allocator:    func() any { return new(DeleteInviteRequest) },
 		CliCmd:       "member invite delete",
-		AllowedRoles: []string{"Admin", "Support"},
+		AllowedRoles: []string{"Admin"},
+	},
+
+	Orgs_RegisterProject_FullMethodName: {
+		Allocator:    func() any { return new(RegisterProjectRequest) },
+		CliCmd:       "project register",
+		AllowedRoles: []string{"Admin"},
+	},
+
+	Orgs_UpdateProject_FullMethodName: {
+		Allocator:    func() any { return new(UpdateProjectRequest) },
+		CliCmd:       "project update",
+		AllowedRoles: []string{"Admin"},
+	},
+
+	Orgs_GetProject_FullMethodName: {
+		Allocator:    func() any { return new(GetProjectRequest) },
+		CliCmd:       "project get",
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"project:read"},
+	},
+
+	Orgs_ListProjects_FullMethodName: {
+		Allocator:    func() any { return new(ListProjectsRequest) },
+		CliCmd:       "project list",
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"org:read"},
+	},
+
+	Orgs_DeleteProject_FullMethodName: {
+		Allocator:    func() any { return new(DeleteProjectRequest) },
+		CliCmd:       "project delete",
+		AllowedRoles: []string{"Admin"},
+	},
+
+	Orgs_CreateAPIKey_FullMethodName: {
+		Allocator:    func() any { return new(CreateAPIKeyRequest) },
+		CliCmd:       "api-key create",
+		AllowedRoles: []string{"Admin"},
+	},
+
+	Orgs_ListAPIKeys_FullMethodName: {
+		Allocator:    func() any { return new(ListAPIKeysRequest) },
+		CliCmd:       "api-key list",
+		AllowedRoles: []string{"Admin"},
+	},
+
+	Orgs_DeleteAPIKey_FullMethodName: {
+		Allocator:    func() any { return new(APIKeyRequest) },
+		CliCmd:       "api-key delete",
+		AllowedRoles: []string{"Admin"},
 	},
 
 	Status_Version_FullMethodName: {

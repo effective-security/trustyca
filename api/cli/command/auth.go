@@ -42,6 +42,93 @@ type AuthCmd struct {
 	Claims    UserinfoCmd  `cmd:"" help:"print OAuth token claims"`
 	Usertoken UserTokenCmd `cmd:"" help:"print user token"`
 	Revoke    RevokeCmd    `cmd:"" help:"revoke user token"`
+	Org       SelectOrgCmd `cmd:"" help:"select the org for the session and store the new token"`
+	Allowed   AllowedCmd   `cmd:"" help:"print allowed methods"`
+	Scope     ScopeCmd     `cmd:"" help:"print the caller scope and method access rules"`
+}
+
+// AllowedCmd prints allowed methods
+type AllowedCmd struct {
+}
+
+// Run the command
+func (a *AllowedCmd) Run(app App) error {
+	client, err := app.AuthClient(false)
+	if err != nil {
+		return err
+	}
+	res, err := client.GetAllowedMethods(app.Context(), &emptypb.Empty{})
+	if err != nil {
+		return err
+	}
+	w := app.Writer()
+	for _, si := range res.Allowed {
+		fmt.Fprintf(w, "%s:\n", si.Service)
+		for _, method := range si.Methods {
+			fmt.Fprintf(w, "  %s\n", method.Key)
+		}
+	}
+
+	return nil
+}
+
+// ScopeCmd prints the caller scope
+type ScopeCmd struct {
+	Methods bool `help:"print the access rules of every method"`
+}
+
+// Run the command
+func (a *ScopeCmd) Run(app App) error {
+	client, err := app.AuthClient(false)
+	if err != nil {
+		return err
+	}
+	res, err := client.GetCallerScope(app.Context(), &emptypb.Empty{})
+	if err != nil {
+		return err
+	}
+	if !a.Methods {
+		res.Methods = nil
+	}
+	return app.Print(res)
+}
+
+// SelectOrgCmd selects the org and stores the token issued for it
+type SelectOrgCmd struct {
+	OrgID   string `kong:"arg" help:"the ID of the org to select, see 'org list'"`
+	NoStore bool   `help:"Specifies to not store the token in the local storage"`
+}
+
+// Run the command
+func (a *SelectOrgCmd) Run(app App) error {
+	client, err := app.AuthClient(false)
+	if err != nil {
+		return err
+	}
+	res, err := client.SelectOrg(app.Context(), &pb.SelectOrgRequest{OrgID: a.OrgID})
+	if err != nil {
+		return err
+	}
+	if !a.NoStore && res.Token != nil && res.Token.AccessToken != "" {
+		hc, err := app.HTTPClient(true)
+		if err != nil {
+			return err
+		}
+		vals := url.Values{
+			"access_token": {res.Token.AccessToken},
+		}
+		if res.Token.Jkt != "" {
+			vals["dpop_jkt"] = []string{res.Token.Jkt}
+		}
+		if exp, err := time.Parse(time.RFC3339, res.Token.ExpiresAt); err == nil {
+			vals["exp"] = []string{strconv.FormatInt(exp.Unix(), 10)}
+		}
+		_, err = hc.Storage().SaveAuthToken(vals.Encode())
+		if err != nil {
+			return errors.WithMessage(err, "unable to store token")
+		}
+	}
+	return app.Print(res)
 }
 
 // RevokeCmd revokes user token
@@ -432,7 +519,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			Verifier: state.codeVerifier,
 		}, &res)
 		if err != nil {
-			err = httperror.New(http.StatusUnauthorized, "unauthorized", "failed to exchange code")
+			//logger.KV(xlog.ERROR, "reason", "exchange_code", "err", err.Error())
+			err = httperror.New(http.StatusUnauthorized, "unauthorized", "failed to exchange code: %s", err.Error())
 			marshal.WriteJSON(w, r, err)
 			return
 		}

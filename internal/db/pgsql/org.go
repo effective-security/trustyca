@@ -142,7 +142,17 @@ func (p *Provider) GetUserOrgs(ctx context.Context, userID uint64) (model.OrgSli
 	if err != nil {
 		return nil, err
 	}
-	return rs.Rows, nil
+	// a user with an org-wide grant and project grants in the same org
+	// produces one row per grant; return each org once
+	seen := map[uint64]bool{}
+	orgs := make(model.OrgSlice, 0, len(rs.Rows))
+	for _, o := range rs.Rows {
+		if !seen[o.ID.UInt64()] {
+			seen[o.ID.UInt64()] = true
+			orgs = append(orgs, o)
+		}
+	}
+	return orgs, nil
 }
 
 // DeleteOrg deletes an org and all its members
@@ -154,6 +164,7 @@ func (p *Provider) DeleteOrg(ctx context.Context, id uint64) (map[string]int64, 
 		schema.EventTableInfo.SchemaName,
 		schema.InviteTableInfo.SchemaName,
 		schema.MembershipTableInfo.SchemaName,
+		schema.ProjectTableInfo.SchemaName,
 	}
 	for _, table := range tables {
 		res, err := p.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s WHERE org_id=$1;", table), id)

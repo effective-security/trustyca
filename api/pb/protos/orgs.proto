@@ -7,8 +7,27 @@ import "es/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "types.proto";
 
+// Orgs manages organizations, projects, memberships and invites.
+//
+// Tenant scoped requests do not carry OrgID: the server takes the selected
+// organization from the validated access token (see Auth.SelectOrg).
+// Requests that act on a project carry ProjectID; the authorization layer
+// verifies that the project belongs to the token organization and that the
+// caller holds the required permission through an explicit org-wide grant or
+// a project grant.
+//
+// (es.api.allowed_roles) lists the minimum roles allowed to call a method at
+// org scope, or at project scope when the request carries ProjectID; a caller
+// passes when one of its roles at that scope can assume an allowed role.
+// (es.api.scopes) lists the scopes an API key must hold; API keys are only
+// allowed where allowed_roles includes APIKey. Methods without allowed_roles
+// require an authenticated caller only.
 service Orgs {
-    // RegisterOrg registers a new org
+    //
+    // Organizations
+    //
+
+    // RegisterOrg registers a new org. The caller becomes its Owner.
     rpc RegisterOrg(RegisterOrgRequest) returns (Org) {
         option (google.api.http) = {
             post: "/pb.Orgs/RegisterOrg",
@@ -16,27 +35,28 @@ service Orgs {
         };
         option (es.api.cli_cmd) = "org register";
     }
-    // UpdateOrg updates an org
-    rpc UpdateOrg(UpdateOrgRequest) returns (Org) {
-        option (es.api.allowed_roles) = "Admin,Support";
-        option (google.api.http)      = {
-            post: "/pb.Orgs/UpdateOrg",
-            body: "*"
-        };
-        option (es.api.cli_cmd) = "org update";
-    }
-    // GetOrg returns an org by ID
-    rpc GetOrg(GetOrgRequest) returns (Org) {
-        option (es.api.allowed_roles) = "Admin,Support";
+    // GetOrg returns the org selected in the token
+    rpc GetOrg(google.protobuf.Empty) returns (Org) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "org:read";
         option (google.api.http)      = {
             post: "/pb.Orgs/GetOrg",
             body: "*"
         };
         option (es.api.cli_cmd) = "org get";
     }
-    // DeleteProject deletes a project
-    rpc DeleteOrg(DeleteOrgRequest) returns (Org) {
+    // UpdateOrg updates the org selected in the token
+    rpc UpdateOrg(UpdateOrgRequest) returns (Org) {
         option (es.api.allowed_roles) = "Admin";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/UpdateOrg",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org update";
+    }
+    // DeleteOrg deactivates the org selected in the token
+    rpc DeleteOrg(google.protobuf.Empty) returns (Org) {
+        option (es.api.allowed_roles) = "Owner";
         option (google.api.http)      = {
             post: "/pb.Orgs/DeleteOrg",
             body: "*"
@@ -44,74 +64,207 @@ service Orgs {
         option (es.api.cli_cmd) = "org delete";
     }
 
-    // GetUserMemberships returns list of calling user orgs
-    rpc GetUserMemberships(google.protobuf.Empty) returns (UserMemberships) {
+    //
+    // Membership discovery
+    //
+
+    // GetUserOrgs returns the orgs the caller can select, each once, with the
+    // resolved org role. Available before an org is selected.
+    rpc GetUserOrgs(google.protobuf.Empty) returns (UserOrgsResponse) {
         option (google.api.http) = {
-            post: "/pb.Orgs/GetUserMemberships",
+            post: "/pb.Orgs/GetUserOrgs",
             body: "*"
         };
         option (es.api.cli_cmd) = "org list";
     }
-    // GetMembers returns list of membership info for the org by org ID
+    // GetUserMemberships returns the caller's resolved access to the org
+    // selected in the token and the caller's explicit grants in that org
+    rpc GetUserMemberships(google.protobuf.Empty) returns (UserMemberships) {
+        option (es.api.allowed_roles) = "Viewer";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/GetUserMemberships",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org access";
+    }
+
+    //
+    // Members
+    //
+
+    // GetMembers returns memberships and invites of the org selected in the
+    // token. With ProjectID only the project's grants are returned; with
+    // Scope Org only the org-wide grants are returned.
     rpc GetMembers(GetMembersRequest) returns (MembersResponse) {
-        option (es.api.allowed_roles) = "Admin,Support";
+        option (es.api.allowed_roles) = "Support,Security";
         option (google.api.http)      = {
             post: "/pb.Orgs/GetMembers",
             body: "*"
         };
         option (es.api.cli_cmd) = "member list";
     };
-    // AddMember adds a user to Org
+    // AddMember grants a role to a user at org scope (empty ProjectID) or in
+    // a project. If the user does not exist yet, an invite is created.
     rpc AddMember(AddMemberRequest) returns (AddMemberResponse) {
-        option (es.api.allowed_roles) = "Admin,Support";
+        option (es.api.allowed_roles) = "Admin";
         option (google.api.http)      = {
             post: "/pb.Orgs/AddMember",
             body: "*"
         };
         option (es.api.cli_cmd) = "member add";
     };
-    // ChangeMemberRole changes user role
+    // ChangeMemberRole changes the role of an existing grant at the given scope
     rpc ChangeMemberRole(ChangeMemberRoleRequest) returns (Membership) {
-        option (es.api.allowed_roles) = "Admin,Support";
+        option (es.api.allowed_roles) = "Admin";
         option (google.api.http)      = {
-            get: "/pb.Orgs/ChangeMemberRole",
+            post: "/pb.Orgs/ChangeMemberRole",
             body: "*"
         };
         option (es.api.cli_cmd) = "member role";
     };
-    // DeleteMember removes user from the project
+    // DeleteMember removes the grant at the given scope
     rpc DeleteMember(DeleteMemberRequest) returns (google.protobuf.Empty) {
-        option (es.api.allowed_roles) = "Admin,Support";
+        option (es.api.allowed_roles) = "Admin";
         option (google.api.http)      = {
             post: "/pb.Orgs/DeleteMember",
             body: "*"
         };
         option (es.api.cli_cmd) = "member delete";
     };
-    // DeleteInvite removes user invite
+    // DeleteInvite removes the invite at the given scope
     rpc DeleteInvite(DeleteInviteRequest) returns (google.protobuf.Empty) {
-        option (es.api.allowed_roles) = "Admin,Support";
+        option (es.api.allowed_roles) = "Admin";
         option (google.api.http)      = {
             post: "/pb.Orgs/DeleteInvite",
             body: "*"
         };
         option (es.api.cli_cmd) = "member invite delete";
     };
+
+    //
+    // Projects
+    //
+
+    // RegisterProject creates a project in the org selected in the token
+    rpc RegisterProject(RegisterProjectRequest) returns (Project) {
+        option (es.api.allowed_roles) = "Admin";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/RegisterProject",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "project register";
+    }
+    // UpdateProject updates a project
+    rpc UpdateProject(UpdateProjectRequest) returns (Project) {
+        option (es.api.allowed_roles) = "Admin";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/UpdateProject",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "project update";
+    }
+    // GetProject returns a project by ID or alias
+    rpc GetProject(GetProjectRequest) returns (Project) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "project:read";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/GetProject",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "project get";
+    }
+    // ListProjects returns the projects of the org selected in the token that
+    // the caller can access
+    rpc ListProjects(ListProjectsRequest) returns (ProjectsResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "org:read";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/ListProjects",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "project list";
+    }
+    // DeleteProject deactivates a project. Records owned by the project are
+    // kept.
+    rpc DeleteProject(DeleteProjectRequest) returns (Project) {
+        option (es.api.allowed_roles) = "Admin";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/DeleteProject",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "project delete";
+    }
+
+    //
+    // API Keys
+    //
+
+    // CreateAPIKey creates a new API key
+    rpc CreateAPIKey(CreateAPIKeyRequest) returns (APIKey) {
+        option (es.api.allowed_roles) = "Admin";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/CreateAPIKey",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "api-key create";
+    };
+
+    // ListAPIKeys lists the API keys of the org selected in the token
+    rpc ListAPIKeys(ListAPIKeysRequest) returns (APIKeysResponse) {
+        option (es.api.allowed_roles) = "Admin";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/ListAPIKeys",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "api-key list";
+    };
+
+    // DeleteAPIKey deletes an API key
+    rpc DeleteAPIKey(APIKeyRequest) returns (RecordsResult) {
+        option (es.api.allowed_roles) = "Admin";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/DeleteAPIKey",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "api-key delete";
+    };
 }
 
 message Role {
+    // Role is assigned org-wide or per project. Roles form a hierarchy for
+    // access checks (see authctx.CanAssumeRoles); integer values are not used
+    // for comparison.
     enum Enum {
         // None specifies no role
         None   = 0;
         APIKey = 1 [(es.api.enum_display) = "API Key"];
+        // Viewer specifies name for Viewer role
+        Viewer = 2;
         // User specifies name for User role
-        User = 2;
-        // Support specifies name for Support role
-        Support = 3;
+        User = 3;
+        // Support specifies name for Support role.
+        Support = 4;
+        // Billing specifies name for Billing role
+        Billing = 5;
+        // Security specifies name for Security role
+        Security = 6;
         // Admin specifies name for Admin role
-        Admin = 4;
+        Admin = 7;
         // Owner specifies name for Owner role
-        Owner = 5;
+        Owner = 8;
+    }
+}
+
+message RoleSource {
+    // RoleSource explains how an org role was resolved
+    enum Enum {
+        // Unknown indicates that the source is unknown
+        Unknown = 0;
+        // Direct indicates an explicit org-wide grant
+        Direct = 1;
+        // Project indicates a derived org Viewer classification from project
+        // grants only; it does not inherit project permissions
+        Project = 2;
     }
 }
 
@@ -131,7 +284,50 @@ message OrgsResponse {
     NextPage NextPage = 2 [json_name = "NextPage"];
 }
 
-// Membership provides Org membership information for a user
+// Project owns a collection of resources governed by a common access policy
+message Project {
+    string ID    = 1 [json_name = "ID"];
+    string OrgID = 2 [json_name = "OrgID"];
+    // Alias is a stable, org-unique identifier chosen by the client,
+    // e.g. a cloud account ID or a slug
+    string Alias           = 3 [json_name = "Alias"];
+    string Name            = 4 [json_name = "Name"];
+    string Description     = 5 [json_name = "Description"];
+    ItemStatus.Enum Status = 6 [json_name = "Status"];
+    string CreatedAt       = 7 [json_name = "CreatedAt"];
+    string UpdatedAt       = 8 [json_name = "UpdatedAt"];
+}
+
+// ProjectsResponse returns list of projects
+message ProjectsResponse {
+    repeated Project Projects = 1 [json_name = "Projects"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+// OrgAccess provides the resolved access of a user to an org
+message OrgAccess {
+    string OrgID    = 1 [json_name = "OrgID"];
+    string OrgAlias = 2 [json_name = "OrgAlias"];
+    string OrgName  = 3 [json_name = "OrgName"];
+    // Role is the resolved org role: the explicit org-wide role, or Viewer
+    // when the user only has project grants
+    Role.Enum Role = 4 [json_name = "Role"];
+    // RoleSource explains how Role was resolved
+    RoleSource.Enum RoleSource = 5 [json_name = "RoleSource"];
+    // ExplicitRole is the explicit org-wide role, None when derived
+    Role.Enum ExplicitRole = 6 [json_name = "ExplicitRole"];
+}
+
+// UserOrgsResponse provides the orgs the caller can select
+message UserOrgsResponse {
+    repeated OrgAccess Orgs = 1 [json_name = "Orgs"];
+}
+
+// Membership is an explicit role assignment (grant).
+// Org scope grant (empty ProjectID) is inherited by every project of the org.
+// Project scope grant applies to the project only; grants are additive.
 message Membership {
     string ID        = 1 [json_name = "ID"];
     string OrgID     = 2 [json_name = "OrgID"];
@@ -142,9 +338,15 @@ message Membership {
     string Email     = 7 [json_name = "Email"];
     Role.Enum Role   = 8 [json_name = "Role"];
     string CreatedAt = 9 [json_name = "CreatedAt"];
+    // Scope of the grant: Org or Project
+    Scope.Enum Scope = 10 [json_name = "Scope"];
+    // ProjectID is set for Project scope grants
+    string ProjectID    = 11 [json_name = "ProjectID"];
+    string ProjectAlias = 12 [json_name = "ProjectAlias"];
+    string ProjectName  = 13 [json_name = "ProjectName"];
 }
 
-// Invite provides Project invite
+// Invite provides an org or project invite
 message Invite {
     string ID        = 1 [json_name = "ID"];
     string OrgID     = 2 [json_name = "OrgID"];
@@ -152,36 +354,55 @@ message Invite {
     string Email     = 4 [json_name = "Email"];
     string CreatedAt = 6 [json_name = "CreatedAt"];
     Role.Enum Role   = 7 [json_name = "Role"];
+    // Scope of the invite: Org or Project
+    Scope.Enum Scope = 8 [json_name = "Scope"];
+    // ProjectID is set for Project scope invites
+    string ProjectID = 9 [json_name = "ProjectID"];
+    // ExpiresAt in RFC3339 format; expired invites grant nothing
+    string ExpiresAt = 10 [json_name = "ExpiresAt"];
 }
 
+// GetMembersRequest specifies request to list members and invites of the
+// org selected in the token. Without ProjectID and Scope, grants of all
+// scopes are returned.
 message GetMembersRequest {
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID limits the result to Project scope grants of the project
+    string ProjectID = 1 [json_name = "ProjectID"];
+    // Scope limits the result to Org scope grants when set to Org
+    Scope.Enum Scope = 2 [json_name = "Scope"];
 }
 
-// MembersResponse provides list of Org members and invites
+// MembersResponse provides list of members and invites
 message MembersResponse {
     repeated Membership Memberships = 1 [json_name = "Memberships"];
     repeated Invite Invites         = 2 [json_name = "Invites"];
 }
 
-// UserMemberships provides list of Org memberships
+// UserMemberships provides the caller's access to the selected org
 message UserMemberships {
-    repeated Membership Memberships = 1 [json_name = "Memberships"];
+    // Org is the resolved org access
+    OrgAccess Org = 1 [json_name = "Org"];
+    // Memberships are the caller's explicit grants in the org: the org-wide
+    // grant (empty ProjectID) and one per project grant
+    repeated Membership Memberships = 2 [json_name = "Memberships"];
 }
 
-// AddMemberRequest specifies request to add user to project
+// AddMemberRequest specifies request to grant a role in the org selected in
+// the token (empty ProjectID) or in a project.
+// If the user does not exist, an invite is created instead.
 message AddMemberRequest {
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // Email specifies user email to search.
-    // The user must exists.
-    string Email = 2
+    string Email = 1
         [json_name = "Email", (es.api.required) = true, (es.api.max) = 160];
-    // Role specifies user role to add.
-    // Only Owner can add another Owner role.
-    Role.Enum Role = 3 [json_name = "Role", (es.api.required) = true];
+    // Role specifies the role to grant. The caller must be allowed to grant
+    // it at the requested scope; only an org Owner can grant Owner.
+    Role.Enum Role = 2 [json_name = "Role", (es.api.required) = true];
+    // ProjectID specifies the project for a Project scope grant;
+    // empty for an org-wide grant
+    string ProjectID = 3 [json_name = "ProjectID"];
 }
 
-// AddMemberResponse provides iresponse for AddMember request.
+// AddMemberResponse provides response for AddMember request.
 // If a user already exists, the Membership is returned.
 // If a user is invited, the Invite is returned.
 message AddMemberResponse {
@@ -189,27 +410,40 @@ message AddMemberResponse {
     Membership Membership = 2 [json_name = "Membership"];
 }
 
-// ChangeMemberRoleRequest specifies request to change user role
+// ChangeMemberRoleRequest specifies request to change the role of an
+// existing grant at the requested scope
 message ChangeMemberRoleRequest {
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // UserID specifies user ID, if Email is empty
-    string UserID = 2 [json_name = "UserID", (es.api.required) = true];
+    string UserID = 1 [json_name = "UserID", (es.api.required_or) = "Email"];
     // Email specifies user email, if UserID is empty
-    string Email = 3
-        [json_name = "Email", (es.api.required) = true, (es.api.max) = 160];
-    Role.Enum Role = 4 [json_name = "Role", (es.api.required) = true];
+    string Email = 2 [
+        json_name            = "Email",
+        (es.api.required_or) = "UserID",
+        (es.api.max)         = 160
+    ];
+    Role.Enum Role = 3 [json_name = "Role", (es.api.required) = true];
+    // ProjectID specifies the project for a Project scope grant;
+    // empty for the org-wide grant
+    string ProjectID = 4 [json_name = "ProjectID"];
 }
 
-// DeleteMemberRequest specifies request to remove user from project
+// DeleteMemberRequest specifies request to remove a grant.
+// With ProjectID only the project grant is removed;
+// without ProjectID only the org-wide grant is removed.
 message DeleteMemberRequest {
-    string OrgID  = 1 [json_name = "OrgID", (es.api.required) = true];
-    string UserID = 2 [json_name = "UserID", (es.api.required) = true];
+    string UserID = 1 [json_name = "UserID", (es.api.required) = true];
+    // ProjectID specifies the project for a Project scope grant;
+    // empty for the org-wide grant
+    string ProjectID = 2 [json_name = "ProjectID"];
 }
 
-// DeleteInviteRequest specifies request to remove user invite
+// DeleteInviteRequest specifies request to remove an invite at the given
+// scope
 message DeleteInviteRequest {
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
-    string Email = 2 [json_name = "Email", (es.api.required) = true];
+    string Email = 1 [json_name = "Email", (es.api.required) = true];
+    // ProjectID specifies the project for a Project scope invite;
+    // empty for an org-wide invite
+    string ProjectID = 2 [json_name = "ProjectID"];
 }
 
 message RegisterOrgRequest {
@@ -218,18 +452,51 @@ message RegisterOrgRequest {
     string Description = 2 [json_name = "Description"];
 }
 
+// UpdateOrgRequest updates the org selected in the token
 message UpdateOrgRequest {
-    string OrgID       = 1 [json_name = "OrgID", (es.api.required) = true];
+    string Name        = 1 [json_name = "Name", (es.api.max) = 64];
+    string Description = 2 [json_name = "Description"];
+}
+
+// RegisterProjectRequest specifies request to create a project in the org
+// selected in the token
+message RegisterProjectRequest {
+    // Alias is org-unique; generated when empty
+    string Alias = 1 [json_name = "Alias", (es.api.max) = 64];
+    string Name  = 2
+        [json_name = "Name", (es.api.required) = true, (es.api.max) = 64];
+    string Description = 3 [json_name = "Description"];
+}
+
+// UpdateProjectRequest specifies request to update a project
+message UpdateProjectRequest {
+    string ProjectID   = 1 [json_name = "ProjectID", (es.api.required) = true];
     string Name        = 2 [json_name = "Name", (es.api.max) = 64];
     string Description = 3 [json_name = "Description"];
 }
 
-message GetOrgRequest {
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+// GetProjectRequest specifies a project by ID or alias
+message GetProjectRequest {
+    string ProjectID = 1
+        [json_name = "ProjectID", (es.api.required_or) = "Alias"];
+    string Alias = 2 [json_name = "Alias", (es.api.required_or) = "ProjectID"];
 }
 
-message DeleteOrgRequest {
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+// ListProjectsRequest specifies a paginated list of projects
+message ListProjectsRequest {
+    // Status filters by status; Unknown returns all
+    ItemStatus.Enum Status = 1 [json_name = "Status"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 2 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 3 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination
+    string Cursor = 4 [json_name = "Cursor"];
+}
+
+// DeleteProjectRequest specifies request to deactivate a project
+message DeleteProjectRequest {
+    string ProjectID = 1 [json_name = "ProjectID", (es.api.required) = true];
 }
 
 // EventsResponse returns list of Event
@@ -239,4 +506,51 @@ message EventsResponse {
     // NextPage specifies pagination information, if there are more pages to
     // fetch. If there are no more pages to fetch, NextPage will be empty.
     NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+message APIKey {
+    string ID                = 1 [json_name = "ID"];
+    string OrgID             = 2 [json_name = "OrgID"];
+    string ProjectID         = 3 [json_name = "ProjectID"];
+    string Label             = 4 [json_name = "Label", (es.api.max) = 260];
+    string Key               = 5 [json_name = "Key", (es.api.max) = 128];
+    string Secret            = 6 [json_name = "Secret", (es.api.max) = 128];
+    repeated string Scopes   = 7 [json_name = "Scopes"];
+    repeated KVPair Metadata = 8 [json_name = "Metadata"];
+    ItemStatus.Enum Status   = 9 [json_name = "Status"];
+    string CreatedAt         = 10 [json_name = "CreatedAt"];
+    string ExpiresAt         = 11 [json_name = "ExpiresAt"];
+    string UsedAt            = 12 [json_name = "UsedAt"];
+    uint32 UsedCount         = 13 [json_name = "UsedCount"];
+}
+
+message APIKeysResponse {
+    repeated APIKey APIKeys = 1 [json_name = "APIKeys"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+message CreateAPIKeyRequest {
+    // ProjectID is optional for project scope.
+    // If not provided, will use Org scope for the current token.
+    string ProjectID = 1 [json_name = "ProjectID"];
+    string Label     = 2
+        [json_name = "Label", (es.api.max) = 260, (es.api.required) = true];
+    repeated string Scopes = 3 [json_name = "Scopes", (es.api.required) = true];
+    string ExpiresAt       = 4 [json_name = "ExpiresAt"];
+}
+
+message ListAPIKeysRequest {
+    // ProjectID is optional for project scope.
+    // If not provided, will use Org scope for the current token.
+    string ProjectID       = 1 [json_name = "ProjectID"];
+    ItemStatus.Enum Status = 2 [json_name = "Status"];
+}
+
+message APIKeyRequest {
+    // ProjectID is optional for project scope.
+    // It must match the project of the API key.
+    string ProjectID = 1 [json_name = "ProjectID"];
+    string ID        = 2 [json_name = "ID", (es.api.required) = true];
 }

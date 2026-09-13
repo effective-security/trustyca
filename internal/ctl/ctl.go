@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -35,7 +36,7 @@ var (
 	DefaultStoragePath = "~/.config/trustyca"
 
 	ServerAlias = map[string]string{
-		"local": "https://localhost:7880",
+		"local": "https://localhost:8880",
 		"dev":   "https://wfe.dev.trustyca.io",
 		"prod":  "https://wfe.prod.trustyca.io",
 	}
@@ -187,6 +188,67 @@ func NewCallerIdentity() (credentials.CallerIdentity, error) {
 }
 */
 
+const defaultConfig = `
+---
+clients:
+  local_wfe:
+    host: https://localhost:8880
+    tls:
+      trusted_ca: ~/.trustyca/certs/trusty_root_ca.pem
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca
+  remote_wfe_dev:
+    host: https://wfe.dev.trustyca.io
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca
+  remote_wfe_prod:
+    host: https://wfe.prod.trustyca.io
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca
+`
+
+func (c *Cli) configFileName() string {
+	cfg := c.Cfg
+	if cfg == "" {
+		storage := values.StringsCoalesce(
+			c.Storage,
+			os.Getenv("TRUSTYCA_STORAGE"),
+			DefaultStoragePath,
+		)
+		cfg = filepath.Join(storage, "config.yaml")
+	}
+	return resolve.ExpandPath(cfg)
+}
+
+func (c *Cli) ensureConfigFile() (string, error) {
+	fn := c.configFileName()
+	fi, err := os.Stat(fn)
+	if err != nil {
+		// if not found, create it
+		if os.IsNotExist(err) {
+			dir := filepath.Dir(fn)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fn, errors.WithMessagef(err, "unable to create config directory: %s", dir)
+			}
+			err = os.WriteFile(fn, []byte(defaultConfig), 0644)
+			if err != nil {
+				return fn, errors.WithMessagef(err, "unable to create config file: %s", fn)
+			}
+		}
+		return fn, err
+	}
+	if fi.IsDir() {
+		return fn, errors.Newf("config file %s is a directory", fn)
+	}
+	return fn, nil
+}
+
 // RPCClient returns gRPC client
 func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 	if c.rpcClient != nil {
@@ -215,7 +277,10 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 	if strings.HasPrefix(host, "https://") {
 		cert, key, ca := resolve.ExpandPath(c.Cert), resolve.ExpandPath(c.CertKey), resolve.ExpandPath(c.TrustedCA)
 
-		cfg := resolve.ExpandPath(c.Cfg)
+		cfg, err := c.ensureConfigFile()
+		if err != nil {
+			return nil, err
+		}
 		f, err := retriable.LoadFactory(cfg)
 		if err == nil {
 			rc := f.ConfigForHost(host)
@@ -231,11 +296,11 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 
 				if rc.TLS != nil {
 					if cert == "" {
-						cert = rc.TLS.CertFile
-						key = rc.TLS.KeyFile
+						cert = resolve.ExpandPath(rc.TLS.CertFile)
+						key = resolve.ExpandPath(rc.TLS.KeyFile)
 					}
 					if ca == "" {
-						ca = rc.TLS.TrustedCAFile
+						ca = resolve.ExpandPath(rc.TLS.TrustedCAFile)
 					}
 				}
 			}
@@ -290,7 +355,10 @@ func (c *Cli) HTTPClient(skipAuth bool) (*retriable.Client, error) {
 	if ServerAlias[server] != "" {
 		server = ServerAlias[server]
 	}
-	cfg := resolve.ExpandPath(c.Cfg)
+	cfg, err := c.ensureConfigFile()
+	if err != nil {
+		return nil, err
+	}
 
 	client, err := retriable.NewForHost(cfg, server)
 	if err != nil {

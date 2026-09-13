@@ -6,6 +6,36 @@ info:
     title: Auth API
     version: 0.0.1
 paths:
+    /pb.Auth/AuthenticateAPIKey:
+        post:
+            tags:
+                - Auth
+            description: |-
+                AuthenticateAPIKey returns the user token info.
+                 The caller must include the API key in the Authorization header
+                 with HMAC SHA256 signature of the request, using API key secret.
+
+                 Date: RFC3339 timestamp
+                 Authorization: APIKey {KeyID}:{signature}
+                 signature = Base64(HMAC-SHA256(secret, method + timestamp))
+            operationId: Auth_AuthenticateAPIKey
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /pb.Auth/Caller:
         post:
             tags:
@@ -51,6 +81,55 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Token'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/GetAllowedMethods:
+        post:
+            tags:
+                - Auth
+            description: GetAllowedMethods returns the allowed methods for the caller
+            operationId: Auth_GetAllowedMethods
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceAccessInfo'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/GetCallerScope:
+        post:
+            tags:
+                - Auth
+            description: |-
+                GetCallerScope returns the caller's resolved scope in the selected org:
+                 the org role, project roles, token scopes, and per method the roles
+                 and scopes it requires.
+            operationId: Auth_GetCallerScope
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CallerScope'
                 default:
                     description: Default error response
                     content:
@@ -125,8 +204,48 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /pb.Auth/SelectOrg:
+        post:
+            tags:
+                - Auth
+            description: |-
+                SelectOrg verifies the caller's access to the org and returns a new
+                 token scoped to it. This is the only tenant request that carries OrgID.
+            operationId: Auth_SelectOrg
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SelectOrgRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
 components:
     schemas:
+        AllowedMethods:
+            type: object
+            properties:
+                Service:
+                    type: string
+                    description: Service is the name of the service
+                Methods:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/KVPair'
+                    description: |-
+                        Methods is the list of methods that are allowed.
+                         The key is the short method name, the value is the full method name.
         AuthProvidersRequest:
             type: object
             properties:
@@ -155,6 +274,44 @@ components:
                          this can be used to display the list of supported IDPs to the user,
                          or for REST clients that are not aware of enum values.
             description: AuthProvidersResponse provides list of supported IDP
+        CallerScope:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                    description: OrgID is the org selected in the token
+                ProjectID:
+                    type: string
+                    description: ProjectID is the project an API key is restricted to
+                Role:
+                    type: integer
+                    description: Role is the resolved role at org scope
+                    format: enum
+                RoleSource:
+                    type: integer
+                    description: RoleSource tells how the org role was resolved
+                    format: enum
+                ProjectRoles:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: |-
+                        ProjectRoles maps the IDs of the projects with an explicit grant to
+                         the granted role
+                Scopes:
+                    type: array
+                    items:
+                        type: string
+                    description: Scopes are the scopes of an API key or a scoped token
+                IsAPIKey:
+                    type: boolean
+                    description: IsAPIKey is true when the caller is an API key
+                Methods:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/MethodAccess'
+                    description: Methods lists the access rules of every public method
+            description: CallerScope is the resolved scope of the caller in the selected org
         CallerStatusResponse:
             type: object
             properties:
@@ -203,6 +360,50 @@ components:
                     type: string
                     description: Value is a value of the pair
             description: KVPair provides generic key-value pair
+        MethodAccess:
+            type: object
+            properties:
+                Method:
+                    type: string
+                    description: Method is the full method name
+                AllowedRoles:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        AllowedRoles are the minimum roles at Org or Project scope; a caller with
+                         a role that can assume any of them is allowed. Empty means any
+                         authenticated caller.
+                Scopes:
+                    type: array
+                    items:
+                        type: string
+                    description: Scopes are required from an API key or a token with a scope claim
+                Allowed:
+                    type: boolean
+                    description: Allowed is true when the caller may call the method at org scope
+            description: |-
+                MethodAccess describes the access rules of a method and whether the caller
+                 satisfies them at org scope
+        SelectOrgRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                    description: OrgID specifies the Org to switch to
+                RememberMe:
+                    type: boolean
+                    description: |-
+                        RememberMe specifies if the cookie should be set for the user.
+                         Otherwise, if the cookie is used, it will be set for the session only.
+            description: SelectOrgRequest specifies a request to switch the token to a specific Org
+        ServiceAccessInfo:
+            type: object
+            properties:
+                Allowed:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AllowedMethods'
         Status:
             type: object
             properties:
@@ -261,6 +462,24 @@ components:
                     description: |-
                         Role is the role of the user in the application.
                          For most of the users, the role is "user".
+                Orgs:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: Orgs maps the IDs of the orgs the user can select to the resolved role
+                OrgID:
+                    type: string
+                    description: OrgID is the org selected in the token
+                OrgRole:
+                    type: string
+                    description: |-
+                        OrgRole is the resolved role in the selected org: the explicit org-wide
+                         role, or Viewer derived from project grants
+                OrgRoleSource:
+                    type: string
+                    description: |-
+                        OrgRoleSource is "direct" for an explicit org-wide grant or "project"
+                         for a derived Viewer classification
             description: UserInfo provides basic info about user
         UserTokenResponse:
             type: object

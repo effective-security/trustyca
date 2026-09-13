@@ -21,11 +21,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Auth_GetProviders_FullMethodName = "/pb.Auth/GetProviders"
-	Auth_GetUserToken_FullMethodName = "/pb.Auth/GetUserToken"
-	Auth_RevokeToken_FullMethodName  = "/pb.Auth/RevokeToken"
-	Auth_Caller_FullMethodName       = "/pb.Auth/Caller"
-	Auth_ExchangeCode_FullMethodName = "/pb.Auth/ExchangeCode"
+	Auth_GetProviders_FullMethodName       = "/pb.Auth/GetProviders"
+	Auth_GetUserToken_FullMethodName       = "/pb.Auth/GetUserToken"
+	Auth_RevokeToken_FullMethodName        = "/pb.Auth/RevokeToken"
+	Auth_Caller_FullMethodName             = "/pb.Auth/Caller"
+	Auth_ExchangeCode_FullMethodName       = "/pb.Auth/ExchangeCode"
+	Auth_SelectOrg_FullMethodName          = "/pb.Auth/SelectOrg"
+	Auth_AuthenticateAPIKey_FullMethodName = "/pb.Auth/AuthenticateAPIKey"
+	Auth_GetAllowedMethods_FullMethodName  = "/pb.Auth/GetAllowedMethods"
+	Auth_GetCallerScope_FullMethodName     = "/pb.Auth/GetCallerScope"
 )
 
 // AuthClient is the client API for Auth service.
@@ -44,6 +48,23 @@ type AuthClient interface {
 	// The returned token only contains the Access Token.
 	// The client should call GetUserToken for full info.
 	ExchangeCode(ctx context.Context, in *ExchangeCodeRequest, opts ...grpc.CallOption) (*Token, error)
+	// SelectOrg verifies the caller's access to the org and returns a new
+	// token scoped to it. This is the only tenant request that carries OrgID.
+	SelectOrg(ctx context.Context, in *SelectOrgRequest, opts ...grpc.CallOption) (*UserTokenResponse, error)
+	// AuthenticateAPIKey returns the user token info.
+	// The caller must include the API key in the Authorization header
+	// with HMAC SHA256 signature of the request, using API key secret.
+	//
+	// Date: RFC3339 timestamp
+	// Authorization: APIKey {KeyID}:{signature}
+	// signature = Base64(HMAC-SHA256(secret, method + timestamp))
+	AuthenticateAPIKey(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*UserTokenResponse, error)
+	// GetAllowedMethods returns the allowed methods for the caller
+	GetAllowedMethods(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ServiceAccessInfo, error)
+	// GetCallerScope returns the caller's resolved scope in the selected org:
+	// the org role, project roles, token scopes, and per method the roles
+	// and scopes it requires.
+	GetCallerScope(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CallerScope, error)
 }
 
 type authClient struct {
@@ -104,6 +125,46 @@ func (c *authClient) ExchangeCode(ctx context.Context, in *ExchangeCodeRequest, 
 	return out, nil
 }
 
+func (c *authClient) SelectOrg(ctx context.Context, in *SelectOrgRequest, opts ...grpc.CallOption) (*UserTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserTokenResponse)
+	err := c.cc.Invoke(ctx, Auth_SelectOrg_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) AuthenticateAPIKey(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*UserTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserTokenResponse)
+	err := c.cc.Invoke(ctx, Auth_AuthenticateAPIKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) GetAllowedMethods(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ServiceAccessInfo, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ServiceAccessInfo)
+	err := c.cc.Invoke(ctx, Auth_GetAllowedMethods_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) GetCallerScope(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CallerScope, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CallerScope)
+	err := c.cc.Invoke(ctx, Auth_GetCallerScope_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServer is the server API for Auth service.
 // All implementations should embed UnimplementedAuthServer
 // for forward compatibility.
@@ -120,6 +181,23 @@ type AuthServer interface {
 	// The returned token only contains the Access Token.
 	// The client should call GetUserToken for full info.
 	ExchangeCode(context.Context, *ExchangeCodeRequest) (*Token, error)
+	// SelectOrg verifies the caller's access to the org and returns a new
+	// token scoped to it. This is the only tenant request that carries OrgID.
+	SelectOrg(context.Context, *SelectOrgRequest) (*UserTokenResponse, error)
+	// AuthenticateAPIKey returns the user token info.
+	// The caller must include the API key in the Authorization header
+	// with HMAC SHA256 signature of the request, using API key secret.
+	//
+	// Date: RFC3339 timestamp
+	// Authorization: APIKey {KeyID}:{signature}
+	// signature = Base64(HMAC-SHA256(secret, method + timestamp))
+	AuthenticateAPIKey(context.Context, *emptypb.Empty) (*UserTokenResponse, error)
+	// GetAllowedMethods returns the allowed methods for the caller
+	GetAllowedMethods(context.Context, *emptypb.Empty) (*ServiceAccessInfo, error)
+	// GetCallerScope returns the caller's resolved scope in the selected org:
+	// the org role, project roles, token scopes, and per method the roles
+	// and scopes it requires.
+	GetCallerScope(context.Context, *emptypb.Empty) (*CallerScope, error)
 }
 
 // UnimplementedAuthServer should be embedded to have
@@ -143,6 +221,18 @@ func (UnimplementedAuthServer) Caller(context.Context, *emptypb.Empty) (*CallerS
 }
 func (UnimplementedAuthServer) ExchangeCode(context.Context, *ExchangeCodeRequest) (*Token, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExchangeCode not implemented")
+}
+func (UnimplementedAuthServer) SelectOrg(context.Context, *SelectOrgRequest) (*UserTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SelectOrg not implemented")
+}
+func (UnimplementedAuthServer) AuthenticateAPIKey(context.Context, *emptypb.Empty) (*UserTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuthenticateAPIKey not implemented")
+}
+func (UnimplementedAuthServer) GetAllowedMethods(context.Context, *emptypb.Empty) (*ServiceAccessInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAllowedMethods not implemented")
+}
+func (UnimplementedAuthServer) GetCallerScope(context.Context, *emptypb.Empty) (*CallerScope, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCallerScope not implemented")
 }
 func (UnimplementedAuthServer) testEmbeddedByValue() {}
 
@@ -254,6 +344,78 @@ func _Auth_ExchangeCode_Handler(srv any, ctx context.Context, dec func(any) erro
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Auth_SelectOrg_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(SelectOrgRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).SelectOrg(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_SelectOrg_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(AuthServer).SelectOrg(ctx, req.(*SelectOrgRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_AuthenticateAPIKey_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).AuthenticateAPIKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_AuthenticateAPIKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(AuthServer).AuthenticateAPIKey(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_GetAllowedMethods_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).GetAllowedMethods(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_GetAllowedMethods_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(AuthServer).GetAllowedMethods(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_GetCallerScope_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).GetCallerScope(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_GetCallerScope_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(AuthServer).GetCallerScope(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Auth_ServiceDesc is the grpc.ServiceDesc for Auth service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -280,6 +442,22 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExchangeCode",
 			Handler:    _Auth_ExchangeCode_Handler,
+		},
+		{
+			MethodName: "SelectOrg",
+			Handler:    _Auth_SelectOrg_Handler,
+		},
+		{
+			MethodName: "AuthenticateAPIKey",
+			Handler:    _Auth_AuthenticateAPIKey_Handler,
+		},
+		{
+			MethodName: "GetAllowedMethods",
+			Handler:    _Auth_GetAllowedMethods_Handler,
+		},
+		{
+			MethodName: "GetCallerScope",
+			Handler:    _Auth_GetCallerScope_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

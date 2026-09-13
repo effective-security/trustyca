@@ -179,4 +179,97 @@ func TestPrintPb(t *testing.T) {
 		}
 		capturePrint(value)
 	})
+
+	t.Run("UserOrgsResponse", func(t *testing.T) {
+		t.Parallel()
+		userOrgsResponse := &pb.UserOrgsResponse{
+			Orgs: []*pb.OrgAccess{
+				{
+					OrgID:        "1",
+					OrgAlias:     "test-org",
+					OrgName:      "Test Org",
+					Role:         pb.Role_Admin,
+					RoleSource:   pb.RoleSource_Direct,
+					ExplicitRole: pb.Role_Admin,
+				},
+			},
+		}
+		capturePrint(userOrgsResponse)
+	})
+
+	t.Run("Project", func(t *testing.T) {
+		t.Parallel()
+		project := &pb.Project{
+			ID:     "1",
+			Alias:  "test-project",
+			Name:   "Test Project",
+			Status: pb.ItemStatus_Active,
+		}
+		capturePrint(project)
+	})
+
+	t.Run("ProjectsResponse", func(t *testing.T) {
+		t.Parallel()
+		project := &pb.Project{
+			ID:     "1",
+			Alias:  "test-project",
+			Name:   "Test Project",
+			Status: pb.ItemStatus_Active,
+		}
+		projectsResponse := &pb.ProjectsResponse{
+			Projects: []*pb.Project{project},
+		}
+		capturePrint(projectsResponse)
+	})
+
+	t.Run("Token", func(t *testing.T) {
+		t.Parallel()
+		token := &pb.Token{
+			AccessToken: "test-token",
+			Jkt:         "test-jkt",
+			Issuer:      "test-issuer",
+			Audience:    "test-audience",
+		}
+		capturePrint(token)
+	})
+
+	t.Run("UserInfo", func(t *testing.T) {
+		t.Parallel()
+		userInfo := &pb.UserInfo{
+			Email: "test@example.com",
+		}
+		capturePrint(userInfo)
+	})
+
+	t.Run("UserTokenResponse", func(t *testing.T) {
+		t.Parallel()
+		userTokenResponse := &pb.UserTokenResponse{
+			Token: &pb.Token{
+				AccessToken: "test-token",
+			},
+			UserInfo: &pb.UserInfo{
+				Email: "test@example.com",
+				Orgs: map[string]string{
+					"1": "Admin",
+				},
+			},
+		}
+		capturePrint(userTokenResponse)
+	})
+
+	t.Run("APIKey", func(t *testing.T) {
+		t.Parallel()
+		apiKey := &pb.APIKey{
+			ID:        "1",
+			OrgID:     "1",
+			ProjectID: "1",
+			Label:     "Test API Key",
+		}
+		capturePrint(apiKey)
+
+		apiKeysResponse := &pb.APIKeysResponse{
+			APIKeys: []*pb.APIKey{apiKey},
+		}
+		capturePrint(apiKeysResponse)
+	})
 }

@@ -22,41 +22,91 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Orgs_RegisterOrg_FullMethodName        = "/pb.Orgs/RegisterOrg"
-	Orgs_UpdateOrg_FullMethodName          = "/pb.Orgs/UpdateOrg"
 	Orgs_GetOrg_FullMethodName             = "/pb.Orgs/GetOrg"
+	Orgs_UpdateOrg_FullMethodName          = "/pb.Orgs/UpdateOrg"
 	Orgs_DeleteOrg_FullMethodName          = "/pb.Orgs/DeleteOrg"
+	Orgs_GetUserOrgs_FullMethodName        = "/pb.Orgs/GetUserOrgs"
 	Orgs_GetUserMemberships_FullMethodName = "/pb.Orgs/GetUserMemberships"
 	Orgs_GetMembers_FullMethodName         = "/pb.Orgs/GetMembers"
 	Orgs_AddMember_FullMethodName          = "/pb.Orgs/AddMember"
 	Orgs_ChangeMemberRole_FullMethodName   = "/pb.Orgs/ChangeMemberRole"
 	Orgs_DeleteMember_FullMethodName       = "/pb.Orgs/DeleteMember"
 	Orgs_DeleteInvite_FullMethodName       = "/pb.Orgs/DeleteInvite"
+	Orgs_RegisterProject_FullMethodName    = "/pb.Orgs/RegisterProject"
+	Orgs_UpdateProject_FullMethodName      = "/pb.Orgs/UpdateProject"
+	Orgs_GetProject_FullMethodName         = "/pb.Orgs/GetProject"
+	Orgs_ListProjects_FullMethodName       = "/pb.Orgs/ListProjects"
+	Orgs_DeleteProject_FullMethodName      = "/pb.Orgs/DeleteProject"
+	Orgs_CreateAPIKey_FullMethodName       = "/pb.Orgs/CreateAPIKey"
+	Orgs_ListAPIKeys_FullMethodName        = "/pb.Orgs/ListAPIKeys"
+	Orgs_DeleteAPIKey_FullMethodName       = "/pb.Orgs/DeleteAPIKey"
 )
 
 // OrgsClient is the client API for Orgs service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Orgs manages organizations, projects, memberships and invites.
+//
+// Tenant scoped requests do not carry OrgID: the server takes the selected
+// organization from the validated access token (see Auth.SelectOrg).
+// Requests that act on a project carry ProjectID; the authorization layer
+// verifies that the project belongs to the token organization and that the
+// caller holds the required permission through an explicit org-wide grant or
+// a project grant.
+//
+// (es.api.allowed_roles) lists the minimum roles allowed to call a method at
+// org scope, or at project scope when the request carries ProjectID; a caller
+// passes when one of its roles at that scope can assume an allowed role.
+// (es.api.scopes) lists the scopes an API key must hold; API keys are only
+// allowed where allowed_roles includes APIKey. Methods without allowed_roles
+// require an authenticated caller only.
 type OrgsClient interface {
-	// RegisterOrg registers a new org
+	// RegisterOrg registers a new org. The caller becomes its Owner.
 	RegisterOrg(ctx context.Context, in *RegisterOrgRequest, opts ...grpc.CallOption) (*Org, error)
-	// UpdateOrg updates an org
+	// GetOrg returns the org selected in the token
+	GetOrg(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Org, error)
+	// UpdateOrg updates the org selected in the token
 	UpdateOrg(ctx context.Context, in *UpdateOrgRequest, opts ...grpc.CallOption) (*Org, error)
-	// GetOrg returns an org by ID
-	GetOrg(ctx context.Context, in *GetOrgRequest, opts ...grpc.CallOption) (*Org, error)
-	// DeleteProject deletes a project
-	DeleteOrg(ctx context.Context, in *DeleteOrgRequest, opts ...grpc.CallOption) (*Org, error)
-	// GetUserMemberships returns list of calling user orgs
+	// DeleteOrg deactivates the org selected in the token
+	DeleteOrg(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Org, error)
+	// GetUserOrgs returns the orgs the caller can select, each once, with the
+	// resolved org role. Available before an org is selected.
+	GetUserOrgs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*UserOrgsResponse, error)
+	// GetUserMemberships returns the caller's resolved access to the org
+	// selected in the token and the caller's explicit grants in that org
 	GetUserMemberships(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*UserMemberships, error)
-	// GetMembers returns list of membership info for the org by org ID
+	// GetMembers returns memberships and invites of the org selected in the
+	// token. With ProjectID only the project's grants are returned; with
+	// Scope Org only the org-wide grants are returned.
 	GetMembers(ctx context.Context, in *GetMembersRequest, opts ...grpc.CallOption) (*MembersResponse, error)
-	// AddMember adds a user to Org
+	// AddMember grants a role to a user at org scope (empty ProjectID) or in
+	// a project. If the user does not exist yet, an invite is created.
 	AddMember(ctx context.Context, in *AddMemberRequest, opts ...grpc.CallOption) (*AddMemberResponse, error)
-	// ChangeMemberRole changes user role
+	// ChangeMemberRole changes the role of an existing grant at the given scope
 	ChangeMemberRole(ctx context.Context, in *ChangeMemberRoleRequest, opts ...grpc.CallOption) (*Membership, error)
-	// DeleteMember removes user from the project
+	// DeleteMember removes the grant at the given scope
 	DeleteMember(ctx context.Context, in *DeleteMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// DeleteInvite removes user invite
+	// DeleteInvite removes the invite at the given scope
 	DeleteInvite(ctx context.Context, in *DeleteInviteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// RegisterProject creates a project in the org selected in the token
+	RegisterProject(ctx context.Context, in *RegisterProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// UpdateProject updates a project
+	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// GetProject returns a project by ID or alias
+	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// ListProjects returns the projects of the org selected in the token that
+	// the caller can access
+	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ProjectsResponse, error)
+	// DeleteProject deactivates a project. Records owned by the project are
+	// kept.
+	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// CreateAPIKey creates a new API key
+	CreateAPIKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error)
+	// ListAPIKeys lists the API keys of the org selected in the token
+	ListAPIKeys(ctx context.Context, in *ListAPIKeysRequest, opts ...grpc.CallOption) (*APIKeysResponse, error)
+	// DeleteAPIKey deletes an API key
+	DeleteAPIKey(ctx context.Context, in *APIKeyRequest, opts ...grpc.CallOption) (*RecordsResult, error)
 }
 
 type orgsClient struct {
@@ -77,6 +127,16 @@ func (c *orgsClient) RegisterOrg(ctx context.Context, in *RegisterOrgRequest, op
 	return out, nil
 }
 
+func (c *orgsClient) GetOrg(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Org, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Org)
+	err := c.cc.Invoke(ctx, Orgs_GetOrg_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *orgsClient) UpdateOrg(ctx context.Context, in *UpdateOrgRequest, opts ...grpc.CallOption) (*Org, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Org)
@@ -87,20 +147,20 @@ func (c *orgsClient) UpdateOrg(ctx context.Context, in *UpdateOrgRequest, opts .
 	return out, nil
 }
 
-func (c *orgsClient) GetOrg(ctx context.Context, in *GetOrgRequest, opts ...grpc.CallOption) (*Org, error) {
+func (c *orgsClient) DeleteOrg(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Org, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Org)
-	err := c.cc.Invoke(ctx, Orgs_GetOrg_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Orgs_DeleteOrg_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *orgsClient) DeleteOrg(ctx context.Context, in *DeleteOrgRequest, opts ...grpc.CallOption) (*Org, error) {
+func (c *orgsClient) GetUserOrgs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*UserOrgsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Org)
-	err := c.cc.Invoke(ctx, Orgs_DeleteOrg_FullMethodName, in, out, cOpts...)
+	out := new(UserOrgsResponse)
+	err := c.cc.Invoke(ctx, Orgs_GetUserOrgs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -167,30 +227,151 @@ func (c *orgsClient) DeleteInvite(ctx context.Context, in *DeleteInviteRequest, 
 	return out, nil
 }
 
+func (c *orgsClient) RegisterProject(ctx context.Context, in *RegisterProjectRequest, opts ...grpc.CallOption) (*Project, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Project)
+	err := c.cc.Invoke(ctx, Orgs_RegisterProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgsClient) UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Project)
+	err := c.cc.Invoke(ctx, Orgs_UpdateProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgsClient) GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Project)
+	err := c.cc.Invoke(ctx, Orgs_GetProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgsClient) ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ProjectsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProjectsResponse)
+	err := c.cc.Invoke(ctx, Orgs_ListProjects_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgsClient) DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*Project, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Project)
+	err := c.cc.Invoke(ctx, Orgs_DeleteProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgsClient) CreateAPIKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(APIKey)
+	err := c.cc.Invoke(ctx, Orgs_CreateAPIKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgsClient) ListAPIKeys(ctx context.Context, in *ListAPIKeysRequest, opts ...grpc.CallOption) (*APIKeysResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(APIKeysResponse)
+	err := c.cc.Invoke(ctx, Orgs_ListAPIKeys_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgsClient) DeleteAPIKey(ctx context.Context, in *APIKeyRequest, opts ...grpc.CallOption) (*RecordsResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecordsResult)
+	err := c.cc.Invoke(ctx, Orgs_DeleteAPIKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrgsServer is the server API for Orgs service.
 // All implementations should embed UnimplementedOrgsServer
 // for forward compatibility.
+//
+// Orgs manages organizations, projects, memberships and invites.
+//
+// Tenant scoped requests do not carry OrgID: the server takes the selected
+// organization from the validated access token (see Auth.SelectOrg).
+// Requests that act on a project carry ProjectID; the authorization layer
+// verifies that the project belongs to the token organization and that the
+// caller holds the required permission through an explicit org-wide grant or
+// a project grant.
+//
+// (es.api.allowed_roles) lists the minimum roles allowed to call a method at
+// org scope, or at project scope when the request carries ProjectID; a caller
+// passes when one of its roles at that scope can assume an allowed role.
+// (es.api.scopes) lists the scopes an API key must hold; API keys are only
+// allowed where allowed_roles includes APIKey. Methods without allowed_roles
+// require an authenticated caller only.
 type OrgsServer interface {
-	// RegisterOrg registers a new org
+	// RegisterOrg registers a new org. The caller becomes its Owner.
 	RegisterOrg(context.Context, *RegisterOrgRequest) (*Org, error)
-	// UpdateOrg updates an org
+	// GetOrg returns the org selected in the token
+	GetOrg(context.Context, *emptypb.Empty) (*Org, error)
+	// UpdateOrg updates the org selected in the token
 	UpdateOrg(context.Context, *UpdateOrgRequest) (*Org, error)
-	// GetOrg returns an org by ID
-	GetOrg(context.Context, *GetOrgRequest) (*Org, error)
-	// DeleteProject deletes a project
-	DeleteOrg(context.Context, *DeleteOrgRequest) (*Org, error)
-	// GetUserMemberships returns list of calling user orgs
+	// DeleteOrg deactivates the org selected in the token
+	DeleteOrg(context.Context, *emptypb.Empty) (*Org, error)
+	// GetUserOrgs returns the orgs the caller can select, each once, with the
+	// resolved org role. Available before an org is selected.
+	GetUserOrgs(context.Context, *emptypb.Empty) (*UserOrgsResponse, error)
+	// GetUserMemberships returns the caller's resolved access to the org
+	// selected in the token and the caller's explicit grants in that org
 	GetUserMemberships(context.Context, *emptypb.Empty) (*UserMemberships, error)
-	// GetMembers returns list of membership info for the org by org ID
+	// GetMembers returns memberships and invites of the org selected in the
+	// token. With ProjectID only the project's grants are returned; with
+	// Scope Org only the org-wide grants are returned.
 	GetMembers(context.Context, *GetMembersRequest) (*MembersResponse, error)
-	// AddMember adds a user to Org
+	// AddMember grants a role to a user at org scope (empty ProjectID) or in
+	// a project. If the user does not exist yet, an invite is created.
 	AddMember(context.Context, *AddMemberRequest) (*AddMemberResponse, error)
-	// ChangeMemberRole changes user role
+	// ChangeMemberRole changes the role of an existing grant at the given scope
 	ChangeMemberRole(context.Context, *ChangeMemberRoleRequest) (*Membership, error)
-	// DeleteMember removes user from the project
+	// DeleteMember removes the grant at the given scope
 	DeleteMember(context.Context, *DeleteMemberRequest) (*emptypb.Empty, error)
-	// DeleteInvite removes user invite
+	// DeleteInvite removes the invite at the given scope
 	DeleteInvite(context.Context, *DeleteInviteRequest) (*emptypb.Empty, error)
+	// RegisterProject creates a project in the org selected in the token
+	RegisterProject(context.Context, *RegisterProjectRequest) (*Project, error)
+	// UpdateProject updates a project
+	UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error)
+	// GetProject returns a project by ID or alias
+	GetProject(context.Context, *GetProjectRequest) (*Project, error)
+	// ListProjects returns the projects of the org selected in the token that
+	// the caller can access
+	ListProjects(context.Context, *ListProjectsRequest) (*ProjectsResponse, error)
+	// DeleteProject deactivates a project. Records owned by the project are
+	// kept.
+	DeleteProject(context.Context, *DeleteProjectRequest) (*Project, error)
+	// CreateAPIKey creates a new API key
+	CreateAPIKey(context.Context, *CreateAPIKeyRequest) (*APIKey, error)
+	// ListAPIKeys lists the API keys of the org selected in the token
+	ListAPIKeys(context.Context, *ListAPIKeysRequest) (*APIKeysResponse, error)
+	// DeleteAPIKey deletes an API key
+	DeleteAPIKey(context.Context, *APIKeyRequest) (*RecordsResult, error)
 }
 
 // UnimplementedOrgsServer should be embedded to have
@@ -203,14 +384,17 @@ type UnimplementedOrgsServer struct{}
 func (UnimplementedOrgsServer) RegisterOrg(context.Context, *RegisterOrgRequest) (*Org, error) {
 	return nil, status.Error(codes.Unimplemented, "method RegisterOrg not implemented")
 }
+func (UnimplementedOrgsServer) GetOrg(context.Context, *emptypb.Empty) (*Org, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetOrg not implemented")
+}
 func (UnimplementedOrgsServer) UpdateOrg(context.Context, *UpdateOrgRequest) (*Org, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateOrg not implemented")
 }
-func (UnimplementedOrgsServer) GetOrg(context.Context, *GetOrgRequest) (*Org, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetOrg not implemented")
-}
-func (UnimplementedOrgsServer) DeleteOrg(context.Context, *DeleteOrgRequest) (*Org, error) {
+func (UnimplementedOrgsServer) DeleteOrg(context.Context, *emptypb.Empty) (*Org, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteOrg not implemented")
+}
+func (UnimplementedOrgsServer) GetUserOrgs(context.Context, *emptypb.Empty) (*UserOrgsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserOrgs not implemented")
 }
 func (UnimplementedOrgsServer) GetUserMemberships(context.Context, *emptypb.Empty) (*UserMemberships, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserMemberships not implemented")
@@ -229,6 +413,30 @@ func (UnimplementedOrgsServer) DeleteMember(context.Context, *DeleteMemberReques
 }
 func (UnimplementedOrgsServer) DeleteInvite(context.Context, *DeleteInviteRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteInvite not implemented")
+}
+func (UnimplementedOrgsServer) RegisterProject(context.Context, *RegisterProjectRequest) (*Project, error) {
+	return nil, status.Error(codes.Unimplemented, "method RegisterProject not implemented")
+}
+func (UnimplementedOrgsServer) UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateProject not implemented")
+}
+func (UnimplementedOrgsServer) GetProject(context.Context, *GetProjectRequest) (*Project, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedOrgsServer) ListProjects(context.Context, *ListProjectsRequest) (*ProjectsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListProjects not implemented")
+}
+func (UnimplementedOrgsServer) DeleteProject(context.Context, *DeleteProjectRequest) (*Project, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteProject not implemented")
+}
+func (UnimplementedOrgsServer) CreateAPIKey(context.Context, *CreateAPIKeyRequest) (*APIKey, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAPIKey not implemented")
+}
+func (UnimplementedOrgsServer) ListAPIKeys(context.Context, *ListAPIKeysRequest) (*APIKeysResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAPIKeys not implemented")
+}
+func (UnimplementedOrgsServer) DeleteAPIKey(context.Context, *APIKeyRequest) (*RecordsResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAPIKey not implemented")
 }
 func (UnimplementedOrgsServer) testEmbeddedByValue() {}
 
@@ -268,6 +476,24 @@ func _Orgs_RegisterOrg_Handler(srv any, ctx context.Context, dec func(any) error
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Orgs_GetOrg_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).GetOrg(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_GetOrg_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).GetOrg(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Orgs_UpdateOrg_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UpdateOrgRequest)
 	if err := dec(in); err != nil {
@@ -286,26 +512,8 @@ func _Orgs_UpdateOrg_Handler(srv any, ctx context.Context, dec func(any) error, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Orgs_GetOrg_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(GetOrgRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OrgsServer).GetOrg(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Orgs_GetOrg_FullMethodName,
-	}
-	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(OrgsServer).GetOrg(ctx, req.(*GetOrgRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Orgs_DeleteOrg_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(DeleteOrgRequest)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -317,7 +525,25 @@ func _Orgs_DeleteOrg_Handler(srv any, ctx context.Context, dec func(any) error, 
 		FullMethod: Orgs_DeleteOrg_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(OrgsServer).DeleteOrg(ctx, req.(*DeleteOrgRequest))
+		return srv.(OrgsServer).DeleteOrg(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orgs_GetUserOrgs_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).GetUserOrgs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_GetUserOrgs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).GetUserOrgs(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -430,6 +656,150 @@ func _Orgs_DeleteInvite_Handler(srv any, ctx context.Context, dec func(any) erro
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Orgs_RegisterProject_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(RegisterProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).RegisterProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_RegisterProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).RegisterProject(ctx, req.(*RegisterProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orgs_UpdateProject_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(UpdateProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).UpdateProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_UpdateProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).UpdateProject(ctx, req.(*UpdateProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orgs_GetProject_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(GetProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).GetProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_GetProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).GetProject(ctx, req.(*GetProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orgs_ListProjects_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).ListProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_ListProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).ListProjects(ctx, req.(*ListProjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orgs_DeleteProject_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(DeleteProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).DeleteProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_DeleteProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).DeleteProject(ctx, req.(*DeleteProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orgs_CreateAPIKey_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(CreateAPIKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).CreateAPIKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_CreateAPIKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).CreateAPIKey(ctx, req.(*CreateAPIKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orgs_ListAPIKeys_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListAPIKeysRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).ListAPIKeys(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_ListAPIKeys_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).ListAPIKeys(ctx, req.(*ListAPIKeysRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Orgs_DeleteAPIKey_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(APIKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).DeleteAPIKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_DeleteAPIKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).DeleteAPIKey(ctx, req.(*APIKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Orgs_ServiceDesc is the grpc.ServiceDesc for Orgs service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -442,16 +812,20 @@ var Orgs_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Orgs_RegisterOrg_Handler,
 		},
 		{
-			MethodName: "UpdateOrg",
-			Handler:    _Orgs_UpdateOrg_Handler,
-		},
-		{
 			MethodName: "GetOrg",
 			Handler:    _Orgs_GetOrg_Handler,
 		},
 		{
+			MethodName: "UpdateOrg",
+			Handler:    _Orgs_UpdateOrg_Handler,
+		},
+		{
 			MethodName: "DeleteOrg",
 			Handler:    _Orgs_DeleteOrg_Handler,
+		},
+		{
+			MethodName: "GetUserOrgs",
+			Handler:    _Orgs_GetUserOrgs_Handler,
 		},
 		{
 			MethodName: "GetUserMemberships",
@@ -476,6 +850,38 @@ var Orgs_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteInvite",
 			Handler:    _Orgs_DeleteInvite_Handler,
+		},
+		{
+			MethodName: "RegisterProject",
+			Handler:    _Orgs_RegisterProject_Handler,
+		},
+		{
+			MethodName: "UpdateProject",
+			Handler:    _Orgs_UpdateProject_Handler,
+		},
+		{
+			MethodName: "GetProject",
+			Handler:    _Orgs_GetProject_Handler,
+		},
+		{
+			MethodName: "ListProjects",
+			Handler:    _Orgs_ListProjects_Handler,
+		},
+		{
+			MethodName: "DeleteProject",
+			Handler:    _Orgs_DeleteProject_Handler,
+		},
+		{
+			MethodName: "CreateAPIKey",
+			Handler:    _Orgs_CreateAPIKey_Handler,
+		},
+		{
+			MethodName: "ListAPIKeys",
+			Handler:    _Orgs_ListAPIKeys_Handler,
+		},
+		{
+			MethodName: "DeleteAPIKey",
+			Handler:    _Orgs_DeleteAPIKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -55,7 +55,7 @@ func TestParse(t *testing.T) {
 	require.NotEmpty(t, homeDir, "HOME is not set")
 
 	t.Run("parse_no_server", func(t *testing.T) {
-		t.Setenv("TRUSTYCA_SERVER", "https://localhost:7880")
+		t.Setenv("TRUSTYCA_SERVER", "https://localhost:8880")
 		var cl struct {
 			Cli
 			Cmd struct{} `kong:"cmd"`
@@ -72,7 +72,7 @@ func TestParse(t *testing.T) {
 		require.Equal(t, "cmd", ctx.Command())
 
 		_, err = cl.Cli.RPCClient(true)
-		assert.EqualError(t, err, "unable to create client: failed to connect to \"localhost:7880\" within 6s")
+		assert.EqualError(t, err, "unable to create client: failed to connect to \"localhost:8880\" within 6s")
 
 		_, err = cl.Cli.HTTPClient(true)
 		assert.NoError(t, err)
@@ -86,7 +86,7 @@ func TestParse(t *testing.T) {
 		p := mustNew(t, &cl)
 		ctx, err := p.Parse([]string{
 			"cmd",
-			"--server", "https://localhost:7880",
+			"--server", "https://localhost:8880",
 			"--timeout", "1",
 			"--cfg", homeDir + "/.trustyca/cli/config.yaml",
 			"--storage", homeDir + "/.trustyca/cli",
@@ -98,7 +98,7 @@ func TestParse(t *testing.T) {
 		assert.False(t, cl.IsJSON())
 
 		_, err = cl.Cli.RPCClient(true)
-		assert.EqualError(t, err, "unable to create client: failed to connect to \"localhost:7880\" within 1s")
+		assert.EqualError(t, err, "unable to create client: failed to connect to \"localhost:8880\" within 1s")
 
 		_, err = cl.Cli.HTTPClient(true)
 		assert.NoError(t, err)

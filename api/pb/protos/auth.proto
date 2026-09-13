@@ -4,6 +4,7 @@ package pb;
 option go_package = "github.com/effective-security/trustyca/api/pb";
 
 import "types.proto";
+import "orgs.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "es/api/annotations.proto";
@@ -29,8 +30,7 @@ service Auth {
 
     // RevokeToken revokes the user token
     rpc RevokeToken(google.protobuf.Empty) returns (google.protobuf.Empty) {
-        option (es.api.allowed_roles) = "User,APIKey";
-        option (google.api.http)      = {
+        option (google.api.http) = {
             post: "/pb.Auth/RevokeToken",
             body: "*"
         };
@@ -54,6 +54,50 @@ service Auth {
             post: "/pb.Auth/ExchangeCode",
             body: "*"
         };
+    }
+
+    // SelectOrg verifies the caller's access to the org and returns a new
+    // token scoped to it. This is the only tenant request that carries OrgID.
+    rpc SelectOrg(SelectOrgRequest) returns (UserTokenResponse) {
+        option (google.api.http) = {
+            post: "/pb.Auth/SelectOrg",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "auth org";
+    }
+
+    // AuthenticateAPIKey returns the user token info.
+    // The caller must include the API key in the Authorization header
+    // with HMAC SHA256 signature of the request, using API key secret.
+    //
+    // Date: RFC3339 timestamp
+    // Authorization: APIKey {KeyID}:{signature}
+    // signature = Base64(HMAC-SHA256(secret, method + timestamp))
+    rpc AuthenticateAPIKey(google.protobuf.Empty) returns (UserTokenResponse) {
+        option (google.api.http) = {
+            post: "/pb.Auth/AuthenticateAPIKey",
+            body: "*"
+        };
+    }
+
+    // GetAllowedMethods returns the allowed methods for the caller
+    rpc GetAllowedMethods(google.protobuf.Empty) returns (ServiceAccessInfo) {
+        option (google.api.http) = {
+            post: "/pb.Auth/GetAllowedMethods",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "auth allowed";
+    }
+
+    // GetCallerScope returns the caller's resolved scope in the selected org:
+    // the org role, project roles, token scopes, and per method the roles
+    // and scopes it requires.
+    rpc GetCallerScope(google.protobuf.Empty) returns (CallerScope) {
+        option (google.api.http) = {
+            post: "/pb.Auth/GetCallerScope",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "auth scope";
     }
 }
 
@@ -84,6 +128,16 @@ message UserInfo {
     // Role is the role of the user in the application.
     // For most of the users, the role is "user".
     string Role = 5 [json_name = "Role"];
+    // Orgs maps the IDs of the orgs the user can select to the resolved role
+    map<string, string> Orgs = 6 [json_name = "Orgs"];
+    // OrgID is the org selected in the token
+    string OrgID = 7 [json_name = "OrgID"];
+    // OrgRole is the resolved role in the selected org: the explicit org-wide
+    // role, or Viewer derived from project grants
+    string OrgRole = 8 [json_name = "OrgRole"];
+    // OrgRoleSource is "direct" for an explicit org-wide grant or "project"
+    // for a derived Viewer classification
+    string OrgRoleSource = 9 [json_name = "OrgRoleSource"];
 }
 
 // Token is returned to the client
@@ -155,4 +209,61 @@ message IDP {
         // Local indicates that the IDP is local for testing
         Local = 1000 [(es.api.enum_display) = "local"];
     }
+}
+
+// SelectOrgRequest specifies a request to switch the token to a specific Org
+message SelectOrgRequest {
+    // OrgID specifies the Org to switch to
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // RememberMe specifies if the cookie should be set for the user.
+    // Otherwise, if the cookie is used, it will be set for the session only.
+    bool RememberMe = 2 [json_name = "RememberMe"];
+}
+
+message AllowedMethods {
+    // Service is the name of the service
+    string Service = 1 [json_name = "Service"];
+    // Methods is the list of methods that are allowed.
+    // The key is the short method name, the value is the full method name.
+    repeated KVPair Methods = 2 [json_name = "Methods"];
+}
+
+message ServiceAccessInfo {
+    repeated AllowedMethods Allowed = 1 [json_name = "Allowed"];
+}
+
+// MethodAccess describes the access rules of a method and whether the caller
+// satisfies them at org scope
+message MethodAccess {
+    // Method is the full method name
+    string Method = 1 [json_name = "Method"];
+    // AllowedRoles are the minimum roles at Org or Project scope; a caller with
+    // a role that can assume any of them is allowed. Empty means any
+    // authenticated caller.
+    repeated string AllowedRoles = 2 [json_name = "AllowedRoles"];
+    // Scopes are required from an API key or a token with a scope claim
+    repeated string Scopes = 3 [json_name = "Scopes"];
+    // Allowed is true when the caller may call the method at org scope
+    bool Allowed = 4 [json_name = "Allowed"];
+}
+
+// CallerScope is the resolved scope of the caller in the selected org
+message CallerScope {
+    // OrgID is the org selected in the token
+    string OrgID = 1 [json_name = "OrgID"];
+    // ProjectID is the project an API key is restricted to
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Role is the resolved role at org scope
+    Role.Enum Role = 3 [json_name = "Role"];
+    // RoleSource tells how the org role was resolved
+    RoleSource.Enum RoleSource = 4 [json_name = "RoleSource"];
+    // ProjectRoles maps the IDs of the projects with an explicit grant to
+    // the granted role
+    map<string, string> ProjectRoles = 5 [json_name = "ProjectRoles"];
+    // Scopes are the scopes of an API key or a scoped token
+    repeated string Scopes = 6 [json_name = "Scopes"];
+    // IsAPIKey is true when the caller is an API key
+    bool IsAPIKey = 7 [json_name = "IsAPIKey"];
+    // Methods lists the access rules of every public method
+    repeated MethodAccess Methods = 8 [json_name = "Methods"];
 }

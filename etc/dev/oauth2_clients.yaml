@@ -23,11 +23,11 @@ clients:
     auth_url: https://accounts.google.com/o/oauth2/v2/auth
     token_url: https://oauth2.googleapis.com/token
     userinfo_url: https://openidconnect.googleapis.com/v1/userinfo
-    domains:
-      # if domains is set then the caller can not use `google` as provider_id,
-      # and only emails from these domains are allowed to use this provider.
-      - tbilicode.com
-      - effectivesecurity.pt
+    # domains:
+    #   # if domains is set then the caller can not use `google` as provider_id,
+    #   # and only emails from these domains are allowed to use this provider.
+    #   - tbilicode.com
+    #   - effectivesecurity.pt
   - provider_id: local
     client_id: trustyca_local_test
     client_secret: notused
@@ -36,4 +36,4 @@ clients:
       - read:user
       - user:email
     response_type: token
-    auth_url: https://localhost:7880/v1/auth/callback?code=test
+    auth_url: https://localhost:8880/v1/auth/callback?code=test

@@ -239,5 +239,9 @@ docs:
 	gomarkdoc ./internal/db/model > ./Documentation/db/trustyca-model.md
 	gomarkdoc ./internal/db/schema > ./Documentation/db/trustyca-schema.md
 	gomarkdoc ./api/client > ./Documentation/api/client.md
-	bin/trustyca --help > ./Documentation/cli/trustyca.md
-	bin/trustycactl --help > ./Documentation/cli/trustycactl.md
+	echo "\`\`\`bash" > ./Documentation/cli/trustyca.md
+	bin/trustyca --help >> ./Documentation/cli/trustyca.md
+	echo "\`\`\`" >> ./Documentation/cli/trustyca.md
+	echo "\`\`\`bash" > ./Documentation/cli/trustycactl.md
+	bin/trustycactl --help >> ./Documentation/cli/trustycactl.md
+	echo "\`\`\`" >> ./Documentation/cli/trustycactl.md

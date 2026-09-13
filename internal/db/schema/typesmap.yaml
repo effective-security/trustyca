@@ -1,5 +1,6 @@
 ---
 tables:
+  trustyca.apikey: APIKey
   trustyca.vw_membership_info: MembershipInfo
 fields:
   trustyca.event.ref_id: ReferenceID
@@ -11,16 +12,26 @@ types:
   _count: uint32
   metadata: xdb.Metadata
   # keep sorted by name
+  trustyca.apikey.status: pb.ItemStatus_Enum
+  trustyca.certificate.status: pb.CertificateStatus_Enum
+  trustyca.certificate_profile.status: pb.ItemStatus_Enum
   trustyca.event.type: pb.EventType_Enum
   trustyca.invite.role: pb.Role_Enum
+  trustyca.issuer.status: pb.IssuerStatus_Enum
+  trustyca.issuer.type: pb.AuthorityType_Enum
   trustyca.login.provider: pb.IDP_Enum
   trustyca.membership.role: pb.Role_Enum
   trustyca.org.status: pb.ItemStatus_Enum
+  trustyca.revoked.reason: pb.ReasonCode_Enum
+  trustyca.root_certificate.trust: pb.Trust_Enum
+  trustyca.project.status: pb.ItemStatus_Enum
   trustyca.vw_membership_info.email: string
   trustyca.vw_membership_info.name: string
   trustyca.vw_membership_info.org_alias: string
   trustyca.vw_membership_info.org_name: string
   trustyca.vw_membership_info.role: pb.Role_Enum
+  trustyca.vw_membership_info.project_alias: string
+  trustyca.vw_membership_info.project_name: string
 
 # add cached props to the model
 with_cached_props:

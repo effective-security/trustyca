@@ -54,7 +54,7 @@ func NewHTTPOrgsClient(client retriable.PostRequester) pb.OrgsServer {
 	}
 }
 
-// RegisterOrg registers a new org
+// RegisterOrg registers a new org. The caller becomes its Owner.
 func (s *proxyOrgsServer) RegisterOrg(ctx context.Context, req *pb.RegisterOrgRequest, opts ...grpc.CallOption) (*pb.Org, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -65,7 +65,7 @@ func (s *proxyOrgsServer) RegisterOrg(ctx context.Context, req *pb.RegisterOrgRe
 	return res, nil
 }
 
-// RegisterOrg registers a new org
+// RegisterOrg registers a new org. The caller becomes its Owner.
 func (s *proxyOrgsClient) RegisterOrg(ctx context.Context, req *pb.RegisterOrgRequest) (*pb.Org, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -76,7 +76,7 @@ func (s *proxyOrgsClient) RegisterOrg(ctx context.Context, req *pb.RegisterOrgRe
 	return res, nil
 }
 
-// RegisterOrg registers a new org
+// RegisterOrg registers a new org. The caller becomes its Owner.
 func (s *postproxyOrgsClient) RegisterOrg(ctx context.Context, req *pb.RegisterOrgRequest) (*pb.Org, error) {
 	var res pb.Org
 	path := pb.Orgs_RegisterOrg_FullMethodName
@@ -87,7 +87,40 @@ func (s *postproxyOrgsClient) RegisterOrg(ctx context.Context, req *pb.RegisterO
 	return &res, nil
 }
 
-// UpdateOrg updates an org
+// GetOrg returns the org selected in the token
+func (s *proxyOrgsServer) GetOrg(ctx context.Context, req *emptypb.Empty, opts ...grpc.CallOption) (*pb.Org, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetOrg(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetOrg returns the org selected in the token
+func (s *proxyOrgsClient) GetOrg(ctx context.Context, req *emptypb.Empty) (*pb.Org, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetOrg(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetOrg returns the org selected in the token
+func (s *postproxyOrgsClient) GetOrg(ctx context.Context, req *emptypb.Empty) (*pb.Org, error) {
+	var res pb.Org
+	path := pb.Orgs_GetOrg_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// UpdateOrg updates the org selected in the token
 func (s *proxyOrgsServer) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRequest, opts ...grpc.CallOption) (*pb.Org, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -98,7 +131,7 @@ func (s *proxyOrgsServer) UpdateOrg(ctx context.Context, req *pb.UpdateOrgReques
 	return res, nil
 }
 
-// UpdateOrg updates an org
+// UpdateOrg updates the org selected in the token
 func (s *proxyOrgsClient) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRequest) (*pb.Org, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -109,7 +142,7 @@ func (s *proxyOrgsClient) UpdateOrg(ctx context.Context, req *pb.UpdateOrgReques
 	return res, nil
 }
 
-// UpdateOrg updates an org
+// UpdateOrg updates the org selected in the token
 func (s *postproxyOrgsClient) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRequest) (*pb.Org, error) {
 	var res pb.Org
 	path := pb.Orgs_UpdateOrg_FullMethodName
@@ -120,41 +153,8 @@ func (s *postproxyOrgsClient) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRe
 	return &res, nil
 }
 
-// GetOrg returns an org by ID
-func (s *proxyOrgsServer) GetOrg(ctx context.Context, req *pb.GetOrgRequest, opts ...grpc.CallOption) (*pb.Org, error) {
-	// add correlation ID to outgoing RPC calls
-	ctx = correlation.WithMetaFromContext(ctx)
-	res, err := s.srv.GetOrg(ctx, req)
-	if err != nil {
-		return nil, httperror.NewFromPb(err)
-	}
-	return res, nil
-}
-
-// GetOrg returns an org by ID
-func (s *proxyOrgsClient) GetOrg(ctx context.Context, req *pb.GetOrgRequest) (*pb.Org, error) {
-	// add correlation ID to outgoing RPC calls
-	ctx = correlation.WithMetaFromContext(ctx)
-	res, err := s.remote.GetOrg(ctx, req, s.callOpts...)
-	if err != nil {
-		return nil, httperror.NewFromPb(err)
-	}
-	return res, nil
-}
-
-// GetOrg returns an org by ID
-func (s *postproxyOrgsClient) GetOrg(ctx context.Context, req *pb.GetOrgRequest) (*pb.Org, error) {
-	var res pb.Org
-	path := pb.Orgs_GetOrg_FullMethodName
-	_, _, err := s.client.Post(ctx, path, req, &res)
-	if err != nil {
-		return nil, err
-	}
-	return &res, nil
-}
-
-// DeleteProject deletes a project
-func (s *proxyOrgsServer) DeleteOrg(ctx context.Context, req *pb.DeleteOrgRequest, opts ...grpc.CallOption) (*pb.Org, error) {
+// DeleteOrg deactivates the org selected in the token
+func (s *proxyOrgsServer) DeleteOrg(ctx context.Context, req *emptypb.Empty, opts ...grpc.CallOption) (*pb.Org, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.srv.DeleteOrg(ctx, req)
@@ -164,8 +164,8 @@ func (s *proxyOrgsServer) DeleteOrg(ctx context.Context, req *pb.DeleteOrgReques
 	return res, nil
 }
 
-// DeleteProject deletes a project
-func (s *proxyOrgsClient) DeleteOrg(ctx context.Context, req *pb.DeleteOrgRequest) (*pb.Org, error) {
+// DeleteOrg deactivates the org selected in the token
+func (s *proxyOrgsClient) DeleteOrg(ctx context.Context, req *emptypb.Empty) (*pb.Org, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.remote.DeleteOrg(ctx, req, s.callOpts...)
@@ -175,8 +175,8 @@ func (s *proxyOrgsClient) DeleteOrg(ctx context.Context, req *pb.DeleteOrgReques
 	return res, nil
 }
 
-// DeleteProject deletes a project
-func (s *postproxyOrgsClient) DeleteOrg(ctx context.Context, req *pb.DeleteOrgRequest) (*pb.Org, error) {
+// DeleteOrg deactivates the org selected in the token
+func (s *postproxyOrgsClient) DeleteOrg(ctx context.Context, req *emptypb.Empty) (*pb.Org, error) {
 	var res pb.Org
 	path := pb.Orgs_DeleteOrg_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
@@ -186,7 +186,44 @@ func (s *postproxyOrgsClient) DeleteOrg(ctx context.Context, req *pb.DeleteOrgRe
 	return &res, nil
 }
 
-// GetUserMemberships returns list of calling user orgs
+// GetUserOrgs returns the orgs the caller can select, each once, with the
+// resolved org role. Available before an org is selected.
+func (s *proxyOrgsServer) GetUserOrgs(ctx context.Context, req *emptypb.Empty, opts ...grpc.CallOption) (*pb.UserOrgsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetUserOrgs(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetUserOrgs returns the orgs the caller can select, each once, with the
+// resolved org role. Available before an org is selected.
+func (s *proxyOrgsClient) GetUserOrgs(ctx context.Context, req *emptypb.Empty) (*pb.UserOrgsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetUserOrgs(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetUserOrgs returns the orgs the caller can select, each once, with the
+// resolved org role. Available before an org is selected.
+func (s *postproxyOrgsClient) GetUserOrgs(ctx context.Context, req *emptypb.Empty) (*pb.UserOrgsResponse, error) {
+	var res pb.UserOrgsResponse
+	path := pb.Orgs_GetUserOrgs_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// GetUserMemberships returns the caller's resolved access to the org
+// selected in the token and the caller's explicit grants in that org
 func (s *proxyOrgsServer) GetUserMemberships(ctx context.Context, req *emptypb.Empty, opts ...grpc.CallOption) (*pb.UserMemberships, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -197,7 +234,8 @@ func (s *proxyOrgsServer) GetUserMemberships(ctx context.Context, req *emptypb.E
 	return res, nil
 }
 
-// GetUserMemberships returns list of calling user orgs
+// GetUserMemberships returns the caller's resolved access to the org
+// selected in the token and the caller's explicit grants in that org
 func (s *proxyOrgsClient) GetUserMemberships(ctx context.Context, req *emptypb.Empty) (*pb.UserMemberships, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -208,7 +246,8 @@ func (s *proxyOrgsClient) GetUserMemberships(ctx context.Context, req *emptypb.E
 	return res, nil
 }
 
-// GetUserMemberships returns list of calling user orgs
+// GetUserMemberships returns the caller's resolved access to the org
+// selected in the token and the caller's explicit grants in that org
 func (s *postproxyOrgsClient) GetUserMemberships(ctx context.Context, req *emptypb.Empty) (*pb.UserMemberships, error) {
 	var res pb.UserMemberships
 	path := pb.Orgs_GetUserMemberships_FullMethodName
@@ -219,7 +258,9 @@ func (s *postproxyOrgsClient) GetUserMemberships(ctx context.Context, req *empty
 	return &res, nil
 }
 
-// GetMembers returns list of membership info for the org by org ID
+// GetMembers returns memberships and invites of the org selected in the
+// token. With ProjectID only the project's grants are returned; with
+// Scope Org only the org-wide grants are returned.
 func (s *proxyOrgsServer) GetMembers(ctx context.Context, req *pb.GetMembersRequest, opts ...grpc.CallOption) (*pb.MembersResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -230,7 +271,9 @@ func (s *proxyOrgsServer) GetMembers(ctx context.Context, req *pb.GetMembersRequ
 	return res, nil
 }
 
-// GetMembers returns list of membership info for the org by org ID
+// GetMembers returns memberships and invites of the org selected in the
+// token. With ProjectID only the project's grants are returned; with
+// Scope Org only the org-wide grants are returned.
 func (s *proxyOrgsClient) GetMembers(ctx context.Context, req *pb.GetMembersRequest) (*pb.MembersResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -241,7 +284,9 @@ func (s *proxyOrgsClient) GetMembers(ctx context.Context, req *pb.GetMembersRequ
 	return res, nil
 }
 
-// GetMembers returns list of membership info for the org by org ID
+// GetMembers returns memberships and invites of the org selected in the
+// token. With ProjectID only the project's grants are returned; with
+// Scope Org only the org-wide grants are returned.
 func (s *postproxyOrgsClient) GetMembers(ctx context.Context, req *pb.GetMembersRequest) (*pb.MembersResponse, error) {
 	var res pb.MembersResponse
 	path := pb.Orgs_GetMembers_FullMethodName
@@ -252,7 +297,8 @@ func (s *postproxyOrgsClient) GetMembers(ctx context.Context, req *pb.GetMembers
 	return &res, nil
 }
 
-// AddMember adds a user to Org
+// AddMember grants a role to a user at org scope (empty ProjectID) or in
+// a project. If the user does not exist yet, an invite is created.
 func (s *proxyOrgsServer) AddMember(ctx context.Context, req *pb.AddMemberRequest, opts ...grpc.CallOption) (*pb.AddMemberResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -263,7 +309,8 @@ func (s *proxyOrgsServer) AddMember(ctx context.Context, req *pb.AddMemberReques
 	return res, nil
 }
 
-// AddMember adds a user to Org
+// AddMember grants a role to a user at org scope (empty ProjectID) or in
+// a project. If the user does not exist yet, an invite is created.
 func (s *proxyOrgsClient) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.AddMemberResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -274,7 +321,8 @@ func (s *proxyOrgsClient) AddMember(ctx context.Context, req *pb.AddMemberReques
 	return res, nil
 }
 
-// AddMember adds a user to Org
+// AddMember grants a role to a user at org scope (empty ProjectID) or in
+// a project. If the user does not exist yet, an invite is created.
 func (s *postproxyOrgsClient) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.AddMemberResponse, error) {
 	var res pb.AddMemberResponse
 	path := pb.Orgs_AddMember_FullMethodName
@@ -285,7 +333,7 @@ func (s *postproxyOrgsClient) AddMember(ctx context.Context, req *pb.AddMemberRe
 	return &res, nil
 }
 
-// ChangeMemberRole changes user role
+// ChangeMemberRole changes the role of an existing grant at the given scope
 func (s *proxyOrgsServer) ChangeMemberRole(ctx context.Context, req *pb.ChangeMemberRoleRequest, opts ...grpc.CallOption) (*pb.Membership, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -296,7 +344,7 @@ func (s *proxyOrgsServer) ChangeMemberRole(ctx context.Context, req *pb.ChangeMe
 	return res, nil
 }
 
-// ChangeMemberRole changes user role
+// ChangeMemberRole changes the role of an existing grant at the given scope
 func (s *proxyOrgsClient) ChangeMemberRole(ctx context.Context, req *pb.ChangeMemberRoleRequest) (*pb.Membership, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -307,7 +355,7 @@ func (s *proxyOrgsClient) ChangeMemberRole(ctx context.Context, req *pb.ChangeMe
 	return res, nil
 }
 
-// ChangeMemberRole changes user role
+// ChangeMemberRole changes the role of an existing grant at the given scope
 func (s *postproxyOrgsClient) ChangeMemberRole(ctx context.Context, req *pb.ChangeMemberRoleRequest) (*pb.Membership, error) {
 	var res pb.Membership
 	path := pb.Orgs_ChangeMemberRole_FullMethodName
@@ -318,7 +366,7 @@ func (s *postproxyOrgsClient) ChangeMemberRole(ctx context.Context, req *pb.Chan
 	return &res, nil
 }
 
-// DeleteMember removes user from the project
+// DeleteMember removes the grant at the given scope
 func (s *proxyOrgsServer) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -329,7 +377,7 @@ func (s *proxyOrgsServer) DeleteMember(ctx context.Context, req *pb.DeleteMember
 	return res, nil
 }
 
-// DeleteMember removes user from the project
+// DeleteMember removes the grant at the given scope
 func (s *proxyOrgsClient) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest) (*emptypb.Empty, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -340,7 +388,7 @@ func (s *proxyOrgsClient) DeleteMember(ctx context.Context, req *pb.DeleteMember
 	return res, nil
 }
 
-// DeleteMember removes user from the project
+// DeleteMember removes the grant at the given scope
 func (s *postproxyOrgsClient) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest) (*emptypb.Empty, error) {
 	var res emptypb.Empty
 	path := pb.Orgs_DeleteMember_FullMethodName
@@ -351,7 +399,7 @@ func (s *postproxyOrgsClient) DeleteMember(ctx context.Context, req *pb.DeleteMe
 	return &res, nil
 }
 
-// DeleteInvite removes user invite
+// DeleteInvite removes the invite at the given scope
 func (s *proxyOrgsServer) DeleteInvite(ctx context.Context, req *pb.DeleteInviteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -362,7 +410,7 @@ func (s *proxyOrgsServer) DeleteInvite(ctx context.Context, req *pb.DeleteInvite
 	return res, nil
 }
 
-// DeleteInvite removes user invite
+// DeleteInvite removes the invite at the given scope
 func (s *proxyOrgsClient) DeleteInvite(ctx context.Context, req *pb.DeleteInviteRequest) (*emptypb.Empty, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -373,10 +421,280 @@ func (s *proxyOrgsClient) DeleteInvite(ctx context.Context, req *pb.DeleteInvite
 	return res, nil
 }
 
-// DeleteInvite removes user invite
+// DeleteInvite removes the invite at the given scope
 func (s *postproxyOrgsClient) DeleteInvite(ctx context.Context, req *pb.DeleteInviteRequest) (*emptypb.Empty, error) {
 	var res emptypb.Empty
 	path := pb.Orgs_DeleteInvite_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// RegisterProject creates a project in the org selected in the token
+func (s *proxyOrgsServer) RegisterProject(ctx context.Context, req *pb.RegisterProjectRequest, opts ...grpc.CallOption) (*pb.Project, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.RegisterProject(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// RegisterProject creates a project in the org selected in the token
+func (s *proxyOrgsClient) RegisterProject(ctx context.Context, req *pb.RegisterProjectRequest) (*pb.Project, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.RegisterProject(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// RegisterProject creates a project in the org selected in the token
+func (s *postproxyOrgsClient) RegisterProject(ctx context.Context, req *pb.RegisterProjectRequest) (*pb.Project, error) {
+	var res pb.Project
+	path := pb.Orgs_RegisterProject_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// UpdateProject updates a project
+func (s *proxyOrgsServer) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest, opts ...grpc.CallOption) (*pb.Project, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.UpdateProject(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// UpdateProject updates a project
+func (s *proxyOrgsClient) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.Project, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.UpdateProject(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// UpdateProject updates a project
+func (s *postproxyOrgsClient) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.Project, error) {
+	var res pb.Project
+	path := pb.Orgs_UpdateProject_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// GetProject returns a project by ID or alias
+func (s *proxyOrgsServer) GetProject(ctx context.Context, req *pb.GetProjectRequest, opts ...grpc.CallOption) (*pb.Project, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetProject(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetProject returns a project by ID or alias
+func (s *proxyOrgsClient) GetProject(ctx context.Context, req *pb.GetProjectRequest) (*pb.Project, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetProject(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetProject returns a project by ID or alias
+func (s *postproxyOrgsClient) GetProject(ctx context.Context, req *pb.GetProjectRequest) (*pb.Project, error) {
+	var res pb.Project
+	path := pb.Orgs_GetProject_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListProjects returns the projects of the org selected in the token that
+// the caller can access
+func (s *proxyOrgsServer) ListProjects(ctx context.Context, req *pb.ListProjectsRequest, opts ...grpc.CallOption) (*pb.ProjectsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListProjects(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListProjects returns the projects of the org selected in the token that
+// the caller can access
+func (s *proxyOrgsClient) ListProjects(ctx context.Context, req *pb.ListProjectsRequest) (*pb.ProjectsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListProjects(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListProjects returns the projects of the org selected in the token that
+// the caller can access
+func (s *postproxyOrgsClient) ListProjects(ctx context.Context, req *pb.ListProjectsRequest) (*pb.ProjectsResponse, error) {
+	var res pb.ProjectsResponse
+	path := pb.Orgs_ListProjects_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// DeleteProject deactivates a project. Records owned by the project are
+// kept.
+func (s *proxyOrgsServer) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest, opts ...grpc.CallOption) (*pb.Project, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.DeleteProject(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// DeleteProject deactivates a project. Records owned by the project are
+// kept.
+func (s *proxyOrgsClient) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.Project, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.DeleteProject(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// DeleteProject deactivates a project. Records owned by the project are
+// kept.
+func (s *postproxyOrgsClient) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.Project, error) {
+	var res pb.Project
+	path := pb.Orgs_DeleteProject_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// CreateAPIKey creates a new API key
+func (s *proxyOrgsServer) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest, opts ...grpc.CallOption) (*pb.APIKey, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.CreateAPIKey(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// CreateAPIKey creates a new API key
+func (s *proxyOrgsClient) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest) (*pb.APIKey, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.CreateAPIKey(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// CreateAPIKey creates a new API key
+func (s *postproxyOrgsClient) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest) (*pb.APIKey, error) {
+	var res pb.APIKey
+	path := pb.Orgs_CreateAPIKey_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListAPIKeys lists the API keys of the org selected in the token
+func (s *proxyOrgsServer) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest, opts ...grpc.CallOption) (*pb.APIKeysResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListAPIKeys(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListAPIKeys lists the API keys of the org selected in the token
+func (s *proxyOrgsClient) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*pb.APIKeysResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListAPIKeys(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListAPIKeys lists the API keys of the org selected in the token
+func (s *postproxyOrgsClient) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*pb.APIKeysResponse, error) {
+	var res pb.APIKeysResponse
+	path := pb.Orgs_ListAPIKeys_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// DeleteAPIKey deletes an API key
+func (s *proxyOrgsServer) DeleteAPIKey(ctx context.Context, req *pb.APIKeyRequest, opts ...grpc.CallOption) (*pb.RecordsResult, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.DeleteAPIKey(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// DeleteAPIKey deletes an API key
+func (s *proxyOrgsClient) DeleteAPIKey(ctx context.Context, req *pb.APIKeyRequest) (*pb.RecordsResult, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.DeleteAPIKey(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// DeleteAPIKey deletes an API key
+func (s *postproxyOrgsClient) DeleteAPIKey(ctx context.Context, req *pb.APIKeyRequest) (*pb.RecordsResult, error) {
+	var res pb.RecordsResult
+	path := pb.Orgs_DeleteAPIKey_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
 	if err != nil {
 		return nil, err

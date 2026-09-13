@@ -17,27 +17,54 @@ import (
 
 var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca/internal", "authctx")
 
+// Token claims set by the auth service
+const (
+	// ClaimOrg is the selected org ID (the tenant claim)
+	ClaimOrg = "org"
+	// ClaimOrgRole is the resolved org role: the explicit org-wide role,
+	// or Viewer derived from project grants. It is informational; permissions
+	// are always resolved from the grants in the DB.
+	ClaimOrgRole = "org_role"
+	// ClaimOrgRoleSource is "direct" for an explicit org-wide grant or
+	// "project" for a derived Viewer classification
+	ClaimOrgRoleSource = "org_role_source"
+)
+
 // TrustyCtx provides trustyca context
 type TrustyCtx interface {
+	// OrgID returns the org selected in the token, zero if none
+	OrgID() xdb.ID
 	UserID() xdb.ID
 	Name() string
 	Email() string
+	// OrgRole returns the resolved role in the selected org from the token
+	// (viewer, user, admin, owner), or APIKey for an API key token.
+	// Permissions of users are resolved from grants; API keys are checked
+	// against Scopes.
+	OrgRole() pb.Role_Enum
+	// ProjectID returns the project an API key is restricted to, zero if none
+	ProjectID() xdb.ID
+	// Scopes returns the scopes granted to an API key or a scoped token
+	Scopes() []string
+	// IsAPIKey returns true for an API key token
+	IsAPIKey() bool
 	// AppRole returns current user role in App service from the token context (trusty-admin, user, guest)
 	AppRole() string
 	// Target of the request, e.g. HTTP path or gRPC method
 	Target() string
 	UserAgent() string
 	AuthMethod() identity.AuthMethod
-	// Memberships returns current user project memberships from the token context
-	Memberships() map[string]pb.Role_Enum
 }
 
 type trustycactx struct {
 	userID     xdb.ID
 	userName   string
 	userEmail  string
-	orgs       map[string]pb.Role_Enum
-	role       string
+	orgID      xdb.ID
+	orgRole    pb.Role_Enum
+	projectID  xdb.ID
+	scopes     []string
+	appRole    string
 	userAgent  string
 	target     string
 	authMethod identity.AuthMethod
@@ -49,7 +76,11 @@ type trustycaCtxState struct {
 	UserID     xdb.ID              `json:"user_id"`
 	Name       string              `json:"user_name"`
 	Email      string              `json:"user_email"`
-	AppRole    string              `json:"role"`
+	OrgID      xdb.ID              `json:"org_id"`
+	OrgRole    pb.Role_Enum        `json:"org_role"`
+	ProjectID  xdb.ID              `json:"project_id,omitempty"`
+	Scopes     []string            `json:"scopes,omitempty"`
+	AppRole    string              `json:"app_role"`
 	Target     string              `json:"target"`
 	UserAgent  string              `json:"ua"`
 	AuthMethod identity.AuthMethod `json:"auth_method"`
@@ -58,6 +89,11 @@ type trustycaCtxState struct {
 // UserID returns current user ID from the token context
 func (s *trustycactx) UserID() xdb.ID {
 	return s.userID
+}
+
+// OrgID returns current Org ID from the token context
+func (s *trustycactx) OrgID() xdb.ID {
+	return s.orgID
 }
 
 // Name returns current user Name from the token context
@@ -71,23 +107,38 @@ func (s *trustycactx) Email() string {
 }
 
 // Target returns request's target
-func (c *trustycactx) Target() string {
-	return c.target
+func (s *trustycactx) Target() string {
+	return s.target
 }
 
 // UserAgent returns request's user agent
-func (c *trustycactx) UserAgent() string {
-	return c.userAgent
+func (s *trustycactx) UserAgent() string {
+	return s.userAgent
 }
 
-// Memberships returns current user project memberships from the token context
-func (s *trustycactx) Memberships() map[string]pb.Role_Enum {
-	return s.orgs
+// OrgRole returns current user Org role from the token context
+func (s *trustycactx) OrgRole() pb.Role_Enum {
+	return s.orgRole
+}
+
+// ProjectID returns the project an API key is restricted to
+func (s *trustycactx) ProjectID() xdb.ID {
+	return s.projectID
+}
+
+// Scopes returns the scopes granted to an API key or a scoped token
+func (s *trustycactx) Scopes() []string {
+	return s.scopes
+}
+
+// IsAPIKey returns true for an API key token
+func (s *trustycactx) IsAPIKey() bool {
+	return s.orgRole == pb.Role_APIKey
 }
 
 // AppRole returns current user role in App service from the token context
 func (s *trustycactx) AppRole() string {
-	return s.role
+	return s.appRole
 }
 
 // AuthMethod returns current authentication method
@@ -134,8 +185,9 @@ func FromRequest(r *http.Request) TrustyCtx {
 func NewTrustyCtx(ctx context.Context, idnCtx identity.Context) context.Context {
 	idn := idnCtx.Identity()
 	role := idn.Role()
+	orgID := idn.Tenant()
 	rctx := &trustycactx{
-		role:       role,
+		appRole:    role,
 		authMethod: idn.AuthMethod(),
 		target:     idnCtx.Target(),
 		userAgent:  idnCtx.UserAgent(),
@@ -143,6 +195,8 @@ func NewTrustyCtx(ctx context.Context, idnCtx identity.Context) context.Context 
 
 	if !strings.EqualFold(role, "guest") {
 		_ = rctx.userID.Set(idn.Subject())
+		_ = rctx.orgID.Set(orgID)
+
 		claims := idn.Claims()
 
 		var jwtclaims jwt.Claims
@@ -152,22 +206,33 @@ func NewTrustyCtx(ctx context.Context, idnCtx identity.Context) context.Context 
 			rctx.userEmail = jwtclaims.Email
 		}
 
-		if orgs := claims.StringsMap("orgs"); orgs != nil {
-			rctx.orgs = map[string]pb.Role_Enum{}
-			for id, role := range orgs {
-				rctx.orgs[id] = RoleEnumValue[role]
-			}
-			logger.ContextKV(ctx, xlog.DEBUG, "status", "authenticated")
+		// the token carries the selected org and the resolved org role for
+		// display; permissions are always resolved from the grants in the DB
+		roleClaim := claims.String(ClaimOrgRole)
+		rctx.orgRole = ParseRole(roleClaim)
+		rctx.scopes = claims.Strings(ClaimScope)
+		_ = rctx.projectID.Set(claims.String(ClaimProject))
+		// NOTE: tenant, subject and app role already added by identity handler
+		if rctx.orgRole != pb.Role_None {
+			ctx = xlog.ContextWithKV(ctx, "org_role", roleClaim)
 		}
+		logger.ContextKV(ctx, xlog.DEBUG,
+			"status", "authenticated",
+			"org_id", orgID,
+		)
 	}
 
 	ctx = context.WithValue(ctx, keyContext, rctx)
 	// Add state to the context
 	beState := &trustycaCtxState{
 		UserID:     rctx.userID,
+		OrgID:      rctx.orgID,
 		Name:       rctx.userName,
 		Email:      rctx.userEmail,
-		AppRole:    rctx.role,
+		AppRole:    rctx.appRole,
+		OrgRole:    rctx.orgRole,
+		ProjectID:  rctx.projectID,
+		Scopes:     rctx.scopes,
 		Target:     rctx.target,
 		UserAgent:  rctx.userAgent,
 		AuthMethod: rctx.authMethod,
@@ -192,17 +257,12 @@ func NewAuthUnaryBackendInterceptor() grpc.UnaryServerInterceptor {
 			var ss trustycaCtxState
 			err := json.Unmarshal([]byte(md[trustycaContextGRPCHeaderName][0]), &ss)
 			if err == nil {
-				// if !strings.HasPrefix(ss.TrustyRole, "trustyca") {
-				// 	logger.ContextKV(ctx, xlog.WARNING,
-				// 		"reason", "trusty_context_not_valid",
-				// 		"email", ss.Email,
-				// 		"role", TrustyRole,
-				// 	)
-				// 	// TODO check access to Backend
-				// 	// return nil, errors.New("trusty context is not valid")
-				// }
 				rctx := &trustycactx{
-					role:       ss.AppRole,
+					appRole:    ss.AppRole,
+					orgID:      ss.OrgID,
+					orgRole:    ss.OrgRole,
+					projectID:  ss.ProjectID,
+					scopes:     ss.Scopes,
 					userID:     ss.UserID,
 					userName:   ss.Name,
 					userEmail:  ss.Email,
@@ -222,17 +282,4 @@ func NewAuthUnaryBackendInterceptor() grpc.UnaryServerInterceptor {
 		}
 		return handler(ctx, req)
 	}
-}
-
-// FindCallerRole returns the role of the current user for the given org ID
-func FindCallerRole(ctx TrustyCtx, orgID string) pb.Role_Enum {
-	orgs := ctx.Memberships()
-	if len(orgs) == 0 {
-		return pb.Role_None
-	}
-	role, ok := orgs[orgID]
-	if !ok {
-		return pb.Role_None
-	}
-	return role
 }

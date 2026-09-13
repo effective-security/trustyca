@@ -127,25 +127,25 @@ After making the change rerun the build.
 ---
 clients:
   local_wfe:
-    host: https://localhost:7880
+    host: https://localhost:8880
     tls:
-      trusted_ca: /tmp/trustyca/certs/trusty_root_ca.pem
+      trusted_ca: ~/.trustyca/certs/trusty_root_ca.pem
     request:
       retry_limit: 3
       timeout: 6s
-    storage_folder: ~/.config/trustyca
+    storage_folder: ~/.trustyca
   remote_wfe_dev:
     host: https://wfe.dev.trustyca.io
     request:
       retry_limit: 3
       timeout: 6s
-    storage_folder: ~/.config/trustyca
+    storage_folder: ~/.trustyca
   remote_wfe_prod:
     host: https://wfe.prod.trustyca.io
     request:
       retry_limit: 3
       timeout: 6s
-    storage_folder: ~/.config/trustyca
+    storage_folder: ~/.trustyca
 ```
 
 ## Stripe
@@ -162,5 +162,5 @@ To install the Stripe CLI on Linux without a package manager:
 Login
 
 stripe login --api-key $TRUSTYCA_STRIPE_API_KEY
-stripe listen --skip-verify --forward-to https://localhost:7880/v1/webhooks/stripe
+stripe listen --skip-verify --forward-to https://localhost:8880/v1/webhooks/stripe
 export TRUSTYCA_STRIPE_WEBHOOK_SECRET=c1..aw

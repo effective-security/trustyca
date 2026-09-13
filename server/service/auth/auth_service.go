@@ -38,13 +38,13 @@ type Service struct {
 	//Emailer   emailer.Provider
 
 	//	clientFactory      backendclient.Factory
-	roleChecker   authctx.RoleChecker
-	server        gserver.GServer
-	cfg           *config.Configuration
-	dp            dataprotection.Provider
-	db            db.OrgsDb
-	cache         cache.Provider
-	oauthProvider *oauth2client.Provider
+	authorizer     authctx.Authorizer
+	server         gserver.GServer
+	cfg            *config.Configuration
+	dataprotection dataprotection.Provider
+	db             db.OrgsDb
+	cache          cache.Provider
+	oauthProvider  *oauth2client.Provider
 
 	allowedEmailsCache *expirable.LRU[string, *oauth2client.Client] // email -> *oauth2client.Client, or nil if not allowed
 }
@@ -62,20 +62,20 @@ func Factory(server gserver.GServer) any {
 		dp dataprotection.Provider,
 		trustycaDb db.OrgsDb,
 		cache cache.Provider,
-		roleChecker authctx.RoleChecker,
+		authorizer authctx.Authorizer,
 		//clientFactory backendclient.Factory,
 		//emailer emailer.Provider,
 	) error {
 		svc := &Service{
-			server:        server,
-			cfg:           cfg,
-			oauthProvider: oauthProvider,
-			JwtParser:     jwtParser,
-			JwtSigner:     jwtSigner,
-			dp:            dp,
-			db:            trustycaDb,
-			cache:         cache,
-			roleChecker:   roleChecker,
+			server:         server,
+			cfg:            cfg,
+			oauthProvider:  oauthProvider,
+			JwtParser:      jwtParser,
+			JwtSigner:      jwtSigner,
+			dataprotection: dp,
+			db:             trustycaDb,
+			cache:          cache,
+			authorizer:     authorizer,
 
 			allowedEmailsCache: expirable.NewLRU[string, *oauth2client.Client](100, nil, 5*time.Minute),
 		}
@@ -107,7 +107,7 @@ func (s *Service) Close() {
 }
 
 func (s *Service) checkRoleForAction(ctx context.Context, req any, action string) error {
-	return authctx.CheckAccess(ctx, s.roleChecker, req, action)
+	return authctx.CheckAccess(ctx, s.authorizer, req, action)
 }
 
 func (s *Service) AuthHTTPHandler() restserver.Handle {
@@ -140,11 +140,8 @@ func (s *Service) RegisterRoute(r restserver.Router) {
 	r.GET(pb.Auth_RevokeToken_FullMethodName, s.RevokeTokenHandler())
 	r.DELETE(pb.Auth_RevokeToken_FullMethodName, s.RevokeTokenHandler())
 
-	// // Add only GET, as POST is handled by HTTP proxy
-	// r.GET(pb.Auth_AuthenticateAPIKey_FullMethodName, s.AuthenticateAPIKeyHandler())
-	// // add custom REST path: /v1/auth/authenticateapikey
-	// r.GET(pb.PathForAuthenticateAPIKey, s.AuthenticateAPIKeyHandler())
-	// r.POST(pb.PathForAuthenticateAPIKey, s.AuthenticateAPIKeyHandler())
+	// GET reads the API key headers; POST goes through the HTTP proxy
+	r.GET(pb.Auth_AuthenticateAPIKey_FullMethodName, s.AuthenticateAPIKeyHandler())
 
 	r.DELETE(pb.PathForRemoveCookie, s.RemoveCookieHandler())
 }
@@ -156,12 +153,12 @@ func (s *Service) RegisterGRPC(r *grpc.Server) {
 
 // Protect returns encrypted value in base64url encoded format
 func (s *Service) Protect(ctx context.Context, v any) (string, error) {
-	return dataprotection.ProtectObject(ctx, s.dp, v)
+	return dataprotection.ProtectObject(ctx, s.dataprotection, v)
 }
 
 // Unprotect decrypts and unmarshals protected string to a struct
 func (s *Service) Unprotect(ctx context.Context, protected string, v any) error {
-	return dataprotection.UnprotectObject(ctx, s.dp, protected, v)
+	return dataprotection.UnprotectObject(ctx, s.dataprotection, protected, v)
 }
 
 // Db returns OrgsDb for unit tests

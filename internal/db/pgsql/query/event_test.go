@@ -19,8 +19,8 @@ func Test_EventsQuery(t *testing.T) {
 		{
 			query.CreateEvent, nil,
 			`INSERT INTO trustyca.event 
-( id, org_id, type, title, description, metadata, ref_id, email, source, created_at 
-) VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, Now() 
+( id, org_id, project_id, type, title, description, metadata, ref_id, email, source, created_at 
+) VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, Now() 
 ) 
 RETURNING ` + schema.EventTableInfo.AllColumns(),
 		},

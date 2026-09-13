@@ -107,7 +107,7 @@ func TestLoginHandler(t *testing.T) {
 			"token":      {"178263549812635496125349"},
 			"expires_in": {"3600"},
 		}
-		state.doneURL = "https://localhost:7880/authenticated"
+		state.doneURL = "https://localhost:8880/authenticated"
 		t.Cleanup(func() { state.doneURL = "" })
 
 		w := httptest.NewRecorder()
@@ -121,7 +121,7 @@ func TestLoginHandler(t *testing.T) {
 		state.wg.Wait()
 
 		assert.Equal(t, http.StatusSeeOther, w.Code)
-		assert.Equal(t, "https://localhost:7880/authenticated", w.Header().Get("Location"))
+		assert.Equal(t, "https://localhost:8880/authenticated", w.Header().Get("Location"))
 		assert.True(t, w.Flushed)
 	})
 
@@ -156,18 +156,18 @@ func TestLoginPageURL(t *testing.T) {
 		"response_type": {"code"},
 	}
 	assert.Equal(t,
-		"https://localhost:7880/login?redirect_uri=http%3A%2F%2Flocalhost%3A38987%2Flogin&response_type=code",
-		loginPageURL("https://localhost:7880", q))
+		"https://localhost:8880/login?redirect_uri=http%3A%2F%2Flocalhost%3A38987%2Flogin&response_type=code",
+		loginPageURL("https://localhost:8880", q))
 }
 
 // func TestCheckoutPageURL(t *testing.T) {
 // 	t.Parallel()
 
 // 	assert.Equal(t,
-// 		"https://localhost:7880/payment#checkout_client_secret=pi_123_secret_abc",
-// 		checkoutPageURL("https://localhost:7880", "pi_123_secret_abc"))
+// 		"https://localhost:8880/payment#checkout_client_secret=pi_123_secret_abc",
+// 		checkoutPageURL("https://localhost:8880", "pi_123_secret_abc"))
 // 	// the secret is escaped so it survives as a single fragment parameter
 // 	assert.Equal(t,
-// 		"https://localhost:7880/payment#checkout_client_secret=a%26b%3Dc",
-// 		checkoutPageURL("https://localhost:7880", "a&b=c"))
+// 		"https://localhost:8880/payment#checkout_client_secret=a%26b%3Dc",
+// 		checkoutPageURL("https://localhost:8880", "a&b=c"))
 // }

@@ -54,6 +54,18 @@ func GetAuthHTTPHandler(s pb.AuthServer, withAccessCheck pb.CheckAccessFunc) res
 		case pb.Auth_ExchangeCode_FullMethodName:
 			res, err = s.ExchangeCode(ctx, req.(*pb.ExchangeCodeRequest))
 
+		case pb.Auth_SelectOrg_FullMethodName:
+			res, err = s.SelectOrg(ctx, req.(*pb.SelectOrgRequest))
+
+		case pb.Auth_AuthenticateAPIKey_FullMethodName:
+			res, err = s.AuthenticateAPIKey(ctx, req.(*emptypb.Empty))
+
+		case pb.Auth_GetAllowedMethods_FullMethodName:
+			res, err = s.GetAllowedMethods(ctx, req.(*emptypb.Empty))
+
+		case pb.Auth_GetCallerScope_FullMethodName:
+			res, err = s.GetCallerScope(ctx, req.(*emptypb.Empty))
+
 		default:
 			err = httperror.Malformed("invalid action: %s", action)
 		}

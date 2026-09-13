@@ -19,6 +19,7 @@ func CreateEvent(args ...any) (string, string) {
 		q.NewRow().
 			Set(schema.Event.ID.Name, nil).
 			Set(schema.Event.OrgID.Name, nil).
+			Set(schema.Event.ProjectID.Name, nil).
 			Set(schema.Event.Type.Name, nil).
 			Set(schema.Event.Title.Name, nil).
 			Set(schema.Event.Description.Name, nil).
@@ -37,6 +38,8 @@ func CreateEvent(args ...any) (string, string) {
 type ListEventsRequest struct {
 	// OrgID specifies the org
 	OrgID uint64
+	// ProjectID specifies the project
+	ProjectID uint64
 	// After specifies the inclusive start of the created_at range
 	After *time.Time
 	// Before specifies the exclusive end of the created_at range
@@ -95,6 +98,9 @@ func (r *ListEventsRequest) QueryParams() xdb.QueryParams {
 	if r.OrgID > 0 {
 		b.Set(schema.Event.OrgID.Position, r.OrgID)
 	}
+	if r.ProjectID > 0 {
+		b.Set(schema.Event.ProjectID.Position, r.ProjectID)
+	}
 	if r.Type != pb.EventType_Unknown {
 		b.Set(schema.Event.Type.Position, r.Type)
 	}
@@ -138,6 +144,9 @@ func ListEvents(args ...any) (string, string) {
 
 		if p.IsSet(schema.Event.OrgID.Position) {
 			q.Where("org_id = ?", nil)
+		}
+		if p.IsSet(schema.Event.ProjectID.Position) {
+			q.Where("project_id = ?", nil)
 		}
 		if p.IsSet(schema.Event.Type.Position) {
 			q.Where("type = ?", nil)

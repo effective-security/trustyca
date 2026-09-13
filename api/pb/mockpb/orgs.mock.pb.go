@@ -49,7 +49,7 @@ func (m *MockOrgsServer) next() proto.Message {
 	return m.Resps[idx]
 }
 
-// RegisterOrg registers a new org
+// RegisterOrg registers a new org. The caller becomes its Owner.
 
 func (m *MockOrgsServer) RegisterOrg(ctx context.Context, req *pb.RegisterOrgRequest) (*pb.Org, error) {
 	if m.Err != nil {
@@ -58,7 +58,16 @@ func (m *MockOrgsServer) RegisterOrg(ctx context.Context, req *pb.RegisterOrgReq
 	return m.next().(*pb.Org), nil
 }
 
-// UpdateOrg updates an org
+// GetOrg returns the org selected in the token
+
+func (m *MockOrgsServer) GetOrg(ctx context.Context, req *emptypb.Empty) (*pb.Org, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.Org), nil
+}
+
+// UpdateOrg updates the org selected in the token
 
 func (m *MockOrgsServer) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRequest) (*pb.Org, error) {
 	if m.Err != nil {
@@ -67,25 +76,27 @@ func (m *MockOrgsServer) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRequest
 	return m.next().(*pb.Org), nil
 }
 
-// GetOrg returns an org by ID
+// DeleteOrg deactivates the org selected in the token
 
-func (m *MockOrgsServer) GetOrg(ctx context.Context, req *pb.GetOrgRequest) (*pb.Org, error) {
+func (m *MockOrgsServer) DeleteOrg(ctx context.Context, req *emptypb.Empty) (*pb.Org, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	return m.next().(*pb.Org), nil
 }
 
-// DeleteProject deletes a project
+// GetUserOrgs returns the orgs the caller can select, each once, with the
+// resolved org role. Available before an org is selected.
 
-func (m *MockOrgsServer) DeleteOrg(ctx context.Context, req *pb.DeleteOrgRequest) (*pb.Org, error) {
+func (m *MockOrgsServer) GetUserOrgs(ctx context.Context, req *emptypb.Empty) (*pb.UserOrgsResponse, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
-	return m.next().(*pb.Org), nil
+	return m.next().(*pb.UserOrgsResponse), nil
 }
 
-// GetUserMemberships returns list of calling user orgs
+// GetUserMemberships returns the caller's resolved access to the org
+// selected in the token and the caller's explicit grants in that org
 
 func (m *MockOrgsServer) GetUserMemberships(ctx context.Context, req *emptypb.Empty) (*pb.UserMemberships, error) {
 	if m.Err != nil {
@@ -94,7 +105,9 @@ func (m *MockOrgsServer) GetUserMemberships(ctx context.Context, req *emptypb.Em
 	return m.next().(*pb.UserMemberships), nil
 }
 
-// GetMembers returns list of membership info for the org by org ID
+// GetMembers returns memberships and invites of the org selected in the
+// token. With ProjectID only the project's grants are returned; with
+// Scope Org only the org-wide grants are returned.
 
 func (m *MockOrgsServer) GetMembers(ctx context.Context, req *pb.GetMembersRequest) (*pb.MembersResponse, error) {
 	if m.Err != nil {
@@ -103,7 +116,8 @@ func (m *MockOrgsServer) GetMembers(ctx context.Context, req *pb.GetMembersReque
 	return m.next().(*pb.MembersResponse), nil
 }
 
-// AddMember adds a user to Org
+// AddMember grants a role to a user at org scope (empty ProjectID) or in
+// a project. If the user does not exist yet, an invite is created.
 
 func (m *MockOrgsServer) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.AddMemberResponse, error) {
 	if m.Err != nil {
@@ -112,7 +126,7 @@ func (m *MockOrgsServer) AddMember(ctx context.Context, req *pb.AddMemberRequest
 	return m.next().(*pb.AddMemberResponse), nil
 }
 
-// ChangeMemberRole changes user role
+// ChangeMemberRole changes the role of an existing grant at the given scope
 
 func (m *MockOrgsServer) ChangeMemberRole(ctx context.Context, req *pb.ChangeMemberRoleRequest) (*pb.Membership, error) {
 	if m.Err != nil {
@@ -121,7 +135,7 @@ func (m *MockOrgsServer) ChangeMemberRole(ctx context.Context, req *pb.ChangeMem
 	return m.next().(*pb.Membership), nil
 }
 
-// DeleteMember removes user from the project
+// DeleteMember removes the grant at the given scope
 
 func (m *MockOrgsServer) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest) (*emptypb.Empty, error) {
 	if m.Err != nil {
@@ -130,11 +144,85 @@ func (m *MockOrgsServer) DeleteMember(ctx context.Context, req *pb.DeleteMemberR
 	return m.next().(*emptypb.Empty), nil
 }
 
-// DeleteInvite removes user invite
+// DeleteInvite removes the invite at the given scope
 
 func (m *MockOrgsServer) DeleteInvite(ctx context.Context, req *pb.DeleteInviteRequest) (*emptypb.Empty, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	return m.next().(*emptypb.Empty), nil
+}
+
+// RegisterProject creates a project in the org selected in the token
+
+func (m *MockOrgsServer) RegisterProject(ctx context.Context, req *pb.RegisterProjectRequest) (*pb.Project, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.Project), nil
+}
+
+// UpdateProject updates a project
+
+func (m *MockOrgsServer) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.Project, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.Project), nil
+}
+
+// GetProject returns a project by ID or alias
+
+func (m *MockOrgsServer) GetProject(ctx context.Context, req *pb.GetProjectRequest) (*pb.Project, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.Project), nil
+}
+
+// ListProjects returns the projects of the org selected in the token that
+// the caller can access
+
+func (m *MockOrgsServer) ListProjects(ctx context.Context, req *pb.ListProjectsRequest) (*pb.ProjectsResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.ProjectsResponse), nil
+}
+
+// DeleteProject deactivates a project. Records owned by the project are
+// kept.
+
+func (m *MockOrgsServer) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.Project, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.Project), nil
+}
+
+// CreateAPIKey creates a new API key
+
+func (m *MockOrgsServer) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest) (*pb.APIKey, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.APIKey), nil
+}
+
+// ListAPIKeys lists the API keys of the org selected in the token
+
+func (m *MockOrgsServer) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*pb.APIKeysResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.APIKeysResponse), nil
+}
+
+// DeleteAPIKey deletes an API key
+
+func (m *MockOrgsServer) DeleteAPIKey(ctx context.Context, req *pb.APIKeyRequest) (*pb.RecordsResult, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.RecordsResult), nil
 }

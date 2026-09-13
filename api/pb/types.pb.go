@@ -82,60 +82,56 @@ func (ItemStatus_Enum) EnumDescriptor() ([]byte, []int) {
 	return file_types_proto_rawDescGZIP(), []int{4, 0}
 }
 
-// PermissionsScope defines virtual key scopes
-type PermissionsScope_Enum int32
+// Scope defines tenancy scopes
+type Scope_Enum int32
 
 const (
-	// None indicates that the permissions scope is none
-	PermissionsScope_None PermissionsScope_Enum = 0
-	// ReadOnly indicates that the permissions scope is read only
-	PermissionsScope_ReadOnly PermissionsScope_Enum = 1
-	// Restricted indicates that the permissions scope is restricted
-	PermissionsScope_Restricted PermissionsScope_Enum = 2
-	// All is the bitmask for all permissions scopes
-	PermissionsScope_All PermissionsScope_Enum = 2147483647
+	// Undefined indicates that the scope is undefined
+	Scope_Undefined Scope_Enum = 0
+	// Org indicates that the scope is org
+	Scope_Org Scope_Enum = 1
+	// Project indicates that the scope is project
+	Scope_Project Scope_Enum = 2
 )
 
-// Enum value maps for PermissionsScope_Enum.
+// Enum value maps for Scope_Enum.
 var (
-	PermissionsScope_Enum_name = map[int32]string{
-		0:          "None",
-		1:          "ReadOnly",
-		2:          "Restricted",
-		2147483647: "All",
+	Scope_Enum_name = map[int32]string{
+		0: "Undefined",
+		1: "Org",
+		2: "Project",
 	}
-	PermissionsScope_Enum_value = map[string]int32{
-		"None":       0,
-		"ReadOnly":   1,
-		"Restricted": 2,
-		"All":        2147483647,
+	Scope_Enum_value = map[string]int32{
+		"Undefined": 0,
+		"Org":       1,
+		"Project":   2,
 	}
 )
 
-func (x PermissionsScope_Enum) Enum() *PermissionsScope_Enum {
-	p := new(PermissionsScope_Enum)
+func (x Scope_Enum) Enum() *Scope_Enum {
+	p := new(Scope_Enum)
 	*p = x
 	return p
 }
 
-func (x PermissionsScope_Enum) String() string {
+func (x Scope_Enum) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (PermissionsScope_Enum) Descriptor() protoreflect.EnumDescriptor {
+func (Scope_Enum) Descriptor() protoreflect.EnumDescriptor {
 	return file_types_proto_enumTypes[1].Descriptor()
 }
 
-func (PermissionsScope_Enum) Type() protoreflect.EnumType {
+func (Scope_Enum) Type() protoreflect.EnumType {
 	return &file_types_proto_enumTypes[1]
 }
 
-func (x PermissionsScope_Enum) Number() protoreflect.EnumNumber {
+func (x Scope_Enum) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use PermissionsScope_Enum.Descriptor instead.
-func (PermissionsScope_Enum) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use Scope_Enum.Descriptor instead.
+func (Scope_Enum) EnumDescriptor() ([]byte, []int) {
 	return file_types_proto_rawDescGZIP(), []int{5, 0}
 }
 
@@ -163,31 +159,117 @@ const (
 	// OrgMemberAccepted indicates that an org member accepted an
 	// invitation
 	EventType_OrgMemberAccepted EventType_Enum = 8
+	// ProjectCreated indicates that a project was created
+	EventType_ProjectCreated EventType_Enum = 9
+	// ProjectUpdated indicates that a project was updated
+	EventType_ProjectUpdated EventType_Enum = 10
+	// ProjectDeleted indicates that a project was deleted
+	EventType_ProjectDeleted EventType_Enum = 11
+	// ProjectMemberAdded indicates that a project member was added
+	EventType_ProjectMemberAdded EventType_Enum = 12
+	// ProjectMemberRemoved indicates that a project member was removed
+	EventType_ProjectMemberRemoved EventType_Enum = 13
+	// ProjectMemberRoleChanged indicates that a project member role was
+	// changed
+	EventType_ProjectMemberRoleChanged EventType_Enum = 14
+	// ProjectMemberInvited indicates that a project member was invited
+	EventType_ProjectMemberInvited EventType_Enum = 15
+	// ProjectMemberAccepted indicates that a project member accepted an
+	// invitation
+	EventType_ProjectMemberAccepted EventType_Enum = 16
+	EventType_UserLogin             EventType_Enum = 20
+	EventType_TokenRevoked          EventType_Enum = 21
+	EventType_APIKeyCreated         EventType_Enum = 31
+	EventType_APIKeyDeleted         EventType_Enum = 32
+	EventType_APIKeyLogin           EventType_Enum = 33
+	// IssuerRegistered indicates that an issuer was registered or imported
+	EventType_IssuerRegistered EventType_Enum = 100
+	// IssuerActivated indicates that a Pending issuer was activated
+	EventType_IssuerActivated EventType_Enum = 101
+	// IssuerUpdated indicates that an issuer config or status changed
+	EventType_IssuerUpdated EventType_Enum = 102
+	// ProfileRegistered indicates that a certificate profile was created
+	// or replaced
+	EventType_ProfileRegistered EventType_Enum = 103
+	// ProfileDeleted indicates that a certificate profile was deleted
+	EventType_ProfileDeleted EventType_Enum = 104
+	// CertificateIssued indicates that a certificate was issued
+	EventType_CertificateIssued EventType_Enum = 105
+	// CertificateRevoked indicates that a certificate was revoked
+	EventType_CertificateRevoked EventType_Enum = 106
+	// CrlPublished indicates that a CRL was published
+	EventType_CrlPublished EventType_Enum = 107
+	// RootRegistered indicates that a trust anchor was registered
+	EventType_RootRegistered EventType_Enum = 108
 )
 
 // Enum value maps for EventType_Enum.
 var (
 	EventType_Enum_name = map[int32]string{
-		0: "Unknown",
-		1: "OrgCreated",
-		2: "OrgUpdated",
-		3: "OrgDeleted",
-		4: "OrgMemberAdded",
-		5: "OrgMemberRemoved",
-		6: "OrgMemberRoleChanged",
-		7: "OrgMemberInvited",
-		8: "OrgMemberAccepted",
+		0:   "Unknown",
+		1:   "OrgCreated",
+		2:   "OrgUpdated",
+		3:   "OrgDeleted",
+		4:   "OrgMemberAdded",
+		5:   "OrgMemberRemoved",
+		6:   "OrgMemberRoleChanged",
+		7:   "OrgMemberInvited",
+		8:   "OrgMemberAccepted",
+		9:   "ProjectCreated",
+		10:  "ProjectUpdated",
+		11:  "ProjectDeleted",
+		12:  "ProjectMemberAdded",
+		13:  "ProjectMemberRemoved",
+		14:  "ProjectMemberRoleChanged",
+		15:  "ProjectMemberInvited",
+		16:  "ProjectMemberAccepted",
+		20:  "UserLogin",
+		21:  "TokenRevoked",
+		31:  "APIKeyCreated",
+		32:  "APIKeyDeleted",
+		33:  "APIKeyLogin",
+		100: "IssuerRegistered",
+		101: "IssuerActivated",
+		102: "IssuerUpdated",
+		103: "ProfileRegistered",
+		104: "ProfileDeleted",
+		105: "CertificateIssued",
+		106: "CertificateRevoked",
+		107: "CrlPublished",
+		108: "RootRegistered",
 	}
 	EventType_Enum_value = map[string]int32{
-		"Unknown":              0,
-		"OrgCreated":           1,
-		"OrgUpdated":           2,
-		"OrgDeleted":           3,
-		"OrgMemberAdded":       4,
-		"OrgMemberRemoved":     5,
-		"OrgMemberRoleChanged": 6,
-		"OrgMemberInvited":     7,
-		"OrgMemberAccepted":    8,
+		"Unknown":                  0,
+		"OrgCreated":               1,
+		"OrgUpdated":               2,
+		"OrgDeleted":               3,
+		"OrgMemberAdded":           4,
+		"OrgMemberRemoved":         5,
+		"OrgMemberRoleChanged":     6,
+		"OrgMemberInvited":         7,
+		"OrgMemberAccepted":        8,
+		"ProjectCreated":           9,
+		"ProjectUpdated":           10,
+		"ProjectDeleted":           11,
+		"ProjectMemberAdded":       12,
+		"ProjectMemberRemoved":     13,
+		"ProjectMemberRoleChanged": 14,
+		"ProjectMemberInvited":     15,
+		"ProjectMemberAccepted":    16,
+		"UserLogin":                20,
+		"TokenRevoked":             21,
+		"APIKeyCreated":            31,
+		"APIKeyDeleted":            32,
+		"APIKeyLogin":              33,
+		"IssuerRegistered":         100,
+		"IssuerActivated":          101,
+		"IssuerUpdated":            102,
+		"ProfileRegistered":        103,
+		"ProfileDeleted":           104,
+		"CertificateIssued":        105,
+		"CertificateRevoked":       106,
+		"CrlPublished":             107,
+		"RootRegistered":           108,
 	}
 )
 
@@ -485,26 +567,26 @@ func (*ItemStatus) Descriptor() ([]byte, []int) {
 	return file_types_proto_rawDescGZIP(), []int{4}
 }
 
-type PermissionsScope struct {
+type Scope struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PermissionsScope) Reset() {
-	*x = PermissionsScope{}
+func (x *Scope) Reset() {
+	*x = Scope{}
 	mi := &file_types_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PermissionsScope) String() string {
+func (x *Scope) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PermissionsScope) ProtoMessage() {}
+func (*Scope) ProtoMessage() {}
 
-func (x *PermissionsScope) ProtoReflect() protoreflect.Message {
+func (x *Scope) ProtoReflect() protoreflect.Message {
 	mi := &file_types_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -516,8 +598,8 @@ func (x *PermissionsScope) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PermissionsScope.ProtoReflect.Descriptor instead.
-func (*PermissionsScope) Descriptor() ([]byte, []int) {
+// Deprecated: Use Scope.ProtoReflect.Descriptor instead.
+func (*Scope) Descriptor() ([]byte, []int) {
 	return file_types_proto_rawDescGZIP(), []int{5}
 }
 
@@ -576,7 +658,9 @@ type Event struct {
 	// Metadata is a list of internal metadata associated with the event
 	Metadata []*KVPair `protobuf:"bytes,9,rep,name=Metadata,proto3" json:"Metadata,omitempty"`
 	// CreatedAt is the timestamp of the event creation in RFC3339 format.
-	CreatedAt     string `protobuf:"bytes,10,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`
+	CreatedAt string `protobuf:"bytes,10,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`
+	// ProjectID is the project ID if the event is related to a project.
+	ProjectID     string `protobuf:"bytes,11,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -681,6 +765,13 @@ func (x *Event) GetCreatedAt() string {
 	return ""
 }
 
+func (x *Event) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
 var File_types_proto protoreflect.FileDescriptor
 
 const file_types_proto_rawDesc = "" +
@@ -706,15 +797,13 @@ const file_types_proto_rawDesc = "" +
 	"\bInactive\x10\x01\x12\n" +
 	"\n" +
 	"\x06Active\x10\x02\x12\v\n" +
-	"\aInvalid\x10\x04\"U\n" +
-	"\x10PermissionsScope\"A\n" +
-	"\x04Enum\x12\b\n" +
-	"\x04None\x10\x00\x12\f\n" +
-	"\bReadOnly\x10\x01\x12\x0e\n" +
-	"\n" +
-	"Restricted\x10\x02\x12\v\n" +
-	"\x03All\x10\xff\xff\xff\xff\a\x1a\x04\x88\xaf\x1a\x01\"\xc2\x01\n" +
-	"\tEventType\"\xb4\x01\n" +
+	"\aInvalid\x10\x04\":\n" +
+	"\x05Scope\"1\n" +
+	"\x04Enum\x12\r\n" +
+	"\tUndefined\x10\x00\x12\a\n" +
+	"\x03Org\x10\x01\x12\v\n" +
+	"\aProject\x10\x02\x1a\x04\x88\xaf\x1a\x01\"\x99\x05\n" +
+	"\tEventType\"\x8b\x05\n" +
 	"\x04Enum\x12\v\n" +
 	"\aUnknown\x10\x00\x12\x0e\n" +
 	"\n" +
@@ -727,7 +816,30 @@ const file_types_proto_rawDesc = "" +
 	"\x10OrgMemberRemoved\x10\x05\x12\x18\n" +
 	"\x14OrgMemberRoleChanged\x10\x06\x12\x14\n" +
 	"\x10OrgMemberInvited\x10\a\x12\x15\n" +
-	"\x11OrgMemberAccepted\x10\b\"\xa3\x02\n" +
+	"\x11OrgMemberAccepted\x10\b\x12\x12\n" +
+	"\x0eProjectCreated\x10\t\x12\x12\n" +
+	"\x0eProjectUpdated\x10\n" +
+	"\x12\x12\n" +
+	"\x0eProjectDeleted\x10\v\x12\x16\n" +
+	"\x12ProjectMemberAdded\x10\f\x12\x18\n" +
+	"\x14ProjectMemberRemoved\x10\r\x12\x1c\n" +
+	"\x18ProjectMemberRoleChanged\x10\x0e\x12\x18\n" +
+	"\x14ProjectMemberInvited\x10\x0f\x12\x19\n" +
+	"\x15ProjectMemberAccepted\x10\x10\x12\r\n" +
+	"\tUserLogin\x10\x14\x12\x10\n" +
+	"\fTokenRevoked\x10\x15\x12\x11\n" +
+	"\rAPIKeyCreated\x10\x1f\x12\x11\n" +
+	"\rAPIKeyDeleted\x10 \x12\x0f\n" +
+	"\vAPIKeyLogin\x10!\x12\x14\n" +
+	"\x10IssuerRegistered\x10d\x12\x13\n" +
+	"\x0fIssuerActivated\x10e\x12\x11\n" +
+	"\rIssuerUpdated\x10f\x12\x15\n" +
+	"\x11ProfileRegistered\x10g\x12\x12\n" +
+	"\x0eProfileDeleted\x10h\x12\x15\n" +
+	"\x11CertificateIssued\x10i\x12\x16\n" +
+	"\x12CertificateRevoked\x10j\x12\x10\n" +
+	"\fCrlPublished\x10k\x12\x12\n" +
+	"\x0eRootRegistered\x10l\"\xc1\x02\n" +
 	"\x05Event\x12\x0e\n" +
 	"\x02ID\x18\x01 \x01(\tR\x02ID\x12\x14\n" +
 	"\x05OrgID\x18\x02 \x01(\tR\x05OrgID\x12&\n" +
@@ -740,7 +852,8 @@ const file_types_proto_rawDesc = "" +
 	"\bMetadata\x18\t \x03(\v2\n" +
 	".pb.KVPairR\bMetadata\x12\x1c\n" +
 	"\tCreatedAt\x18\n" +
-	" \x01(\tR\tCreatedAtB/Z-github.com/effective-security/trustyca/api/pbb\x06proto3"
+	" \x01(\tR\tCreatedAt\x12\x1c\n" +
+	"\tProjectID\x18\v \x01(\tR\tProjectIDB/Z-github.com/effective-security/trustyca/api/pbb\x06proto3"
 
 var (
 	file_types_proto_rawDescOnce sync.Once
@@ -757,17 +870,17 @@ func file_types_proto_rawDescGZIP() []byte {
 var file_types_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_types_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_types_proto_goTypes = []any{
-	(ItemStatus_Enum)(0),       // 0: pb.ItemStatus.Enum
-	(PermissionsScope_Enum)(0), // 1: pb.PermissionsScope.Enum
-	(EventType_Enum)(0),        // 2: pb.EventType.Enum
-	(*KVPair)(nil),             // 3: pb.KVPair
-	(*KVSet)(nil),              // 4: pb.KVSet
-	(*NextPage)(nil),           // 5: pb.NextPage
-	(*RecordsResult)(nil),      // 6: pb.RecordsResult
-	(*ItemStatus)(nil),         // 7: pb.ItemStatus
-	(*PermissionsScope)(nil),   // 8: pb.PermissionsScope
-	(*EventType)(nil),          // 9: pb.EventType
-	(*Event)(nil),              // 10: pb.Event
+	(ItemStatus_Enum)(0),  // 0: pb.ItemStatus.Enum
+	(Scope_Enum)(0),       // 1: pb.Scope.Enum
+	(EventType_Enum)(0),   // 2: pb.EventType.Enum
+	(*KVPair)(nil),        // 3: pb.KVPair
+	(*KVSet)(nil),         // 4: pb.KVSet
+	(*NextPage)(nil),      // 5: pb.NextPage
+	(*RecordsResult)(nil), // 6: pb.RecordsResult
+	(*ItemStatus)(nil),    // 7: pb.ItemStatus
+	(*Scope)(nil),         // 8: pb.Scope
+	(*EventType)(nil),     // 9: pb.EventType
+	(*Event)(nil),         // 10: pb.Event
 }
 var file_types_proto_depIdxs = []int32{
 	2, // 0: pb.Event.Type:type_name -> pb.EventType.Enum

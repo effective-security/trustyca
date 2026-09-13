@@ -112,19 +112,62 @@ func (s *testSuiteGrpc) Test_OrgGetCmd() {
 }
 
 func (s *testSuiteGrpc) Test_OrgListCmd() {
-	expectedResponse := &pb.UserMemberships{
-		Memberships: []*pb.Membership{
+	expectedResponse := &pb.UserOrgsResponse{
+		Orgs: []*pb.OrgAccess{
 			{
-				ID:      "1",
-				OrgName: "Test Org",
-				OrgID:   "1",
-				Role:    pb.Role_Admin,
+				OrgID:        "1",
+				OrgName:      "Test Org",
+				Role:         pb.Role_Admin,
+				RoleSource:   pb.RoleSource_Direct,
+				ExplicitRole: pb.Role_Admin,
+			},
+			{
+				OrgID:      "2",
+				OrgName:    "Other Org",
+				Role:       pb.Role_Viewer,
+				RoleSource: pb.RoleSource_Project,
 			},
 		},
 	}
 	s.MockOrgs.SetResponse(expectedResponse)
 
 	a := command.OrgListCmd{}
+	err := a.Run(s.Ctl)
+	s.Require().NoError(err)
+	s.CapturePrint()
+
+	s.Ctl.O = "json"
+	s.Out.Reset()
+
+	err = a.Run(s.Ctl)
+	s.Require().NoError(err)
+	s.CapturePrint()
+
+	s.MockOrgs.Err = httperror.NewGrpc(codes.Unknown, "request failed")
+	err = a.Run(s.Ctl)
+	s.EqualError(err, "unexpected: request failed")
+}
+
+func (s *testSuiteGrpc) Test_OrgAccessCmd() {
+	s.MockOrgs.SetResponse(&pb.UserMemberships{
+		Org: &pb.OrgAccess{
+			OrgID:      "1",
+			OrgName:    "Test Org",
+			Role:       pb.Role_Viewer,
+			RoleSource: pb.RoleSource_Project,
+		},
+		Memberships: []*pb.Membership{
+			{
+				ID:           "1",
+				OrgID:        "1",
+				ProjectID:    "201",
+				ProjectAlias: "payments",
+				Scope:        pb.Scope_Project,
+				Role:         pb.Role_Admin,
+			},
+		},
+	})
+	a := command.OrgAccessCmd{}
 	err := a.Run(s.Ctl)
 	s.Require().NoError(err)
 	s.CapturePrint()

@@ -111,11 +111,19 @@ func TestCheckErrIDConflict(t *testing.T) {
 
 func Test_ListTables(t *testing.T) {
 	expectedTables := []string{
+		"apikey",
+		"certificate",
+		"certificate_profile",
+		"crl",
 		"event",
 		"invite",
+		"issuer",
 		"login",
 		"membership",
 		"org",
+		"project",
+		"revoked",
+		"root_certificate",
 		"schema_migrations",
 		"user",
 	}

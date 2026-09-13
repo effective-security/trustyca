@@ -296,7 +296,7 @@ func Test_CallbackHandler(t *testing.T) {
 	t.Run("token", func(t *testing.T) {
 		state, err := service.Protect(context.Background(), &auth.State{
 			ResponseType: "token",
-			RedirectURL:  "https://localhost:7880/v1/auth",
+			RedirectURL:  "https://localhost:8880/v1/auth",
 			Provider:     pb.IDP_Github,
 			IssuedAt:     time.Now().Unix(),
 		})
@@ -805,7 +805,7 @@ func Test_DPoPCallbackHandlerLocal(t *testing.T) {
 	prov, err := service.AuthProvider(ctx, pb.IDP_Local)
 	require.NoError(t, err)
 	o := prov.Config()
-	o.AuthURL = strings.Replace(o.AuthURL, "https://localhost:7880", server.URL(), 1)
+	o.AuthURL = strings.Replace(o.AuthURL, "https://localhost:8880", server.URL(), 1)
 
 	u, err := url.Parse(server.URL() + "/")
 	require.NoError(t, err)
@@ -1058,18 +1058,18 @@ func Test_RequestValidate(t *testing.T) {
 	assert.EqualError(t, r.Validate(), "invalid_request: missing parameter: redirect_uri")
 	r = auth.Request{
 		ResponseType: "token",
-		RedirectURI:  "http://localhost:7880/v1/auth/callback",
+		RedirectURI:  "http://localhost:8880/v1/auth/callback",
 	}
 	assert.EqualError(t, r.Validate(), "invalid_request: missing parameter: scope")
 	r = auth.Request{
 		ResponseType: "token",
-		RedirectURI:  "http://localhost:7880/v1/auth/callback",
+		RedirectURI:  "http://localhost:8880/v1/auth/callback",
 		Scope:        "email",
 	}
 	assert.NoError(t, r.Validate())
 	r = auth.Request{
 		ResponseType: "token",
-		RedirectURI:  "http://localhost:7880/v1/auth/callback",
+		RedirectURI:  "http://localhost:8880/v1/auth/callback",
 		Scope:        "email",
 		Provider:     pb.IDP_Github,
 	}

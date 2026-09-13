@@ -5,26 +5,31 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 )
 
-// MemberCmd is the base command for member operations
+// MemberCmd is the base command for org-wide grants in the selected org.
+// Project grants are managed with `project member` commands.
 type MemberCmd struct {
-	List         MembersListCmd      `cmd:""  help:"List members of the org"`
-	Add          MemberAddCmd        `cmd:""  help:"Add a new member to the org"`
-	Delete       MemberDeleteCmd     `cmd:""  help:"Delete a member from the org"`
-	Change       MemberChangeRoleCmd `cmd:""  help:"Change the role of a member"`
-	DeleteInvide InviteDeleteCmd     `cmd:""  help:"Delete a member invite from the org"`
+	List         MembersListCmd      `cmd:""  help:"List members of the selected org"`
+	Add          MemberAddCmd        `cmd:""  help:"Grant an org-wide role"`
+	Delete       MemberDeleteCmd     `cmd:""  help:"Remove an org-wide grant"`
+	Change       MemberChangeRoleCmd `cmd:""  help:"Change the org-wide role of a member"`
+	DeleteInvite InviteDeleteCmd     `cmd:""  help:"Delete an org-wide invite"`
 }
 
+// MembersListCmd lists members of the selected org
 type MembersListCmd struct {
-	Org string `kong:"arg" help:"The ID of the org"`
+	// All lists grants of all scopes, including project grants
+	All bool `help:"list org-wide and project grants; by default only org-wide"`
 }
 
+// Run the command
 func (a *MembersListCmd) Run(app App) error {
 	client, err := app.OrgsClient()
 	if err != nil {
 		return err
 	}
-	req := &pb.GetMembersRequest{
-		OrgID: a.Org,
+	req := &pb.GetMembersRequest{}
+	if !a.All {
+		req.Scope = pb.Scope_Org
 	}
 	res, err := client.GetMembers(app.Context(), req)
 	if err != nil {
@@ -33,61 +38,59 @@ func (a *MembersListCmd) Run(app App) error {
 	return app.Print(res)
 }
 
+// MemberDeleteCmd removes an org-wide grant
 type MemberDeleteCmd struct {
-	Org  string `kong:"arg" help:"The ID of the org"`
 	User string `kong:"arg" help:"The ID of the user"`
 }
 
+// Run the command
 func (a *MemberDeleteCmd) Run(app App) error {
 	client, err := app.OrgsClient()
 	if err != nil {
 		return err
 	}
-	req := &pb.DeleteMemberRequest{
-		OrgID:  a.Org,
+	res, err := client.DeleteMember(app.Context(), &pb.DeleteMemberRequest{
 		UserID: a.User,
-	}
-	res, err := client.DeleteMember(app.Context(), req)
+	})
 	if err != nil {
 		return err
 	}
 	return app.Print(res)
 }
 
+// InviteDeleteCmd deletes an org-wide invite
 type InviteDeleteCmd struct {
-	Org   string `kong:"arg" help:"The ID of the org"`
-	Email string `kong:"arg" help:"The email of the member"`
+	Email string `kong:"arg" help:"The email of the invitee"`
 }
 
+// Run the command
 func (a *InviteDeleteCmd) Run(app App) error {
 	client, err := app.OrgsClient()
 	if err != nil {
 		return err
 	}
-	req := &pb.DeleteInviteRequest{
-		OrgID: a.Org,
+	res, err := client.DeleteInvite(app.Context(), &pb.DeleteInviteRequest{
 		Email: a.Email,
-	}
-	res, err := client.DeleteInvite(app.Context(), req)
+	})
 	if err != nil {
 		return err
 	}
 	return app.Print(res)
 }
 
+// MemberAddCmd grants an org-wide role
 type MemberAddCmd struct {
-	Org   string `kong:"arg" help:"The ID of the org"`
 	Email string `kong:"arg" help:"The email of the member"`
-	Role  string `kong:"arg" help:"The role of the member"`
+	Role  string `kong:"arg" help:"The org-wide role: Viewer|User|Support|Billing|Security|Admin|Owner"`
 }
 
+// Run the command
 func (a *MemberAddCmd) Run(app App) error {
 	client, err := app.OrgsClient()
 	if err != nil {
 		return err
 	}
 	req := &pb.AddMemberRequest{
-		OrgID: a.Org,
 		Email: a.Email,
 		Role:  pb.Role_Enum_Value[a.Role],
 	}
@@ -102,19 +105,19 @@ func (a *MemberAddCmd) Run(app App) error {
 	return app.Print(res)
 }
 
+// MemberChangeRoleCmd changes the org-wide role of a member
 type MemberChangeRoleCmd struct {
-	Org  string `kong:"arg" help:"The ID of the org"`
 	User string `kong:"arg" help:"The ID of the user"`
-	Role string `kong:"arg" help:"The role of the member"`
+	Role string `kong:"arg" help:"The org-wide role"`
 }
 
+// Run the command
 func (a *MemberChangeRoleCmd) Run(app App) error {
 	client, err := app.OrgsClient()
 	if err != nil {
 		return err
 	}
 	req := &pb.ChangeMemberRoleRequest{
-		OrgID:  a.Org,
 		UserID: a.User,
 		Role:   pb.Role_Enum_Value[a.Role],
 	}

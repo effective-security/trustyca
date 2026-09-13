@@ -12,42 +12,707 @@ import (
 )
 
 const (
-	Display_EventType_Unknown              = "Unknown"
-	Display_EventType_OrgCreated           = "Org Created"
-	Display_EventType_OrgUpdated           = "Org Updated"
-	Display_EventType_OrgDeleted           = "Org Deleted"
-	Display_EventType_OrgMemberAdded       = "Org Member Added"
-	Display_EventType_OrgMemberRemoved     = "Org Member Removed"
-	Display_EventType_OrgMemberRoleChanged = "Org Member Role Changed"
-	Display_EventType_OrgMemberInvited     = "Org Member Invited"
-	Display_EventType_OrgMemberAccepted    = "Org Member Accepted"
-	Display_IDP_Undefined                  = "undefined"
-	Display_IDP_Google                     = "google"
-	Display_IDP_Github                     = "github"
-	Display_IDP_Gitlab                     = "gitlab"
-	Display_IDP_Local                      = "local"
-	Display_ItemStatus_Unknown             = "Unknown"
-	Display_ItemStatus_Inactive            = "Inactive"
-	Display_ItemStatus_Active              = "Active"
-	Display_ItemStatus_Invalid             = "Invalid"
-	Display_PermissionsScope_None          = "None"
-	Display_PermissionsScope_ReadOnly      = "Read Only"
-	Display_PermissionsScope_Restricted    = "Restricted"
-	Display_PermissionsScope_All           = "All"
-	Display_Role_None                      = "None"
-	Display_Role_APIKey                    = "API Key"
-	Display_Role_User                      = "User"
-	Display_Role_Support                   = "Support"
-	Display_Role_Admin                     = "Admin"
-	Display_Role_Owner                     = "Owner"
+	Display_AuthorityType_Unknown              = "Unknown"
+	Display_AuthorityType_Root                 = "Root"
+	Display_AuthorityType_Intermediate         = "Intermediate"
+	Display_AuthorityType_Issuing              = "Issuing"
+	Display_AuthorityType_Shaken               = "Shaken"
+	Display_AuthorityType_ShakenDelegated      = "Shaken Delegated"
+	Display_CertificateStatus_Unknown          = "Unknown"
+	Display_CertificateStatus_Active           = "Active"
+	Display_CertificateStatus_Expired          = "Expired"
+	Display_CertificateStatus_Revoked          = "Revoked"
+	Display_EncodingFormat_PEM                 = "PEM"
+	Display_EncodingFormat_DER                 = "DER"
+	Display_EncodingFormat_PKCS7               = "PKCS7"
+	Display_EventType_Unknown                  = "Unknown"
+	Display_EventType_OrgCreated               = "Org Created"
+	Display_EventType_OrgUpdated               = "Org Updated"
+	Display_EventType_OrgDeleted               = "Org Deleted"
+	Display_EventType_OrgMemberAdded           = "Org Member Added"
+	Display_EventType_OrgMemberRemoved         = "Org Member Removed"
+	Display_EventType_OrgMemberRoleChanged     = "Org Member Role Changed"
+	Display_EventType_OrgMemberInvited         = "Org Member Invited"
+	Display_EventType_OrgMemberAccepted        = "Org Member Accepted"
+	Display_EventType_ProjectCreated           = "Project Created"
+	Display_EventType_ProjectUpdated           = "Project Updated"
+	Display_EventType_ProjectDeleted           = "Project Deleted"
+	Display_EventType_ProjectMemberAdded       = "Project Member Added"
+	Display_EventType_ProjectMemberRemoved     = "Project Member Removed"
+	Display_EventType_ProjectMemberRoleChanged = "Project Member Role Changed"
+	Display_EventType_ProjectMemberInvited     = "Project Member Invited"
+	Display_EventType_ProjectMemberAccepted    = "Project Member Accepted"
+	Display_EventType_UserLogin                = "User Login"
+	Display_EventType_TokenRevoked             = "Token Revoked"
+	Display_EventType_APIKeyCreated            = "API Key Created"
+	Display_EventType_APIKeyDeleted            = "API Key Deleted"
+	Display_EventType_APIKeyLogin              = "API Key Login"
+	Display_EventType_IssuerRegistered         = "Issuer Registered"
+	Display_EventType_IssuerActivated          = "Issuer Activated"
+	Display_EventType_IssuerUpdated            = "Issuer Updated"
+	Display_EventType_ProfileRegistered        = "Profile Registered"
+	Display_EventType_ProfileDeleted           = "Profile Deleted"
+	Display_EventType_CertificateIssued        = "Certificate Issued"
+	Display_EventType_CertificateRevoked       = "Certificate Revoked"
+	Display_EventType_CrlPublished             = "Crl Published"
+	Display_EventType_RootRegistered           = "Root Registered"
+	Display_IDP_Undefined                      = "undefined"
+	Display_IDP_Google                         = "google"
+	Display_IDP_Github                         = "github"
+	Display_IDP_Gitlab                         = "gitlab"
+	Display_IDP_Local                          = "local"
+	Display_IssuerStatus_Unknown               = "Unknown"
+	Display_IssuerStatus_Pending               = "Pending"
+	Display_IssuerStatus_Active                = "Active"
+	Display_IssuerStatus_Archived              = "Archived"
+	Display_IssuerStatus_Destroyed             = "Destroyed"
+	Display_ItemStatus_Unknown                 = "Unknown"
+	Display_ItemStatus_Inactive                = "Inactive"
+	Display_ItemStatus_Active                  = "Active"
+	Display_ItemStatus_Invalid                 = "Invalid"
+	Display_ReasonCode_Unspecified             = "Unspecified"
+	Display_ReasonCode_KeyCompromise           = "Key Compromise"
+	Display_ReasonCode_CACompromise            = "CA Compromise"
+	Display_ReasonCode_AffiliationChanged      = "Affiliation Changed"
+	Display_ReasonCode_Superseded              = "Superseded"
+	Display_ReasonCode_CessationOfOperation    = "Cessation of Operation"
+	Display_ReasonCode_CertificateHold         = "Certificate Hold"
+	Display_ReasonCode_RemoveFromCRL           = "Remove From CRL"
+	Display_ReasonCode_PrivilegeWithdrawn      = "Privilege Withdrawn"
+	Display_ReasonCode_AACompromise            = "AA Compromise"
+	Display_Role_None                          = "None"
+	Display_Role_APIKey                        = "API Key"
+	Display_Role_Viewer                        = "Viewer"
+	Display_Role_User                          = "User"
+	Display_Role_Support                       = "Support"
+	Display_Role_Billing                       = "Billing"
+	Display_Role_Security                      = "Security"
+	Display_Role_Admin                         = "Admin"
+	Display_Role_Owner                         = "Owner"
+	Display_RoleSource_Unknown                 = "Unknown"
+	Display_RoleSource_Direct                  = "Direct"
+	Display_RoleSource_Project                 = "Project"
+	Display_Scope_Undefined                    = "Undefined"
+	Display_Scope_Org                          = "Org"
+	Display_Scope_Project                      = "Project"
+	Display_Trust_Any                          = "Any"
+	Display_Trust_Public                       = "Public"
+	Display_Trust_Private                      = "Private"
 )
 
 var EnumNameTypes = map[string]reflect.Type{
-	"pb.EventType.Enum":        reflect.TypeOf(EventType_Enum(0)),
-	"pb.IDP.Enum":              reflect.TypeOf(IDP_Enum(0)),
-	"pb.ItemStatus.Enum":       reflect.TypeOf(ItemStatus_Enum(0)),
-	"pb.PermissionsScope.Enum": reflect.TypeOf(PermissionsScope_Enum(0)),
-	"pb.Role.Enum":             reflect.TypeOf(Role_Enum(0)),
+	"pb.AuthorityType.Enum":     reflect.TypeOf(AuthorityType_Enum(0)),
+	"pb.CertificateStatus.Enum": reflect.TypeOf(CertificateStatus_Enum(0)),
+	"pb.EncodingFormat.Enum":    reflect.TypeOf(EncodingFormat_Enum(0)),
+	"pb.EventType.Enum":         reflect.TypeOf(EventType_Enum(0)),
+	"pb.IDP.Enum":               reflect.TypeOf(IDP_Enum(0)),
+	"pb.IssuerStatus.Enum":      reflect.TypeOf(IssuerStatus_Enum(0)),
+	"pb.ItemStatus.Enum":        reflect.TypeOf(ItemStatus_Enum(0)),
+	"pb.ReasonCode.Enum":        reflect.TypeOf(ReasonCode_Enum(0)),
+	"pb.Role.Enum":              reflect.TypeOf(Role_Enum(0)),
+	"pb.RoleSource.Enum":        reflect.TypeOf(RoleSource_Enum(0)),
+	"pb.Scope.Enum":             reflect.TypeOf(Scope_Enum(0)),
+	"pb.Trust.Enum":             reflect.TypeOf(Trust_Enum(0)),
+}
+
+//
+// AuthorityType_Enum
+//
+
+type AuthorityType_EnumSlice []AuthorityType_Enum
+
+const AuthorityType_Enum_SupportedNamesHelp = "Unknown,Root,Intermediate,Issuing,Shaken,ShakenDelegated"
+
+// ValuesMap returns a map of enum values
+func (s AuthorityType_Enum) ValuesMap() map[string]int32 {
+	return AuthorityType_Enum_value
+}
+
+// NamesMap returns map of enum names
+func (s AuthorityType_Enum) NamesMap() map[int32]string {
+	return AuthorityType_Enum_name
+}
+
+// DisplayNamesMap returns a map of enum display names
+func (s AuthorityType_Enum) DisplayNamesMap() map[int32]string {
+	return AuthorityType_Enum_displayName
+}
+
+// SupportedNames returns string of supported Enum name concatenated by ","
+func (s AuthorityType_Enum) SupportedNames() string {
+	return enum.SupportedNames[AuthorityType_Enum]()
+}
+
+// ValueNames returns list of Enum value names
+func (s AuthorityType_Enum) ValueNames() []string {
+	return enum.FlagNames(s)
+}
+
+// ValueString returns string of Enum value names concatenated by ","
+func (s AuthorityType_Enum) ValueString() string {
+	return strings.Join(s.ValueNames(), ",")
+}
+
+// Flags returns list of Enum values
+func (s AuthorityType_Enum) Flags() []AuthorityType_Enum {
+	return enum.Flags(s)
+}
+
+// FlagsInt returns list of Enum values as int32
+func (s AuthorityType_Enum) FlagsInt() []int32 {
+	return enum.FlagsInt(s)
+}
+
+// UnmarshalYAML unmarshals Enum from YAML
+func (s *AuthorityType_Enum) UnmarshalYAML(unmarshal func(any) error) error {
+	// Try to unmarshal as an integer
+	var valInt int32
+	if err := unmarshal(&valInt); err == nil {
+		*s = AuthorityType_Enum(valInt)
+		return nil
+	}
+
+	// Try to unmarshal as a string
+	var valStr string
+	if err := unmarshal(&valStr); err == nil {
+		*s = enum.Parse[AuthorityType_Enum](valStr)
+		return nil
+	}
+
+	// If both attempts fail, set to default
+	*s = 0
+	return nil
+}
+
+// UnmarshalJSON unmarshals Enum from JSON
+func (s *AuthorityType_Enum) UnmarshalJSON(b []byte) error {
+	var val any
+	if err := json.Unmarshal(b, &val); err != nil {
+		return err
+	}
+	*s = AuthorityType_Enum(0).Parse(val)
+	return nil
+}
+
+// DisplayNames returns display names of Enum bitflag value
+func (s AuthorityType_Enum) DisplayNames() []string {
+	flags := enum.Flags(s)
+	count := len(flags)
+	if count == 0 {
+		return []string{s.String()}
+	}
+	if count == 1 {
+		return []string{AuthorityType_Enum_DisplayName[flags[0]]}
+	}
+	var names []string
+	for _, flag := range flags {
+		names = append(names, AuthorityType_Enum_DisplayName[flag])
+	}
+	return names
+}
+
+// DisplayName returns display name of Enum value
+func (s AuthorityType_Enum) DisplayName() string {
+	if val, ok := AuthorityType_Enum_DisplayName[s]; ok {
+		return val
+	}
+	return s.String()
+}
+
+// Meta returns Enum meta information
+func (s AuthorityType_Enum) Meta() *api.EnumMeta {
+	return AuthorityType_Enum_Meta[s]
+}
+
+// Describe returns Enum meta information for all values
+func (s AuthorityType_Enum) Describe() map[AuthorityType_Enum]*api.EnumMeta {
+	return AuthorityType_Enum_Meta
+}
+
+// GetDescription returns Enum description
+func (s AuthorityType_Enum) GetDescription() *api.EnumDescription {
+	return AuthorityType_Enum_EnumDescription
+}
+
+// Parse returns Enum value parsed from val
+func (_ AuthorityType_Enum) Parse(val any) AuthorityType_Enum {
+	return AuthorityType_Enum_EnumDescription.ParseEnum[AuthorityType_Enum](val)
+}
+
+var AuthorityType_Enum_Name = map[AuthorityType_Enum]string{
+	AuthorityType_Unknown:         "Unknown",
+	AuthorityType_Root:            "Root",
+	AuthorityType_Intermediate:    "Intermediate",
+	AuthorityType_Issuing:         "Issuing",
+	AuthorityType_Shaken:          "Shaken",
+	AuthorityType_ShakenDelegated: "ShakenDelegated",
+}
+
+var AuthorityType_Enum_Value = map[string]AuthorityType_Enum{
+	"Unknown":         AuthorityType_Unknown,
+	"Root":            AuthorityType_Root,
+	"Intermediate":    AuthorityType_Intermediate,
+	"Issuing":         AuthorityType_Issuing,
+	"Shaken":          AuthorityType_Shaken,
+	"ShakenDelegated": AuthorityType_ShakenDelegated,
+}
+
+var AuthorityType_Enum_DisplayName = map[AuthorityType_Enum]string{
+	AuthorityType_Unknown:         Display_AuthorityType_Unknown,
+	AuthorityType_Root:            Display_AuthorityType_Root,
+	AuthorityType_Intermediate:    Display_AuthorityType_Intermediate,
+	AuthorityType_Issuing:         Display_AuthorityType_Issuing,
+	AuthorityType_Shaken:          Display_AuthorityType_Shaken,
+	AuthorityType_ShakenDelegated: Display_AuthorityType_ShakenDelegated,
+}
+
+var AuthorityType_Enum_displayName = map[int32]string{
+	0: Display_AuthorityType_Unknown,
+	1: Display_AuthorityType_Root,
+	2: Display_AuthorityType_Intermediate,
+	3: Display_AuthorityType_Issuing,
+	4: Display_AuthorityType_Shaken,
+	5: Display_AuthorityType_ShakenDelegated,
+}
+
+var AuthorityType_Enum_EnumDescription = &api.EnumDescription{
+	Name:      "AuthorityType_Enum",
+	FullName:  "pb.AuthorityType.Enum",
+	IsBitmask: false,
+	Enums: []*api.EnumMeta{
+		{
+			Value:         0,
+			Name:          "Unknown",
+			FullName:      "pb.AuthorityType.Unknown",
+			Display:       Display_AuthorityType_Unknown,
+			Documentation: `Unknown indicates that the authority type is unknown`,
+		},
+		{
+			Value:         1,
+			Name:          "Root",
+			FullName:      "pb.AuthorityType.Root",
+			Display:       Display_AuthorityType_Root,
+			Documentation: `Root indicates a self-signed root authority`,
+		},
+		{
+			Value:    2,
+			Name:     "Intermediate",
+			FullName: "pb.AuthorityType.Intermediate",
+			Display:  Display_AuthorityType_Intermediate,
+			Documentation: `Intermediate indicates an intermediate authority that only signs
+subordinate CAs`,
+		},
+		{
+			Value:         3,
+			Name:          "Issuing",
+			FullName:      "pb.AuthorityType.Issuing",
+			Display:       Display_AuthorityType_Issuing,
+			Documentation: `Issuing indicates an issuing authority for end-entity certificates`,
+		},
+		{
+			Value:         4,
+			Name:          "Shaken",
+			FullName:      "pb.AuthorityType.Shaken",
+			Display:       Display_AuthorityType_Shaken,
+			Documentation: `Shaken indicates a STIR/SHAKEN authority`,
+		},
+		{
+			Value:         5,
+			Name:          "ShakenDelegated",
+			FullName:      "pb.AuthorityType.ShakenDelegated",
+			Display:       Display_AuthorityType_ShakenDelegated,
+			Documentation: `ShakenDelegated indicates a STIR/SHAKEN Delegated authority`,
+		},
+	},
+	Documentation: `AuthorityType defines type constants for authorities`,
+}
+
+var AuthorityType_Enum_Meta = map[AuthorityType_Enum]*api.EnumMeta{
+	AuthorityType_Unknown:         AuthorityType_Enum_EnumDescription.Enums[0],
+	AuthorityType_Root:            AuthorityType_Enum_EnumDescription.Enums[1],
+	AuthorityType_Intermediate:    AuthorityType_Enum_EnumDescription.Enums[2],
+	AuthorityType_Issuing:         AuthorityType_Enum_EnumDescription.Enums[3],
+	AuthorityType_Shaken:          AuthorityType_Enum_EnumDescription.Enums[4],
+	AuthorityType_ShakenDelegated: AuthorityType_Enum_EnumDescription.Enums[5],
+}
+
+//
+// CertificateStatus_Enum
+//
+
+type CertificateStatus_EnumSlice []CertificateStatus_Enum
+
+const CertificateStatus_Enum_SupportedNamesHelp = "Unknown,Active,Expired,Revoked"
+
+// ValuesMap returns a map of enum values
+func (s CertificateStatus_Enum) ValuesMap() map[string]int32 {
+	return CertificateStatus_Enum_value
+}
+
+// NamesMap returns map of enum names
+func (s CertificateStatus_Enum) NamesMap() map[int32]string {
+	return CertificateStatus_Enum_name
+}
+
+// DisplayNamesMap returns a map of enum display names
+func (s CertificateStatus_Enum) DisplayNamesMap() map[int32]string {
+	return CertificateStatus_Enum_displayName
+}
+
+// SupportedNames returns string of supported Enum name concatenated by ","
+func (s CertificateStatus_Enum) SupportedNames() string {
+	return enum.SupportedNames[CertificateStatus_Enum]()
+}
+
+// ValueNames returns list of Enum value names
+func (s CertificateStatus_Enum) ValueNames() []string {
+	return enum.FlagNames(s)
+}
+
+// ValueString returns string of Enum value names concatenated by ","
+func (s CertificateStatus_Enum) ValueString() string {
+	return strings.Join(s.ValueNames(), ",")
+}
+
+// Flags returns list of Enum values
+func (s CertificateStatus_Enum) Flags() []CertificateStatus_Enum {
+	return enum.Flags(s)
+}
+
+// FlagsInt returns list of Enum values as int32
+func (s CertificateStatus_Enum) FlagsInt() []int32 {
+	return enum.FlagsInt(s)
+}
+
+// UnmarshalYAML unmarshals Enum from YAML
+func (s *CertificateStatus_Enum) UnmarshalYAML(unmarshal func(any) error) error {
+	// Try to unmarshal as an integer
+	var valInt int32
+	if err := unmarshal(&valInt); err == nil {
+		*s = CertificateStatus_Enum(valInt)
+		return nil
+	}
+
+	// Try to unmarshal as a string
+	var valStr string
+	if err := unmarshal(&valStr); err == nil {
+		*s = enum.Parse[CertificateStatus_Enum](valStr)
+		return nil
+	}
+
+	// If both attempts fail, set to default
+	*s = 0
+	return nil
+}
+
+// UnmarshalJSON unmarshals Enum from JSON
+func (s *CertificateStatus_Enum) UnmarshalJSON(b []byte) error {
+	var val any
+	if err := json.Unmarshal(b, &val); err != nil {
+		return err
+	}
+	*s = CertificateStatus_Enum(0).Parse(val)
+	return nil
+}
+
+// DisplayNames returns display names of Enum bitflag value
+func (s CertificateStatus_Enum) DisplayNames() []string {
+	flags := enum.Flags(s)
+	count := len(flags)
+	if count == 0 {
+		return []string{s.String()}
+	}
+	if count == 1 {
+		return []string{CertificateStatus_Enum_DisplayName[flags[0]]}
+	}
+	var names []string
+	for _, flag := range flags {
+		names = append(names, CertificateStatus_Enum_DisplayName[flag])
+	}
+	return names
+}
+
+// DisplayName returns display name of Enum value
+func (s CertificateStatus_Enum) DisplayName() string {
+	if val, ok := CertificateStatus_Enum_DisplayName[s]; ok {
+		return val
+	}
+	return s.String()
+}
+
+// Meta returns Enum meta information
+func (s CertificateStatus_Enum) Meta() *api.EnumMeta {
+	return CertificateStatus_Enum_Meta[s]
+}
+
+// Describe returns Enum meta information for all values
+func (s CertificateStatus_Enum) Describe() map[CertificateStatus_Enum]*api.EnumMeta {
+	return CertificateStatus_Enum_Meta
+}
+
+// GetDescription returns Enum description
+func (s CertificateStatus_Enum) GetDescription() *api.EnumDescription {
+	return CertificateStatus_Enum_EnumDescription
+}
+
+// Parse returns Enum value parsed from val
+func (_ CertificateStatus_Enum) Parse(val any) CertificateStatus_Enum {
+	return CertificateStatus_Enum_EnumDescription.ParseEnum[CertificateStatus_Enum](val)
+}
+
+var CertificateStatus_Enum_Name = map[CertificateStatus_Enum]string{
+	CertificateStatus_Unknown: "Unknown",
+	CertificateStatus_Active:  "Active",
+	CertificateStatus_Expired: "Expired",
+	CertificateStatus_Revoked: "Revoked",
+}
+
+var CertificateStatus_Enum_Value = map[string]CertificateStatus_Enum{
+	"Unknown": CertificateStatus_Unknown,
+	"Active":  CertificateStatus_Active,
+	"Expired": CertificateStatus_Expired,
+	"Revoked": CertificateStatus_Revoked,
+}
+
+var CertificateStatus_Enum_DisplayName = map[CertificateStatus_Enum]string{
+	CertificateStatus_Unknown: Display_CertificateStatus_Unknown,
+	CertificateStatus_Active:  Display_CertificateStatus_Active,
+	CertificateStatus_Expired: Display_CertificateStatus_Expired,
+	CertificateStatus_Revoked: Display_CertificateStatus_Revoked,
+}
+
+var CertificateStatus_Enum_displayName = map[int32]string{
+	0: Display_CertificateStatus_Unknown,
+	1: Display_CertificateStatus_Active,
+	2: Display_CertificateStatus_Expired,
+	3: Display_CertificateStatus_Revoked,
+}
+
+var CertificateStatus_Enum_EnumDescription = &api.EnumDescription{
+	Name:      "CertificateStatus_Enum",
+	FullName:  "pb.CertificateStatus.Enum",
+	IsBitmask: false,
+	Enums: []*api.EnumMeta{
+		{
+			Value:         0,
+			Name:          "Unknown",
+			FullName:      "pb.CertificateStatus.Unknown",
+			Display:       Display_CertificateStatus_Unknown,
+			Documentation: `Unknown indicates that the certificate status is unknown`,
+		},
+		{
+			Value:         1,
+			Name:          "Active",
+			FullName:      "pb.CertificateStatus.Active",
+			Display:       Display_CertificateStatus_Active,
+			Documentation: `Active indicates that the certificate is active and ready to use`,
+		},
+		{
+			Value:         2,
+			Name:          "Expired",
+			FullName:      "pb.CertificateStatus.Expired",
+			Display:       Display_CertificateStatus_Expired,
+			Documentation: `Expired indicates that the certificate is expired`,
+		},
+		{
+			Value:         3,
+			Name:          "Revoked",
+			FullName:      "pb.CertificateStatus.Revoked",
+			Display:       Display_CertificateStatus_Revoked,
+			Documentation: `Revoked indicates that the certificate is revoked`,
+		},
+	},
+	Documentation: `CertificateStatus defines status constants for certificates`,
+}
+
+var CertificateStatus_Enum_Meta = map[CertificateStatus_Enum]*api.EnumMeta{
+	CertificateStatus_Unknown: CertificateStatus_Enum_EnumDescription.Enums[0],
+	CertificateStatus_Active:  CertificateStatus_Enum_EnumDescription.Enums[1],
+	CertificateStatus_Expired: CertificateStatus_Enum_EnumDescription.Enums[2],
+	CertificateStatus_Revoked: CertificateStatus_Enum_EnumDescription.Enums[3],
+}
+
+//
+// EncodingFormat_Enum
+//
+
+type EncodingFormat_EnumSlice []EncodingFormat_Enum
+
+const EncodingFormat_Enum_SupportedNamesHelp = "PEM,DER,PKCS7"
+
+// ValuesMap returns a map of enum values
+func (s EncodingFormat_Enum) ValuesMap() map[string]int32 {
+	return EncodingFormat_Enum_value
+}
+
+// NamesMap returns map of enum names
+func (s EncodingFormat_Enum) NamesMap() map[int32]string {
+	return EncodingFormat_Enum_name
+}
+
+// DisplayNamesMap returns a map of enum display names
+func (s EncodingFormat_Enum) DisplayNamesMap() map[int32]string {
+	return EncodingFormat_Enum_displayName
+}
+
+// SupportedNames returns string of supported Enum name concatenated by ","
+func (s EncodingFormat_Enum) SupportedNames() string {
+	return enum.SupportedNames[EncodingFormat_Enum]()
+}
+
+// ValueNames returns list of Enum value names
+func (s EncodingFormat_Enum) ValueNames() []string {
+	return enum.FlagNames(s)
+}
+
+// ValueString returns string of Enum value names concatenated by ","
+func (s EncodingFormat_Enum) ValueString() string {
+	return strings.Join(s.ValueNames(), ",")
+}
+
+// Flags returns list of Enum values
+func (s EncodingFormat_Enum) Flags() []EncodingFormat_Enum {
+	return enum.Flags(s)
+}
+
+// FlagsInt returns list of Enum values as int32
+func (s EncodingFormat_Enum) FlagsInt() []int32 {
+	return enum.FlagsInt(s)
+}
+
+// UnmarshalYAML unmarshals Enum from YAML
+func (s *EncodingFormat_Enum) UnmarshalYAML(unmarshal func(any) error) error {
+	// Try to unmarshal as an integer
+	var valInt int32
+	if err := unmarshal(&valInt); err == nil {
+		*s = EncodingFormat_Enum(valInt)
+		return nil
+	}
+
+	// Try to unmarshal as a string
+	var valStr string
+	if err := unmarshal(&valStr); err == nil {
+		*s = enum.Parse[EncodingFormat_Enum](valStr)
+		return nil
+	}
+
+	// If both attempts fail, set to default
+	*s = 0
+	return nil
+}
+
+// UnmarshalJSON unmarshals Enum from JSON
+func (s *EncodingFormat_Enum) UnmarshalJSON(b []byte) error {
+	var val any
+	if err := json.Unmarshal(b, &val); err != nil {
+		return err
+	}
+	*s = EncodingFormat_Enum(0).Parse(val)
+	return nil
+}
+
+// DisplayNames returns display names of Enum bitflag value
+func (s EncodingFormat_Enum) DisplayNames() []string {
+	flags := enum.Flags(s)
+	count := len(flags)
+	if count == 0 {
+		return []string{s.String()}
+	}
+	if count == 1 {
+		return []string{EncodingFormat_Enum_DisplayName[flags[0]]}
+	}
+	var names []string
+	for _, flag := range flags {
+		names = append(names, EncodingFormat_Enum_DisplayName[flag])
+	}
+	return names
+}
+
+// DisplayName returns display name of Enum value
+func (s EncodingFormat_Enum) DisplayName() string {
+	if val, ok := EncodingFormat_Enum_DisplayName[s]; ok {
+		return val
+	}
+	return s.String()
+}
+
+// Meta returns Enum meta information
+func (s EncodingFormat_Enum) Meta() *api.EnumMeta {
+	return EncodingFormat_Enum_Meta[s]
+}
+
+// Describe returns Enum meta information for all values
+func (s EncodingFormat_Enum) Describe() map[EncodingFormat_Enum]*api.EnumMeta {
+	return EncodingFormat_Enum_Meta
+}
+
+// GetDescription returns Enum description
+func (s EncodingFormat_Enum) GetDescription() *api.EnumDescription {
+	return EncodingFormat_Enum_EnumDescription
+}
+
+// Parse returns Enum value parsed from val
+func (_ EncodingFormat_Enum) Parse(val any) EncodingFormat_Enum {
+	return EncodingFormat_Enum_EnumDescription.ParseEnum[EncodingFormat_Enum](val)
+}
+
+var EncodingFormat_Enum_Name = map[EncodingFormat_Enum]string{
+	EncodingFormat_PEM:   "PEM",
+	EncodingFormat_DER:   "DER",
+	EncodingFormat_PKCS7: "PKCS7",
+}
+
+var EncodingFormat_Enum_Value = map[string]EncodingFormat_Enum{
+	"PEM":   EncodingFormat_PEM,
+	"DER":   EncodingFormat_DER,
+	"PKCS7": EncodingFormat_PKCS7,
+}
+
+var EncodingFormat_Enum_DisplayName = map[EncodingFormat_Enum]string{
+	EncodingFormat_PEM:   Display_EncodingFormat_PEM,
+	EncodingFormat_DER:   Display_EncodingFormat_DER,
+	EncodingFormat_PKCS7: Display_EncodingFormat_PKCS7,
+}
+
+var EncodingFormat_Enum_displayName = map[int32]string{
+	0: Display_EncodingFormat_PEM,
+	1: Display_EncodingFormat_DER,
+	2: Display_EncodingFormat_PKCS7,
+}
+
+var EncodingFormat_Enum_EnumDescription = &api.EnumDescription{
+	Name:      "EncodingFormat_Enum",
+	FullName:  "pb.EncodingFormat.Enum",
+	IsBitmask: false,
+	Enums: []*api.EnumMeta{
+		{
+			Value:         0,
+			Name:          "PEM",
+			FullName:      "pb.EncodingFormat.PEM",
+			Display:       Display_EncodingFormat_PEM,
+			Documentation: `PEM indicates that the encoding format is PEM`,
+		},
+		{
+			Value:         1,
+			Name:          "DER",
+			FullName:      "pb.EncodingFormat.DER",
+			Display:       Display_EncodingFormat_DER,
+			Documentation: `DER indicates that the encoding format is DER`,
+		},
+		{
+			Value:         2,
+			Name:          "PKCS7",
+			FullName:      "pb.EncodingFormat.PKCS7",
+			Display:       Display_EncodingFormat_PKCS7,
+			Documentation: `PKCS7 indicates that the encoding format is PKCS7`,
+		},
+	},
+}
+
+var EncodingFormat_Enum_Meta = map[EncodingFormat_Enum]*api.EnumMeta{
+	EncodingFormat_PEM:   EncodingFormat_Enum_EnumDescription.Enums[0],
+	EncodingFormat_DER:   EncodingFormat_Enum_EnumDescription.Enums[1],
+	EncodingFormat_PKCS7: EncodingFormat_Enum_EnumDescription.Enums[2],
 }
 
 //
@@ -56,7 +721,7 @@ var EnumNameTypes = map[string]reflect.Type{
 
 type EventType_EnumSlice []EventType_Enum
 
-const EventType_Enum_SupportedNamesHelp = "Unknown,OrgCreated,OrgUpdated,OrgDeleted,OrgMemberAdded,OrgMemberRemoved,OrgMemberRoleChanged,OrgMemberInvited,OrgMemberAccepted"
+const EventType_Enum_SupportedNamesHelp = "Unknown,OrgCreated,OrgUpdated,OrgDeleted,OrgMemberAdded,OrgMemberRemoved,OrgMemberRoleChanged,OrgMemberInvited,OrgMemberAccepted,ProjectCreated,ProjectUpdated,ProjectDeleted,ProjectMemberAdded,ProjectMemberRemoved,ProjectMemberRoleChanged,ProjectMemberInvited,ProjectMemberAccepted,UserLogin,TokenRevoked,APIKeyCreated,APIKeyDeleted,APIKeyLogin,IssuerRegistered,IssuerActivated,IssuerUpdated,ProfileRegistered,ProfileDeleted,CertificateIssued,CertificateRevoked,CrlPublished,RootRegistered"
 
 // ValuesMap returns a map of enum values
 func (s EventType_Enum) ValuesMap() map[string]int32 {
@@ -175,51 +840,139 @@ func (_ EventType_Enum) Parse(val any) EventType_Enum {
 }
 
 var EventType_Enum_Name = map[EventType_Enum]string{
-	EventType_Unknown:              "Unknown",
-	EventType_OrgCreated:           "OrgCreated",
-	EventType_OrgUpdated:           "OrgUpdated",
-	EventType_OrgDeleted:           "OrgDeleted",
-	EventType_OrgMemberAdded:       "OrgMemberAdded",
-	EventType_OrgMemberRemoved:     "OrgMemberRemoved",
-	EventType_OrgMemberRoleChanged: "OrgMemberRoleChanged",
-	EventType_OrgMemberInvited:     "OrgMemberInvited",
-	EventType_OrgMemberAccepted:    "OrgMemberAccepted",
+	EventType_Unknown:                  "Unknown",
+	EventType_OrgCreated:               "OrgCreated",
+	EventType_OrgUpdated:               "OrgUpdated",
+	EventType_OrgDeleted:               "OrgDeleted",
+	EventType_OrgMemberAdded:           "OrgMemberAdded",
+	EventType_OrgMemberRemoved:         "OrgMemberRemoved",
+	EventType_OrgMemberRoleChanged:     "OrgMemberRoleChanged",
+	EventType_OrgMemberInvited:         "OrgMemberInvited",
+	EventType_OrgMemberAccepted:        "OrgMemberAccepted",
+	EventType_ProjectCreated:           "ProjectCreated",
+	EventType_ProjectUpdated:           "ProjectUpdated",
+	EventType_ProjectDeleted:           "ProjectDeleted",
+	EventType_ProjectMemberAdded:       "ProjectMemberAdded",
+	EventType_ProjectMemberRemoved:     "ProjectMemberRemoved",
+	EventType_ProjectMemberRoleChanged: "ProjectMemberRoleChanged",
+	EventType_ProjectMemberInvited:     "ProjectMemberInvited",
+	EventType_ProjectMemberAccepted:    "ProjectMemberAccepted",
+	EventType_UserLogin:                "UserLogin",
+	EventType_TokenRevoked:             "TokenRevoked",
+	EventType_APIKeyCreated:            "APIKeyCreated",
+	EventType_APIKeyDeleted:            "APIKeyDeleted",
+	EventType_APIKeyLogin:              "APIKeyLogin",
+	EventType_IssuerRegistered:         "IssuerRegistered",
+	EventType_IssuerActivated:          "IssuerActivated",
+	EventType_IssuerUpdated:            "IssuerUpdated",
+	EventType_ProfileRegistered:        "ProfileRegistered",
+	EventType_ProfileDeleted:           "ProfileDeleted",
+	EventType_CertificateIssued:        "CertificateIssued",
+	EventType_CertificateRevoked:       "CertificateRevoked",
+	EventType_CrlPublished:             "CrlPublished",
+	EventType_RootRegistered:           "RootRegistered",
 }
 
 var EventType_Enum_Value = map[string]EventType_Enum{
-	"Unknown":              EventType_Unknown,
-	"OrgCreated":           EventType_OrgCreated,
-	"OrgUpdated":           EventType_OrgUpdated,
-	"OrgDeleted":           EventType_OrgDeleted,
-	"OrgMemberAdded":       EventType_OrgMemberAdded,
-	"OrgMemberRemoved":     EventType_OrgMemberRemoved,
-	"OrgMemberRoleChanged": EventType_OrgMemberRoleChanged,
-	"OrgMemberInvited":     EventType_OrgMemberInvited,
-	"OrgMemberAccepted":    EventType_OrgMemberAccepted,
+	"Unknown":                  EventType_Unknown,
+	"OrgCreated":               EventType_OrgCreated,
+	"OrgUpdated":               EventType_OrgUpdated,
+	"OrgDeleted":               EventType_OrgDeleted,
+	"OrgMemberAdded":           EventType_OrgMemberAdded,
+	"OrgMemberRemoved":         EventType_OrgMemberRemoved,
+	"OrgMemberRoleChanged":     EventType_OrgMemberRoleChanged,
+	"OrgMemberInvited":         EventType_OrgMemberInvited,
+	"OrgMemberAccepted":        EventType_OrgMemberAccepted,
+	"ProjectCreated":           EventType_ProjectCreated,
+	"ProjectUpdated":           EventType_ProjectUpdated,
+	"ProjectDeleted":           EventType_ProjectDeleted,
+	"ProjectMemberAdded":       EventType_ProjectMemberAdded,
+	"ProjectMemberRemoved":     EventType_ProjectMemberRemoved,
+	"ProjectMemberRoleChanged": EventType_ProjectMemberRoleChanged,
+	"ProjectMemberInvited":     EventType_ProjectMemberInvited,
+	"ProjectMemberAccepted":    EventType_ProjectMemberAccepted,
+	"UserLogin":                EventType_UserLogin,
+	"TokenRevoked":             EventType_TokenRevoked,
+	"APIKeyCreated":            EventType_APIKeyCreated,
+	"APIKeyDeleted":            EventType_APIKeyDeleted,
+	"APIKeyLogin":              EventType_APIKeyLogin,
+	"IssuerRegistered":         EventType_IssuerRegistered,
+	"IssuerActivated":          EventType_IssuerActivated,
+	"IssuerUpdated":            EventType_IssuerUpdated,
+	"ProfileRegistered":        EventType_ProfileRegistered,
+	"ProfileDeleted":           EventType_ProfileDeleted,
+	"CertificateIssued":        EventType_CertificateIssued,
+	"CertificateRevoked":       EventType_CertificateRevoked,
+	"CrlPublished":             EventType_CrlPublished,
+	"RootRegistered":           EventType_RootRegistered,
 }
 
 var EventType_Enum_DisplayName = map[EventType_Enum]string{
-	EventType_Unknown:              Display_EventType_Unknown,
-	EventType_OrgCreated:           Display_EventType_OrgCreated,
-	EventType_OrgUpdated:           Display_EventType_OrgUpdated,
-	EventType_OrgDeleted:           Display_EventType_OrgDeleted,
-	EventType_OrgMemberAdded:       Display_EventType_OrgMemberAdded,
-	EventType_OrgMemberRemoved:     Display_EventType_OrgMemberRemoved,
-	EventType_OrgMemberRoleChanged: Display_EventType_OrgMemberRoleChanged,
-	EventType_OrgMemberInvited:     Display_EventType_OrgMemberInvited,
-	EventType_OrgMemberAccepted:    Display_EventType_OrgMemberAccepted,
+	EventType_Unknown:                  Display_EventType_Unknown,
+	EventType_OrgCreated:               Display_EventType_OrgCreated,
+	EventType_OrgUpdated:               Display_EventType_OrgUpdated,
+	EventType_OrgDeleted:               Display_EventType_OrgDeleted,
+	EventType_OrgMemberAdded:           Display_EventType_OrgMemberAdded,
+	EventType_OrgMemberRemoved:         Display_EventType_OrgMemberRemoved,
+	EventType_OrgMemberRoleChanged:     Display_EventType_OrgMemberRoleChanged,
+	EventType_OrgMemberInvited:         Display_EventType_OrgMemberInvited,
+	EventType_OrgMemberAccepted:        Display_EventType_OrgMemberAccepted,
+	EventType_ProjectCreated:           Display_EventType_ProjectCreated,
+	EventType_ProjectUpdated:           Display_EventType_ProjectUpdated,
+	EventType_ProjectDeleted:           Display_EventType_ProjectDeleted,
+	EventType_ProjectMemberAdded:       Display_EventType_ProjectMemberAdded,
+	EventType_ProjectMemberRemoved:     Display_EventType_ProjectMemberRemoved,
+	EventType_ProjectMemberRoleChanged: Display_EventType_ProjectMemberRoleChanged,
+	EventType_ProjectMemberInvited:     Display_EventType_ProjectMemberInvited,
+	EventType_ProjectMemberAccepted:    Display_EventType_ProjectMemberAccepted,
+	EventType_UserLogin:                Display_EventType_UserLogin,
+	EventType_TokenRevoked:             Display_EventType_TokenRevoked,
+	EventType_APIKeyCreated:            Display_EventType_APIKeyCreated,
+	EventType_APIKeyDeleted:            Display_EventType_APIKeyDeleted,
+	EventType_APIKeyLogin:              Display_EventType_APIKeyLogin,
+	EventType_IssuerRegistered:         Display_EventType_IssuerRegistered,
+	EventType_IssuerActivated:          Display_EventType_IssuerActivated,
+	EventType_IssuerUpdated:            Display_EventType_IssuerUpdated,
+	EventType_ProfileRegistered:        Display_EventType_ProfileRegistered,
+	EventType_ProfileDeleted:           Display_EventType_ProfileDeleted,
+	EventType_CertificateIssued:        Display_EventType_CertificateIssued,
+	EventType_CertificateRevoked:       Display_EventType_CertificateRevoked,
+	EventType_CrlPublished:             Display_EventType_CrlPublished,
+	EventType_RootRegistered:           Display_EventType_RootRegistered,
 }
 
 var EventType_Enum_displayName = map[int32]string{
-	0: Display_EventType_Unknown,
-	1: Display_EventType_OrgCreated,
-	2: Display_EventType_OrgUpdated,
-	3: Display_EventType_OrgDeleted,
-	4: Display_EventType_OrgMemberAdded,
-	5: Display_EventType_OrgMemberRemoved,
-	6: Display_EventType_OrgMemberRoleChanged,
-	7: Display_EventType_OrgMemberInvited,
-	8: Display_EventType_OrgMemberAccepted,
+	0:   Display_EventType_Unknown,
+	1:   Display_EventType_OrgCreated,
+	2:   Display_EventType_OrgUpdated,
+	3:   Display_EventType_OrgDeleted,
+	4:   Display_EventType_OrgMemberAdded,
+	5:   Display_EventType_OrgMemberRemoved,
+	6:   Display_EventType_OrgMemberRoleChanged,
+	7:   Display_EventType_OrgMemberInvited,
+	8:   Display_EventType_OrgMemberAccepted,
+	9:   Display_EventType_ProjectCreated,
+	10:  Display_EventType_ProjectUpdated,
+	11:  Display_EventType_ProjectDeleted,
+	12:  Display_EventType_ProjectMemberAdded,
+	13:  Display_EventType_ProjectMemberRemoved,
+	14:  Display_EventType_ProjectMemberRoleChanged,
+	15:  Display_EventType_ProjectMemberInvited,
+	16:  Display_EventType_ProjectMemberAccepted,
+	20:  Display_EventType_UserLogin,
+	21:  Display_EventType_TokenRevoked,
+	31:  Display_EventType_APIKeyCreated,
+	32:  Display_EventType_APIKeyDeleted,
+	33:  Display_EventType_APIKeyLogin,
+	100: Display_EventType_IssuerRegistered,
+	101: Display_EventType_IssuerActivated,
+	102: Display_EventType_IssuerUpdated,
+	103: Display_EventType_ProfileRegistered,
+	104: Display_EventType_ProfileDeleted,
+	105: Display_EventType_CertificateIssued,
+	106: Display_EventType_CertificateRevoked,
+	107: Display_EventType_CrlPublished,
+	108: Display_EventType_RootRegistered,
 }
 
 var EventType_Enum_EnumDescription = &api.EnumDescription{
@@ -292,20 +1045,194 @@ changed`,
 			Documentation: `OrgMemberAccepted indicates that an org member accepted an
 invitation`,
 		},
+		{
+			Value:         9,
+			Name:          "ProjectCreated",
+			FullName:      "pb.EventType.ProjectCreated",
+			Display:       Display_EventType_ProjectCreated,
+			Documentation: `ProjectCreated indicates that a project was created`,
+		},
+		{
+			Value:         10,
+			Name:          "ProjectUpdated",
+			FullName:      "pb.EventType.ProjectUpdated",
+			Display:       Display_EventType_ProjectUpdated,
+			Documentation: `ProjectUpdated indicates that a project was updated`,
+		},
+		{
+			Value:         11,
+			Name:          "ProjectDeleted",
+			FullName:      "pb.EventType.ProjectDeleted",
+			Display:       Display_EventType_ProjectDeleted,
+			Documentation: `ProjectDeleted indicates that a project was deleted`,
+		},
+		{
+			Value:         12,
+			Name:          "ProjectMemberAdded",
+			FullName:      "pb.EventType.ProjectMemberAdded",
+			Display:       Display_EventType_ProjectMemberAdded,
+			Documentation: `ProjectMemberAdded indicates that a project member was added`,
+		},
+		{
+			Value:         13,
+			Name:          "ProjectMemberRemoved",
+			FullName:      "pb.EventType.ProjectMemberRemoved",
+			Display:       Display_EventType_ProjectMemberRemoved,
+			Documentation: `ProjectMemberRemoved indicates that a project member was removed`,
+		},
+		{
+			Value:    14,
+			Name:     "ProjectMemberRoleChanged",
+			FullName: "pb.EventType.ProjectMemberRoleChanged",
+			Display:  Display_EventType_ProjectMemberRoleChanged,
+			Documentation: `ProjectMemberRoleChanged indicates that a project member role was
+changed`,
+		},
+		{
+			Value:         15,
+			Name:          "ProjectMemberInvited",
+			FullName:      "pb.EventType.ProjectMemberInvited",
+			Display:       Display_EventType_ProjectMemberInvited,
+			Documentation: `ProjectMemberInvited indicates that a project member was invited`,
+		},
+		{
+			Value:    16,
+			Name:     "ProjectMemberAccepted",
+			FullName: "pb.EventType.ProjectMemberAccepted",
+			Display:  Display_EventType_ProjectMemberAccepted,
+			Documentation: `ProjectMemberAccepted indicates that a project member accepted an
+invitation`,
+		},
+		{
+			Value:    20,
+			Name:     "UserLogin",
+			FullName: "pb.EventType.UserLogin",
+			Display:  Display_EventType_UserLogin,
+		},
+		{
+			Value:    21,
+			Name:     "TokenRevoked",
+			FullName: "pb.EventType.TokenRevoked",
+			Display:  Display_EventType_TokenRevoked,
+		},
+		{
+			Value:    31,
+			Name:     "APIKeyCreated",
+			FullName: "pb.EventType.APIKeyCreated",
+			Display:  Display_EventType_APIKeyCreated,
+		},
+		{
+			Value:    32,
+			Name:     "APIKeyDeleted",
+			FullName: "pb.EventType.APIKeyDeleted",
+			Display:  Display_EventType_APIKeyDeleted,
+		},
+		{
+			Value:    33,
+			Name:     "APIKeyLogin",
+			FullName: "pb.EventType.APIKeyLogin",
+			Display:  Display_EventType_APIKeyLogin,
+		},
+		{
+			Value:         100,
+			Name:          "IssuerRegistered",
+			FullName:      "pb.EventType.IssuerRegistered",
+			Display:       Display_EventType_IssuerRegistered,
+			Documentation: `IssuerRegistered indicates that an issuer was registered or imported`,
+		},
+		{
+			Value:         101,
+			Name:          "IssuerActivated",
+			FullName:      "pb.EventType.IssuerActivated",
+			Display:       Display_EventType_IssuerActivated,
+			Documentation: `IssuerActivated indicates that a Pending issuer was activated`,
+		},
+		{
+			Value:         102,
+			Name:          "IssuerUpdated",
+			FullName:      "pb.EventType.IssuerUpdated",
+			Display:       Display_EventType_IssuerUpdated,
+			Documentation: `IssuerUpdated indicates that an issuer config or status changed`,
+		},
+		{
+			Value:    103,
+			Name:     "ProfileRegistered",
+			FullName: "pb.EventType.ProfileRegistered",
+			Display:  Display_EventType_ProfileRegistered,
+			Documentation: `ProfileRegistered indicates that a certificate profile was created
+or replaced`,
+		},
+		{
+			Value:         104,
+			Name:          "ProfileDeleted",
+			FullName:      "pb.EventType.ProfileDeleted",
+			Display:       Display_EventType_ProfileDeleted,
+			Documentation: `ProfileDeleted indicates that a certificate profile was deleted`,
+		},
+		{
+			Value:         105,
+			Name:          "CertificateIssued",
+			FullName:      "pb.EventType.CertificateIssued",
+			Display:       Display_EventType_CertificateIssued,
+			Documentation: `CertificateIssued indicates that a certificate was issued`,
+		},
+		{
+			Value:         106,
+			Name:          "CertificateRevoked",
+			FullName:      "pb.EventType.CertificateRevoked",
+			Display:       Display_EventType_CertificateRevoked,
+			Documentation: `CertificateRevoked indicates that a certificate was revoked`,
+		},
+		{
+			Value:         107,
+			Name:          "CrlPublished",
+			FullName:      "pb.EventType.CrlPublished",
+			Display:       Display_EventType_CrlPublished,
+			Documentation: `CrlPublished indicates that a CRL was published`,
+		},
+		{
+			Value:         108,
+			Name:          "RootRegistered",
+			FullName:      "pb.EventType.RootRegistered",
+			Display:       Display_EventType_RootRegistered,
+			Documentation: `RootRegistered indicates that a trust anchor was registered`,
+		},
 	},
 	Documentation: `EventType defines event types`,
 }
 
 var EventType_Enum_Meta = map[EventType_Enum]*api.EnumMeta{
-	EventType_Unknown:              EventType_Enum_EnumDescription.Enums[0],
-	EventType_OrgCreated:           EventType_Enum_EnumDescription.Enums[1],
-	EventType_OrgUpdated:           EventType_Enum_EnumDescription.Enums[2],
-	EventType_OrgDeleted:           EventType_Enum_EnumDescription.Enums[3],
-	EventType_OrgMemberAdded:       EventType_Enum_EnumDescription.Enums[4],
-	EventType_OrgMemberRemoved:     EventType_Enum_EnumDescription.Enums[5],
-	EventType_OrgMemberRoleChanged: EventType_Enum_EnumDescription.Enums[6],
-	EventType_OrgMemberInvited:     EventType_Enum_EnumDescription.Enums[7],
-	EventType_OrgMemberAccepted:    EventType_Enum_EnumDescription.Enums[8],
+	EventType_Unknown:                  EventType_Enum_EnumDescription.Enums[0],
+	EventType_OrgCreated:               EventType_Enum_EnumDescription.Enums[1],
+	EventType_OrgUpdated:               EventType_Enum_EnumDescription.Enums[2],
+	EventType_OrgDeleted:               EventType_Enum_EnumDescription.Enums[3],
+	EventType_OrgMemberAdded:           EventType_Enum_EnumDescription.Enums[4],
+	EventType_OrgMemberRemoved:         EventType_Enum_EnumDescription.Enums[5],
+	EventType_OrgMemberRoleChanged:     EventType_Enum_EnumDescription.Enums[6],
+	EventType_OrgMemberInvited:         EventType_Enum_EnumDescription.Enums[7],
+	EventType_OrgMemberAccepted:        EventType_Enum_EnumDescription.Enums[8],
+	EventType_ProjectCreated:           EventType_Enum_EnumDescription.Enums[9],
+	EventType_ProjectUpdated:           EventType_Enum_EnumDescription.Enums[10],
+	EventType_ProjectDeleted:           EventType_Enum_EnumDescription.Enums[11],
+	EventType_ProjectMemberAdded:       EventType_Enum_EnumDescription.Enums[12],
+	EventType_ProjectMemberRemoved:     EventType_Enum_EnumDescription.Enums[13],
+	EventType_ProjectMemberRoleChanged: EventType_Enum_EnumDescription.Enums[14],
+	EventType_ProjectMemberInvited:     EventType_Enum_EnumDescription.Enums[15],
+	EventType_ProjectMemberAccepted:    EventType_Enum_EnumDescription.Enums[16],
+	EventType_UserLogin:                EventType_Enum_EnumDescription.Enums[17],
+	EventType_TokenRevoked:             EventType_Enum_EnumDescription.Enums[18],
+	EventType_APIKeyCreated:            EventType_Enum_EnumDescription.Enums[19],
+	EventType_APIKeyDeleted:            EventType_Enum_EnumDescription.Enums[20],
+	EventType_APIKeyLogin:              EventType_Enum_EnumDescription.Enums[21],
+	EventType_IssuerRegistered:         EventType_Enum_EnumDescription.Enums[22],
+	EventType_IssuerActivated:          EventType_Enum_EnumDescription.Enums[23],
+	EventType_IssuerUpdated:            EventType_Enum_EnumDescription.Enums[24],
+	EventType_ProfileRegistered:        EventType_Enum_EnumDescription.Enums[25],
+	EventType_ProfileDeleted:           EventType_Enum_EnumDescription.Enums[26],
+	EventType_CertificateIssued:        EventType_Enum_EnumDescription.Enums[27],
+	EventType_CertificateRevoked:       EventType_Enum_EnumDescription.Enums[28],
+	EventType_CrlPublished:             EventType_Enum_EnumDescription.Enums[29],
+	EventType_RootRegistered:           EventType_Enum_EnumDescription.Enums[30],
 }
 
 //
@@ -516,6 +1443,217 @@ var IDP_Enum_Meta = map[IDP_Enum]*api.EnumMeta{
 }
 
 //
+// IssuerStatus_Enum
+//
+
+type IssuerStatus_EnumSlice []IssuerStatus_Enum
+
+const IssuerStatus_Enum_SupportedNamesHelp = "Unknown,Pending,Active,Archived,Destroyed"
+
+// ValuesMap returns a map of enum values
+func (s IssuerStatus_Enum) ValuesMap() map[string]int32 {
+	return IssuerStatus_Enum_value
+}
+
+// NamesMap returns map of enum names
+func (s IssuerStatus_Enum) NamesMap() map[int32]string {
+	return IssuerStatus_Enum_name
+}
+
+// DisplayNamesMap returns a map of enum display names
+func (s IssuerStatus_Enum) DisplayNamesMap() map[int32]string {
+	return IssuerStatus_Enum_displayName
+}
+
+// SupportedNames returns string of supported Enum name concatenated by ","
+func (s IssuerStatus_Enum) SupportedNames() string {
+	return enum.SupportedNames[IssuerStatus_Enum]()
+}
+
+// ValueNames returns list of Enum value names
+func (s IssuerStatus_Enum) ValueNames() []string {
+	return enum.FlagNames(s)
+}
+
+// ValueString returns string of Enum value names concatenated by ","
+func (s IssuerStatus_Enum) ValueString() string {
+	return strings.Join(s.ValueNames(), ",")
+}
+
+// Flags returns list of Enum values
+func (s IssuerStatus_Enum) Flags() []IssuerStatus_Enum {
+	return enum.Flags(s)
+}
+
+// FlagsInt returns list of Enum values as int32
+func (s IssuerStatus_Enum) FlagsInt() []int32 {
+	return enum.FlagsInt(s)
+}
+
+// UnmarshalYAML unmarshals Enum from YAML
+func (s *IssuerStatus_Enum) UnmarshalYAML(unmarshal func(any) error) error {
+	// Try to unmarshal as an integer
+	var valInt int32
+	if err := unmarshal(&valInt); err == nil {
+		*s = IssuerStatus_Enum(valInt)
+		return nil
+	}
+
+	// Try to unmarshal as a string
+	var valStr string
+	if err := unmarshal(&valStr); err == nil {
+		*s = enum.Parse[IssuerStatus_Enum](valStr)
+		return nil
+	}
+
+	// If both attempts fail, set to default
+	*s = 0
+	return nil
+}
+
+// UnmarshalJSON unmarshals Enum from JSON
+func (s *IssuerStatus_Enum) UnmarshalJSON(b []byte) error {
+	var val any
+	if err := json.Unmarshal(b, &val); err != nil {
+		return err
+	}
+	*s = IssuerStatus_Enum(0).Parse(val)
+	return nil
+}
+
+// DisplayNames returns display names of Enum bitflag value
+func (s IssuerStatus_Enum) DisplayNames() []string {
+	flags := enum.Flags(s)
+	count := len(flags)
+	if count == 0 {
+		return []string{s.String()}
+	}
+	if count == 1 {
+		return []string{IssuerStatus_Enum_DisplayName[flags[0]]}
+	}
+	var names []string
+	for _, flag := range flags {
+		names = append(names, IssuerStatus_Enum_DisplayName[flag])
+	}
+	return names
+}
+
+// DisplayName returns display name of Enum value
+func (s IssuerStatus_Enum) DisplayName() string {
+	if val, ok := IssuerStatus_Enum_DisplayName[s]; ok {
+		return val
+	}
+	return s.String()
+}
+
+// Meta returns Enum meta information
+func (s IssuerStatus_Enum) Meta() *api.EnumMeta {
+	return IssuerStatus_Enum_Meta[s]
+}
+
+// Describe returns Enum meta information for all values
+func (s IssuerStatus_Enum) Describe() map[IssuerStatus_Enum]*api.EnumMeta {
+	return IssuerStatus_Enum_Meta
+}
+
+// GetDescription returns Enum description
+func (s IssuerStatus_Enum) GetDescription() *api.EnumDescription {
+	return IssuerStatus_Enum_EnumDescription
+}
+
+// Parse returns Enum value parsed from val
+func (_ IssuerStatus_Enum) Parse(val any) IssuerStatus_Enum {
+	return IssuerStatus_Enum_EnumDescription.ParseEnum[IssuerStatus_Enum](val)
+}
+
+var IssuerStatus_Enum_Name = map[IssuerStatus_Enum]string{
+	IssuerStatus_Unknown:   "Unknown",
+	IssuerStatus_Pending:   "Pending",
+	IssuerStatus_Active:    "Active",
+	IssuerStatus_Archived:  "Archived",
+	IssuerStatus_Destroyed: "Destroyed",
+}
+
+var IssuerStatus_Enum_Value = map[string]IssuerStatus_Enum{
+	"Unknown":   IssuerStatus_Unknown,
+	"Pending":   IssuerStatus_Pending,
+	"Active":    IssuerStatus_Active,
+	"Archived":  IssuerStatus_Archived,
+	"Destroyed": IssuerStatus_Destroyed,
+}
+
+var IssuerStatus_Enum_DisplayName = map[IssuerStatus_Enum]string{
+	IssuerStatus_Unknown:   Display_IssuerStatus_Unknown,
+	IssuerStatus_Pending:   Display_IssuerStatus_Pending,
+	IssuerStatus_Active:    Display_IssuerStatus_Active,
+	IssuerStatus_Archived:  Display_IssuerStatus_Archived,
+	IssuerStatus_Destroyed: Display_IssuerStatus_Destroyed,
+}
+
+var IssuerStatus_Enum_displayName = map[int32]string{
+	0: Display_IssuerStatus_Unknown,
+	1: Display_IssuerStatus_Pending,
+	2: Display_IssuerStatus_Active,
+	3: Display_IssuerStatus_Archived,
+	4: Display_IssuerStatus_Destroyed,
+}
+
+var IssuerStatus_Enum_EnumDescription = &api.EnumDescription{
+	Name:      "IssuerStatus_Enum",
+	FullName:  "pb.IssuerStatus.Enum",
+	IsBitmask: false,
+	Enums: []*api.EnumMeta{
+		{
+			Value:         0,
+			Name:          "Unknown",
+			FullName:      "pb.IssuerStatus.Unknown",
+			Display:       Display_IssuerStatus_Unknown,
+			Documentation: `Unknown indicates that the issuer status is unknown`,
+		},
+		{
+			Value:    1,
+			Name:     "Pending",
+			FullName: "pb.IssuerStatus.Pending",
+			Display:  Display_IssuerStatus_Pending,
+			Documentation: `Pending indicates that the key is generated and the CSR is awaiting
+an externally signed certificate`,
+		},
+		{
+			Value:         2,
+			Name:          "Active",
+			FullName:      "pb.IssuerStatus.Active",
+			Display:       Display_IssuerStatus_Active,
+			Documentation: `Active indicates that the issuer signs certificates`,
+		},
+		{
+			Value:    3,
+			Name:     "Archived",
+			FullName: "pb.IssuerStatus.Archived",
+			Display:  Display_IssuerStatus_Archived,
+			Documentation: `Archived indicates that the issuer does not sign new certificates,
+but still serves CRL and OCSP for the issued ones`,
+		},
+		{
+			Value:    4,
+			Name:     "Destroyed",
+			FullName: "pb.IssuerStatus.Destroyed",
+			Display:  Display_IssuerStatus_Destroyed,
+			Documentation: `Destroyed indicates that the private key is destroyed;
+CRL and OCSP are no longer produced`,
+		},
+	},
+	Documentation: `IssuerStatus defines lifecycle status of an issuer`,
+}
+
+var IssuerStatus_Enum_Meta = map[IssuerStatus_Enum]*api.EnumMeta{
+	IssuerStatus_Unknown:   IssuerStatus_Enum_EnumDescription.Enums[0],
+	IssuerStatus_Pending:   IssuerStatus_Enum_EnumDescription.Enums[1],
+	IssuerStatus_Active:    IssuerStatus_Enum_EnumDescription.Enums[2],
+	IssuerStatus_Archived:  IssuerStatus_Enum_EnumDescription.Enums[3],
+	IssuerStatus_Destroyed: IssuerStatus_Enum_EnumDescription.Enums[4],
+}
+
+//
 // ItemStatus_Enum
 //
 
@@ -713,66 +1851,66 @@ var ItemStatus_Enum_Meta = map[ItemStatus_Enum]*api.EnumMeta{
 }
 
 //
-// PermissionsScope_Enum
+// ReasonCode_Enum
 //
 
-type PermissionsScope_EnumSlice []PermissionsScope_Enum
+type ReasonCode_EnumSlice []ReasonCode_Enum
 
-const PermissionsScope_Enum_SupportedNamesHelp = "None,ReadOnly,Restricted,All"
+const ReasonCode_Enum_SupportedNamesHelp = "Unspecified,KeyCompromise,CACompromise,AffiliationChanged,Superseded,CessationOfOperation,CertificateHold,RemoveFromCRL,PrivilegeWithdrawn,AACompromise"
 
 // ValuesMap returns a map of enum values
-func (s PermissionsScope_Enum) ValuesMap() map[string]int32 {
-	return PermissionsScope_Enum_value
+func (s ReasonCode_Enum) ValuesMap() map[string]int32 {
+	return ReasonCode_Enum_value
 }
 
 // NamesMap returns map of enum names
-func (s PermissionsScope_Enum) NamesMap() map[int32]string {
-	return PermissionsScope_Enum_name
+func (s ReasonCode_Enum) NamesMap() map[int32]string {
+	return ReasonCode_Enum_name
 }
 
 // DisplayNamesMap returns a map of enum display names
-func (s PermissionsScope_Enum) DisplayNamesMap() map[int32]string {
-	return PermissionsScope_Enum_displayName
+func (s ReasonCode_Enum) DisplayNamesMap() map[int32]string {
+	return ReasonCode_Enum_displayName
 }
 
 // SupportedNames returns string of supported Enum name concatenated by ","
-func (s PermissionsScope_Enum) SupportedNames() string {
-	return enum.SupportedNames[PermissionsScope_Enum]()
+func (s ReasonCode_Enum) SupportedNames() string {
+	return enum.SupportedNames[ReasonCode_Enum]()
 }
 
 // ValueNames returns list of Enum value names
-func (s PermissionsScope_Enum) ValueNames() []string {
+func (s ReasonCode_Enum) ValueNames() []string {
 	return enum.FlagNames(s)
 }
 
 // ValueString returns string of Enum value names concatenated by ","
-func (s PermissionsScope_Enum) ValueString() string {
+func (s ReasonCode_Enum) ValueString() string {
 	return strings.Join(s.ValueNames(), ",")
 }
 
 // Flags returns list of Enum values
-func (s PermissionsScope_Enum) Flags() []PermissionsScope_Enum {
+func (s ReasonCode_Enum) Flags() []ReasonCode_Enum {
 	return enum.Flags(s)
 }
 
 // FlagsInt returns list of Enum values as int32
-func (s PermissionsScope_Enum) FlagsInt() []int32 {
+func (s ReasonCode_Enum) FlagsInt() []int32 {
 	return enum.FlagsInt(s)
 }
 
 // UnmarshalYAML unmarshals Enum from YAML
-func (s *PermissionsScope_Enum) UnmarshalYAML(unmarshal func(any) error) error {
+func (s *ReasonCode_Enum) UnmarshalYAML(unmarshal func(any) error) error {
 	// Try to unmarshal as an integer
 	var valInt int32
 	if err := unmarshal(&valInt); err == nil {
-		*s = PermissionsScope_Enum(valInt)
+		*s = ReasonCode_Enum(valInt)
 		return nil
 	}
 
 	// Try to unmarshal as a string
 	var valStr string
 	if err := unmarshal(&valStr); err == nil {
-		*s = enum.Parse[PermissionsScope_Enum](valStr)
+		*s = enum.Parse[ReasonCode_Enum](valStr)
 		return nil
 	}
 
@@ -782,139 +1920,202 @@ func (s *PermissionsScope_Enum) UnmarshalYAML(unmarshal func(any) error) error {
 }
 
 // UnmarshalJSON unmarshals Enum from JSON
-func (s *PermissionsScope_Enum) UnmarshalJSON(b []byte) error {
+func (s *ReasonCode_Enum) UnmarshalJSON(b []byte) error {
 	var val any
 	if err := json.Unmarshal(b, &val); err != nil {
 		return err
 	}
-	*s = PermissionsScope_Enum(0).Parse(val)
+	*s = ReasonCode_Enum(0).Parse(val)
 	return nil
 }
 
 // DisplayNames returns display names of Enum bitflag value
-func (s PermissionsScope_Enum) DisplayNames() []string {
+func (s ReasonCode_Enum) DisplayNames() []string {
 	flags := enum.Flags(s)
 	count := len(flags)
 	if count == 0 {
 		return []string{s.String()}
 	}
 	if count == 1 {
-		return []string{PermissionsScope_Enum_DisplayName[flags[0]]}
+		return []string{ReasonCode_Enum_DisplayName[flags[0]]}
 	}
 	var names []string
 	for _, flag := range flags {
-		names = append(names, PermissionsScope_Enum_DisplayName[flag])
+		names = append(names, ReasonCode_Enum_DisplayName[flag])
 	}
 	return names
 }
 
 // DisplayName returns display name of Enum value
-func (s PermissionsScope_Enum) DisplayName() string {
-	flags := enum.Flags(s)
-	count := len(flags)
-	if count == 0 {
-		return s.String()
+func (s ReasonCode_Enum) DisplayName() string {
+	if val, ok := ReasonCode_Enum_DisplayName[s]; ok {
+		return val
 	}
-	if count == 1 {
-		return PermissionsScope_Enum_DisplayName[flags[0]]
-	}
-	var names []string
-	for _, flag := range flags {
-		names = append(names, PermissionsScope_Enum_DisplayName[flag])
-	}
-	return strings.Join(names, ",")
+	return s.String()
 }
 
 // Meta returns Enum meta information
-func (s PermissionsScope_Enum) Meta() *api.EnumMeta {
-	return PermissionsScope_Enum_Meta[s]
+func (s ReasonCode_Enum) Meta() *api.EnumMeta {
+	return ReasonCode_Enum_Meta[s]
 }
 
 // Describe returns Enum meta information for all values
-func (s PermissionsScope_Enum) Describe() map[PermissionsScope_Enum]*api.EnumMeta {
-	return PermissionsScope_Enum_Meta
+func (s ReasonCode_Enum) Describe() map[ReasonCode_Enum]*api.EnumMeta {
+	return ReasonCode_Enum_Meta
 }
 
 // GetDescription returns Enum description
-func (s PermissionsScope_Enum) GetDescription() *api.EnumDescription {
-	return PermissionsScope_Enum_EnumDescription
+func (s ReasonCode_Enum) GetDescription() *api.EnumDescription {
+	return ReasonCode_Enum_EnumDescription
 }
 
 // Parse returns Enum value parsed from val
-func (_ PermissionsScope_Enum) Parse(val any) PermissionsScope_Enum {
-	return PermissionsScope_Enum_EnumDescription.ParseEnum[PermissionsScope_Enum](val)
+func (_ ReasonCode_Enum) Parse(val any) ReasonCode_Enum {
+	return ReasonCode_Enum_EnumDescription.ParseEnum[ReasonCode_Enum](val)
 }
 
-var PermissionsScope_Enum_Name = map[PermissionsScope_Enum]string{
-	PermissionsScope_None:       "None",
-	PermissionsScope_ReadOnly:   "ReadOnly",
-	PermissionsScope_Restricted: "Restricted",
-	PermissionsScope_All:        "All",
+var ReasonCode_Enum_Name = map[ReasonCode_Enum]string{
+	ReasonCode_Unspecified:          "Unspecified",
+	ReasonCode_KeyCompromise:        "KeyCompromise",
+	ReasonCode_CACompromise:         "CACompromise",
+	ReasonCode_AffiliationChanged:   "AffiliationChanged",
+	ReasonCode_Superseded:           "Superseded",
+	ReasonCode_CessationOfOperation: "CessationOfOperation",
+	ReasonCode_CertificateHold:      "CertificateHold",
+	ReasonCode_RemoveFromCRL:        "RemoveFromCRL",
+	ReasonCode_PrivilegeWithdrawn:   "PrivilegeWithdrawn",
+	ReasonCode_AACompromise:         "AACompromise",
 }
 
-var PermissionsScope_Enum_Value = map[string]PermissionsScope_Enum{
-	"None":       PermissionsScope_None,
-	"ReadOnly":   PermissionsScope_ReadOnly,
-	"Restricted": PermissionsScope_Restricted,
-	"All":        PermissionsScope_All,
+var ReasonCode_Enum_Value = map[string]ReasonCode_Enum{
+	"Unspecified":          ReasonCode_Unspecified,
+	"KeyCompromise":        ReasonCode_KeyCompromise,
+	"CACompromise":         ReasonCode_CACompromise,
+	"AffiliationChanged":   ReasonCode_AffiliationChanged,
+	"Superseded":           ReasonCode_Superseded,
+	"CessationOfOperation": ReasonCode_CessationOfOperation,
+	"CertificateHold":      ReasonCode_CertificateHold,
+	"RemoveFromCRL":        ReasonCode_RemoveFromCRL,
+	"PrivilegeWithdrawn":   ReasonCode_PrivilegeWithdrawn,
+	"AACompromise":         ReasonCode_AACompromise,
 }
 
-var PermissionsScope_Enum_DisplayName = map[PermissionsScope_Enum]string{
-	PermissionsScope_None:       Display_PermissionsScope_None,
-	PermissionsScope_ReadOnly:   Display_PermissionsScope_ReadOnly,
-	PermissionsScope_Restricted: Display_PermissionsScope_Restricted,
-	PermissionsScope_All:        Display_PermissionsScope_All,
+var ReasonCode_Enum_DisplayName = map[ReasonCode_Enum]string{
+	ReasonCode_Unspecified:          Display_ReasonCode_Unspecified,
+	ReasonCode_KeyCompromise:        Display_ReasonCode_KeyCompromise,
+	ReasonCode_CACompromise:         Display_ReasonCode_CACompromise,
+	ReasonCode_AffiliationChanged:   Display_ReasonCode_AffiliationChanged,
+	ReasonCode_Superseded:           Display_ReasonCode_Superseded,
+	ReasonCode_CessationOfOperation: Display_ReasonCode_CessationOfOperation,
+	ReasonCode_CertificateHold:      Display_ReasonCode_CertificateHold,
+	ReasonCode_RemoveFromCRL:        Display_ReasonCode_RemoveFromCRL,
+	ReasonCode_PrivilegeWithdrawn:   Display_ReasonCode_PrivilegeWithdrawn,
+	ReasonCode_AACompromise:         Display_ReasonCode_AACompromise,
 }
 
-var PermissionsScope_Enum_displayName = map[int32]string{
-	0:          Display_PermissionsScope_None,
-	1:          Display_PermissionsScope_ReadOnly,
-	2:          Display_PermissionsScope_Restricted,
-	2147483647: Display_PermissionsScope_All,
+var ReasonCode_Enum_displayName = map[int32]string{
+	0:  Display_ReasonCode_Unspecified,
+	1:  Display_ReasonCode_KeyCompromise,
+	2:  Display_ReasonCode_CACompromise,
+	3:  Display_ReasonCode_AffiliationChanged,
+	4:  Display_ReasonCode_Superseded,
+	5:  Display_ReasonCode_CessationOfOperation,
+	6:  Display_ReasonCode_CertificateHold,
+	8:  Display_ReasonCode_RemoveFromCRL,
+	9:  Display_ReasonCode_PrivilegeWithdrawn,
+	10: Display_ReasonCode_AACompromise,
 }
 
-var PermissionsScope_Enum_EnumDescription = &api.EnumDescription{
-	Name:      "PermissionsScope_Enum",
-	FullName:  "pb.PermissionsScope.Enum",
-	IsBitmask: true,
+var ReasonCode_Enum_EnumDescription = &api.EnumDescription{
+	Name:      "ReasonCode_Enum",
+	FullName:  "pb.ReasonCode.Enum",
+	IsBitmask: false,
 	Enums: []*api.EnumMeta{
 		{
 			Value:         0,
-			Name:          "None",
-			FullName:      "pb.PermissionsScope.None",
-			Display:       Display_PermissionsScope_None,
-			Documentation: `None indicates that the permissions scope is none`,
+			Name:          "Unspecified",
+			FullName:      "pb.ReasonCode.Unspecified",
+			Display:       Display_ReasonCode_Unspecified,
+			Documentation: `Unspecified indicates that the reason code is unspecified`,
 		},
 		{
 			Value:         1,
-			Name:          "ReadOnly",
-			FullName:      "pb.PermissionsScope.ReadOnly",
-			Display:       Display_PermissionsScope_ReadOnly,
-			Documentation: `ReadOnly indicates that the permissions scope is read only`,
+			Name:          "KeyCompromise",
+			FullName:      "pb.ReasonCode.KeyCompromise",
+			Display:       Display_ReasonCode_KeyCompromise,
+			Documentation: `KeyCompromise indicates that the subject key is compromised`,
 		},
 		{
 			Value:         2,
-			Name:          "Restricted",
-			FullName:      "pb.PermissionsScope.Restricted",
-			Display:       Display_PermissionsScope_Restricted,
-			Documentation: `Restricted indicates that the permissions scope is restricted`,
+			Name:          "CACompromise",
+			FullName:      "pb.ReasonCode.CACompromise",
+			Display:       Display_ReasonCode_CACompromise,
+			Documentation: `CACompromise indicates that the issuing CA is compromised`,
 		},
 		{
-			Value:         2147483647,
-			Name:          "All",
-			FullName:      "pb.PermissionsScope.All",
-			Display:       Display_PermissionsScope_All,
-			Documentation: `All is the bitmask for all permissions scopes`,
+			Value:         3,
+			Name:          "AffiliationChanged",
+			FullName:      "pb.ReasonCode.AffiliationChanged",
+			Display:       Display_ReasonCode_AffiliationChanged,
+			Documentation: `AffiliationChanged indicates that the subject affiliation changed`,
+		},
+		{
+			Value:         4,
+			Name:          "Superseded",
+			FullName:      "pb.ReasonCode.Superseded",
+			Display:       Display_ReasonCode_Superseded,
+			Documentation: `Superseded indicates that the certificate is superseded`,
+		},
+		{
+			Value:    5,
+			Name:     "CessationOfOperation",
+			FullName: "pb.ReasonCode.CessationOfOperation",
+			Display:  Display_ReasonCode_CessationOfOperation,
+			Documentation: `CessationOfOperation indicates that the certificate is no longer in
+operation`,
+		},
+		{
+			Value:         6,
+			Name:          "CertificateHold",
+			FullName:      "pb.ReasonCode.CertificateHold",
+			Display:       Display_ReasonCode_CertificateHold,
+			Documentation: `CertificateHold indicates that the certificate is on hold`,
+		},
+		{
+			Value:         8,
+			Name:          "RemoveFromCRL",
+			FullName:      "pb.ReasonCode.RemoveFromCRL",
+			Display:       Display_ReasonCode_RemoveFromCRL,
+			Documentation: `RemoveFromCRL indicates that the certificate is removed from the CRL`,
+		},
+		{
+			Value:         9,
+			Name:          "PrivilegeWithdrawn",
+			FullName:      "pb.ReasonCode.PrivilegeWithdrawn",
+			Display:       Display_ReasonCode_PrivilegeWithdrawn,
+			Documentation: `PrivilegeWithdrawn indicates that the privilege is withdrawn`,
+		},
+		{
+			Value:         10,
+			Name:          "AACompromise",
+			FullName:      "pb.ReasonCode.AACompromise",
+			Display:       Display_ReasonCode_AACompromise,
+			Documentation: `AACompromise indicates that the attribute authority is compromised`,
 		},
 	},
-	Documentation: `PermissionsScope defines virtual key scopes`,
 }
 
-var PermissionsScope_Enum_Meta = map[PermissionsScope_Enum]*api.EnumMeta{
-	PermissionsScope_None:       PermissionsScope_Enum_EnumDescription.Enums[0],
-	PermissionsScope_ReadOnly:   PermissionsScope_Enum_EnumDescription.Enums[1],
-	PermissionsScope_Restricted: PermissionsScope_Enum_EnumDescription.Enums[2],
-	PermissionsScope_All:        PermissionsScope_Enum_EnumDescription.Enums[3],
+var ReasonCode_Enum_Meta = map[ReasonCode_Enum]*api.EnumMeta{
+	ReasonCode_Unspecified:          ReasonCode_Enum_EnumDescription.Enums[0],
+	ReasonCode_KeyCompromise:        ReasonCode_Enum_EnumDescription.Enums[1],
+	ReasonCode_CACompromise:         ReasonCode_Enum_EnumDescription.Enums[2],
+	ReasonCode_AffiliationChanged:   ReasonCode_Enum_EnumDescription.Enums[3],
+	ReasonCode_Superseded:           ReasonCode_Enum_EnumDescription.Enums[4],
+	ReasonCode_CessationOfOperation: ReasonCode_Enum_EnumDescription.Enums[5],
+	ReasonCode_CertificateHold:      ReasonCode_Enum_EnumDescription.Enums[6],
+	ReasonCode_RemoveFromCRL:        ReasonCode_Enum_EnumDescription.Enums[7],
+	ReasonCode_PrivilegeWithdrawn:   ReasonCode_Enum_EnumDescription.Enums[8],
+	ReasonCode_AACompromise:         ReasonCode_Enum_EnumDescription.Enums[9],
 }
 
 //
@@ -923,7 +2124,7 @@ var PermissionsScope_Enum_Meta = map[PermissionsScope_Enum]*api.EnumMeta{
 
 type Role_EnumSlice []Role_Enum
 
-const Role_Enum_SupportedNamesHelp = "None,APIKey,User,Support,Admin,Owner"
+const Role_Enum_SupportedNamesHelp = "None,APIKey,Viewer,User,Support,Billing,Security,Admin,Owner"
 
 // ValuesMap returns a map of enum values
 func (s Role_Enum) ValuesMap() map[string]int32 {
@@ -1042,39 +2243,51 @@ func (_ Role_Enum) Parse(val any) Role_Enum {
 }
 
 var Role_Enum_Name = map[Role_Enum]string{
-	Role_None:    "None",
-	Role_APIKey:  "APIKey",
-	Role_User:    "User",
-	Role_Support: "Support",
-	Role_Admin:   "Admin",
-	Role_Owner:   "Owner",
+	Role_None:     "None",
+	Role_APIKey:   "APIKey",
+	Role_Viewer:   "Viewer",
+	Role_User:     "User",
+	Role_Support:  "Support",
+	Role_Billing:  "Billing",
+	Role_Security: "Security",
+	Role_Admin:    "Admin",
+	Role_Owner:    "Owner",
 }
 
 var Role_Enum_Value = map[string]Role_Enum{
-	"None":    Role_None,
-	"APIKey":  Role_APIKey,
-	"User":    Role_User,
-	"Support": Role_Support,
-	"Admin":   Role_Admin,
-	"Owner":   Role_Owner,
+	"None":     Role_None,
+	"APIKey":   Role_APIKey,
+	"Viewer":   Role_Viewer,
+	"User":     Role_User,
+	"Support":  Role_Support,
+	"Billing":  Role_Billing,
+	"Security": Role_Security,
+	"Admin":    Role_Admin,
+	"Owner":    Role_Owner,
 }
 
 var Role_Enum_DisplayName = map[Role_Enum]string{
-	Role_None:    Display_Role_None,
-	Role_APIKey:  Display_Role_APIKey,
-	Role_User:    Display_Role_User,
-	Role_Support: Display_Role_Support,
-	Role_Admin:   Display_Role_Admin,
-	Role_Owner:   Display_Role_Owner,
+	Role_None:     Display_Role_None,
+	Role_APIKey:   Display_Role_APIKey,
+	Role_Viewer:   Display_Role_Viewer,
+	Role_User:     Display_Role_User,
+	Role_Support:  Display_Role_Support,
+	Role_Billing:  Display_Role_Billing,
+	Role_Security: Display_Role_Security,
+	Role_Admin:    Display_Role_Admin,
+	Role_Owner:    Display_Role_Owner,
 }
 
 var Role_Enum_displayName = map[int32]string{
 	0: Display_Role_None,
 	1: Display_Role_APIKey,
-	2: Display_Role_User,
-	3: Display_Role_Support,
-	4: Display_Role_Admin,
-	5: Display_Role_Owner,
+	2: Display_Role_Viewer,
+	3: Display_Role_User,
+	4: Display_Role_Support,
+	5: Display_Role_Billing,
+	6: Display_Role_Security,
+	7: Display_Role_Admin,
+	8: Display_Role_Owner,
 }
 
 var Role_Enum_EnumDescription = &api.EnumDescription{
@@ -1097,40 +2310,629 @@ var Role_Enum_EnumDescription = &api.EnumDescription{
 		},
 		{
 			Value:         2,
+			Name:          "Viewer",
+			FullName:      "pb.Role.Viewer",
+			Display:       Display_Role_Viewer,
+			Documentation: `Viewer specifies name for Viewer role`,
+		},
+		{
+			Value:         3,
 			Name:          "User",
 			FullName:      "pb.Role.User",
 			Display:       Display_Role_User,
 			Documentation: `User specifies name for User role`,
 		},
 		{
-			Value:         3,
+			Value:         4,
 			Name:          "Support",
 			FullName:      "pb.Role.Support",
 			Display:       Display_Role_Support,
-			Documentation: `Support specifies name for Support role`,
+			Documentation: `Support specifies name for Support role.`,
 		},
 		{
-			Value:         4,
+			Value:         5,
+			Name:          "Billing",
+			FullName:      "pb.Role.Billing",
+			Display:       Display_Role_Billing,
+			Documentation: `Billing specifies name for Billing role`,
+		},
+		{
+			Value:         6,
+			Name:          "Security",
+			FullName:      "pb.Role.Security",
+			Display:       Display_Role_Security,
+			Documentation: `Security specifies name for Security role`,
+		},
+		{
+			Value:         7,
 			Name:          "Admin",
 			FullName:      "pb.Role.Admin",
 			Display:       Display_Role_Admin,
 			Documentation: `Admin specifies name for Admin role`,
 		},
 		{
-			Value:         5,
+			Value:         8,
 			Name:          "Owner",
 			FullName:      "pb.Role.Owner",
 			Display:       Display_Role_Owner,
 			Documentation: `Owner specifies name for Owner role`,
 		},
 	},
+	Documentation: `Role is assigned org-wide or per project. Roles form a hierarchy for
+access checks (see authctx.CanAssumeRoles); integer values are not used
+for comparison.`,
 }
 
 var Role_Enum_Meta = map[Role_Enum]*api.EnumMeta{
-	Role_None:    Role_Enum_EnumDescription.Enums[0],
-	Role_APIKey:  Role_Enum_EnumDescription.Enums[1],
-	Role_User:    Role_Enum_EnumDescription.Enums[2],
-	Role_Support: Role_Enum_EnumDescription.Enums[3],
-	Role_Admin:   Role_Enum_EnumDescription.Enums[4],
-	Role_Owner:   Role_Enum_EnumDescription.Enums[5],
+	Role_None:     Role_Enum_EnumDescription.Enums[0],
+	Role_APIKey:   Role_Enum_EnumDescription.Enums[1],
+	Role_Viewer:   Role_Enum_EnumDescription.Enums[2],
+	Role_User:     Role_Enum_EnumDescription.Enums[3],
+	Role_Support:  Role_Enum_EnumDescription.Enums[4],
+	Role_Billing:  Role_Enum_EnumDescription.Enums[5],
+	Role_Security: Role_Enum_EnumDescription.Enums[6],
+	Role_Admin:    Role_Enum_EnumDescription.Enums[7],
+	Role_Owner:    Role_Enum_EnumDescription.Enums[8],
+}
+
+//
+// RoleSource_Enum
+//
+
+type RoleSource_EnumSlice []RoleSource_Enum
+
+const RoleSource_Enum_SupportedNamesHelp = "Unknown,Direct,Project"
+
+// ValuesMap returns a map of enum values
+func (s RoleSource_Enum) ValuesMap() map[string]int32 {
+	return RoleSource_Enum_value
+}
+
+// NamesMap returns map of enum names
+func (s RoleSource_Enum) NamesMap() map[int32]string {
+	return RoleSource_Enum_name
+}
+
+// DisplayNamesMap returns a map of enum display names
+func (s RoleSource_Enum) DisplayNamesMap() map[int32]string {
+	return RoleSource_Enum_displayName
+}
+
+// SupportedNames returns string of supported Enum name concatenated by ","
+func (s RoleSource_Enum) SupportedNames() string {
+	return enum.SupportedNames[RoleSource_Enum]()
+}
+
+// ValueNames returns list of Enum value names
+func (s RoleSource_Enum) ValueNames() []string {
+	return enum.FlagNames(s)
+}
+
+// ValueString returns string of Enum value names concatenated by ","
+func (s RoleSource_Enum) ValueString() string {
+	return strings.Join(s.ValueNames(), ",")
+}
+
+// Flags returns list of Enum values
+func (s RoleSource_Enum) Flags() []RoleSource_Enum {
+	return enum.Flags(s)
+}
+
+// FlagsInt returns list of Enum values as int32
+func (s RoleSource_Enum) FlagsInt() []int32 {
+	return enum.FlagsInt(s)
+}
+
+// UnmarshalYAML unmarshals Enum from YAML
+func (s *RoleSource_Enum) UnmarshalYAML(unmarshal func(any) error) error {
+	// Try to unmarshal as an integer
+	var valInt int32
+	if err := unmarshal(&valInt); err == nil {
+		*s = RoleSource_Enum(valInt)
+		return nil
+	}
+
+	// Try to unmarshal as a string
+	var valStr string
+	if err := unmarshal(&valStr); err == nil {
+		*s = enum.Parse[RoleSource_Enum](valStr)
+		return nil
+	}
+
+	// If both attempts fail, set to default
+	*s = 0
+	return nil
+}
+
+// UnmarshalJSON unmarshals Enum from JSON
+func (s *RoleSource_Enum) UnmarshalJSON(b []byte) error {
+	var val any
+	if err := json.Unmarshal(b, &val); err != nil {
+		return err
+	}
+	*s = RoleSource_Enum(0).Parse(val)
+	return nil
+}
+
+// DisplayNames returns display names of Enum bitflag value
+func (s RoleSource_Enum) DisplayNames() []string {
+	flags := enum.Flags(s)
+	count := len(flags)
+	if count == 0 {
+		return []string{s.String()}
+	}
+	if count == 1 {
+		return []string{RoleSource_Enum_DisplayName[flags[0]]}
+	}
+	var names []string
+	for _, flag := range flags {
+		names = append(names, RoleSource_Enum_DisplayName[flag])
+	}
+	return names
+}
+
+// DisplayName returns display name of Enum value
+func (s RoleSource_Enum) DisplayName() string {
+	if val, ok := RoleSource_Enum_DisplayName[s]; ok {
+		return val
+	}
+	return s.String()
+}
+
+// Meta returns Enum meta information
+func (s RoleSource_Enum) Meta() *api.EnumMeta {
+	return RoleSource_Enum_Meta[s]
+}
+
+// Describe returns Enum meta information for all values
+func (s RoleSource_Enum) Describe() map[RoleSource_Enum]*api.EnumMeta {
+	return RoleSource_Enum_Meta
+}
+
+// GetDescription returns Enum description
+func (s RoleSource_Enum) GetDescription() *api.EnumDescription {
+	return RoleSource_Enum_EnumDescription
+}
+
+// Parse returns Enum value parsed from val
+func (_ RoleSource_Enum) Parse(val any) RoleSource_Enum {
+	return RoleSource_Enum_EnumDescription.ParseEnum[RoleSource_Enum](val)
+}
+
+var RoleSource_Enum_Name = map[RoleSource_Enum]string{
+	RoleSource_Unknown: "Unknown",
+	RoleSource_Direct:  "Direct",
+	RoleSource_Project: "Project",
+}
+
+var RoleSource_Enum_Value = map[string]RoleSource_Enum{
+	"Unknown": RoleSource_Unknown,
+	"Direct":  RoleSource_Direct,
+	"Project": RoleSource_Project,
+}
+
+var RoleSource_Enum_DisplayName = map[RoleSource_Enum]string{
+	RoleSource_Unknown: Display_RoleSource_Unknown,
+	RoleSource_Direct:  Display_RoleSource_Direct,
+	RoleSource_Project: Display_RoleSource_Project,
+}
+
+var RoleSource_Enum_displayName = map[int32]string{
+	0: Display_RoleSource_Unknown,
+	1: Display_RoleSource_Direct,
+	2: Display_RoleSource_Project,
+}
+
+var RoleSource_Enum_EnumDescription = &api.EnumDescription{
+	Name:      "RoleSource_Enum",
+	FullName:  "pb.RoleSource.Enum",
+	IsBitmask: false,
+	Enums: []*api.EnumMeta{
+		{
+			Value:         0,
+			Name:          "Unknown",
+			FullName:      "pb.RoleSource.Unknown",
+			Display:       Display_RoleSource_Unknown,
+			Documentation: `Unknown indicates that the source is unknown`,
+		},
+		{
+			Value:         1,
+			Name:          "Direct",
+			FullName:      "pb.RoleSource.Direct",
+			Display:       Display_RoleSource_Direct,
+			Documentation: `Direct indicates an explicit org-wide grant`,
+		},
+		{
+			Value:    2,
+			Name:     "Project",
+			FullName: "pb.RoleSource.Project",
+			Display:  Display_RoleSource_Project,
+			Documentation: `Project indicates a derived org Viewer classification from project
+grants only; it does not inherit project permissions`,
+		},
+	},
+	Documentation: `RoleSource explains how an org role was resolved`,
+}
+
+var RoleSource_Enum_Meta = map[RoleSource_Enum]*api.EnumMeta{
+	RoleSource_Unknown: RoleSource_Enum_EnumDescription.Enums[0],
+	RoleSource_Direct:  RoleSource_Enum_EnumDescription.Enums[1],
+	RoleSource_Project: RoleSource_Enum_EnumDescription.Enums[2],
+}
+
+//
+// Scope_Enum
+//
+
+type Scope_EnumSlice []Scope_Enum
+
+const Scope_Enum_SupportedNamesHelp = "Undefined,Org,Project"
+
+// ValuesMap returns a map of enum values
+func (s Scope_Enum) ValuesMap() map[string]int32 {
+	return Scope_Enum_value
+}
+
+// NamesMap returns map of enum names
+func (s Scope_Enum) NamesMap() map[int32]string {
+	return Scope_Enum_name
+}
+
+// DisplayNamesMap returns a map of enum display names
+func (s Scope_Enum) DisplayNamesMap() map[int32]string {
+	return Scope_Enum_displayName
+}
+
+// SupportedNames returns string of supported Enum name concatenated by ","
+func (s Scope_Enum) SupportedNames() string {
+	return enum.SupportedNames[Scope_Enum]()
+}
+
+// ValueNames returns list of Enum value names
+func (s Scope_Enum) ValueNames() []string {
+	return enum.FlagNames(s)
+}
+
+// ValueString returns string of Enum value names concatenated by ","
+func (s Scope_Enum) ValueString() string {
+	return strings.Join(s.ValueNames(), ",")
+}
+
+// Flags returns list of Enum values
+func (s Scope_Enum) Flags() []Scope_Enum {
+	return enum.Flags(s)
+}
+
+// FlagsInt returns list of Enum values as int32
+func (s Scope_Enum) FlagsInt() []int32 {
+	return enum.FlagsInt(s)
+}
+
+// UnmarshalYAML unmarshals Enum from YAML
+func (s *Scope_Enum) UnmarshalYAML(unmarshal func(any) error) error {
+	// Try to unmarshal as an integer
+	var valInt int32
+	if err := unmarshal(&valInt); err == nil {
+		*s = Scope_Enum(valInt)
+		return nil
+	}
+
+	// Try to unmarshal as a string
+	var valStr string
+	if err := unmarshal(&valStr); err == nil {
+		*s = enum.Parse[Scope_Enum](valStr)
+		return nil
+	}
+
+	// If both attempts fail, set to default
+	*s = 0
+	return nil
+}
+
+// UnmarshalJSON unmarshals Enum from JSON
+func (s *Scope_Enum) UnmarshalJSON(b []byte) error {
+	var val any
+	if err := json.Unmarshal(b, &val); err != nil {
+		return err
+	}
+	*s = Scope_Enum(0).Parse(val)
+	return nil
+}
+
+// DisplayNames returns display names of Enum bitflag value
+func (s Scope_Enum) DisplayNames() []string {
+	flags := enum.Flags(s)
+	count := len(flags)
+	if count == 0 {
+		return []string{s.String()}
+	}
+	if count == 1 {
+		return []string{Scope_Enum_DisplayName[flags[0]]}
+	}
+	var names []string
+	for _, flag := range flags {
+		names = append(names, Scope_Enum_DisplayName[flag])
+	}
+	return names
+}
+
+// DisplayName returns display name of Enum value
+func (s Scope_Enum) DisplayName() string {
+	flags := enum.Flags(s)
+	count := len(flags)
+	if count == 0 {
+		return s.String()
+	}
+	if count == 1 {
+		return Scope_Enum_DisplayName[flags[0]]
+	}
+	var names []string
+	for _, flag := range flags {
+		names = append(names, Scope_Enum_DisplayName[flag])
+	}
+	return strings.Join(names, ",")
+}
+
+// Meta returns Enum meta information
+func (s Scope_Enum) Meta() *api.EnumMeta {
+	return Scope_Enum_Meta[s]
+}
+
+// Describe returns Enum meta information for all values
+func (s Scope_Enum) Describe() map[Scope_Enum]*api.EnumMeta {
+	return Scope_Enum_Meta
+}
+
+// GetDescription returns Enum description
+func (s Scope_Enum) GetDescription() *api.EnumDescription {
+	return Scope_Enum_EnumDescription
+}
+
+// Parse returns Enum value parsed from val
+func (_ Scope_Enum) Parse(val any) Scope_Enum {
+	return Scope_Enum_EnumDescription.ParseEnum[Scope_Enum](val)
+}
+
+var Scope_Enum_Name = map[Scope_Enum]string{
+	Scope_Undefined: "Undefined",
+	Scope_Org:       "Org",
+	Scope_Project:   "Project",
+}
+
+var Scope_Enum_Value = map[string]Scope_Enum{
+	"Undefined": Scope_Undefined,
+	"Org":       Scope_Org,
+	"Project":   Scope_Project,
+}
+
+var Scope_Enum_DisplayName = map[Scope_Enum]string{
+	Scope_Undefined: Display_Scope_Undefined,
+	Scope_Org:       Display_Scope_Org,
+	Scope_Project:   Display_Scope_Project,
+}
+
+var Scope_Enum_displayName = map[int32]string{
+	0: Display_Scope_Undefined,
+	1: Display_Scope_Org,
+	2: Display_Scope_Project,
+}
+
+var Scope_Enum_EnumDescription = &api.EnumDescription{
+	Name:      "Scope_Enum",
+	FullName:  "pb.Scope.Enum",
+	IsBitmask: true,
+	Enums: []*api.EnumMeta{
+		{
+			Value:         0,
+			Name:          "Undefined",
+			FullName:      "pb.Scope.Undefined",
+			Display:       Display_Scope_Undefined,
+			Documentation: `Undefined indicates that the scope is undefined`,
+		},
+		{
+			Value:         1,
+			Name:          "Org",
+			FullName:      "pb.Scope.Org",
+			Display:       Display_Scope_Org,
+			Documentation: `Org indicates that the scope is org`,
+		},
+		{
+			Value:         2,
+			Name:          "Project",
+			FullName:      "pb.Scope.Project",
+			Display:       Display_Scope_Project,
+			Documentation: `Project indicates that the scope is project`,
+		},
+	},
+	Documentation: `Scope defines tenancy scopes`,
+}
+
+var Scope_Enum_Meta = map[Scope_Enum]*api.EnumMeta{
+	Scope_Undefined: Scope_Enum_EnumDescription.Enums[0],
+	Scope_Org:       Scope_Enum_EnumDescription.Enums[1],
+	Scope_Project:   Scope_Enum_EnumDescription.Enums[2],
+}
+
+//
+// Trust_Enum
+//
+
+type Trust_EnumSlice []Trust_Enum
+
+const Trust_Enum_SupportedNamesHelp = "Any,Public,Private"
+
+// ValuesMap returns a map of enum values
+func (s Trust_Enum) ValuesMap() map[string]int32 {
+	return Trust_Enum_value
+}
+
+// NamesMap returns map of enum names
+func (s Trust_Enum) NamesMap() map[int32]string {
+	return Trust_Enum_name
+}
+
+// DisplayNamesMap returns a map of enum display names
+func (s Trust_Enum) DisplayNamesMap() map[int32]string {
+	return Trust_Enum_displayName
+}
+
+// SupportedNames returns string of supported Enum name concatenated by ","
+func (s Trust_Enum) SupportedNames() string {
+	return enum.SupportedNames[Trust_Enum]()
+}
+
+// ValueNames returns list of Enum value names
+func (s Trust_Enum) ValueNames() []string {
+	return enum.FlagNames(s)
+}
+
+// ValueString returns string of Enum value names concatenated by ","
+func (s Trust_Enum) ValueString() string {
+	return strings.Join(s.ValueNames(), ",")
+}
+
+// Flags returns list of Enum values
+func (s Trust_Enum) Flags() []Trust_Enum {
+	return enum.Flags(s)
+}
+
+// FlagsInt returns list of Enum values as int32
+func (s Trust_Enum) FlagsInt() []int32 {
+	return enum.FlagsInt(s)
+}
+
+// UnmarshalYAML unmarshals Enum from YAML
+func (s *Trust_Enum) UnmarshalYAML(unmarshal func(any) error) error {
+	// Try to unmarshal as an integer
+	var valInt int32
+	if err := unmarshal(&valInt); err == nil {
+		*s = Trust_Enum(valInt)
+		return nil
+	}
+
+	// Try to unmarshal as a string
+	var valStr string
+	if err := unmarshal(&valStr); err == nil {
+		*s = enum.Parse[Trust_Enum](valStr)
+		return nil
+	}
+
+	// If both attempts fail, set to default
+	*s = 0
+	return nil
+}
+
+// UnmarshalJSON unmarshals Enum from JSON
+func (s *Trust_Enum) UnmarshalJSON(b []byte) error {
+	var val any
+	if err := json.Unmarshal(b, &val); err != nil {
+		return err
+	}
+	*s = Trust_Enum(0).Parse(val)
+	return nil
+}
+
+// DisplayNames returns display names of Enum bitflag value
+func (s Trust_Enum) DisplayNames() []string {
+	flags := enum.Flags(s)
+	count := len(flags)
+	if count == 0 {
+		return []string{s.String()}
+	}
+	if count == 1 {
+		return []string{Trust_Enum_DisplayName[flags[0]]}
+	}
+	var names []string
+	for _, flag := range flags {
+		names = append(names, Trust_Enum_DisplayName[flag])
+	}
+	return names
+}
+
+// DisplayName returns display name of Enum value
+func (s Trust_Enum) DisplayName() string {
+	if val, ok := Trust_Enum_DisplayName[s]; ok {
+		return val
+	}
+	return s.String()
+}
+
+// Meta returns Enum meta information
+func (s Trust_Enum) Meta() *api.EnumMeta {
+	return Trust_Enum_Meta[s]
+}
+
+// Describe returns Enum meta information for all values
+func (s Trust_Enum) Describe() map[Trust_Enum]*api.EnumMeta {
+	return Trust_Enum_Meta
+}
+
+// GetDescription returns Enum description
+func (s Trust_Enum) GetDescription() *api.EnumDescription {
+	return Trust_Enum_EnumDescription
+}
+
+// Parse returns Enum value parsed from val
+func (_ Trust_Enum) Parse(val any) Trust_Enum {
+	return Trust_Enum_EnumDescription.ParseEnum[Trust_Enum](val)
+}
+
+var Trust_Enum_Name = map[Trust_Enum]string{
+	Trust_Any:     "Any",
+	Trust_Public:  "Public",
+	Trust_Private: "Private",
+}
+
+var Trust_Enum_Value = map[string]Trust_Enum{
+	"Any":     Trust_Any,
+	"Public":  Trust_Public,
+	"Private": Trust_Private,
+}
+
+var Trust_Enum_DisplayName = map[Trust_Enum]string{
+	Trust_Any:     Display_Trust_Any,
+	Trust_Public:  Display_Trust_Public,
+	Trust_Private: Display_Trust_Private,
+}
+
+var Trust_Enum_displayName = map[int32]string{
+	0: Display_Trust_Any,
+	1: Display_Trust_Public,
+	2: Display_Trust_Private,
+}
+
+var Trust_Enum_EnumDescription = &api.EnumDescription{
+	Name:      "Trust_Enum",
+	FullName:  "pb.Trust.Enum",
+	IsBitmask: false,
+	Enums: []*api.EnumMeta{
+		{
+			Value:         0,
+			Name:          "Any",
+			FullName:      "pb.Trust.Any",
+			Display:       Display_Trust_Any,
+			Documentation: `Any indicates any trust scope`,
+		},
+		{
+			Value:         1,
+			Name:          "Public",
+			FullName:      "pb.Trust.Public",
+			Display:       Display_Trust_Public,
+			Documentation: `Public indicates a publicly trusted root`,
+		},
+		{
+			Value:         2,
+			Name:          "Private",
+			FullName:      "pb.Trust.Private",
+			Display:       Display_Trust_Private,
+			Documentation: `Private indicates a private (enterprise) root`,
+		},
+	},
+	Documentation: `Trust defines the trust scope of a root certificate`,
+}
+
+var Trust_Enum_Meta = map[Trust_Enum]*api.EnumMeta{
+	Trust_Any:     Trust_Enum_EnumDescription.Enums[0],
+	Trust_Public:  Trust_Enum_EnumDescription.Enums[1],
+	Trust_Private: Trust_Enum_EnumDescription.Enums[2],
 }

@@ -243,13 +243,13 @@ func (a *App) Run(startedCh chan<- bool) error {
 			switch name {
 			case config.WFEServerName:
 				// Add Authz per Project to WFE
-				err = a.container.Invoke(func(checkRole authctx.RoleChecker) error {
+				err = a.container.Invoke(func(authorizer authctx.Authorizer) error {
 					opts = append(opts,
 						gserver.MaxRecvMsgSize(values.NumbersCoalesce(svcCfg.MaxRecvMsgSize, 10*1024*1024)),
 						gserver.MaxSendMsgSize(values.NumbersCoalesce(svcCfg.MaxSendMsgSize, 5*1024*1024)),
 						gserver.WithMiddleware(authctx.Handler),
-						gserver.WithUnaryServerInterceptor(authctx.NewAuthUnaryInterceptor(checkRole, svcCfg.SkipLogPaths)),
-						//gserver.WithStreamServerInterceptor(authctx.NewAuthStreamInterceptor(checkRole, svcCfg.SkipLogPaths)),
+						gserver.WithUnaryServerInterceptor(authctx.NewAuthUnaryInterceptor(authorizer, svcCfg.SkipLogPaths)),
+						//gserver.WithStreamServerInterceptor(authctx.NewAuthStreamInterceptor(authorizer, svcCfg.SkipLogPaths)),
 					)
 					return nil
 				})

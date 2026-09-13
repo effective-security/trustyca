@@ -29,7 +29,7 @@ func Test_Invite(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, invite.ID, got.ID)
 
-	got2, err := provider.GetInviteByOrgAndEmail(ctx, org.ID.UInt64(), inviteeEmail)
+	got2, err := provider.GetInviteByOrgAndEmail(ctx, org.ID.UInt64(), 0, inviteeEmail)
 	require.NoError(t, err)
 	assert.Equal(t, invite.ID, got2.ID)
 

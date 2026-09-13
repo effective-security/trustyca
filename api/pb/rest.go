@@ -80,6 +80,48 @@ const (
 	PathForRemoveCookie = "/v1/auth/removecookie"
 )
 
+// CIS service API
+// In addition to the JSON API below, CIS registers binary endpoints that
+// are referenced from issued certificates (AIA and CDP extensions):
+//
+//	GET  /v1/cert/{ikid}          application/pkix-cert   issuer certificate
+//	GET  /v1/crl/{ikid}           application/pkix-crl    current CRL (DER)
+//	GET  /v1/ocsp/{ikid}/{req}    application/ocsp-response
+//	POST /v1/ocsp/{ikid}          application/ocsp-response
+//	POST /v1/ocsp                 application/ocsp-response (issuer by KID)
+const (
+	// PathForCert provides the issuer certificate by IKID
+	//
+	// Verbs: GET
+	// Content-Type: application/pkix-cert
+	// Response: CertificateResponse
+	PathForCert = "/v1/cert/:ikid"
+	// PathForCRL provides the current CRL by IKID
+	//
+	// Verbs: GET
+	// Content-Type: application/pkix-crl
+	// Response: CrlResponse
+	PathForCRL = "/v1/crl/:ikid"
+	// PathForGetOCSP provides the OCSP response by IKID and request
+	//
+	// Verbs: GET
+	// Content-Type: application/ocsp-response
+	// Response: OCSPResponse
+	PathForGetOCSP = "/v1/ocsp/:ikid/:req"
+	// PathForOCSPByIssuerID provides the OCSP response by IKID
+	//
+	// Verbs: POST
+	// Content-Type: application/ocsp-response
+	// Response: OCSPResponse
+	PathForOCSPByIssuerID = "/v1/ocsp/:ikid"
+	// PathForOCSP provides the OCSP response by issuer KID
+	//
+	// Verbs: POST
+	// Content-Type: application/ocsp-response
+	// Response: OCSPResponse
+	PathForOCSP = "/v1/ocsp"
+)
+
 // Webhooks
 const (
 	// PathForWebhooks provides the base path for webhooks

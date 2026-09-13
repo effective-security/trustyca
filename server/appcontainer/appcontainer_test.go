@@ -90,7 +90,7 @@ func TestAppContainer(t *testing.T) {
 		_ cache.Provider,
 		_ jwt.Parser,
 		_ client.Factory,
-		_ authctx.RoleChecker,
+		_ authctx.Authorizer,
 		_ *oauth2client.Provider,
 	) {
 	})

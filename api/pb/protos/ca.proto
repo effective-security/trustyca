@@ -1,0 +1,597 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "github.com/effective-security/trustyca/api/pb";
+
+import "es/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "types.proto";
+import "pkix.proto";
+
+// CA is the Certification Authority service.
+// It is served over gRPC only on the backend and is not exposed to the
+// internet. The Registration Authority (RA) is the trusted caller and is
+// responsible for tenant mapping and end-user authorization.
+// Every request is scoped by OrgID and optional ProjectID. Trusted service
+// callers (mTLS) pass OrgID explicitly; user tokens are checked against the
+// permission named by (es.api.scopes).
+service CA {
+    //
+    // Issuers
+    //
+
+    // RegisterIssuer creates a new issuing authority for the tenant.
+    // The private key is generated in the configured crypto provider and
+    // never leaves it. The certificate is signed by the parent issuer,
+    // self-signed for Root type, or, when no parent is available, the issuer
+    // is created in Pending status with a CSR to be signed externally.
+    rpc RegisterIssuer(RegisterIssuerRequest) returns (Issuer) {
+        option (es.api.allowed_roles) = "Admin";
+        option (es.api.scopes)        = "ca:write";
+    }
+    // UpdateIssuer updates the runtime configuration or status of an issuer.
+    // Status transitions: Active -> Archived -> Destroyed.
+    rpc UpdateIssuer(UpdateIssuerRequest) returns (Issuer) {
+        option (es.api.allowed_roles) = "Admin";
+        option (es.api.scopes)        = "ca:write";
+    }
+    // ImportIssuer registers an issuer from an existing certificate and key.
+    // The key is either referenced by a crypto provider URI or provided as
+    // PEM and stored protected. Used for bring-your-own-CA.
+    rpc ImportIssuer(ImportIssuerRequest) returns (Issuer) {
+        option (es.api.allowed_roles) = "Admin";
+        option (es.api.scopes)        = "ca:write";
+    }
+    // ActivateIssuer sets the externally signed certificate for a Pending
+    // issuer and activates it.
+    rpc ActivateIssuer(ActivateIssuerRequest) returns (Issuer) {
+        option (es.api.allowed_roles) = "Admin";
+        option (es.api.scopes)        = "ca:write";
+    }
+    // GetIssuer returns the issuer by ID, label or IKID
+    rpc GetIssuer(GetIssuerRequest) returns (Issuer) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "ca:read";
+    }
+    // ListIssuers returns the tenant's issuers
+    rpc ListIssuers(ListIssuersRequest) returns (IssuersResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "ca:read";
+    }
+
+    //
+    // Root certificates (trust anchors)
+    //
+
+    // RegisterRoot registers an external trust anchor for the tenant.
+    // Roots created via RegisterIssuer are registered automatically.
+    rpc RegisterRoot(RegisterRootRequest) returns (RootCertificate) {
+        option (es.api.allowed_roles) = "Admin";
+        option (es.api.scopes)        = "ca:write";
+    }
+    // ListRoots returns the tenant's trust anchors
+    rpc ListRoots(ListRootsRequest) returns (RootsResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "ca:read";
+    }
+
+    //
+    // Certificate profiles
+    //
+
+    // RegisterProfile creates or replaces a certificate profile, keyed by
+    // (OrgID, ProjectID, Label)
+    rpc RegisterProfile(RegisterProfileRequest) returns (CertProfile) {
+        option (es.api.allowed_roles) = "Admin";
+        option (es.api.scopes)        = "ca:write";
+    }
+    // GetProfile returns the profile by ID or label
+    rpc GetProfile(GetProfileRequest) returns (CertProfile) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "ca:read";
+    }
+    // ListProfiles returns the tenant's profiles
+    rpc ListProfiles(ListProfilesRequest) returns (ProfilesResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "ca:read";
+    }
+    // DeleteProfile deletes a profile
+    rpc DeleteProfile(DeleteProfileRequest) returns (google.protobuf.Empty) {
+        option (es.api.allowed_roles) = "Admin";
+        option (es.api.scopes)        = "ca:write";
+    }
+
+    //
+    // Certificates
+    //
+
+    // SignCertificate signs a certificate request with the profile's issuer
+    rpc SignCertificate(SignCertificateRequest) returns (CertificateResponse) {
+        option (es.api.allowed_roles) = "User,APIKey";
+        option (es.api.scopes)        = "certs:issue";
+    }
+    // GetCertificate returns the certificate by ID, SKID, Sha256 or
+    // issuer and serial number
+    rpc GetCertificate(GetCertificateRequest) returns (CertificateResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "certs:read";
+    }
+    // ListCertificates returns the tenant's certificates, newest first
+    rpc ListCertificates(ListCertificatesRequest)
+        returns (CertificatesResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "certs:read";
+    }
+    // UpdateCertificateLabel updates the client-provided label and metadata
+    rpc UpdateCertificateLabel(UpdateCertificateLabelRequest)
+        returns (CertificateResponse) {
+        option (es.api.allowed_roles) = "User,APIKey";
+        option (es.api.scopes)        = "certs:issue";
+    }
+    // RevokeCertificate revokes the certificate
+    rpc RevokeCertificate(RevokeCertificateRequest)
+        returns (RevokedCertificateResponse) {
+        option (es.api.allowed_roles) = "User,APIKey,Security";
+        option (es.api.scopes)        = "certs:revoke";
+    }
+    // ListRevokedCertificates returns the tenant's revoked certificates
+    rpc ListRevokedCertificates(ListRevokedCertificatesRequest)
+        returns (RevokedCertificatesResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "certs:read";
+    }
+
+    //
+    // Revocation status
+    //
+
+    // GetCRL returns the current CRL of the issuer
+    rpc GetCRL(GetCrlRequest) returns (CrlResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "certs:read";
+    }
+    // PublishCrls generates and publishes CRLs on demand.
+    // It is also invoked by the scheduled CRL renewal task.
+    rpc PublishCrls(PublishCrlsRequest) returns (CrlsResponse) {
+        option (es.api.allowed_roles) = "Admin,Security";
+        option (es.api.scopes)        = "ca:write";
+    }
+    // SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
+    rpc SignOCSP(OCSPRequest) returns (OCSPResponse) {
+        option (es.api.allowed_roles) = "Admin,Security";
+        option (es.api.scopes)        = "ca:write";
+    }
+}
+
+//
+// Issuers
+//
+
+// RegisterIssuerRequest specifies a request to create a new issuer
+message RegisterIssuerRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; empty for an org-wide issuer
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Label of the issuer, unique per (Org, Project)
+    string Label = 3
+        [json_name = "Label", (es.api.required) = true, (es.api.max) = 64];
+    // Type of the authority
+    AuthorityType.Enum Type = 4 [json_name = "Type", (es.api.required) = true];
+    // Subject of the issuer certificate
+    X509Subject Subject = 5 [json_name = "Subject", (es.api.required) = true];
+    // KeySpec of the key to generate; defaults to ECDSA P-256
+    KeySpec KeySpec = 6 [json_name = "KeySpec"];
+    // KeyProvider selects the crypto provider; empty for the server default
+    string KeyProvider = 7 [json_name = "KeyProvider"];
+    // ParentID specifies the signing issuer. It must belong to the same org,
+    // or be a platform issuer that allows the Profile.
+    // Empty for Root type, or to create a Pending issuer with a CSR.
+    string ParentID = 8 [json_name = "ParentID"];
+    // Profile specifies the CA profile the parent uses to sign the issuer
+    // certificate. Required when ParentID is set or Type is Root.
+    string Profile = 9 [json_name = "Profile"];
+    // Config provides runtime settings
+    IssuerConfig Config = 10 [json_name = "Config"];
+    // SAN specifies Subject Alternative Names for the issuer certificate
+    repeated string SAN = 11 [json_name = "SAN"];
+    // Extensions specifies additional extensions for the issuer certificate
+    repeated X509Extension Extensions = 12 [json_name = "Extensions"];
+}
+
+// ImportIssuerRequest specifies a request to import an existing issuer
+message ImportIssuerRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; empty for an org-wide issuer
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Label of the issuer, unique per (Org, Project)
+    string Label = 3
+        [json_name = "Label", (es.api.required) = true, (es.api.max) = 64];
+    // Type of the authority
+    AuthorityType.Enum Type = 4 [json_name = "Type", (es.api.required) = true];
+    // Certificate provides the issuer certificate in PEM format
+    string Certificate = 5
+        [json_name = "Certificate", (es.api.required) = true];
+    // Intermediates provides the intermediate CA certificates in PEM format
+    string Intermediates = 6 [json_name = "Intermediates"];
+    // Root provides the Root CA certificate in PEM format
+    string Root = 7 [json_name = "Root"];
+    // KeyURI references an existing key in a crypto provider,
+    // e.g. awskms://..., gcpkms://..., pkcs11:...
+    string KeyURI = 8 [json_name = "KeyURI", (es.api.required_or) = "KeyPem"];
+    // KeyPem provides the private key in PEM format.
+    // It is stored protected by the data protection provider.
+    string KeyPem = 9 [json_name = "KeyPem", (es.api.required_or) = "KeyURI"];
+    // Config provides runtime settings
+    IssuerConfig Config = 10 [json_name = "Config"];
+}
+
+// ActivateIssuerRequest specifies the externally signed certificate for a
+// Pending issuer
+message ActivateIssuerRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID of the Pending issuer
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
+    // Certificate provides the issuer certificate in PEM format
+    string Certificate = 3
+        [json_name = "Certificate", (es.api.required) = true];
+    // Intermediates provides the intermediate CA certificates in PEM format
+    string Intermediates = 4 [json_name = "Intermediates"];
+    // Root provides the Root CA certificate in PEM format
+    string Root = 5 [json_name = "Root"];
+}
+
+// GetIssuerRequest specifies an issuer by ID, label or IKID
+message GetIssuerRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; used with Label
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // ID of the issuer
+    string ID = 3 [json_name = "ID", (es.api.required_or) = "Label,IKID"];
+    // Label of the issuer, resolved as (Org, Project) then (Org)
+    string Label = 4 [json_name = "Label", (es.api.required_or) = "ID,IKID"];
+    // IKID specifies Issuer Key ID
+    string IKID = 5 [json_name = "IKID", (es.api.required_or) = "ID,Label"];
+}
+
+// ListIssuersRequest specifies a paginated list of issuers
+message ListIssuersRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID filters by project; empty returns org-wide and all project
+    // issuers
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Status filters by status; Unknown returns all
+    IssuerStatus.Enum Status = 3 [json_name = "Status"];
+    // Type filters by authority type; Unknown returns all
+    AuthorityType.Enum Type = 4 [json_name = "Type"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 5 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 6 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    string Cursor = 7 [json_name = "Cursor"];
+}
+
+// IssuersResponse returns list of issuers
+message IssuersResponse {
+    repeated Issuer Issuers = 1 [json_name = "Issuers"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+// UpdateIssuerRequest updates issuer config or status
+message UpdateIssuerRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID of the issuer
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
+    // Config replaces runtime settings when provided
+    IssuerConfig Config = 3 [json_name = "Config"];
+    // Status changes the status when provided: Archived or Destroyed
+    IssuerStatus.Enum Status = 4 [json_name = "Status"];
+}
+
+//
+// Roots
+//
+
+// RegisterRootRequest registers an external trust anchor
+message RegisterRootRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // Pem encoded root certificate
+    string Pem = 2 [json_name = "Pem", (es.api.required) = true];
+    // Trust scope
+    Trust.Enum Trust = 3 [json_name = "Trust"];
+}
+
+// ListRootsRequest specifies a list of trust anchors
+message ListRootsRequest {
+    // OrgID of the owning org; empty for platform roots
+    string OrgID = 1 [json_name = "OrgID"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 2 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 3 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination
+    string Cursor = 4 [json_name = "Cursor"];
+}
+
+// RootsResponse returns Root Certificates
+message RootsResponse {
+    repeated RootCertificate Roots = 1 [json_name = "Roots"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+//
+// Profiles
+//
+
+// RegisterProfileRequest creates or replaces a profile
+message RegisterProfileRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; empty for an org-wide profile
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Profile provides the profile definition.
+    // Profile.Label and Profile.IssuerLabel are required.
+    CertProfile Profile = 3 [json_name = "Profile", (es.api.required) = true];
+}
+
+// GetProfileRequest specifies a profile by ID or label
+message GetProfileRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; used with Label
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // ID of the profile
+    string ID = 3 [json_name = "ID", (es.api.required_or) = "Label"];
+    // Label of the profile, resolved as (Org, Project) then (Org)
+    string Label = 4 [json_name = "Label", (es.api.required_or) = "ID"];
+}
+
+// ListProfilesRequest specifies a paginated list of profiles
+message ListProfilesRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID filters by project; empty returns org-wide and all project
+    // profiles
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // IssuerLabel filters by issuer label
+    string IssuerLabel = 3 [json_name = "IssuerLabel"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 4 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 5 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination
+    string Cursor = 6 [json_name = "Cursor"];
+}
+
+// ProfilesResponse returns list of profiles
+message ProfilesResponse {
+    repeated CertProfile Profiles = 1 [json_name = "Profiles"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+// DeleteProfileRequest deletes a profile
+message DeleteProfileRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID of the profile
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
+}
+
+//
+// Certificates
+//
+
+// SignCertificateRequest specifies certificate sign request
+message SignCertificateRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; recorded on the certificate and used to
+    // resolve project-scoped profiles and issuers
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Profile specifies the certificate profile label
+    string Profile = 3 [json_name = "Profile", (es.api.required) = true];
+    // IssuerLabel selects the issuer when the profile binds to "*";
+    // otherwise it must match the profile's issuer
+    string IssuerLabel = 4 [json_name = "IssuerLabel"];
+    // RequestFormat provides the certificate request format: PEM or DER
+    EncodingFormat.Enum RequestFormat = 5 [json_name = "RequestFormat"];
+    // Request provides the PKCS#10 certificate request
+    bytes Request = 6 [json_name = "Request", (es.api.required) = true];
+    // SAN specifies Subject Alternative Names to add or override
+    repeated string SAN = 7 [json_name = "SAN"];
+    // Subject overrides the subject name from the request
+    X509Subject Subject = 8 [json_name = "Subject"];
+    // NotBefore overrides the validity start in RFC3339 format;
+    // no backdate is applied when provided
+    string NotBefore = 9 [json_name = "NotBefore"];
+    // NotAfter overrides the validity end in RFC3339 format;
+    // it must not exceed the profile expiry
+    string NotAfter = 10 [json_name = "NotAfter"];
+    // Extensions specifies additional extensions to include, subject to the
+    // profile's AllowedExtensions
+    repeated X509Extension Extensions = 11 [json_name = "Extensions"];
+    // Label is provided by the client for search and display
+    string Label = 12 [json_name = "Label", (es.api.max) = 260];
+    // Metadata is provided by the client
+    map<string, string> Metadata = 13 [json_name = "Metadata"];
+}
+
+// UpdateCertificateLabelRequest specifies certificate label update request
+message UpdateCertificateLabelRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID specifies certificate ID
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
+    // Label is provided by the client
+    string Label = 3 [json_name = "Label", (es.api.max) = 260];
+    // Metadata replaces the client metadata when provided
+    map<string, string> Metadata = 4 [json_name = "Metadata"];
+}
+
+// GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer
+// and serial number
+message GetCertificateRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID specifies certificate ID
+    string ID = 2
+        [json_name = "ID", (es.api.required_or) = "SKID,Sha256,IssuerSerial"];
+    // SKID specifies Subject Key ID to search
+    string SKID = 3
+        [json_name = "SKID", (es.api.required_or) = "ID,Sha256,IssuerSerial"];
+    // Sha256 specifies the certificate thumbprint to search
+    string Sha256 = 4
+        [json_name = "Sha256", (es.api.required_or) = "ID,SKID,IssuerSerial"];
+    // IssuerSerial specifies Issuer Key ID and certificate serial number
+    IssuerSerial IssuerSerial = 5
+        [json_name = "IssuerSerial", (es.api.required_or) = "ID,SKID,Sha256"];
+}
+
+// ListCertificatesRequest specifies a paginated list of certificates,
+// sorted by ID descending (newest first)
+message ListCertificatesRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID filters by project; empty returns org-wide and all project
+    // certificates
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // IKID filters by issuer
+    string IKID = 3 [json_name = "IKID"];
+    // Profile filters by profile label
+    string Profile = 4 [json_name = "Profile"];
+    // Status filters by status; Unknown returns all
+    CertificateStatus.Enum Status = 5 [json_name = "Status"];
+    // ExpiringBefore filters certificates with NotAfter before the time,
+    // in RFC3339 format
+    string ExpiringBefore = 6 [json_name = "ExpiringBefore"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 7 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 8 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    string Cursor = 9 [json_name = "Cursor"];
+}
+
+// ListRevokedCertificatesRequest specifies a paginated list of revoked
+// certificates, sorted by revocation ID descending
+message ListRevokedCertificatesRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID filters by project
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // IKID filters by issuer
+    string IKID = 3 [json_name = "IKID"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 4 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 5 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination
+    string Cursor = 6 [json_name = "Cursor"];
+}
+
+// RevokeCertificateRequest specifies revocation request
+message RevokeCertificateRequest {
+    // OrgID of the owning org
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID specifies certificate ID
+    string ID = 2
+        [json_name = "ID", (es.api.required_or) = "SKID,IssuerSerial"];
+    // SKID specifies Subject Key ID to search
+    string SKID = 3
+        [json_name = "SKID", (es.api.required_or) = "ID,IssuerSerial"];
+    // IssuerSerial specifies Issuer Key ID and certificate serial number
+    IssuerSerial IssuerSerial = 4
+        [json_name = "IssuerSerial", (es.api.required_or) = "ID,SKID"];
+    // Reason for revocation
+    ReasonCode.Enum Reason = 5 [json_name = "Reason"];
+    // ReasonText provides optional free-form revocation note
+    string ReasonText = 6 [json_name = "ReasonText", (es.api.max) = 260];
+}
+
+// CertificateResponse returns Certificate
+message CertificateResponse {
+    Certificate Certificate = 1 [json_name = "Certificate"];
+}
+
+// CertificatesResponse returns Certificates list
+message CertificatesResponse {
+    repeated Certificate Certificates = 1 [json_name = "Certificates"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+// RevokedCertificateResponse returns Revoked Certificate
+message RevokedCertificateResponse {
+    RevokedCertificate Revoked = 1 [json_name = "Revoked"];
+}
+
+// RevokedCertificatesResponse returns Revoked Certificates list
+message RevokedCertificatesResponse {
+    repeated RevokedCertificate RevokedCertificates = 1
+        [json_name = "RevokedCertificates"];
+    // NextPage specifies pagination information, if there are more pages to
+    // fetch. If there are no more pages to fetch, NextPage will be empty.
+    NextPage NextPage = 2 [json_name = "NextPage"];
+}
+
+//
+// Revocation status
+//
+
+// GetCrlRequest specifies CRL request by IKID
+message GetCrlRequest {
+    // OrgID of the owning org; empty allows lookup across orgs for CIS
+    string OrgID = 1 [json_name = "OrgID"];
+    // IKID specifies Issuer Key ID
+    string IKID = 2 [json_name = "IKID", (es.api.required) = true];
+}
+
+// PublishCrlsRequest allows to publish CRLs on demand
+message PublishCrlsRequest {
+    // OrgID of the owning org; empty for all orgs
+    string OrgID = 1 [json_name = "OrgID"];
+    // IKID specifies Issuer Key ID; empty to publish for all issuers in scope
+    string IKID = 2 [json_name = "IKID"];
+    // Force specifies to publish even if the current CRL is not due for renewal
+    bool Force = 3 [json_name = "Force"];
+}
+
+// CrlsResponse returns published CRLs
+message CrlsResponse {
+    repeated Crl Crls = 1 [json_name = "Crls"];
+}
+
+// CrlResponse returns CRL
+message CrlResponse {
+    Crl Crl = 1 [json_name = "Crl"];
+}
+
+// OCSPRequest provides DER encoded OCSP request
+message OCSPRequest {
+    // Der provides DER encoded request
+    bytes Der = 1 [json_name = "Der", (es.api.required) = true];
+}
+
+// OCSPResponse returns DER encoded OCSP response
+message OCSPResponse {
+    // Der provides DER encoded response
+    bytes Der = 1 [json_name = "Der"];
+}

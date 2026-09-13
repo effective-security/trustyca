@@ -1,14 +1,83 @@
 - TestRpc/TestUserTokenCmd/txt:
+ Token     │ at        
+ Jkt       │ dpop      
+ Issuer    │           
+ Audience  │           
+ Provider  │ undefined 
+ IssuedAt  │           
+ ExpiresIn │ 0         
+ ExpiresAt │           
+
+ Name            │                               
+ Email           │ denis@ekspand.onmicrosoft.com 
+ EmailVerified   │ no                            
+ Role            │                               
+ Org ID          │                               
+ Org Role        │                               
+ Org Role Source │                               
+
+
+- TestRpc/Test_APIKeyCreateCmd/json:
 {
-	"Token": {
-		"TokenType": "test",
-		"AccessToken": "at",
-		"Jkt": "dpop"
-	},
-	"UserInfo": {
-		"Email": "denis@ekspand.onmicrosoft.com"
-	}
+	"ID": "555",
+	"OrgID": "100",
+	"ProjectID": "201",
+	"Label": "ci",
+	"Key": "sk_100_abc",
+	"Secret": "shown-once",
+	"Scopes": [
+		"certs:issue"
+	],
+	"ExpiresAt": "2027-01-01T00:00:00Z"
 }
+
+- TestRpc/Test_APIKeyCreateCmd/txt:
+ ID         │ 555                  
+ Key        │ sk_100_abc           
+ Scopes     │ certs:issue          
+ Org ID     │ 100                  
+ Project ID │ 201                  
+ Label      │ ci                   
+ Status     │ Unknown              
+ Expires At │ 2027-01-01T00:00:00Z 
+ Used At    │                      
+ Used Count │ 0                    
+ Created    │                      
+
+
+- TestRpc/Test_APIKeyDeleteCmd/json:
+{
+	"Deleted": "1"
+}
+
+- TestRpc/Test_APIKeyDeleteCmd/txt:
+{
+	"Deleted": "1"
+}
+
+- TestRpc/Test_APIKeyListCmd/json:
+{
+	"APIKeys": [
+		{
+			"ID": "555",
+			"OrgID": "100",
+			"Label": "ci",
+			"Key": "sk_100_abc",
+			"Scopes": [
+				"org:read"
+			],
+			"UsedCount": 2
+		}
+	]
+}
+
+- TestRpc/Test_APIKeyListCmd/txt:
+┌─────┬────────┬────────────┬───────┬─────────┬────────────┬─────────┬────────────┬─────────┐
+│ ID  │ ORG ID │ PROJECT ID │ LABEL │ STATUS  │ EXPIRES AT │ USED AT │ USED COUNT │ CREATED │
+├─────┼────────┼────────────┼───────┼─────────┼────────────┼─────────┼────────────┼─────────┤
+│ 555 │ 100    │            │ ci    │ Unknown │            │         │ 2          │         │
+└─────┴────────┴────────────┴───────┴─────────┴────────────┴─────────┴────────────┴─────────┘
+
 
 - TestRpc/Test_InviteDeleteCmd/json:
 {}
@@ -21,25 +90,23 @@
 	"Invite": {
 		"ID": "1",
 		"Email": "test@example.com",
-		"Role": 4
+		"Role": 7
 	}
 }
 
 - TestRpc/Test_MemberAddCmd/txt:
-{
-	"Invite": {
-		"ID": "1",
-		"Email": "test@example.com",
-		"Role": 4
-	}
-}
+ ID      │ 1                
+ Email   │ test@example.com 
+ Role    │ Admin            
+ Created │                  
+
 
 - TestRpc/Test_MemberChangeRoleCmd/json:
 {
 	"ID": "1",
 	"Name": "Test Member",
 	"Email": "test@example.com",
-	"Role": 4
+	"Role": 7
 }
 
 - TestRpc/Test_MemberChangeRoleCmd/txt:
@@ -67,14 +134,14 @@
 			"ID": "1",
 			"Name": "Test Member",
 			"Email": "test@example.com",
-			"Role": 4
+			"Role": 7
 		}
 	],
 	"Invites": [
 		{
 			"ID": "2",
 			"Email": "test@example.com",
-			"Role": 4
+			"Role": 7
 		}
 	]
 }
@@ -93,6 +160,34 @@ Invites:
 ├────┼──────────────────┼───────┼─────────┤
 │ 2  │ test@example.com │ Admin │         │
 └────┴──────────────────┴───────┴─────────┘
+
+
+- TestRpc/Test_OrgAccessCmd/json:
+{
+	"Org": {
+		"OrgID": "1",
+		"OrgName": "Test Org",
+		"Role": 2,
+		"RoleSource": 2
+	},
+	"Memberships": [
+		{
+			"ID": "1",
+			"OrgID": "1",
+			"Role": 7,
+			"Scope": 2,
+			"ProjectID": "201",
+			"ProjectAlias": "payments"
+		}
+	]
+}
+
+- TestRpc/Test_OrgAccessCmd/txt:
+┌────────┬───────┬─────┬───────┬──────┬──────┬───────┬─────────┐
+│ ORG ID │ ALIAS │ ORG │ ROLE  │ USER │ NAME │ EMAIL │ CREATED │
+├────────┼───────┼─────┼───────┼──────┼──────┼───────┼─────────┤
+│ 1      │       │     │ Admin │      │      │       │         │
+└────────┴───────┴─────┴───────┴──────┴──────┴───────┴─────────┘
 
 
 - TestRpc/Test_OrgCreateCmd/json:
@@ -145,22 +240,30 @@ Invites:
 
 - TestRpc/Test_OrgListCmd/json:
 {
-	"Memberships": [
+	"Orgs": [
 		{
-			"ID": "1",
 			"OrgID": "1",
 			"OrgName": "Test Org",
-			"Role": 4
+			"Role": 7,
+			"RoleSource": 1,
+			"ExplicitRole": 7
+		},
+		{
+			"OrgID": "2",
+			"OrgName": "Other Org",
+			"Role": 2,
+			"RoleSource": 2
 		}
 	]
 }
 
 - TestRpc/Test_OrgListCmd/txt:
-┌────────┬───────┬──────────┬───────┬──────┬──────┬───────┬─────────┐
-│ ORG ID │ ALIAS │   ORG    │ ROLE  │ USER │ NAME │ EMAIL │ CREATED │
-├────────┼───────┼──────────┼───────┼──────┼──────┼───────┼─────────┤
-│ 1      │       │ Test Org │ Admin │      │      │       │         │
-└────────┴───────┴──────────┴───────┴──────┴──────┴───────┴─────────┘
+┌────┬───────┬───────────┬────────┬─────────────┬───────────────┐
+│ ID │ ALIAS │   NAME    │  ROLE  │ ROLE SOURCE │ EXPLICIT ROLE │
+├────┼───────┼───────────┼────────┼─────────────┼───────────────┤
+│ 1  │       │ Test Org  │ Admin  │ Direct      │ Admin         │
+│ 2  │       │ Other Org │ Viewer │ Project     │ None          │
+└────┴───────┴───────────┴────────┴─────────────┴───────────────┘
 
 
 - TestRpc/Test_OrgUpdateCmd/json:
@@ -177,5 +280,241 @@ Invites:
  Alias   │          
  Status  │ Active   
  Created │          
+
+
+- TestRpc/Test_ProjectCreateCmd/json:
+{
+	"ID": "201",
+	"OrgID": "100",
+	"Alias": "payments",
+	"Name": "Payments",
+	"Description": "Payments project",
+	"Status": 2
+}
+
+- TestRpc/Test_ProjectCreateCmd/txt:
+ ID      │ 201      
+ Alias   │ payments 
+ Name    │ Payments 
+ Status  │ Active   
+ Created │          
+
+
+- TestRpc/Test_ProjectDeleteCmd/json:
+{
+	"ID": "201",
+	"OrgID": "100",
+	"Alias": "payments",
+	"Name": "Payments",
+	"Status": 1
+}
+
+- TestRpc/Test_ProjectDeleteCmd/txt:
+ ID      │ 201      
+ Alias   │ payments 
+ Name    │ Payments 
+ Status  │ Inactive 
+ Created │          
+
+
+- TestRpc/Test_ProjectGetCmd/json:
+{
+	"ID": "201",
+	"OrgID": "100",
+	"Alias": "payments",
+	"Name": "Payments",
+	"Description": "Payments project",
+	"Status": 2
+}
+
+- TestRpc/Test_ProjectGetCmd/txt:
+ ID      │ 201      
+ Alias   │ payments 
+ Name    │ Payments 
+ Status  │ Active   
+ Created │          
+
+
+- TestRpc/Test_ProjectInviteDeleteCmd/json:
+{}
+
+- TestRpc/Test_ProjectInviteDeleteCmd/txt:
+{}
+
+- TestRpc/Test_ProjectListCmd/json:
+{
+	"Projects": [
+		{
+			"ID": "201",
+			"OrgID": "100",
+			"Alias": "payments",
+			"Name": "Payments",
+			"Description": "Payments project",
+			"Status": 2
+		}
+	]
+}
+
+- TestRpc/Test_ProjectListCmd/txt:
+┌─────┬──────────┬──────────┬────────┬─────────┐
+│ ID  │  ALIAS   │   NAME   │ STATUS │ CREATED │
+├─────┼──────────┼──────────┼────────┼─────────┤
+│ 201 │ payments │ Payments │ Active │         │
+└─────┴──────────┴──────────┴────────┴─────────┘
+
+
+- TestRpc/Test_ProjectMemberAddCmd/json:
+{
+	"Membership": {
+		"ID": "1",
+		"OrgID": "100",
+		"Email": "test@example.com",
+		"Role": 7,
+		"Scope": 2,
+		"ProjectID": "201"
+	}
+}
+
+- TestRpc/Test_ProjectMemberAddCmd/txt:
+ ID        │ 1                
+ Org       │ 100              
+ Org Alias │                  
+ Org Name  │                  
+ Role      │ Admin            
+ User      │                  
+ Name      │                  
+ Email     │ test@example.com 
+ Created   │                  
+
+
+- TestRpc/Test_ProjectMemberChangeRoleCmd/json:
+{
+	"ID": "1",
+	"OrgID": "100",
+	"Email": "test@example.com",
+	"Role": 3,
+	"Scope": 2,
+	"ProjectID": "201"
+}
+
+- TestRpc/Test_ProjectMemberChangeRoleCmd/txt:
+ ID        │ 1                
+ Org       │ 100              
+ Org Alias │                  
+ Org Name  │                  
+ Role      │ User             
+ User      │                  
+ Name      │                  
+ Email     │ test@example.com 
+ Created   │                  
+
+
+- TestRpc/Test_ProjectMemberDeleteCmd/json:
+{}
+
+- TestRpc/Test_ProjectMemberDeleteCmd/txt:
+{}
+
+- TestRpc/Test_ProjectMembersListCmd/json:
+{
+	"Memberships": [
+		{
+			"ID": "1",
+			"OrgID": "100",
+			"Name": "Test Member",
+			"Email": "test@example.com",
+			"Role": 7,
+			"Scope": 2,
+			"ProjectID": "201",
+			"ProjectAlias": "payments"
+		}
+	],
+	"Invites": [
+		{
+			"ID": "2",
+			"OrgID": "100",
+			"Email": "invitee@example.com",
+			"Role": 3,
+			"Scope": 2,
+			"ProjectID": "201"
+		}
+	]
+}
+
+- TestRpc/Test_ProjectMembersListCmd/txt:
+Memberships:
+┌────────┬───────┬─────┬───────┬──────┬─────────────┬──────────────────┬─────────┐
+│ ORG ID │ ALIAS │ ORG │ ROLE  │ USER │    NAME     │      EMAIL       │ CREATED │
+├────────┼───────┼─────┼───────┼──────┼─────────────┼──────────────────┼─────────┤
+│ 100    │       │     │ Admin │      │ Test Member │ test@example.com │         │
+└────────┴───────┴─────┴───────┴──────┴─────────────┴──────────────────┴─────────┘
+
+Invites:
+┌────┬─────────────────────┬──────┬─────────┐
+│ ID │        EMAIL        │ ROLE │ CREATED │
+├────┼─────────────────────┼──────┼─────────┤
+│ 2  │ invitee@example.com │ User │         │
+└────┴─────────────────────┴──────┴─────────┘
+
+
+- TestRpc/Test_ProjectUpdateCmd/json:
+{
+	"ID": "201",
+	"OrgID": "100",
+	"Alias": "payments",
+	"Name": "Payments",
+	"Description": "Payments project",
+	"Status": 2
+}
+
+- TestRpc/Test_ProjectUpdateCmd/txt:
+ ID      │ 201      
+ Alias   │ payments 
+ Name    │ Payments 
+ Status  │ Active   
+ Created │          
+
+
+- TestRpc/Test_ScopeCmd/json:
+{
+	"OrgID": "100",
+	"Role": 3,
+	"RoleSource": 1,
+	"ProjectRoles": {
+		"201": "Admin"
+	},
+	"Methods": [
+		{
+			"Method": "/pb.Orgs/CreateAPIKey",
+			"AllowedRoles": [
+				"Admin"
+			]
+		},
+		{
+			"Method": "/pb.Orgs/GetOrg",
+			"AllowedRoles": [
+				"Viewer",
+				"APIKey"
+			],
+			"Scopes": [
+				"org:read"
+			],
+			"Allowed": true
+		}
+	]
+}
+
+- TestRpc/Test_ScopeCmd/txt:
+ Org ID      │ 100    
+ Role        │ User   
+ Role Source │ Direct 
+ Scopes      │        
+ Is API Key  │ no     
+
+┌────────────┬───────┐
+│ PROJECT ID │ ROLE  │
+├────────────┼───────┤
+│ 201        │ Admin │
+└────────────┴───────┘
 
 

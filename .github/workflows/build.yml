@@ -61,7 +61,7 @@ jobs:
           echo "RUN_ATTEMPT: ${{env.RUN_ATTEMPT}}"
 
   TestAndDeploy:
-    runs-on: ubuntu-latest-l
+    runs-on: ubuntu-latest
     needs:
       - detect-noop
 

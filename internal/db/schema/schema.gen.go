@@ -12,14 +12,58 @@ import (
 // Dialect provides Dialect for trustycadb
 var Dialect = xsql.Postgres
 
+// APIKeyTableInfo provides table info for 'apikey'
+var APIKeyTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.apikey",
+	Schema:     "trustyca",
+	Name:       "apikey",
+	PrimaryKey: "id",
+	Columns:    []string{"id", "org_id", "project_id", "key", "secret", "label", "scopes", "metadata", "status", "created_at", "expires_at", "used_at", "used_count"},
+	Indexes:    []string{"apikey_key", "apikey_pkey", "idx_apikey_org_project"},
+	Dialect:    xsql.Postgres,
+}
+
+// CertificateTableInfo provides table info for 'certificate'
+var CertificateTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.certificate",
+	Schema:     "trustyca",
+	Name:       "certificate",
+	PrimaryKey: "id",
+	Columns:    []string{"id", "org_id", "project_id", "skid", "ikid", "serial_number", "not_before", "not_after", "subject", "issuer", "sha256", "profile", "label", "locations", "metadata", "pem", "issuers_pem", "status", "created_at"},
+	Indexes:    []string{"certificate_pkey", "idx_certificate_ikid_id_desc", "idx_certificate_org_project_id_desc", "idx_certificate_org_project_notafter", "idx_certificate_skid", "unique_certificate_ikid_serial", "unique_certificate_sha256"},
+	Dialect:    xsql.Postgres,
+}
+
+// CertificateProfileTableInfo provides table info for 'certificate_profile'
+var CertificateProfileTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.certificate_profile",
+	Schema:     "trustyca",
+	Name:       "certificate_profile",
+	PrimaryKey: "id",
+	Columns:    []string{"id", "org_id", "project_id", "label", "issuer_label", "status", "config", "created_at", "updated_at"},
+	Indexes:    []string{"certificate_profile_pkey", "idx_certificate_profile_org_issuer", "unique_certificate_profile_org_project_label"},
+	Dialect:    xsql.Postgres,
+}
+
+// CrlTableInfo provides table info for 'crl'
+var CrlTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.crl",
+	Schema:     "trustyca",
+	Name:       "crl",
+	PrimaryKey: "id",
+	Columns:    []string{"id", "org_id", "project_id", "issuer_id", "ikid", "crl_number", "this_update", "next_update", "issuer", "pem", "locations", "created_at"},
+	Indexes:    []string{"crl_pkey", "idx_crl_next_update", "unique_crl_ikid"},
+	Dialect:    xsql.Postgres,
+}
+
 // EventTableInfo provides table info for 'event'
 var EventTableInfo = xdbschema.TableInfo{
 	SchemaName: "trustyca.event",
 	Schema:     "trustyca",
 	Name:       "event",
 	PrimaryKey: "id",
-	Columns:    []string{"id", "org_id", "type", "title", "description", "metadata", "ref_id", "email", "source", "created_at"},
-	Indexes:    []string{"event_pkey", "idx_event_email", "idx_event_org_created_id_desc", "idx_event_org_id", "idx_event_org_ref_id", "idx_event_type"},
+	Columns:    []string{"id", "org_id", "project_id", "type", "title", "description", "metadata", "ref_id", "email", "source", "created_at"},
+	Indexes:    []string{"event_pkey", "idx_event_email", "idx_event_org_created_id_desc", "idx_event_org_id", "idx_event_org_project_created_id_desc", "idx_event_org_ref_id", "idx_event_type"},
 	Dialect:    xsql.Postgres,
 }
 
@@ -29,19 +73,19 @@ var InviteTableInfo = xdbschema.TableInfo{
 	Schema:     "trustyca",
 	Name:       "invite",
 	PrimaryKey: "id",
-	Columns:    []string{"id", "org_id", "inviter_id", "email", "role", "created_at"},
-	Indexes:    []string{"idx_invite_email", "idx_invite_org_id", "invites_pkey", "unique_invite_org_id_email"},
+	Columns:    []string{"id", "org_id", "project_id", "inviter_id", "email", "role", "created_at", "expires_at"},
+	Indexes:    []string{"idx_invite_email", "idx_invite_org_project", "invite_pkey", "unique_invite_org_project_email"},
 	Dialect:    xsql.Postgres,
 }
 
-// LlmModelTableInfo provides table info for 'llm_model'
-var LlmModelTableInfo = xdbschema.TableInfo{
-	SchemaName: "trustyca.llm_model",
+// IssuerTableInfo provides table info for 'issuer'
+var IssuerTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.issuer",
 	Schema:     "trustyca",
-	Name:       "llm_model",
+	Name:       "issuer",
 	PrimaryKey: "id",
-	Columns:    []string{"id", "provider", "name", "description", "status", "metadata", "cost_input_token", "cost_output_token", "cost_cached_input_read", "cost_cached_input_write", "cost_reasoning_token", "created_at", "updated_at"},
-	Indexes:    []string{"idx_llm_model_name", "llm_model_pkey", "unique_llm_model_provider_name"},
+	Columns:    []string{"id", "org_id", "project_id", "label", "type", "status", "parent_id", "skid", "ikid", "serial_number", "subject", "issuer", "sha256", "not_before", "not_after", "pem", "chain_pem", "root_pem", "csr_pem", "key_provider", "key_id", "key_protected", "config", "crl_number", "created_at", "updated_at"},
+	Indexes:    []string{"idx_issuer_notafter", "idx_issuer_org_project_status", "idx_issuer_parent", "issuer_pkey", "unique_issuer_org_project_label", "unique_issuer_skid"},
 	Dialect:    xsql.Postgres,
 }
 
@@ -62,8 +106,8 @@ var MembershipTableInfo = xdbschema.TableInfo{
 	Schema:     "trustyca",
 	Name:       "membership",
 	PrimaryKey: "id",
-	Columns:    []string{"id", "org_id", "user_id", "role", "created_at"},
-	Indexes:    []string{"idx_membership_org_id", "idx_membership_user_id", "membership_org_user", "membership_pkey"},
+	Columns:    []string{"id", "org_id", "project_id", "user_id", "role", "created_at"},
+	Indexes:    []string{"idx_membership_org_project", "idx_membership_user_id", "membership_pkey", "unique_membership_org_project_user"},
 	Dialect:    xsql.Postgres,
 }
 
@@ -75,6 +119,39 @@ var OrgTableInfo = xdbschema.TableInfo{
 	PrimaryKey: "id",
 	Columns:    []string{"id", "alias", "name", "description", "status", "created_at"},
 	Indexes:    []string{"org_pkey", "unique_org_alias"},
+	Dialect:    xsql.Postgres,
+}
+
+// ProjectTableInfo provides table info for 'project'
+var ProjectTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.project",
+	Schema:     "trustyca",
+	Name:       "project",
+	PrimaryKey: "id",
+	Columns:    []string{"id", "org_id", "alias", "name", "description", "status", "created_at", "updated_at"},
+	Indexes:    []string{"idx_project_org_status", "project_pkey", "unique_project_org_alias", "unique_project_org_id"},
+	Dialect:    xsql.Postgres,
+}
+
+// RevokedTableInfo provides table info for 'revoked'
+var RevokedTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.revoked",
+	Schema:     "trustyca",
+	Name:       "revoked",
+	PrimaryKey: "id",
+	Columns:    []string{"id", "org_id", "project_id", "certificate_id", "ikid", "serial_number", "not_after", "revoked_at", "reason", "reason_text"},
+	Indexes:    []string{"idx_revoked_ikid_notafter", "idx_revoked_org_project_id_desc", "revoked_pkey", "unique_revoked_certificate"},
+	Dialect:    xsql.Postgres,
+}
+
+// RootCertificateTableInfo provides table info for 'root_certificate'
+var RootCertificateTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.root_certificate",
+	Schema:     "trustyca",
+	Name:       "root_certificate",
+	PrimaryKey: "id",
+	Columns:    []string{"id", "org_id", "skid", "not_before", "not_after", "subject", "sha256", "trust", "pem", "created_at"},
+	Indexes:    []string{"idx_root_certificate_notafter", "idx_root_certificate_org", "idx_root_certificate_skid", "root_certificate_pkey", "unique_root_certificate_sha256"},
 	Dialect:    xsql.Postgres,
 }
 
@@ -106,22 +183,191 @@ var MembershipInfoTableInfo = xdbschema.TableInfo{
 	Schema:     "trustyca",
 	Name:       "vw_membership_info",
 	PrimaryKey: "",
-	Columns:    []string{"id", "org_id", "org_alias", "org_name", "org_status", "user_id", "email", "name", "role", "created_at"},
+	Columns:    []string{"id", "org_id", "project_id", "org_alias", "org_name", "org_status", "project_alias", "project_name", "user_id", "email", "name", "role", "created_at"},
 	Indexes:    []string{},
 	Dialect:    xsql.Postgres,
 }
 
 // TrustycadbTables provides tables map for trustycadb
 var TrustycadbTables = map[string]*xdbschema.TableInfo{
-	"event":              &EventTableInfo,
-	"invite":             &InviteTableInfo,
-	"llm_model":          &LlmModelTableInfo,
-	"login":              &LoginTableInfo,
-	"membership":         &MembershipTableInfo,
-	"org":                &OrgTableInfo,
-	"schema_migrations":  &SchemaMigrationTableInfo,
-	"user":               &UserTableInfo,
-	"vw_membership_info": &MembershipInfoTableInfo,
+	"apikey":              &APIKeyTableInfo,
+	"certificate":         &CertificateTableInfo,
+	"certificate_profile": &CertificateProfileTableInfo,
+	"crl":                 &CrlTableInfo,
+	"event":               &EventTableInfo,
+	"invite":              &InviteTableInfo,
+	"issuer":              &IssuerTableInfo,
+	"login":               &LoginTableInfo,
+	"membership":          &MembershipTableInfo,
+	"org":                 &OrgTableInfo,
+	"project":             &ProjectTableInfo,
+	"revoked":             &RevokedTableInfo,
+	"root_certificate":    &RootCertificateTableInfo,
+	"schema_migrations":   &SchemaMigrationTableInfo,
+	"user":                &UserTableInfo,
+	"vw_membership_info":  &MembershipInfoTableInfo,
+}
+
+// APIKey provides column definitions for table 'trustyca.apikey'.
+// Primary key: id
+// Indexes:
+//
+//	apikey_key: UNIQUE [key]
+//	apikey_pkey: PRIMARY UNIQUE [id]
+//	idx_apikey_org_project: [org_id,project_id]
+var APIKey = struct {
+	Table     *xdbschema.TableInfo
+	ID        xdbschema.Column // id bigint
+	OrgID     xdbschema.Column // org_id bigint
+	ProjectID xdbschema.Column // project_id bigint
+	Key       xdbschema.Column // key character varying
+	Secret    xdbschema.Column // secret character varying
+	Label     xdbschema.Column // label character varying
+	Scopes    xdbschema.Column // scopes ARRAY
+	Metadata  xdbschema.Column // metadata jsonb
+	Status    xdbschema.Column // status integer
+	CreatedAt xdbschema.Column // created_at timestamp with time zone
+	ExpiresAt xdbschema.Column // expires_at timestamp with time zone
+	UsedAt    xdbschema.Column // used_at timestamp with time zone
+	UsedCount xdbschema.Column // used_count integer
+}{
+	Table:     &APIKeyTableInfo,
+	ID:        xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
+	OrgID:     xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: false},
+	ProjectID: xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	Key:       xdbschema.Column{Name: "key", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 128},
+	Secret:    xdbschema.Column{Name: "secret", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 128},
+	Label:     xdbschema.Column{Name: "label", Position: 6, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	Scopes:    xdbschema.Column{Name: "scopes", Position: 7, Type: "ARRAY", UdtType: "_varchar", Nullable: false},
+	Metadata:  xdbschema.Column{Name: "metadata", Position: 8, Type: "jsonb", UdtType: "jsonb", Nullable: true},
+	Status:    xdbschema.Column{Name: "status", Position: 9, Type: "integer", UdtType: "int4", Nullable: false},
+	CreatedAt: xdbschema.Column{Name: "created_at", Position: 10, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	ExpiresAt: xdbschema.Column{Name: "expires_at", Position: 11, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	UsedAt:    xdbschema.Column{Name: "used_at", Position: 12, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	UsedCount: xdbschema.Column{Name: "used_count", Position: 13, Type: "integer", UdtType: "int4", Nullable: false},
+}
+
+// Certificate provides column definitions for table 'trustyca.certificate'.
+// Primary key: id
+// Indexes:
+//
+//	certificate_pkey: PRIMARY UNIQUE [id]
+//	idx_certificate_ikid_id_desc: [ikid,id]
+//	idx_certificate_org_project_id_desc: [project_id,id,org_id]
+//	idx_certificate_org_project_notafter: [not_after,org_id,project_id]
+//	idx_certificate_skid: [skid]
+//	unique_certificate_ikid_serial: UNIQUE [serial_number,ikid]
+//	unique_certificate_sha256: UNIQUE [sha256]
+var Certificate = struct {
+	Table        *xdbschema.TableInfo
+	ID           xdbschema.Column // id bigint
+	OrgID        xdbschema.Column // org_id bigint
+	ProjectID    xdbschema.Column // project_id bigint
+	Skid         xdbschema.Column // skid character varying
+	Ikid         xdbschema.Column // ikid character varying
+	SerialNumber xdbschema.Column // serial_number character varying
+	NotBefore    xdbschema.Column // not_before timestamp with time zone
+	NotAfter     xdbschema.Column // not_after timestamp with time zone
+	Subject      xdbschema.Column // subject character varying
+	Issuer       xdbschema.Column // issuer character varying
+	Sha256       xdbschema.Column // sha256 character varying
+	Profile      xdbschema.Column // profile character varying
+	Label        xdbschema.Column // label character varying
+	Locations    xdbschema.Column // locations ARRAY
+	Metadata     xdbschema.Column // metadata jsonb
+	Pem          xdbschema.Column // pem text
+	IssuersPem   xdbschema.Column // issuers_pem text
+	Status       xdbschema.Column // status integer
+	CreatedAt    xdbschema.Column // created_at timestamp with time zone
+}{
+	Table:        &CertificateTableInfo,
+	ID:           xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
+	OrgID:        xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	ProjectID:    xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	Skid:         xdbschema.Column{Name: "skid", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Ikid:         xdbschema.Column{Name: "ikid", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	SerialNumber: xdbschema.Column{Name: "serial_number", Position: 6, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	NotBefore:    xdbschema.Column{Name: "not_before", Position: 7, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	NotAfter:     xdbschema.Column{Name: "not_after", Position: 8, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	Subject:      xdbschema.Column{Name: "subject", Position: 9, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	Issuer:       xdbschema.Column{Name: "issuer", Position: 10, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	Sha256:       xdbschema.Column{Name: "sha256", Position: 11, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Profile:      xdbschema.Column{Name: "profile", Position: 12, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Label:        xdbschema.Column{Name: "label", Position: 13, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	Locations:    xdbschema.Column{Name: "locations", Position: 14, Type: "ARRAY", UdtType: "_varchar", Nullable: false},
+	Metadata:     xdbschema.Column{Name: "metadata", Position: 15, Type: "jsonb", UdtType: "jsonb", Nullable: false},
+	Pem:          xdbschema.Column{Name: "pem", Position: 16, Type: "text", UdtType: "text", Nullable: false},
+	IssuersPem:   xdbschema.Column{Name: "issuers_pem", Position: 17, Type: "text", UdtType: "text", Nullable: false},
+	Status:       xdbschema.Column{Name: "status", Position: 18, Type: "integer", UdtType: "int4", Nullable: false},
+	CreatedAt:    xdbschema.Column{Name: "created_at", Position: 19, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+}
+
+// CertificateProfile provides column definitions for table 'trustyca.certificate_profile'.
+// Primary key: id
+// Indexes:
+//
+//	certificate_profile_pkey: PRIMARY UNIQUE [id]
+//	idx_certificate_profile_org_issuer: [org_id,issuer_label]
+//	unique_certificate_profile_org_project_label: UNIQUE [org_id,project_id,label]
+var CertificateProfile = struct {
+	Table       *xdbschema.TableInfo
+	ID          xdbschema.Column // id bigint
+	OrgID       xdbschema.Column // org_id bigint
+	ProjectID   xdbschema.Column // project_id bigint
+	Label       xdbschema.Column // label character varying
+	IssuerLabel xdbschema.Column // issuer_label character varying
+	Status      xdbschema.Column // status integer
+	Config      xdbschema.Column // config jsonb
+	CreatedAt   xdbschema.Column // created_at timestamp with time zone
+	UpdatedAt   xdbschema.Column // updated_at timestamp with time zone
+}{
+	Table:       &CertificateProfileTableInfo,
+	ID:          xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
+	OrgID:       xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	ProjectID:   xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	Label:       xdbschema.Column{Name: "label", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	IssuerLabel: xdbschema.Column{Name: "issuer_label", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Status:      xdbschema.Column{Name: "status", Position: 6, Type: "integer", UdtType: "int4", Nullable: false},
+	Config:      xdbschema.Column{Name: "config", Position: 7, Type: "jsonb", UdtType: "jsonb", Nullable: false},
+	CreatedAt:   xdbschema.Column{Name: "created_at", Position: 8, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	UpdatedAt:   xdbschema.Column{Name: "updated_at", Position: 9, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+}
+
+// Crl provides column definitions for table 'trustyca.crl'.
+// Primary key: id
+// Indexes:
+//
+//	crl_pkey: PRIMARY UNIQUE [id]
+//	idx_crl_next_update: [next_update]
+//	unique_crl_ikid: UNIQUE [ikid]
+var Crl = struct {
+	Table      *xdbschema.TableInfo
+	ID         xdbschema.Column // id bigint
+	OrgID      xdbschema.Column // org_id bigint
+	ProjectID  xdbschema.Column // project_id bigint
+	IssuerID   xdbschema.Column // issuer_id bigint
+	Ikid       xdbschema.Column // ikid character varying
+	CrlNumber  xdbschema.Column // crl_number bigint
+	ThisUpdate xdbschema.Column // this_update timestamp with time zone
+	NextUpdate xdbschema.Column // next_update timestamp with time zone
+	Issuer     xdbschema.Column // issuer character varying
+	Pem        xdbschema.Column // pem text
+	Locations  xdbschema.Column // locations ARRAY
+	CreatedAt  xdbschema.Column // created_at timestamp with time zone
+}{
+	Table:      &CrlTableInfo,
+	ID:         xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
+	OrgID:      xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	ProjectID:  xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	IssuerID:   xdbschema.Column{Name: "issuer_id", Position: 4, Type: "bigint", UdtType: "int8", Nullable: false},
+	Ikid:       xdbschema.Column{Name: "ikid", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	CrlNumber:  xdbschema.Column{Name: "crl_number", Position: 6, Type: "bigint", UdtType: "int8", Nullable: false},
+	ThisUpdate: xdbschema.Column{Name: "this_update", Position: 7, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	NextUpdate: xdbschema.Column{Name: "next_update", Position: 8, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	Issuer:     xdbschema.Column{Name: "issuer", Position: 9, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	Pem:        xdbschema.Column{Name: "pem", Position: 10, Type: "text", UdtType: "text", Nullable: false},
+	Locations:  xdbschema.Column{Name: "locations", Position: 11, Type: "ARRAY", UdtType: "_varchar", Nullable: false},
+	CreatedAt:  xdbschema.Column{Name: "created_at", Position: 12, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
 }
 
 // Event provides column definitions for table 'trustyca.event'.
@@ -130,14 +376,16 @@ var TrustycadbTables = map[string]*xdbschema.TableInfo{
 //
 //	event_pkey: PRIMARY UNIQUE [id]
 //	idx_event_email: [email]
-//	idx_event_org_created_id_desc: [org_id,created_at,id]
+//	idx_event_org_created_id_desc: [id,org_id,created_at]
 //	idx_event_org_id: [org_id]
+//	idx_event_org_project_created_id_desc: [org_id,id,project_id,created_at]
 //	idx_event_org_ref_id: [org_id,ref_id]
 //	idx_event_type: [type]
 var Event = struct {
 	Table       *xdbschema.TableInfo
 	ID          xdbschema.Column // id bigint
 	OrgID       xdbschema.Column // org_id bigint
+	ProjectID   xdbschema.Column // project_id bigint
 	Type        xdbschema.Column // type integer
 	Title       xdbschema.Column // title character varying
 	Description xdbschema.Column // description text
@@ -149,15 +397,16 @@ var Event = struct {
 }{
 	Table:       &EventTableInfo,
 	ID:          xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
-	OrgID:       xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: false},
-	Type:        xdbschema.Column{Name: "type", Position: 3, Type: "integer", UdtType: "int4", Nullable: false},
-	Title:       xdbschema.Column{Name: "title", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 256},
-	Description: xdbschema.Column{Name: "description", Position: 5, Type: "text", UdtType: "text", Nullable: true},
-	Metadata:    xdbschema.Column{Name: "metadata", Position: 6, Type: "jsonb", UdtType: "jsonb", Nullable: false},
-	ReferenceID: xdbschema.Column{Name: "ref_id", Position: 7, Type: "bigint", UdtType: "int8", Nullable: true},
-	Email:       xdbschema.Column{Name: "email", Position: 8, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 160},
-	Source:      xdbschema.Column{Name: "source", Position: 9, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 256},
-	CreatedAt:   xdbschema.Column{Name: "created_at", Position: 10, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	OrgID:       xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	ProjectID:   xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	Type:        xdbschema.Column{Name: "type", Position: 4, Type: "integer", UdtType: "int4", Nullable: false},
+	Title:       xdbschema.Column{Name: "title", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 256},
+	Description: xdbschema.Column{Name: "description", Position: 6, Type: "text", UdtType: "text", Nullable: true},
+	Metadata:    xdbschema.Column{Name: "metadata", Position: 7, Type: "jsonb", UdtType: "jsonb", Nullable: false},
+	ReferenceID: xdbschema.Column{Name: "ref_id", Position: 8, Type: "bigint", UdtType: "int8", Nullable: true},
+	Email:       xdbschema.Column{Name: "email", Position: 9, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 160},
+	Source:      xdbschema.Column{Name: "source", Position: 10, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 256},
+	CreatedAt:   xdbschema.Column{Name: "created_at", Position: 11, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
 }
 
 // Invite provides column definitions for table 'trustyca.invite'.
@@ -165,64 +414,97 @@ var Event = struct {
 // Indexes:
 //
 //	idx_invite_email: [email]
-//	idx_invite_org_id: [org_id]
-//	invites_pkey: PRIMARY UNIQUE [id]
-//	unique_invite_org_id_email: UNIQUE [org_id,email]
+//	idx_invite_org_project: [org_id,project_id]
+//	invite_pkey: PRIMARY UNIQUE [id]
+//	unique_invite_org_project_email: UNIQUE [email,org_id,project_id]
 var Invite = struct {
 	Table     *xdbschema.TableInfo
 	ID        xdbschema.Column // id bigint
 	OrgID     xdbschema.Column // org_id bigint
+	ProjectID xdbschema.Column // project_id bigint
 	InviterID xdbschema.Column // inviter_id bigint
 	Email     xdbschema.Column // email character varying
 	Role      xdbschema.Column // role integer
 	CreatedAt xdbschema.Column // created_at timestamp with time zone
+	ExpiresAt xdbschema.Column // expires_at timestamp with time zone
 }{
 	Table:     &InviteTableInfo,
 	ID:        xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
 	OrgID:     xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: false},
-	InviterID: xdbschema.Column{Name: "inviter_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: false},
-	Email:     xdbschema.Column{Name: "email", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 160},
-	Role:      xdbschema.Column{Name: "role", Position: 5, Type: "integer", UdtType: "int4", Nullable: false},
-	CreatedAt: xdbschema.Column{Name: "created_at", Position: 6, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	ProjectID: xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	InviterID: xdbschema.Column{Name: "inviter_id", Position: 4, Type: "bigint", UdtType: "int8", Nullable: false},
+	Email:     xdbschema.Column{Name: "email", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 160},
+	Role:      xdbschema.Column{Name: "role", Position: 6, Type: "integer", UdtType: "int4", Nullable: false},
+	CreatedAt: xdbschema.Column{Name: "created_at", Position: 7, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	ExpiresAt: xdbschema.Column{Name: "expires_at", Position: 8, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
 }
 
-// LlmModel provides column definitions for table 'trustyca.llm_model'.
+// Issuer provides column definitions for table 'trustyca.issuer'.
 // Primary key: id
 // Indexes:
 //
-//	idx_llm_model_name: [name]
-//	llm_model_pkey: PRIMARY UNIQUE [id]
-//	unique_llm_model_provider_name: UNIQUE [provider,name]
-var LlmModel = struct {
-	Table                *xdbschema.TableInfo
-	ID                   xdbschema.Column // id bigint
-	Provider             xdbschema.Column // provider integer
-	Name                 xdbschema.Column // name character varying
-	Description          xdbschema.Column // description text
-	Status               xdbschema.Column // status integer
-	Metadata             xdbschema.Column // metadata jsonb
-	CostInputToken       xdbschema.Column // cost_input_token bigint
-	CostOutputToken      xdbschema.Column // cost_output_token bigint
-	CostCachedInputRead  xdbschema.Column // cost_cached_input_read bigint
-	CostCachedInputWrite xdbschema.Column // cost_cached_input_write bigint
-	CostReasoningToken   xdbschema.Column // cost_reasoning_token bigint
-	CreatedAt            xdbschema.Column // created_at timestamp with time zone
-	UpdatedAt            xdbschema.Column // updated_at timestamp with time zone
+//	idx_issuer_notafter: [not_after]
+//	idx_issuer_org_project_status: [org_id,project_id,status]
+//	idx_issuer_parent: [parent_id]
+//	issuer_pkey: PRIMARY UNIQUE [id]
+//	unique_issuer_org_project_label: UNIQUE [org_id,project_id,label]
+//	unique_issuer_skid: UNIQUE [skid]
+var Issuer = struct {
+	Table        *xdbschema.TableInfo
+	ID           xdbschema.Column // id bigint
+	OrgID        xdbschema.Column // org_id bigint
+	ProjectID    xdbschema.Column // project_id bigint
+	Label        xdbschema.Column // label character varying
+	Type         xdbschema.Column // type integer
+	Status       xdbschema.Column // status integer
+	ParentID     xdbschema.Column // parent_id bigint
+	Skid         xdbschema.Column // skid character varying
+	Ikid         xdbschema.Column // ikid character varying
+	SerialNumber xdbschema.Column // serial_number character varying
+	Subject      xdbschema.Column // subject character varying
+	Issuer       xdbschema.Column // issuer character varying
+	Sha256       xdbschema.Column // sha256 character varying
+	NotBefore    xdbschema.Column // not_before timestamp with time zone
+	NotAfter     xdbschema.Column // not_after timestamp with time zone
+	Pem          xdbschema.Column // pem text
+	ChainPem     xdbschema.Column // chain_pem text
+	RootPem      xdbschema.Column // root_pem text
+	CsrPem       xdbschema.Column // csr_pem text
+	KeyProvider  xdbschema.Column // key_provider character varying
+	KeyID        xdbschema.Column // key_id character varying
+	KeyProtected xdbschema.Column // key_protected text
+	Config       xdbschema.Column // config jsonb
+	CrlNumber    xdbschema.Column // crl_number bigint
+	CreatedAt    xdbschema.Column // created_at timestamp with time zone
+	UpdatedAt    xdbschema.Column // updated_at timestamp with time zone
 }{
-	Table:                &LlmModelTableInfo,
-	ID:                   xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
-	Provider:             xdbschema.Column{Name: "provider", Position: 2, Type: "integer", UdtType: "int4", Nullable: false},
-	Name:                 xdbschema.Column{Name: "name", Position: 3, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
-	Description:          xdbschema.Column{Name: "description", Position: 4, Type: "text", UdtType: "text", Nullable: true},
-	Status:               xdbschema.Column{Name: "status", Position: 5, Type: "integer", UdtType: "int4", Nullable: false},
-	Metadata:             xdbschema.Column{Name: "metadata", Position: 6, Type: "jsonb", UdtType: "jsonb", Nullable: false},
-	CostInputToken:       xdbschema.Column{Name: "cost_input_token", Position: 7, Type: "bigint", UdtType: "int8", Nullable: false},
-	CostOutputToken:      xdbschema.Column{Name: "cost_output_token", Position: 8, Type: "bigint", UdtType: "int8", Nullable: false},
-	CostCachedInputRead:  xdbschema.Column{Name: "cost_cached_input_read", Position: 9, Type: "bigint", UdtType: "int8", Nullable: false},
-	CostCachedInputWrite: xdbschema.Column{Name: "cost_cached_input_write", Position: 10, Type: "bigint", UdtType: "int8", Nullable: false},
-	CostReasoningToken:   xdbschema.Column{Name: "cost_reasoning_token", Position: 11, Type: "bigint", UdtType: "int8", Nullable: false},
-	CreatedAt:            xdbschema.Column{Name: "created_at", Position: 12, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
-	UpdatedAt:            xdbschema.Column{Name: "updated_at", Position: 13, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	Table:        &IssuerTableInfo,
+	ID:           xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
+	OrgID:        xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	ProjectID:    xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	Label:        xdbschema.Column{Name: "label", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Type:         xdbschema.Column{Name: "type", Position: 5, Type: "integer", UdtType: "int4", Nullable: false},
+	Status:       xdbschema.Column{Name: "status", Position: 6, Type: "integer", UdtType: "int4", Nullable: false},
+	ParentID:     xdbschema.Column{Name: "parent_id", Position: 7, Type: "bigint", UdtType: "int8", Nullable: true},
+	Skid:         xdbschema.Column{Name: "skid", Position: 8, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Ikid:         xdbschema.Column{Name: "ikid", Position: 9, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	SerialNumber: xdbschema.Column{Name: "serial_number", Position: 10, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Subject:      xdbschema.Column{Name: "subject", Position: 11, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	Issuer:       xdbschema.Column{Name: "issuer", Position: 12, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	Sha256:       xdbschema.Column{Name: "sha256", Position: 13, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	NotBefore:    xdbschema.Column{Name: "not_before", Position: 14, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	NotAfter:     xdbschema.Column{Name: "not_after", Position: 15, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	Pem:          xdbschema.Column{Name: "pem", Position: 16, Type: "text", UdtType: "text", Nullable: false},
+	ChainPem:     xdbschema.Column{Name: "chain_pem", Position: 17, Type: "text", UdtType: "text", Nullable: false},
+	RootPem:      xdbschema.Column{Name: "root_pem", Position: 18, Type: "text", UdtType: "text", Nullable: false},
+	CsrPem:       xdbschema.Column{Name: "csr_pem", Position: 19, Type: "text", UdtType: "text", Nullable: false},
+	KeyProvider:  xdbschema.Column{Name: "key_provider", Position: 20, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	KeyID:        xdbschema.Column{Name: "key_id", Position: 21, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	KeyProtected: xdbschema.Column{Name: "key_protected", Position: 22, Type: "text", UdtType: "text", Nullable: true},
+	Config:       xdbschema.Column{Name: "config", Position: 23, Type: "jsonb", UdtType: "jsonb", Nullable: false},
+	CrlNumber:    xdbschema.Column{Name: "crl_number", Position: 24, Type: "bigint", UdtType: "int8", Nullable: false},
+	CreatedAt:    xdbschema.Column{Name: "created_at", Position: 25, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	UpdatedAt:    xdbschema.Column{Name: "updated_at", Position: 26, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
 }
 
 // Login provides column definitions for table 'trustyca.login'.
@@ -265,14 +547,15 @@ var Login = struct {
 // Primary key: id
 // Indexes:
 //
-//	idx_membership_org_id: [org_id]
+//	idx_membership_org_project: [org_id,project_id]
 //	idx_membership_user_id: [user_id]
-//	membership_org_user: UNIQUE [org_id,user_id]
 //	membership_pkey: PRIMARY UNIQUE [id]
+//	unique_membership_org_project_user: UNIQUE [user_id,org_id,project_id]
 var Membership = struct {
 	Table     *xdbschema.TableInfo
 	ID        xdbschema.Column // id bigint
 	OrgID     xdbschema.Column // org_id bigint
+	ProjectID xdbschema.Column // project_id bigint
 	UserID    xdbschema.Column // user_id bigint
 	Role      xdbschema.Column // role integer
 	CreatedAt xdbschema.Column // created_at timestamp with time zone
@@ -280,9 +563,10 @@ var Membership = struct {
 	Table:     &MembershipTableInfo,
 	ID:        xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
 	OrgID:     xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: false},
-	UserID:    xdbschema.Column{Name: "user_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: false},
-	Role:      xdbschema.Column{Name: "role", Position: 4, Type: "integer", UdtType: "int4", Nullable: false},
-	CreatedAt: xdbschema.Column{Name: "created_at", Position: 5, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	ProjectID: xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	UserID:    xdbschema.Column{Name: "user_id", Position: 4, Type: "bigint", UdtType: "int8", Nullable: false},
+	Role:      xdbschema.Column{Name: "role", Position: 5, Type: "integer", UdtType: "int4", Nullable: false},
+	CreatedAt: xdbschema.Column{Name: "created_at", Position: 6, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
 }
 
 // Org provides column definitions for table 'trustyca.org'.
@@ -307,6 +591,105 @@ var Org = struct {
 	Description: xdbschema.Column{Name: "description", Position: 4, Type: "text", UdtType: "text", Nullable: true},
 	Status:      xdbschema.Column{Name: "status", Position: 5, Type: "integer", UdtType: "int4", Nullable: false},
 	CreatedAt:   xdbschema.Column{Name: "created_at", Position: 6, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+}
+
+// Project provides column definitions for table 'trustyca.project'.
+// Primary key: id
+// Indexes:
+//
+//	idx_project_org_status: [org_id,status]
+//	project_pkey: PRIMARY UNIQUE [id]
+//	unique_project_org_alias: UNIQUE [alias,org_id]
+//	unique_project_org_id: UNIQUE [id,org_id]
+var Project = struct {
+	Table       *xdbschema.TableInfo
+	ID          xdbschema.Column // id bigint
+	OrgID       xdbschema.Column // org_id bigint
+	Alias       xdbschema.Column // alias character varying
+	Name        xdbschema.Column // name character varying
+	Description xdbschema.Column // description text
+	Status      xdbschema.Column // status integer
+	CreatedAt   xdbschema.Column // created_at timestamp with time zone
+	UpdatedAt   xdbschema.Column // updated_at timestamp with time zone
+}{
+	Table:       &ProjectTableInfo,
+	ID:          xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
+	OrgID:       xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: false},
+	Alias:       xdbschema.Column{Name: "alias", Position: 3, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Name:        xdbschema.Column{Name: "name", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Description: xdbschema.Column{Name: "description", Position: 5, Type: "text", UdtType: "text", Nullable: true},
+	Status:      xdbschema.Column{Name: "status", Position: 6, Type: "integer", UdtType: "int4", Nullable: false},
+	CreatedAt:   xdbschema.Column{Name: "created_at", Position: 7, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	UpdatedAt:   xdbschema.Column{Name: "updated_at", Position: 8, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+}
+
+// Revoked provides column definitions for table 'trustyca.revoked'.
+// Primary key: id
+// Indexes:
+//
+//	idx_revoked_ikid_notafter: [not_after,ikid]
+//	idx_revoked_org_project_id_desc: [project_id,id,org_id]
+//	revoked_pkey: PRIMARY UNIQUE [id]
+//	unique_revoked_certificate: UNIQUE [certificate_id]
+var Revoked = struct {
+	Table         *xdbschema.TableInfo
+	ID            xdbschema.Column // id bigint
+	OrgID         xdbschema.Column // org_id bigint
+	ProjectID     xdbschema.Column // project_id bigint
+	CertificateID xdbschema.Column // certificate_id bigint
+	Ikid          xdbschema.Column // ikid character varying
+	SerialNumber  xdbschema.Column // serial_number character varying
+	NotAfter      xdbschema.Column // not_after timestamp with time zone
+	RevokedAt     xdbschema.Column // revoked_at timestamp with time zone
+	Reason        xdbschema.Column // reason integer
+	ReasonText    xdbschema.Column // reason_text character varying
+}{
+	Table:         &RevokedTableInfo,
+	ID:            xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
+	OrgID:         xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	ProjectID:     xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	CertificateID: xdbschema.Column{Name: "certificate_id", Position: 4, Type: "bigint", UdtType: "int8", Nullable: false},
+	Ikid:          xdbschema.Column{Name: "ikid", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	SerialNumber:  xdbschema.Column{Name: "serial_number", Position: 6, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	NotAfter:      xdbschema.Column{Name: "not_after", Position: 7, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	RevokedAt:     xdbschema.Column{Name: "revoked_at", Position: 8, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	Reason:        xdbschema.Column{Name: "reason", Position: 9, Type: "integer", UdtType: "int4", Nullable: false},
+	ReasonText:    xdbschema.Column{Name: "reason_text", Position: 10, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+}
+
+// RootCertificate provides column definitions for table 'trustyca.root_certificate'.
+// Primary key: id
+// Indexes:
+//
+//	idx_root_certificate_notafter: [not_after]
+//	idx_root_certificate_org: [org_id]
+//	idx_root_certificate_skid: [skid]
+//	root_certificate_pkey: PRIMARY UNIQUE [id]
+//	unique_root_certificate_sha256: UNIQUE [sha256]
+var RootCertificate = struct {
+	Table     *xdbschema.TableInfo
+	ID        xdbschema.Column // id bigint
+	OrgID     xdbschema.Column // org_id bigint
+	Skid      xdbschema.Column // skid character varying
+	NotBefore xdbschema.Column // not_before timestamp with time zone
+	NotAfter  xdbschema.Column // not_after timestamp with time zone
+	Subject   xdbschema.Column // subject character varying
+	Sha256    xdbschema.Column // sha256 character varying
+	Trust     xdbschema.Column // trust integer
+	Pem       xdbschema.Column // pem text
+	CreatedAt xdbschema.Column // created_at timestamp with time zone
+}{
+	Table:     &RootCertificateTableInfo,
+	ID:        xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: false},
+	OrgID:     xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	Skid:      xdbschema.Column{Name: "skid", Position: 3, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	NotBefore: xdbschema.Column{Name: "not_before", Position: 4, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	NotAfter:  xdbschema.Column{Name: "not_after", Position: 5, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
+	Subject:   xdbschema.Column{Name: "subject", Position: 6, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 260},
+	Sha256:    xdbschema.Column{Name: "sha256", Position: 7, Type: "character varying", UdtType: "varchar", Nullable: false, MaxLength: 64},
+	Trust:     xdbschema.Column{Name: "trust", Position: 8, Type: "integer", UdtType: "int4", Nullable: false},
+	Pem:       xdbschema.Column{Name: "pem", Position: 9, Type: "text", UdtType: "text", Nullable: false},
+	CreatedAt: xdbschema.Column{Name: "created_at", Position: 10, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: false},
 }
 
 // SchemaMigration provides column definitions for table 'trustyca.schema_migrations'.
@@ -346,27 +729,33 @@ var User = struct {
 
 // MembershipInfo provides column definitions for table 'trustyca.vw_membership_info'.
 var MembershipInfo = struct {
-	Table     *xdbschema.TableInfo
-	ID        xdbschema.Column // id bigint
-	OrgID     xdbschema.Column // org_id bigint
-	OrgAlias  xdbschema.Column // org_alias character varying
-	OrgName   xdbschema.Column // org_name character varying
-	OrgStatus xdbschema.Column // org_status integer
-	UserID    xdbschema.Column // user_id bigint
-	Email     xdbschema.Column // email character varying
-	Name      xdbschema.Column // name character varying
-	Role      xdbschema.Column // role integer
-	CreatedAt xdbschema.Column // created_at timestamp with time zone
+	Table        *xdbschema.TableInfo
+	ID           xdbschema.Column // id bigint
+	OrgID        xdbschema.Column // org_id bigint
+	ProjectID    xdbschema.Column // project_id bigint
+	OrgAlias     xdbschema.Column // org_alias character varying
+	OrgName      xdbschema.Column // org_name character varying
+	OrgStatus    xdbschema.Column // org_status integer
+	ProjectAlias xdbschema.Column // project_alias character varying
+	ProjectName  xdbschema.Column // project_name character varying
+	UserID       xdbschema.Column // user_id bigint
+	Email        xdbschema.Column // email character varying
+	Name         xdbschema.Column // name character varying
+	Role         xdbschema.Column // role integer
+	CreatedAt    xdbschema.Column // created_at timestamp with time zone
 }{
-	Table:     &MembershipInfoTableInfo,
-	ID:        xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: true},
-	OrgID:     xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
-	OrgAlias:  xdbschema.Column{Name: "org_alias", Position: 3, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 32},
-	OrgName:   xdbschema.Column{Name: "org_name", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
-	OrgStatus: xdbschema.Column{Name: "org_status", Position: 5, Type: "integer", UdtType: "int4", Nullable: true},
-	UserID:    xdbschema.Column{Name: "user_id", Position: 6, Type: "bigint", UdtType: "int8", Nullable: true},
-	Email:     xdbschema.Column{Name: "email", Position: 7, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 160},
-	Name:      xdbschema.Column{Name: "name", Position: 8, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
-	Role:      xdbschema.Column{Name: "role", Position: 9, Type: "integer", UdtType: "int4", Nullable: true},
-	CreatedAt: xdbschema.Column{Name: "created_at", Position: 10, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	Table:        &MembershipInfoTableInfo,
+	ID:           xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: true},
+	OrgID:        xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	ProjectID:    xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	OrgAlias:     xdbschema.Column{Name: "org_alias", Position: 4, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 32},
+	OrgName:      xdbschema.Column{Name: "org_name", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
+	OrgStatus:    xdbschema.Column{Name: "org_status", Position: 6, Type: "integer", UdtType: "int4", Nullable: true},
+	ProjectAlias: xdbschema.Column{Name: "project_alias", Position: 7, Type: "character varying", UdtType: "varchar", Nullable: true},
+	ProjectName:  xdbschema.Column{Name: "project_name", Position: 8, Type: "character varying", UdtType: "varchar", Nullable: true},
+	UserID:       xdbschema.Column{Name: "user_id", Position: 9, Type: "bigint", UdtType: "int8", Nullable: true},
+	Email:        xdbschema.Column{Name: "email", Position: 10, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 160},
+	Name:         xdbschema.Column{Name: "name", Position: 11, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
+	Role:         xdbschema.Column{Name: "role", Position: 12, Type: "integer", UdtType: "int4", Nullable: true},
+	CreatedAt:    xdbschema.Column{Name: "created_at", Position: 13, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
 }

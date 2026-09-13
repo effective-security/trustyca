@@ -206,7 +206,17 @@ type UserInfo struct {
 	EmailVerified bool                   `protobuf:"varint,4,opt,name=EmailVerified,proto3" json:"EmailVerified,omitempty"`
 	// Role is the role of the user in the application.
 	// For most of the users, the role is "user".
-	Role          string `protobuf:"bytes,5,opt,name=Role,proto3" json:"Role,omitempty"`
+	Role string `protobuf:"bytes,5,opt,name=Role,proto3" json:"Role,omitempty"`
+	// Orgs maps the IDs of the orgs the user can select to the resolved role
+	Orgs map[string]string `protobuf:"bytes,6,rep,name=Orgs,proto3" json:"Orgs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// OrgID is the org selected in the token
+	OrgID string `protobuf:"bytes,7,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// OrgRole is the resolved role in the selected org: the explicit org-wide
+	// role, or Viewer derived from project grants
+	OrgRole string `protobuf:"bytes,8,opt,name=OrgRole,proto3" json:"OrgRole,omitempty"`
+	// OrgRoleSource is "direct" for an explicit org-wide grant or "project"
+	// for a derived Viewer classification
+	OrgRoleSource string `protobuf:"bytes,9,opt,name=OrgRoleSource,proto3" json:"OrgRoleSource,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -272,6 +282,34 @@ func (x *UserInfo) GetEmailVerified() bool {
 func (x *UserInfo) GetRole() string {
 	if x != nil {
 		return x.Role
+	}
+	return ""
+}
+
+func (x *UserInfo) GetOrgs() map[string]string {
+	if x != nil {
+		return x.Orgs
+	}
+	return nil
+}
+
+func (x *UserInfo) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *UserInfo) GetOrgRole() string {
+	if x != nil {
+		return x.OrgRole
+	}
+	return ""
+}
+
+func (x *UserInfo) GetOrgRoleSource() string {
+	if x != nil {
+		return x.OrgRoleSource
 	}
 	return ""
 }
@@ -700,24 +738,373 @@ func (*IDP) Descriptor() ([]byte, []int) {
 	return file_auth_proto_rawDescGZIP(), []int{8}
 }
 
+// SelectOrgRequest specifies a request to switch the token to a specific Org
+type SelectOrgRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID specifies the Org to switch to
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// RememberMe specifies if the cookie should be set for the user.
+	// Otherwise, if the cookie is used, it will be set for the session only.
+	RememberMe    bool `protobuf:"varint,2,opt,name=RememberMe,proto3" json:"RememberMe,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SelectOrgRequest) Reset() {
+	*x = SelectOrgRequest{}
+	mi := &file_auth_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SelectOrgRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SelectOrgRequest) ProtoMessage() {}
+
+func (x *SelectOrgRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SelectOrgRequest.ProtoReflect.Descriptor instead.
+func (*SelectOrgRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SelectOrgRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *SelectOrgRequest) GetRememberMe() bool {
+	if x != nil {
+		return x.RememberMe
+	}
+	return false
+}
+
+type AllowedMethods struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Service is the name of the service
+	Service string `protobuf:"bytes,1,opt,name=Service,proto3" json:"Service,omitempty"`
+	// Methods is the list of methods that are allowed.
+	// The key is the short method name, the value is the full method name.
+	Methods       []*KVPair `protobuf:"bytes,2,rep,name=Methods,proto3" json:"Methods,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AllowedMethods) Reset() {
+	*x = AllowedMethods{}
+	mi := &file_auth_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AllowedMethods) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AllowedMethods) ProtoMessage() {}
+
+func (x *AllowedMethods) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AllowedMethods.ProtoReflect.Descriptor instead.
+func (*AllowedMethods) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *AllowedMethods) GetService() string {
+	if x != nil {
+		return x.Service
+	}
+	return ""
+}
+
+func (x *AllowedMethods) GetMethods() []*KVPair {
+	if x != nil {
+		return x.Methods
+	}
+	return nil
+}
+
+type ServiceAccessInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Allowed       []*AllowedMethods      `protobuf:"bytes,1,rep,name=Allowed,proto3" json:"Allowed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ServiceAccessInfo) Reset() {
+	*x = ServiceAccessInfo{}
+	mi := &file_auth_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServiceAccessInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServiceAccessInfo) ProtoMessage() {}
+
+func (x *ServiceAccessInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServiceAccessInfo.ProtoReflect.Descriptor instead.
+func (*ServiceAccessInfo) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ServiceAccessInfo) GetAllowed() []*AllowedMethods {
+	if x != nil {
+		return x.Allowed
+	}
+	return nil
+}
+
+// MethodAccess describes the access rules of a method and whether the caller
+// satisfies them at org scope
+type MethodAccess struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Method is the full method name
+	Method string `protobuf:"bytes,1,opt,name=Method,proto3" json:"Method,omitempty"`
+	// AllowedRoles are the minimum roles at Org or Project scope; a caller with
+	// a role that can assume any of them is allowed. Empty means any
+	// authenticated caller.
+	AllowedRoles []string `protobuf:"bytes,2,rep,name=AllowedRoles,proto3" json:"AllowedRoles,omitempty"`
+	// Scopes are required from an API key or a token with a scope claim
+	Scopes []string `protobuf:"bytes,3,rep,name=Scopes,proto3" json:"Scopes,omitempty"`
+	// Allowed is true when the caller may call the method at org scope
+	Allowed       bool `protobuf:"varint,4,opt,name=Allowed,proto3" json:"Allowed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MethodAccess) Reset() {
+	*x = MethodAccess{}
+	mi := &file_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MethodAccess) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MethodAccess) ProtoMessage() {}
+
+func (x *MethodAccess) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MethodAccess.ProtoReflect.Descriptor instead.
+func (*MethodAccess) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *MethodAccess) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *MethodAccess) GetAllowedRoles() []string {
+	if x != nil {
+		return x.AllowedRoles
+	}
+	return nil
+}
+
+func (x *MethodAccess) GetScopes() []string {
+	if x != nil {
+		return x.Scopes
+	}
+	return nil
+}
+
+func (x *MethodAccess) GetAllowed() bool {
+	if x != nil {
+		return x.Allowed
+	}
+	return false
+}
+
+// CallerScope is the resolved scope of the caller in the selected org
+type CallerScope struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID is the org selected in the token
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID is the project an API key is restricted to
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// Role is the resolved role at org scope
+	Role Role_Enum `protobuf:"varint,3,opt,name=Role,proto3,enum=pb.Role_Enum" json:"Role,omitempty"`
+	// RoleSource tells how the org role was resolved
+	RoleSource RoleSource_Enum `protobuf:"varint,4,opt,name=RoleSource,proto3,enum=pb.RoleSource_Enum" json:"RoleSource,omitempty"`
+	// ProjectRoles maps the IDs of the projects with an explicit grant to
+	// the granted role
+	ProjectRoles map[string]string `protobuf:"bytes,5,rep,name=ProjectRoles,proto3" json:"ProjectRoles,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Scopes are the scopes of an API key or a scoped token
+	Scopes []string `protobuf:"bytes,6,rep,name=Scopes,proto3" json:"Scopes,omitempty"`
+	// IsAPIKey is true when the caller is an API key
+	IsAPIKey bool `protobuf:"varint,7,opt,name=IsAPIKey,proto3" json:"IsAPIKey,omitempty"`
+	// Methods lists the access rules of every public method
+	Methods       []*MethodAccess `protobuf:"bytes,8,rep,name=Methods,proto3" json:"Methods,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CallerScope) Reset() {
+	*x = CallerScope{}
+	mi := &file_auth_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CallerScope) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CallerScope) ProtoMessage() {}
+
+func (x *CallerScope) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CallerScope.ProtoReflect.Descriptor instead.
+func (*CallerScope) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *CallerScope) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *CallerScope) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *CallerScope) GetRole() Role_Enum {
+	if x != nil {
+		return x.Role
+	}
+	return Role_None
+}
+
+func (x *CallerScope) GetRoleSource() RoleSource_Enum {
+	if x != nil {
+		return x.RoleSource
+	}
+	return RoleSource_Unknown
+}
+
+func (x *CallerScope) GetProjectRoles() map[string]string {
+	if x != nil {
+		return x.ProjectRoles
+	}
+	return nil
+}
+
+func (x *CallerScope) GetScopes() []string {
+	if x != nil {
+		return x.Scopes
+	}
+	return nil
+}
+
+func (x *CallerScope) GetIsAPIKey() bool {
+	if x != nil {
+		return x.IsAPIKey
+	}
+	return false
+}
+
+func (x *CallerScope) GetMethods() []*MethodAccess {
+	if x != nil {
+		return x.Methods
+	}
+	return nil
+}
+
 var File_auth_proto protoreflect.FileDescriptor
 
 const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"auth.proto\x12\x02pb\x1a\vtypes.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x18es/api/annotations.proto\"2\n" +
+	"auth.proto\x12\x02pb\x1a\vtypes.proto\x1a\n" +
+	"orgs.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x18es/api/annotations.proto\"2\n" +
 	"\x14AuthProvidersRequest\x12\x1a\n" +
 	"\x05Email\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05Email\"\x83\x01\n" +
 	"\x15AuthProvidersResponse\x12\x18\n" +
 	"\aAuthURL\x18\x01 \x01(\tR\aAuthURL\x12*\n" +
 	"\tProviders\x18\x02 \x03(\x0e2\f.pb.IDP.EnumR\tProviders\x12$\n" +
-	"\rProviderNames\x18\x03 \x03(\tR\rProviderNames\"~\n" +
+	"\rProviderNames\x18\x03 \x03(\tR\rProviderNames\"\xb9\x02\n" +
 	"\bUserInfo\x12\x0e\n" +
 	"\x02ID\x18\x01 \x01(\tR\x02ID\x12\x12\n" +
 	"\x04Name\x18\x02 \x01(\tR\x04Name\x12\x14\n" +
 	"\x05Email\x18\x03 \x01(\tR\x05Email\x12$\n" +
 	"\rEmailVerified\x18\x04 \x01(\bR\rEmailVerified\x12\x12\n" +
-	"\x04Role\x18\x05 \x01(\tR\x04Role\"\x8f\x02\n" +
+	"\x04Role\x18\x05 \x01(\tR\x04Role\x12*\n" +
+	"\x04Orgs\x18\x06 \x03(\v2\x16.pb.UserInfo.OrgsEntryR\x04Orgs\x12\x14\n" +
+	"\x05OrgID\x18\a \x01(\tR\x05OrgID\x12\x18\n" +
+	"\aOrgRole\x18\b \x01(\tR\aOrgRole\x12$\n" +
+	"\rOrgRoleSource\x18\t \x01(\tR\rOrgRoleSource\x1a7\n" +
+	"\tOrgsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8f\x02\n" +
 	"\x05Token\x12\x1c\n" +
 	"\tTokenType\x18\x01 \x01(\tR\tTokenType\x12 \n" +
 	"\vAccessToken\x18\x02 \x01(\tR\vAccessToken\x12\x10\n" +
@@ -761,13 +1148,48 @@ const file_auth_proto_rawDesc = "" +
 	"\x92\xb2\x19\x06github\x12\x16\n" +
 	"\x06Gitlab\x10\x03\x1a\n" +
 	"\x92\xb2\x19\x06gitlab\x12\x15\n" +
-	"\x05Local\x10\xe8\a\x1a\t\x92\xb2\x19\x05local2\xa3\x04\n" +
+	"\x05Local\x10\xe8\a\x1a\t\x92\xb2\x19\x05local\"N\n" +
+	"\x10SelectOrgRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1e\n" +
+	"\n" +
+	"RememberMe\x18\x02 \x01(\bR\n" +
+	"RememberMe\"P\n" +
+	"\x0eAllowedMethods\x12\x18\n" +
+	"\aService\x18\x01 \x01(\tR\aService\x12$\n" +
+	"\aMethods\x18\x02 \x03(\v2\n" +
+	".pb.KVPairR\aMethods\"A\n" +
+	"\x11ServiceAccessInfo\x12,\n" +
+	"\aAllowed\x18\x01 \x03(\v2\x12.pb.AllowedMethodsR\aAllowed\"|\n" +
+	"\fMethodAccess\x12\x16\n" +
+	"\x06Method\x18\x01 \x01(\tR\x06Method\x12\"\n" +
+	"\fAllowedRoles\x18\x02 \x03(\tR\fAllowedRoles\x12\x16\n" +
+	"\x06Scopes\x18\x03 \x03(\tR\x06Scopes\x12\x18\n" +
+	"\aAllowed\x18\x04 \x01(\bR\aAllowed\"\x81\x03\n" +
+	"\vCallerScope\x12\x14\n" +
+	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12!\n" +
+	"\x04Role\x18\x03 \x01(\x0e2\r.pb.Role.EnumR\x04Role\x123\n" +
+	"\n" +
+	"RoleSource\x18\x04 \x01(\x0e2\x13.pb.RoleSource.EnumR\n" +
+	"RoleSource\x12E\n" +
+	"\fProjectRoles\x18\x05 \x03(\v2!.pb.CallerScope.ProjectRolesEntryR\fProjectRoles\x12\x16\n" +
+	"\x06Scopes\x18\x06 \x03(\tR\x06Scopes\x12\x1a\n" +
+	"\bIsAPIKey\x18\a \x01(\bR\bIsAPIKey\x12*\n" +
+	"\aMethods\x18\b \x03(\v2\x10.pb.MethodAccessR\aMethods\x1a?\n" +
+	"\x11ProjectRolesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xcc\a\n" +
 	"\x04Auth\x12v\n" +
 	"\fGetProviders\x12\x18.pb.AuthProvidersRequest\x1a\x19.pb.AuthProvidersResponse\"1\x82C\x0eauth providers\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/pb.Auth/GetProviders\x12k\n" +
-	"\fGetUserToken\x12\x16.google.protobuf.Empty\x1a\x15.pb.UserTokenResponse\",\x82C\tauth user\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/pb.Auth/GetUserToken\x12z\n" +
-	"\vRevokeToken\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\";\xfaB\vUser,APIKey\x82C\vauth revoke\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/pb.Auth/RevokeToken\x12d\n" +
+	"\fGetUserToken\x12\x16.google.protobuf.Empty\x1a\x15.pb.UserTokenResponse\",\x82C\tauth user\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/pb.Auth/GetUserToken\x12l\n" +
+	"\vRevokeToken\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"-\x82C\vauth revoke\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/pb.Auth/RevokeToken\x12d\n" +
 	"\x06Caller\x12\x16.google.protobuf.Empty\x1a\x18.pb.CallerStatusResponse\"(\x82C\vauth caller\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/pb.Auth/Caller\x12T\n" +
-	"\fExchangeCode\x12\x17.pb.ExchangeCodeRequest\x1a\t.pb.Token\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/pb.Auth/ExchangeCodeB/Z-github.com/effective-security/trustyca/api/pbb\x06proto3"
+	"\fExchangeCode\x12\x17.pb.ExchangeCodeRequest\x1a\t.pb.Token\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/pb.Auth/ExchangeCode\x12b\n" +
+	"\tSelectOrg\x12\x14.pb.SelectOrgRequest\x1a\x15.pb.UserTokenResponse\"(\x82C\bauth org\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/pb.Auth/SelectOrg\x12k\n" +
+	"\x12AuthenticateAPIKey\x12\x16.google.protobuf.Empty\x1a\x15.pb.UserTokenResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/pb.Auth/AuthenticateAPIKey\x12x\n" +
+	"\x11GetAllowedMethods\x12\x16.google.protobuf.Empty\x1a\x15.pb.ServiceAccessInfo\"4\x82C\fauth allowed\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/pb.Auth/GetAllowedMethods\x12j\n" +
+	"\x0eGetCallerScope\x12\x16.google.protobuf.Empty\x1a\x0f.pb.CallerScope\"/\x82C\n" +
+	"auth scope\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/pb.Auth/GetCallerScopeB/Z-github.com/effective-security/trustyca/api/pbb\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once
@@ -782,7 +1204,7 @@ func file_auth_proto_rawDescGZIP() []byte {
 }
 
 var file_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_auth_proto_goTypes = []any{
 	(IDP_Enum)(0),                 // 0: pb.IDP.Enum
 	(*AuthProvidersRequest)(nil),  // 1: pb.AuthProvidersRequest
@@ -794,31 +1216,55 @@ var file_auth_proto_goTypes = []any{
 	(*LoginInfo)(nil),             // 7: pb.LoginInfo
 	(*ExchangeCodeRequest)(nil),   // 8: pb.ExchangeCodeRequest
 	(*IDP)(nil),                   // 9: pb.IDP
-	(*KVPair)(nil),                // 10: pb.KVPair
-	(*emptypb.Empty)(nil),         // 11: google.protobuf.Empty
+	(*SelectOrgRequest)(nil),      // 10: pb.SelectOrgRequest
+	(*AllowedMethods)(nil),        // 11: pb.AllowedMethods
+	(*ServiceAccessInfo)(nil),     // 12: pb.ServiceAccessInfo
+	(*MethodAccess)(nil),          // 13: pb.MethodAccess
+	(*CallerScope)(nil),           // 14: pb.CallerScope
+	nil,                           // 15: pb.UserInfo.OrgsEntry
+	nil,                           // 16: pb.CallerScope.ProjectRolesEntry
+	(*KVPair)(nil),                // 17: pb.KVPair
+	(Role_Enum)(0),                // 18: pb.Role.Enum
+	(RoleSource_Enum)(0),          // 19: pb.RoleSource.Enum
+	(*emptypb.Empty)(nil),         // 20: google.protobuf.Empty
 }
 var file_auth_proto_depIdxs = []int32{
 	0,  // 0: pb.AuthProvidersResponse.Providers:type_name -> pb.IDP.Enum
-	0,  // 1: pb.Token.Provider:type_name -> pb.IDP.Enum
-	4,  // 2: pb.UserTokenResponse.Token:type_name -> pb.Token
-	3,  // 3: pb.UserTokenResponse.UserInfo:type_name -> pb.UserInfo
-	10, // 4: pb.CallerStatusResponse.Claims:type_name -> pb.KVPair
-	0,  // 5: pb.LoginInfo.Provider:type_name -> pb.IDP.Enum
-	1,  // 6: pb.Auth.GetProviders:input_type -> pb.AuthProvidersRequest
-	11, // 7: pb.Auth.GetUserToken:input_type -> google.protobuf.Empty
-	11, // 8: pb.Auth.RevokeToken:input_type -> google.protobuf.Empty
-	11, // 9: pb.Auth.Caller:input_type -> google.protobuf.Empty
-	8,  // 10: pb.Auth.ExchangeCode:input_type -> pb.ExchangeCodeRequest
-	2,  // 11: pb.Auth.GetProviders:output_type -> pb.AuthProvidersResponse
-	5,  // 12: pb.Auth.GetUserToken:output_type -> pb.UserTokenResponse
-	11, // 13: pb.Auth.RevokeToken:output_type -> google.protobuf.Empty
-	6,  // 14: pb.Auth.Caller:output_type -> pb.CallerStatusResponse
-	4,  // 15: pb.Auth.ExchangeCode:output_type -> pb.Token
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	15, // 1: pb.UserInfo.Orgs:type_name -> pb.UserInfo.OrgsEntry
+	0,  // 2: pb.Token.Provider:type_name -> pb.IDP.Enum
+	4,  // 3: pb.UserTokenResponse.Token:type_name -> pb.Token
+	3,  // 4: pb.UserTokenResponse.UserInfo:type_name -> pb.UserInfo
+	17, // 5: pb.CallerStatusResponse.Claims:type_name -> pb.KVPair
+	0,  // 6: pb.LoginInfo.Provider:type_name -> pb.IDP.Enum
+	17, // 7: pb.AllowedMethods.Methods:type_name -> pb.KVPair
+	11, // 8: pb.ServiceAccessInfo.Allowed:type_name -> pb.AllowedMethods
+	18, // 9: pb.CallerScope.Role:type_name -> pb.Role.Enum
+	19, // 10: pb.CallerScope.RoleSource:type_name -> pb.RoleSource.Enum
+	16, // 11: pb.CallerScope.ProjectRoles:type_name -> pb.CallerScope.ProjectRolesEntry
+	13, // 12: pb.CallerScope.Methods:type_name -> pb.MethodAccess
+	1,  // 13: pb.Auth.GetProviders:input_type -> pb.AuthProvidersRequest
+	20, // 14: pb.Auth.GetUserToken:input_type -> google.protobuf.Empty
+	20, // 15: pb.Auth.RevokeToken:input_type -> google.protobuf.Empty
+	20, // 16: pb.Auth.Caller:input_type -> google.protobuf.Empty
+	8,  // 17: pb.Auth.ExchangeCode:input_type -> pb.ExchangeCodeRequest
+	10, // 18: pb.Auth.SelectOrg:input_type -> pb.SelectOrgRequest
+	20, // 19: pb.Auth.AuthenticateAPIKey:input_type -> google.protobuf.Empty
+	20, // 20: pb.Auth.GetAllowedMethods:input_type -> google.protobuf.Empty
+	20, // 21: pb.Auth.GetCallerScope:input_type -> google.protobuf.Empty
+	2,  // 22: pb.Auth.GetProviders:output_type -> pb.AuthProvidersResponse
+	5,  // 23: pb.Auth.GetUserToken:output_type -> pb.UserTokenResponse
+	20, // 24: pb.Auth.RevokeToken:output_type -> google.protobuf.Empty
+	6,  // 25: pb.Auth.Caller:output_type -> pb.CallerStatusResponse
+	4,  // 26: pb.Auth.ExchangeCode:output_type -> pb.Token
+	5,  // 27: pb.Auth.SelectOrg:output_type -> pb.UserTokenResponse
+	5,  // 28: pb.Auth.AuthenticateAPIKey:output_type -> pb.UserTokenResponse
+	12, // 29: pb.Auth.GetAllowedMethods:output_type -> pb.ServiceAccessInfo
+	14, // 30: pb.Auth.GetCallerScope:output_type -> pb.CallerScope
+	22, // [22:31] is the sub-list for method output_type
+	13, // [13:22] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_auth_proto_init() }
@@ -827,13 +1273,14 @@ func file_auth_proto_init() {
 		return
 	}
 	file_types_proto_init()
+	file_orgs_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_proto_rawDesc), len(file_auth_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

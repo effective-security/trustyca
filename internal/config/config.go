@@ -46,6 +46,12 @@ type Configuration struct {
 
 	// Tasks specifies array of tasks
 	Tasks []Task `json:"tasks" yaml:"tasks"`
+
+	// Trusty specifies the Trusty configuration
+	Trusty Trusty `json:"trusty" yaml:"trusty"`
+
+	// Orgs specifies the Orgs configuration
+	Orgs Orgs `json:"orgs" yaml:"orgs"`
 }
 
 // Service specifies the basic service info
@@ -109,4 +115,18 @@ type Task struct {
 
 	// Args specifies parameters for the task.
 	Args []string `json:"args" yaml:"args"`
+}
+
+// Trusty specifies the Trusty configuration
+type Trusty struct {
+}
+
+// Orgs specifies the Orgs configuration
+type Orgs struct {
+	// DefaultOrgName specifies the default org name to be created for new users.
+	// If empty, no default org will be created.
+	DefaultOrgName string `json:"default_org_name" yaml:"default_org_name"`
+	// DefaultProjectName specifies the default project name to be created for new users.
+	// If empty, no default project will be created.
+	DefaultProjectName string `json:"default_project_name" yaml:"default_project_name"`
 }

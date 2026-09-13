@@ -23,7 +23,7 @@ var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca/serve
 // Service defines the Orgs service
 type Service struct {
 	server         gserver.GServer
-	roleChecker    authctx.RoleChecker
+	authorizer     authctx.Authorizer
 	cfg            *config.Configuration
 	db             db.OrgsDb
 	dataprotection dataprotection.Provider
@@ -38,10 +38,10 @@ func Factory(server gserver.GServer) any {
 	return func(cfg *config.Configuration,
 		trustycaDb db.OrgsDb,
 		dataprotection dataprotection.Provider,
-		roleChecker authctx.RoleChecker) {
+		authorizer authctx.Authorizer) {
 		svc := &Service{
 			server:         server,
-			roleChecker:    roleChecker,
+			authorizer:     authorizer,
 			cfg:            cfg,
 			db:             trustycaDb,
 			dataprotection: dataprotection,
@@ -67,7 +67,7 @@ func (s *Service) Close() {
 }
 
 func (s *Service) checkRoleForAction(ctx context.Context, req any, action string) error {
-	return authctx.CheckAccess(ctx, s.roleChecker, req, action)
+	return authctx.CheckAccess(ctx, s.authorizer, req, action)
 }
 
 func (s *Service) OrgsHTTPHandler() restserver.Handle {

@@ -78,19 +78,16 @@ message ItemStatus {
     }
 }
 
-message PermissionsScope {
-    // PermissionsScope defines virtual key scopes
+message Scope {
+    // Scope defines tenancy scopes
     enum Enum {
         option (es.api.is_bitmask) = true;
-
-        // None indicates that the permissions scope is none
-        None = 0x0;
-        // ReadOnly indicates that the permissions scope is read only
-        ReadOnly = 0x1;
-        // Restricted indicates that the permissions scope is restricted
-        Restricted = 0x2;
-        // All is the bitmask for all permissions scopes
-        All = 0x7fffffff;
+        // Undefined indicates that the scope is undefined
+        Undefined = 0x0;
+        // Org indicates that the scope is org
+        Org = 0x1;
+        // Project indicates that the scope is project
+        Project = 0x2;
     }
 }
 
@@ -117,6 +114,51 @@ message EventType {
         // OrgMemberAccepted indicates that an org member accepted an
         // invitation
         OrgMemberAccepted = 8;
+        // ProjectCreated indicates that a project was created
+        ProjectCreated = 9;
+        // ProjectUpdated indicates that a project was updated
+        ProjectUpdated = 10;
+        // ProjectDeleted indicates that a project was deleted
+        ProjectDeleted = 11;
+        // ProjectMemberAdded indicates that a project member was added
+        ProjectMemberAdded = 12;
+        // ProjectMemberRemoved indicates that a project member was removed
+        ProjectMemberRemoved = 13;
+        // ProjectMemberRoleChanged indicates that a project member role was
+        // changed
+        ProjectMemberRoleChanged = 14;
+        // ProjectMemberInvited indicates that a project member was invited
+        ProjectMemberInvited = 15;
+        // ProjectMemberAccepted indicates that a project member accepted an
+        // invitation
+        ProjectMemberAccepted = 16;
+
+        UserLogin    = 20;
+        TokenRevoked = 21;
+
+        APIKeyCreated = 31;
+        APIKeyDeleted = 32;
+        APIKeyLogin   = 33;
+
+        // IssuerRegistered indicates that an issuer was registered or imported
+        IssuerRegistered = 100;
+        // IssuerActivated indicates that a Pending issuer was activated
+        IssuerActivated = 101;
+        // IssuerUpdated indicates that an issuer config or status changed
+        IssuerUpdated = 102;
+        // ProfileRegistered indicates that a certificate profile was created
+        // or replaced
+        ProfileRegistered = 103;
+        // ProfileDeleted indicates that a certificate profile was deleted
+        ProfileDeleted = 104;
+        // CertificateIssued indicates that a certificate was issued
+        CertificateIssued = 105;
+        // CertificateRevoked indicates that a certificate was revoked
+        CertificateRevoked = 106;
+        // CrlPublished indicates that a CRL was published
+        CrlPublished = 107;
+        // RootRegistered indicates that a trust anchor was registered
+        RootRegistered = 108;
     }
 }
 
@@ -139,4 +181,6 @@ message Event {
     repeated KVPair Metadata = 9 [json_name = "Metadata"];
     // CreatedAt is the timestamp of the event creation in RFC3339 format.
     string CreatedAt = 10 [json_name = "CreatedAt"];
+    // ProjectID is the project ID if the event is related to a project.
+    string ProjectID = 11 [json_name = "ProjectID"];
 }

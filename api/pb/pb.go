@@ -8,6 +8,8 @@ import (
 //go:generate mockgen -source=auth_grpc.pb.go -destination=../../mocks/mockpb/auth_mock.gen.go -package mockpb
 //go:generate mockgen -source=status_grpc.pb.go -destination=../../mocks/mockpb/status_mock.gen.go -package mockpb
 //go:generate mockgen -source=orgs_grpc.pb.go -destination=../../mocks/mockpb/orgs_mock.gen.go -package mockpb
+//go:generate mockgen -source=ca_grpc.pb.go -destination=../../mocks/mockpb/ca_mock.gen.go -package mockpb
+//go:generate mockgen -source=cis_grpc.pb.go -destination=../../mocks/mockpb/cis_mock.gen.go -package mockpb
 
 // IDPFromString converts a string to an IDP_Enum.
 func IDPFromString(s string) IDP_Enum {

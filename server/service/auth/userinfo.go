@@ -12,6 +12,7 @@ import (
 	"github.com/effective-security/porto/xhttp/identity"
 	"github.com/effective-security/porto/xhttp/marshal"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/authctx"
 	"github.com/effective-security/x/values"
 	"github.com/effective-security/xpki/jwt"
 	"google.golang.org/grpc/codes"
@@ -57,6 +58,9 @@ func (s *Service) GetUserToken(ctx context.Context, _ *emptypb.Empty) (*pb.UserT
 			Email:         claims.Email,
 			EmailVerified: claims.EmailVerified,
 			Role:          caller.Role(),
+			OrgID:         mapclaims.String(authctx.ClaimOrg),
+			OrgRole:       mapclaims.String(authctx.ClaimOrgRole),
+			OrgRoleSource: mapclaims.String(authctx.ClaimOrgRoleSource),
 		},
 	}
 	if claims.Cnf != nil {
@@ -186,4 +190,14 @@ func (s *Service) RevokeTokenHandler() restserver.Handle {
 
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+// GetAllowedMethods returns the allowed methods for the caller
+func (s *Service) GetAllowedMethods(ctx context.Context, req *emptypb.Empty) (*pb.ServiceAccessInfo, error) {
+	return authctx.GetAllowedMethods(ctx, s.authorizer)
+}
+
+// GetCallerScope returns the caller's resolved scope and the method access rules
+func (s *Service) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.CallerScope, error) {
+	return authctx.GetCallerScope(ctx, s.authorizer)
 }

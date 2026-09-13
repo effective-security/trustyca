@@ -54,12 +54,12 @@ func (msg *ItemStatus) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON implements json.Marshaler
-func (msg *PermissionsScope) MarshalJSON() ([]byte, error) {
+func (msg *Scope) MarshalJSON() ([]byte, error) {
 	return JsonMarshalOptions.Marshal(msg)
 }
 
 // UnmarshalJSON implements json.Unmarshaler
-func (msg *PermissionsScope) UnmarshalJSON(b []byte) error {
+func (msg *Scope) UnmarshalJSON(b []byte) error {
 	return JsonUnmarshalOptions.Unmarshal(b, msg)
 }
 

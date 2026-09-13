@@ -51,8 +51,8 @@ type ProvideClientFactoryFn func(cfg *config.Configuration) (client.Factory, err
 // ProvideDataprotectionFn defines data protection provider
 type ProvideDataprotectionFn func() (dataprotection.Provider, error)
 
-// ProvideRoleCheckerFn defines role checker provider
-type ProvideRoleCheckerFn func(trustycaDb db.OrgsDb) authctx.RoleChecker
+// ProvideAuthorizerFn defines role checker provider
+type ProvideAuthorizerFn func(trustycaDb db.OrgsDb) authctx.Authorizer
 
 // ProvideOAuth2ClientsFn defines OAuth2 clients provider
 type ProvideOAuth2ClientsFn func(cfg *config.Configuration) (*oauth2client.Provider, error)
@@ -75,8 +75,8 @@ type ContainerFactory struct {
 	dpProvider            ProvideDataprotectionFn
 	oauthProviderProvider ProvideOAuth2ClientsFn
 	// awsSessionProvider    ProvideAwsFactoryFn
-	cacheProvider       ProvideCacheFn
-	roleCheckerProvider ProvideRoleCheckerFn
+	cacheProvider      ProvideCacheFn
+	authorizerProvider ProvideAuthorizerFn
 }
 
 // NewContainerFactory returns an instance of ContainerFactory
@@ -99,7 +99,7 @@ func NewContainerFactory(closer CloseRegistrator) *ContainerFactory {
 		WithClientFactoryProvider(provideClientFactory).
 		WithDataprotectionProvider(provideDp).
 		WithCacheProvider(provideCache).
-		WithRoleCheckerProvider(provideRoleChecker).
+		WithAuthorizerProvider(provideAuthorizer).
 		WithOAuth2ClientsProvider(provideOAuth2Clients)
 }
 
@@ -151,9 +151,9 @@ func (f *ContainerFactory) WithSchedulerProvider(p ProvideSchedulerFn) *Containe
 	return f
 }
 
-// WithRoleCheckerProvider allows to specify custom RoleChecker provider
-func (f *ContainerFactory) WithRoleCheckerProvider(p ProvideRoleCheckerFn) *ContainerFactory {
-	f.roleCheckerProvider = p
+// WithAuthorizerProvider allows to specify custom RoleChecker provider
+func (f *ContainerFactory) WithAuthorizerProvider(p ProvideAuthorizerFn) *ContainerFactory {
+	f.authorizerProvider = p
 	return f
 }
 
@@ -182,7 +182,7 @@ func (f *ContainerFactory) CreateContainerWithDependencies() (*dig.Container, er
 		f.clientFactoryProvider,
 		f.dpProvider,
 		f.cacheProvider,
-		f.roleCheckerProvider,
+		f.authorizerProvider,
 		f.oauthProviderProvider,
 	}
 
@@ -245,10 +245,10 @@ func provideOAuth2Clients(cfg *config.Configuration) (*oauth2client.Provider, er
 	return oauth2client.NewProvider(ocfg)
 }
 
-// provideRoleChecker gives the whole app one role checker, so a service that
+// provideAuthorizer gives the whole app one role checker, so a service that
 // invalidates its cache clears the cache the authz interceptor reads.
-func provideRoleChecker(trustycaDb db.OrgsDb) authctx.RoleChecker {
-	return authctx.NewRoleChecker(trustycaDb)
+func provideAuthorizer(trustycaDb db.OrgsDb) authctx.Authorizer {
+	return authctx.NewAuthorizer(trustycaDb)
 }
 
 func provideDp() (dataprotection.Provider, error) {
