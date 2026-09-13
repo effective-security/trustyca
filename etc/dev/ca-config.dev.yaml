@@ -1,0 +1,263 @@
+---
+authority:
+  ca_bundles:
+    - ${HOME}/.trustyca/certs/shaken_cabundle.pem
+    - ${HOME}/.trustyca/certs/trusty_cabundle.pem
+  root_bundles:
+    - ${HOME}/.trustyca/certs/shaken_root_ca.pem
+    - ${HOME}/.trustyca/certs/trusty_root_ca.pem
+  issuers:
+    - # specifies Issuer's label
+      label: trusty.svc
+      # specifies type: tls|codesign|timestamp|ocsp|spiffe|trusty
+      type: trusty
+      cert: ${HOME}/.trustyca/certs/trusty_l2_ca.pem
+      key: ${HOME}/.trustyca/certs/trusty_l2_ca.key
+      # location of the CA bundle file
+      ca_bundle:
+      # location of the Root CA file
+      root_bundle:
+      allowed_profiles:
+        - ocsp
+      aia:
+        issuer_url: http://localhost:8880/v1/cert/${ISSUER_ID}
+        crl_url: http://localhost:8880/v1/crl/${ISSUER_ID}
+        ocsp_url: http://localhost:8880/v1/ocspca/${ISSUER_ID}
+        crl_expiry: 48h
+        crl_renewal: 12h
+        ocsp_expiry: 1h
+        delegated_ocsp_profile: ocsp
+    - # specifies Issuer's label
+      label: SHAKEN_G1_CA
+      type: shaken
+      cert: ${HOME}/.trustyca/certs/shaken_ca.pem
+      key: ${HOME}/.trustyca/certs/shaken_ca.key
+      # location of the CA bundle file
+      ca_bundle:
+      # location of the Root CA file
+      root_bundle:
+      aia:
+        #crl_url: https://authenticate-api.iconectiv.com/download/v1/crl
+        issuer_url:
+        ocsp_url:
+        crl_expiry:
+        crl_renewal:
+        ocsp_expiry:
+    - # specifies Issuer's label
+      label: DELEGATED_L1_CA
+      type: delegated
+      cert: ${HOME}/.trustyca/certs/shaken_delegated_l1_ca.pem
+      key: ${HOME}/.trustyca/certs/shaken_delegated_l1_ca.key
+      # location of the CA bundle file
+      ca_bundle: ${HOME}/.trustyca/certs/shaken_cabundle.pem
+      # location of the Root CA file
+      root_bundle: ${HOME}/.trustyca/certs/shaken_root_ca.pem
+      aia:
+        #crl_url: https://authenticate-api.iconectiv.com/download/v1/crl
+        issuer_url:
+        ocsp_url:
+        crl_expiry:
+        crl_renewal:
+        ocsp_expiry:
+
+# profile:
+#
+# description: string
+# expiry: duration
+# backdate: duration
+# usages: []string
+# ocsp_no_check: bool
+# allowed_extensions: []string
+# allowed_names: regex
+# allowed_dns: regex
+# allowed_email: regex
+# allowed_fields:
+#   subject: bool
+#   dns: bool
+#   ip: bool
+#   email: bool
+#   email: uri
+# policies: []
+#   oid:
+#   qualifiers:
+# ca_constraint:
+#   is_ca:
+#   max_path_len:
+#
+profiles:
+  default:
+    issuer_label: trusty.svc
+    expiry: 168h
+    backdate: 30m
+    usages:
+      - signing
+      - key encipherment
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.1 # AIA
+      - 2.5.29.17 # SAN
+
+  test_server:
+    description: test server profile
+    issuer_label: trusty.svc
+    expiry: 5m
+    backdate: 30m
+    usages: # provides a list key usages
+      - signing
+      - key encipherment
+      - server auth
+      - ipsec end system
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.1 # AIA
+      - 2.5.29.17 # SAN
+
+  test_client:
+    description: test client profile
+    issuer_label: trusty.svc
+    expiry: 5m
+    backdate: 30m
+    usages:
+      - signing
+      - key encipherment
+      - client auth
+      - ipsec user
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.1 # AIA
+      - 2.5.29.17 # SAN
+
+  peer:
+    issuer_label: trusty.svc
+    expiry: 168h
+    backdate: 30m
+    usages:
+      - signing
+      - key encipherment
+      - server auth
+      - client auth
+      - ipsec user
+      - ipsec end system
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.1 # AIA
+      - 2.5.29.17 # SAN
+    allowed_uri: ^spiffe://trusty/.*$
+    allowed_fields:
+      uri: true
+
+  server:
+    issuer_label: trusty.svc
+    expiry: 168h
+    backdate: 30m
+    usages:
+      - signing
+      - key encipherment
+      - server auth
+      - ipsec end system
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.1 # AIA
+      - 2.5.29.17 # SAN
+
+  client:
+    issuer_label: trusty.svc
+    expiry: 168h
+    backdate: 30m
+    usages:
+      - signing
+      - key encipherment
+      - client auth
+      - ipsec user
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.1 # AIA
+      - 2.5.29.17 # SAN
+    allowed_uri: ^spiffe://trusty/.*$
+    allowed_fields:
+      uri: true
+
+  ocsp:
+    description: Delegated OCSP responder profile
+    issuer_label: "*"
+    expiry: 168h
+    backdate: 30m
+    usages:
+      - ocsp signing
+    ocsp_no_check: true
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.1 # AIA
+      - 1.3.6.1.5.5.7.48.1.5 # OCSP no check
+
+  timestamp:
+    description: Timestamp certificate profile
+    issuer_label: trusty.svc
+    expiry: 43070h
+    backdate: 30m
+    usages:
+      - digital signature
+      - timestamping
+    allowed_extensions:
+      - 2.5.29.37
+
+  codesign:
+    description: Codesigning certificate profile
+    issuer_label: trusty.svc
+    expiry: 8760h
+    backdate: 30m
+    usages:
+      - digital signature
+      - code signing
+      - key encipherment
+
+  SHAKEN:
+    issuer_label: SHAKEN_G1_CA
+    expiry: 8760h
+    backdate: 30m
+    usages:
+      - signing
+      - digital signature
+    policies:
+      - oid: 2.16.840.1.114569.1.1.1
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.26
+    allowed_fields:
+      subject: true
+      dns: false
+      ip: false
+      email: false
+    #allowed_names: ^C=US, O=Entity Name From Registration, CN=SHAKEN .*$
+
+  # Delegated Issuing CA,
+  # issued by presense of SPC token with CA=true
+  DELEGATED_ICA:
+    issuer_label: DELEGATED_L1_CA
+    expiry: 17520h # 2 years
+    backdate: 30m
+    usages:
+      - cert sign
+    ca_constraint:
+      is_ca: true
+      max_path_len: 0
+    policies:
+      - oid: 2.16.840.1.114569.1.1.1
+      - oid: 1.3.6.1.4.1.57973.1.1
+        qualifiers:
+          - type: id-qt-cps
+            value: https://stirshaken.com/CPS
+    allowed_extensions:
+      - 2.5.29.32 # Certificate Policies
+      - 1.3.6.1.5.5.7.1.26
+
+  # issued by DELEGATED_ICA_{org_id}
+  DELEGATED:
+    issuer_label: "*"
+    expiry: 168h
+    backdate: 30m
+    usages:
+      - signing
+      - digital signature
+    policies:
+      - oid: 2.16.840.1.114569.1.1.1
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.26
+    allowed_fields:
+      subject: true
+      dns: false
+      ip: false
+      email: false
+    #allowed_names: ^C=US, O=Entity Name From Registration, CN=SHAKEN .*$

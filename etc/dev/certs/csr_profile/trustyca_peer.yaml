@@ -1,0 +1,9 @@
+---
+san:
+  - localhost
+  - 127.0.0.1
+common_name: localhost
+names:
+  - C: US
+    L: WA
+    O: Tbilicode

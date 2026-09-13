@@ -1,0 +1,140 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "github.com/effective-security/trustyca/api/pb";
+
+import "google/api/annotations.proto";
+import "es/api/annotations.proto";
+import "types.proto";
+import "pkix.proto";
+import "ca.proto";
+
+// CIS is the Certificate Information Service.
+// It is a read-only, publicly exposable gRPC andREST service that serves
+// trust anchors, issuer chains, certificate information and revocation
+// status. It never holds CA private keys.
+//
+// In addition to the JSON API below, CIS registers binary endpoints that
+// are referenced from issued certificates (AIA and CDP extensions):
+//
+//   GET  /v1/cert/{ikid}          application/pkix-cert   issuer certificate
+//   GET  /v1/crl/{ikid}           application/pkix-crl    current CRL (DER)
+//   GET  /v1/ocsp/{ikid}/{req}    application/ocsp-response
+//   POST /v1/ocsp/{ikid}          application/ocsp-response
+//   POST /v1/ocsp                 application/ocsp-response (issuer by KID)
+//
+// OCSP requests are forwarded to CA.SignOCSP over gRPC and cached until
+// the response NextUpdate.
+service CIS {
+    // GetRoots returns the published trust anchors
+    rpc GetRoots(ListRootsRequest) returns (RootsResponse) {
+        option (google.api.http) = {
+            post: "/pb.CIS/GetRoots",
+            body: "*"
+        };
+    }
+
+    // GetIssuer returns the issuer chain and status by IKID
+    rpc GetIssuer(GetIssuerInfoRequest) returns (IssuerInfo) {
+        option (google.api.http) = {
+            post: "/pb.CIS/GetIssuer",
+            body: "*"
+        };
+    }
+
+    // GetCertificate returns the certificate by ID, SKID, Sha256 or issuer
+    // and serial number
+    rpc GetCertificate(GetCertificateInfoRequest)
+        returns (CertificateResponse) {
+        option (google.api.http) = {
+            post: "/pb.CIS/GetCertificate",
+            body: "*"
+        };
+    }
+
+    // GetCertificateStatus returns the revocation status of a certificate
+    rpc GetCertificateStatus(GetCertificateInfoRequest)
+        returns (CertificateStatusResponse) {
+        option (google.api.http) = {
+            post: "/pb.CIS/GetCertificateStatus",
+            body: "*"
+        };
+    }
+
+    // GetCRL returns the current CRL of the issuer in PEM format
+    rpc GetCRL(GetCrlRequest) returns (CrlResponse) {
+        option (google.api.http) = {
+            post: "/pb.CIS/GetCRL",
+            body: "*"
+        };
+    }
+}
+
+// GetIssuerInfoRequest specifies an issuer by IKID
+message GetIssuerInfoRequest {
+    // IKID specifies Issuer Key ID
+    string IKID = 1 [json_name = "IKID", (es.api.required) = true];
+}
+
+// IssuerInfo provides the public view of an issuer
+message IssuerInfo {
+    // Label of the issuer
+    string Label = 1 [json_name = "Label"];
+    // Type of the authority
+    AuthorityType.Enum Type = 2 [json_name = "Type"];
+    // Status of the issuer
+    IssuerStatus.Enum Status = 3 [json_name = "Status"];
+    // SKID provides Subject Key Identifier
+    string SKID = 4 [json_name = "SKID"];
+    // Subject name
+    string Subject = 5 [json_name = "Subject"];
+    // NotBefore in RFC3339 format
+    string NotBefore = 6 [json_name = "NotBefore"];
+    // NotAfter in RFC3339 format
+    string NotAfter = 7 [json_name = "NotAfter"];
+    // Certificate provides the issuer certificate in PEM format
+    string Certificate = 8 [json_name = "Certificate"];
+    // Intermediates provides the intermediate CA certificates in PEM format
+    string Intermediates = 9 [json_name = "Intermediates"];
+    // Root provides the Root CA certificate in PEM format
+    string Root = 10 [json_name = "Root"];
+    // CrlURL is the CRL Distribution Point
+    string CrlURL = 11 [json_name = "CrlURL"];
+    // OcspURL is the OCSP responder URL
+    string OcspURL = 12 [json_name = "OcspURL"];
+    // AiaURL is the AIA issuer certificate URL
+    string AiaURL = 13 [json_name = "AiaURL"];
+}
+
+// GetCertificateInfoRequest specifies a certificate by ID, SKID, Sha256 or
+// issuer and serial number
+message GetCertificateInfoRequest {
+    // ID specifies certificate ID
+    string ID = 1
+        [json_name = "ID", (es.api.required_or) = "SKID,Sha256,IssuerSerial"];
+    // SKID specifies Subject Key ID to search
+    string SKID = 2
+        [json_name = "SKID", (es.api.required_or) = "ID,Sha256,IssuerSerial"];
+    // Sha256 specifies the certificate thumbprint to search
+    string Sha256 = 3
+        [json_name = "Sha256", (es.api.required_or) = "ID,SKID,IssuerSerial"];
+    // IssuerSerial specifies Issuer Key ID and certificate serial number
+    IssuerSerial IssuerSerial = 4
+        [json_name = "IssuerSerial", (es.api.required_or) = "ID,SKID,Sha256"];
+}
+
+// CertificateStatusResponse returns the revocation status of a certificate
+message CertificateStatusResponse {
+    // IKID provides Issuer Key Identifier
+    string IKID = 1 [json_name = "IKID"];
+    // SerialNumber provides Serial Number
+    string SerialNumber = 2 [json_name = "SerialNumber"];
+    // Status of the certificate
+    CertificateStatus.Enum Status = 3 [json_name = "Status"];
+    // NotAfter in RFC3339 format
+    string NotAfter = 4 [json_name = "NotAfter"];
+    // RevokedAt in RFC3339 format, when revoked
+    string RevokedAt = 5 [json_name = "RevokedAt"];
+    // Reason of the revocation, when revoked
+    ReasonCode.Enum Reason = 6 [json_name = "Reason"];
+}

@@ -1,0 +1,9 @@
+Provider,Name,InputCost,OutputCost,ReasoningCost,CachedInputReadCost,CachedInputWriteCost,Description
+OpenAI_Bedrock,gpt-5,1000,5000,5000,0,0,
+OpenAI_Azure,gpt-5,1000,5000,5000,0,0,
+OpenAI,gpt-5,1000,5000,5000,0,0,
+OpenAI,gpt-6,1000,5000,5000,0,0,
+Gemini,gemini-2.5-flash,1000,4000,4000,0,0,
+Anthropic_Bedrock,claude-4-5-sonnet,1000,5000,5000,0,0,
+Anthropic_Azure,claude-4-5-sonnet,1000,5000,5000,0,0,
+Anthropic,claude-4-5-sonnet,1000,5000,5000,0,0,

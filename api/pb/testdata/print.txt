@@ -1,0 +1,239 @@
+
+- APIKey:
+
+ ID         │ 1            
+ Key        │              
+ Scopes     │              
+ Org ID     │ 1            
+ Project ID │ 1            
+ Label      │ Test API Key 
+ Status     │ Unknown      
+ Expires At │              
+ Used At    │              
+ Used Count │ 0            
+ Created    │              
+
+
+
+- APIKeysResponse:
+
+┌────┬────────┬────────────┬──────────────┬─────────┬────────────┬─────────┬────────────┬─────────┐
+│ ID │ ORG ID │ PROJECT ID │    LABEL     │ STATUS  │ EXPIRES AT │ USED AT │ USED COUNT │ CREATED │
+├────┼────────┼────────────┼──────────────┼─────────┼────────────┼─────────┼────────────┼─────────┤
+│ 1  │ 1      │ 1          │ Test API Key │ Unknown │            │         │ 0          │         │
+└────┴────────┴────────────┴──────────────┴─────────┴────────────┴─────────┴────────────┴─────────┘
+
+
+
+- AddMemberResponse:
+
+ ID        │ 1     
+ Org       │       
+ Org Alias │       
+ Org Name  │       
+ Role      │ Admin 
+ User      │ 3     
+ Name      │       
+ Email     │       
+ Created   │       
+
+ ID      │ 2                
+ Email   │ test@example.com 
+ Role    │ Admin            
+ Created │                  
+
+
+
+- CallerStatusResponse:
+
+ Subject │ test  
+ Role    │ Admin 
+
+┌───────┬───────┐
+│ CLAIM │ VALUE │
+├───────┼───────┤
+│ test  │ test  │
+│ test2 │ test2 │
+└───────┴───────┘
+
+
+
+- Invite:
+
+ ID      │ 2                
+ Email   │ test@example.com 
+ Role    │ Admin            
+ Created │                  
+
+
+
+- KVPair:
+
+{
+	"Key": "test",
+	"Value": "test"
+}
+
+
+- LoginInfo:
+
+{
+	"ID": "1",
+	"Name": "Test User",
+	"Email": "test@example.com"
+}
+
+
+- MembersResponse:
+
+Memberships:
+┌────────┬───────┬─────┬───────┬──────┬──────┬───────┬─────────┐
+│ ORG ID │ ALIAS │ ORG │ ROLE  │ USER │ NAME │ EMAIL │ CREATED │
+├────────┼───────┼─────┼───────┼──────┼──────┼───────┼─────────┤
+│        │       │     │ Admin │ 3    │      │       │         │
+└────────┴───────┴─────┴───────┴──────┴──────┴───────┴─────────┘
+
+Invites:
+┌────┬──────────────────┬───────┬─────────┐
+│ ID │      EMAIL       │ ROLE  │ CREATED │
+├────┼──────────────────┼───────┼─────────┤
+│ 2  │ test@example.com │ Admin │         │
+└────┴──────────────────┴───────┴─────────┘
+
+
+
+- Membership:
+
+ ID        │ 1     
+ Org       │       
+ Org Alias │       
+ Org Name  │       
+ Role      │ Admin 
+ User      │ 3     
+ Name      │       
+ Email     │       
+ Created   │       
+
+
+
+- Org:
+
+ ID      │ 1        
+ Name    │ Test Org 
+ Alias   │          
+ Status  │ Active   
+ Created │          
+
+
+
+- OrgsResponse:
+
+┌────┬───────┬──────────┬────────┬─────────┐
+│ ID │ ALIAS │   NAME   │ STATUS │ CREATED │
+├────┼───────┼──────────┼────────┼─────────┤
+│ 1  │       │ Test Org │ Active │         │
+└────┴───────┴──────────┴────────┴─────────┘
+
+
+
+- Project:
+
+ ID      │ 1            
+ Alias   │ test-project 
+ Name    │ Test Project 
+ Status  │ Active       
+ Created │              
+
+
+
+- ProjectsResponse:
+
+┌────┬──────────────┬──────────────┬────────┬─────────┐
+│ ID │    ALIAS     │     NAME     │ STATUS │ CREATED │
+├────┼──────────────┼──────────────┼────────┼─────────┤
+│ 1  │ test-project │ Test Project │ Active │         │
+└────┴──────────────┴──────────────┴────────┴─────────┘
+
+
+
+- Token:
+
+ Token     │ test-token    
+ Jkt       │ test-jkt      
+ Issuer    │ test-issuer   
+ Audience  │ test-audience 
+ Provider  │ undefined     
+ IssuedAt  │               
+ ExpiresIn │ 0             
+ ExpiresAt │               
+
+
+
+- UserInfo:
+
+ Name            │                  
+ Email           │ test@example.com 
+ EmailVerified   │ no               
+ Role            │                  
+ Org ID          │                  
+ Org Role        │                  
+ Org Role Source │                  
+
+
+
+- UserMemberships:
+
+┌────────┬───────┬─────┬───────┬──────┬──────┬───────┬─────────┐
+│ ORG ID │ ALIAS │ ORG │ ROLE  │ USER │ NAME │ EMAIL │ CREATED │
+├────────┼───────┼─────┼───────┼──────┼──────┼───────┼─────────┤
+│        │       │     │ Admin │ 3    │      │       │         │
+└────────┴───────┴─────┴───────┴──────┴──────┴───────┴─────────┘
+
+
+
+- UserOrgsResponse:
+
+┌────┬──────────┬──────────┬───────┬─────────────┬───────────────┐
+│ ID │  ALIAS   │   NAME   │ ROLE  │ ROLE SOURCE │ EXPLICIT ROLE │
+├────┼──────────┼──────────┼───────┼─────────────┼───────────────┤
+│ 1  │ test-org │ Test Org │ Admin │ Direct      │ Admin         │
+└────┴──────────┴──────────┴───────┴─────────────┴───────────────┘
+
+
+
+- UserTokenResponse:
+
+ Token     │ test-token 
+ Jkt       │            
+ Issuer    │            
+ Audience  │            
+ Provider  │ undefined  
+ IssuedAt  │            
+ ExpiresIn │ 0          
+ ExpiresAt │            
+
+ Name            │                  
+ Email           │ test@example.com 
+ EmailVerified   │ no               
+ Role            │                  
+ Org ID          │                  
+ Org Role        │                  
+ Org Role Source │                  
+
+┌────────┬───────┐
+│ ORG ID │ ROLE  │
+├────────┼───────┤
+│ 1      │ Admin │
+└────────┴───────┘
+
+
+
+- []LoginInfo:
+
+┌────┬───────────┬──────────────────┬──────────┬───────────┬────────┬────────────┐
+│ ID │   NAME    │      EMAIL       │ EXTERNAL │ PROVIDER  │ LOGINS │ LAST LOGIN │
+├────┼───────────┼──────────────────┼──────────┼───────────┼────────┼────────────┤
+│ 1  │ Test User │ test@example.com │          │ undefined │ 0      │            │
+└────┴───────────┴──────────────────┴──────────┴───────────┴────────┴────────────┘
+
+

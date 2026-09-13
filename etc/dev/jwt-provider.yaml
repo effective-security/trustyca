@@ -1,0 +1,7 @@
+---
+issuer: https://localhost:8880
+token_expiry: 8h
+kid: 0
+keys:
+  - id: 0
+    seed: env://TRUSTYCA_DP_SEED

@@ -1,0 +1,3 @@
+---
+service:
+  environment: UNIT_TEST

@@ -1,0 +1,62 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "github.com/effective-security/trustyca/api/pb";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "es/api/annotations.proto";
+
+service Status {
+    // Version returns the server version.
+    rpc Version(google.protobuf.Empty) returns (ServerVersion) {
+        option (google.api.http) = {
+            post: "/pb.Status/Version",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "version";
+    };
+
+    // Server returns the server status.
+    rpc Server(google.protobuf.Empty) returns (ServerStatusResponse) {
+        option (google.api.http) = {
+            post: "/pb.Status/Server",
+            body: "*"
+        };
+        option (es.api.cli_cmd)          = "server";
+        option (es.api.refresh_interval) = 10;
+    };
+}
+
+// ServerVersion provides server build and runtime version
+message ServerVersion {
+    // Build is the server build version.
+    string Build = 1 [json_name = "Build"];
+    // Runtime is the runtime version.
+    string Runtime = 2 [json_name = "Runtime"];
+}
+
+// ServerStatus provides server status information
+message ServerStatus {
+    // Name of the server or application.
+    string Name = 1 [json_name = "Name"];
+    // Nodename is the human-readable name of the cluster member,
+    // or empty for single host.
+    string Nodename = 2 [json_name = "Nodename"];
+    // Hostname is operating system's host name.
+    string Hostname = 3 [json_name = "Hostname"];
+    // ListenURLs is the list of URLs the service is listening on.
+    repeated string ListenUrls = 4 [json_name = "ListenUrls"];
+    // StartedAt is the time in RFC3339 format.
+    string StartedAt = 5 [json_name = "StartedAt"];
+}
+
+// ServerStatusResponse returns status and version
+message ServerStatusResponse {
+    // Status of the server.
+    ServerStatus Status = 1 [json_name = "Status"];
+
+    // Version of the server.
+    ServerVersion Version = 2 [json_name = "Version"];
+
+    map<string, string> Pods = 3 [json_name = "Pods"];
+}

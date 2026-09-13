@@ -1,0 +1,136 @@
+{{template "header" .}}
+<script src="https://js.stripe.com/v3/"></script>
+<h1>Complete your payment</h1>
+<p id="amount" class="muted">Loading order…</p>
+<div id="status" class="status info" hidden></div>
+<form id="payment-form" hidden>
+  <div id="payment-element"></div>
+  <div class="row">
+    <button type="submit" id="submit" class="primary">Pay</button>
+  </div>
+</form>
+<script>
+  (function () {
+    'use strict';
+
+    // rendered by the server; empty when Stripe is not configured
+    var publishableKey = {{.StripePublishableKey}};
+
+    var statusEl = document.getElementById('status');
+    var amountEl = document.getElementById('amount');
+    var form = document.getElementById('payment-form');
+    var submit = document.getElementById('submit');
+
+    function showStatus(kind, text) {
+      statusEl.className = 'status ' + kind;
+      statusEl.textContent = text;
+      statusEl.hidden = false;
+    }
+
+    // Stripe reports these currencies in whole units, all others in cents
+    var zeroDecimalCurrencies = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
+
+    function formatAmount(amount, currency) {
+      var value = zeroDecimalCurrencies.indexOf(currency.toLowerCase()) >= 0 ? amount : amount / 100;
+      try {
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.toUpperCase() }).format(value);
+      } catch (e) {
+        return value.toFixed(2) + ' ' + currency.toUpperCase();
+      }
+    }
+
+    function showIntent(intent) {
+      amountEl.textContent = 'Total: ' + formatAmount(intent.amount, intent.currency);
+      switch (intent.status) {
+        case 'succeeded':
+          showStatus('ok', 'Payment succeeded. You can close this window.');
+          form.hidden = true;
+          break;
+        case 'processing':
+          showStatus('info', 'Payment is processing. You will be notified when it completes.');
+          form.hidden = true;
+          break;
+        case 'requires_payment_method':
+          showStatus('error', 'Payment was not completed. Try another payment method.');
+          form.hidden = false;
+          break;
+        default:
+          showStatus('info', 'Payment status: ' + intent.status);
+          form.hidden = false;
+      }
+    }
+
+    // The client secret is either the checkout_client_secret fragment set by
+    // the CLI, or payment_intent_client_secret in the query string, which
+    // Stripe appends when it returns here after a redirect-based method
+    // such as 3-D Secure.
+    var fragment = new URLSearchParams(window.location.hash.slice(1));
+    var query = new URLSearchParams(window.location.search);
+    var clientSecret = fragment.get('checkout_client_secret') || query.get('payment_intent_client_secret');
+
+    if (!publishableKey) {
+      amountEl.hidden = true;
+      showStatus('error', 'Stripe is not configured on the server (trustyca.payments.publishable_key).');
+      return;
+    }
+    if (!clientSecret) {
+      amountEl.hidden = true;
+      showStatus('error', 'Missing checkout_client_secret. Open this page from the URL printed by `trustyca order create`.');
+      return;
+    }
+    if (!window.Stripe) {
+      amountEl.hidden = true;
+      showStatus('error', 'Unable to load Stripe.js.');
+      return;
+    }
+
+    var stripe = window.Stripe(publishableKey);
+    var elements = null;
+
+    stripe.retrievePaymentIntent(clientSecret).then(function (res) {
+      if (res.error) {
+        amountEl.hidden = true;
+        showStatus('error', res.error.message);
+        return;
+      }
+      var intent = res.paymentIntent;
+      showIntent(intent);
+      if (intent.status === 'succeeded' || intent.status === 'processing') {
+        return;
+      }
+
+      elements = stripe.elements({ clientSecret: clientSecret, appearance: { theme: 'stripe' } });
+      elements.create('payment', { layout: 'tabs' }).mount('#payment-element');
+      submit.textContent = 'Pay ' + formatAmount(intent.amount, intent.currency);
+      form.hidden = false;
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!elements) {
+        return;
+      }
+      submit.disabled = true;
+      showStatus('info', 'Confirming payment…');
+      stripe.confirmPayment({
+        elements: elements,
+        confirmParams: {
+          // used only by payment methods that redirect away from this page
+          return_url: window.location.origin + window.location.pathname
+        },
+        redirect: 'if_required'
+      }).then(function (res) {
+        if (res.error) {
+          submit.disabled = false;
+          showStatus('error', res.error.message);
+          return;
+        }
+        showIntent(res.paymentIntent);
+      }).catch(function (err) {
+        submit.disabled = false;
+        showStatus('error', err.message);
+      });
+    });
+  }());
+</script>
+{{template "footer" .}}

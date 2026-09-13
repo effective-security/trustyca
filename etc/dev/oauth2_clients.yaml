@@ -1,0 +1,39 @@
+clients:
+  - provider_id: github
+    client_id: env://TRUSTYCA_GITHUB_CLIENT_ID
+    client_secret: env://TRUSTYCA_GITHUB_CLIENT_SECRET
+    scopes:
+      - openid
+      - read:user
+      - user:email
+      - read:org
+      - repo
+    response_type: code
+    auth_url: https://github.com/login/oauth/authorize
+    token_url: https://github.com/login/oauth/access_token
+    userinfo_url: https://api.github.com/user
+  - provider_id: google
+    client_id: env://TRUSTYCA_GOOGLE_CLIENT_ID
+    client_secret: env://TRUSTYCA_GOOGLE_CLIENT_SECRET
+    scopes:
+      - openid
+      - https://www.googleapis.com/auth/userinfo.email
+      - https://www.googleapis.com/auth/userinfo.profile
+    response_type: code
+    auth_url: https://accounts.google.com/o/oauth2/v2/auth
+    token_url: https://oauth2.googleapis.com/token
+    userinfo_url: https://openidconnect.googleapis.com/v1/userinfo
+    # domains:
+    #   # if domains is set then the caller can not use `google` as provider_id,
+    #   # and only emails from these domains are allowed to use this provider.
+    #   - tbilicode.com
+    #   - effectivesecurity.pt
+  - provider_id: local
+    client_id: trustyca_local_test
+    client_secret: notused
+    scopes:
+      - openid
+      - read:user
+      - user:email
+    response_type: token
+    auth_url: https://localhost:8880/v1/auth/callback?code=test

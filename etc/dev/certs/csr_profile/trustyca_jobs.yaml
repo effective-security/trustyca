@@ -1,0 +1,8 @@
+---
+common_name: trustyca-job
+san:
+  - spiffe://trustyca/jobs
+names:
+  - C: US
+    L: WA
+    O: Tbilicode

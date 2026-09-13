@@ -1,0 +1,200 @@
+syntax = "proto3";
+package es.api;
+
+option go_package = "github.com/effective-security/protoc-gen-go/api";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.MethodOptions {
+    // allowed_roles is the option for the method to be allowed for the given
+    // roles. It's comma-separated list of roles supported by the system.
+    string allowed_roles = 1071;
+    // cli_cmd is the option for the method to be a CLI command.
+    string cli_cmd = 1072;
+    // refresh_interval is the option for the method to be refreshed, in
+    // seconds.
+    int32 refresh_interval = 1073;
+    // scopes is the option for the method to be allowed for the given
+    // scopes. It's comma-separated list of scopes supported by the system.
+    // Scopes are used to authorize the method call, similarly to OAuth 2.0
+    // scopes. Application may use scopes and/or allowed_roles to authorize the
+    // method call.
+    string scopes = 1074;
+}
+
+extend google.protobuf.FieldOptions {
+    // search is the option for OpenSearch Index.
+    // It can include Index type:
+    // facet|store|nested|object|flat_object|no_index,exclude.
+    // - `object` for fields that should be indexed as object.
+    // - `nested` for fields that should be indexed as nested.
+    // - `flat_object` for nested fields that should not be indexed.
+    // - `no_index` for fields that should not be indexed.
+    // - `exclude` for fields that should not be included in the search results.
+    // - `facet` for fields that should be indexed as facet.
+    // - `store` for fields that should be stored.
+    // - `hide` for fields that should be hidden in the search query by UI.
+    // - `with_keyword` for text fields that also need keyword sub-index.
+    // - `with_text` for keyword fields that also need text sub-index.
+    // - other values are define type:
+    // keyword|text|integer|float|double|boolean|date|geo_point|ip.
+    string search = 51001;
+    // display is the option for the field's Display Name in the UI.
+    string display = 51002;
+    // description is the option for the field's description.
+    string description = 51003;
+    // required is the option for the field to be required.
+    bool required = 51005;
+    // required_or is the option for the field to be required, if one of the
+    // other values is provided.
+    // Comma-separated list of field names that are required if this field is
+    // not provided. For example, "field1,field2" will be parsed as a list.
+    string required_or = 51006;
+    // min is the option for the field minimum length for strings, and minimum
+    // value for numbers.
+    int32 min = 51007;
+    // max is the option for the field maximum length for strings, and maximum
+    // value for numbers.
+    int32 max = 51008;
+    // min_count is the option for the field minimum count for lists.
+    int32 min_count = 51009;
+    // max_count is the option for the field maximum count for lists.
+    int32 max_count = 51010;
+    // alias is the option for the field alias name for the search query.
+    string alias = 51011;
+}
+
+extend google.protobuf.EnumOptions {
+    // is_bitmask marks the enum as a bitmask enum.
+    bool is_bitmask = 54001;
+}
+
+// Custom enum value option
+extend google.protobuf.EnumValueOptions {
+    // args is the option for the field's arguments,
+    // it can be used to specify the arguments for the enum value, as a string
+    // of comma-separated values.
+    // For example, "arg1,arg2,arg3" will be parsed as a list of strings
+    string enum_args = 52001;
+    // enum_display is the option for the field's Display Name in the UI.
+    string enum_display = 52002;
+    // enum_description is the option for the field's description.
+    string enum_description = 52003;
+    // enum_group is the option for the field's group name.
+    string enum_group = 52004;
+    // opts is the miscellaneous options for the enum,
+    // For example, "arg1,arg2,arg3" will be parsed as a list of strings
+    string enum_opts = 52005;
+}
+
+// Custom message option
+extend google.protobuf.MessageOptions {
+    // generate_meta is the option for generating the message's meta
+    // information. By default, only for Request and Response messages.
+    bool generate_meta = 53001;
+    // message_display is the option for the message's Display Name in the UI.
+    string message_display = 53002;
+    // message_description is the option for the message's description.
+    string message_description = 53003;
+    // generate_model is the option for generating the message's model
+    // for search index.
+    bool generate_model = 53004;
+}
+
+message EnumMeta {
+    int32 Value             = 1 [json_name = "Value"];
+    string Name             = 2 [json_name = "Name"];
+    string FullName         = 3 [json_name = "FullName"];
+    string Display          = 4 [json_name = "Display"];
+    string Documentation    = 5 [json_name = "Documentation"];
+    repeated string Args    = 6 [json_name = "Args"];
+    string Group            = 7 [json_name = "Group"];
+    repeated string Options = 8 [json_name = "Options"];
+}
+
+message SearchOption {
+    enum Enum {
+        // None is the default value.
+        None = 0;
+        // Facet is the option for the field to be indexed as facet.
+        Facet = 0x1;
+        // NoIndex is the option for the field to be not indexed.
+        NoIndex = 0x2;
+        // Exclude is the option for the field to be excluded from the search
+        // results.
+        Exclude = 0x4;
+        // Store is the option for the field to be stored.
+        Store = 0x8;
+        // Sortable is the option for the field to be sortable.
+        Sortable = 0x10;
+        // Hidden is the option for the field to be hidden in the search query
+        // builder or by UI.
+        Hidden = 0x20;
+        // WithKeyword is the option for text fields that also need
+        // keyword sub-index.
+        WithKeyword = 0x40;
+        // WithText is the option for keyword fields that also need text
+        // sub-index.
+        WithText = 0x80;
+    }
+}
+
+message FieldMeta {
+    string Name          = 1 [json_name = "Name"];
+    string FullName      = 2 [json_name = "FullName"];
+    string Display       = 3 [json_name = "Display"];
+    string Documentation = 4 [json_name = "Documentation"];
+    string Type          = 5 [json_name = "Type"];
+    // SearchType is the type of search for the field.
+    // It can be one of the following:
+    // keyword|text|integer|float|double|boolean|date|geo_point|ip|object|nested|flat_object.
+    string SearchType = 7 [json_name = "SearchType"];
+    // SearchOptions is populated from es.api.search option.
+    SearchOption.Enum SearchOptions = 8 [json_name = "SearchOptions"];
+    // Required is the option for the field to be required.
+    bool Required = 9 [json_name = "Required"];
+    // RequiredOr is the option for the field to be required, if one of the
+    // other values is provided.
+    repeated string RequiredOr = 10 [json_name = "RequiredOr"];
+
+    // StructName is the full name of the nested struct,
+    // for which Fields are provided.
+    string StructName = 11 [json_name = "StructName"];
+    // Fields is the list of fields for the nested struct.
+    repeated FieldMeta Fields = 12 [json_name = "Fields"];
+    // EnumDescription is provided for enum fields
+    EnumDescription EnumDescription = 13 [json_name = "EnumDescription"];
+    // Min is the option for the field minimum length for strings, and minimum
+    // value for numbers.
+    int32 Min = 14 [json_name = "Min"];
+    // Max is the option for the field maximum length for strings, and maximum
+    // value for numbers.
+    int32 Max = 15 [json_name = "Max"];
+    // MinCount is the option for the field minimum count for lists.
+    int32 MinCount = 16 [json_name = "MinCount"];
+    // MaxCount is the option for the field maximum count for lists.
+    int32 MaxCount = 17 [json_name = "MaxCount"];
+    // Deprecated is the option for the field to be deprecated.
+    bool Deprecated = 18 [json_name = "Deprecated"];
+    // Alias is the option for the field alias name for the search query.
+    string Alias = 19 [json_name = "Alias"];
+}
+
+message EnumDescription {
+    string Name             = 1 [json_name = "Name"];
+    repeated EnumMeta Enums = 2 [json_name = "Enums"];
+    string Documentation    = 3 [json_name = "Documentation"];
+    // IsBitmask is the option for the enum to be a bitmask enum.
+    bool IsBitmask  = 4 [json_name = "IsBitmask"];
+    string FullName = 5 [json_name = "FullName"];
+}
+
+message MessageDescription {
+    string Name               = 1 [json_name = "Name"];
+    string Display            = 2 [json_name = "Display"];
+    repeated FieldMeta Fields = 3 [json_name = "Fields"];
+    string Documentation      = 4 [json_name = "Documentation"];
+    string FullName           = 5 [json_name = "FullName"];
+    // Deprecated is the option for the message to be deprecated.
+    bool Deprecated = 8 [json_name = "Deprecated"];
+}

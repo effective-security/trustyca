@@ -1,0 +1,493 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: Auth API
+    version: 0.0.1
+paths:
+    /pb.Auth/AuthenticateAPIKey:
+        post:
+            tags:
+                - Auth
+            description: |-
+                AuthenticateAPIKey returns the user token info.
+                 The caller must include the API key in the Authorization header
+                 with HMAC SHA256 signature of the request, using API key secret.
+
+                 Date: RFC3339 timestamp
+                 Authorization: APIKey {KeyID}:{signature}
+                 signature = Base64(HMAC-SHA256(secret, method + timestamp))
+            operationId: Auth_AuthenticateAPIKey
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/Caller:
+        post:
+            tags:
+                - Auth
+            description: Caller returns the caller status.
+            operationId: Auth_Caller
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CallerStatusResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/ExchangeCode:
+        post:
+            tags:
+                - Auth
+            description: |-
+                ExchangeCode exchanges the one-time code for a token.
+                 The returned token only contains the Access Token.
+                 The client should call GetUserToken for full info.
+            operationId: Auth_ExchangeCode
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExchangeCodeRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Token'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/GetAllowedMethods:
+        post:
+            tags:
+                - Auth
+            description: GetAllowedMethods returns the allowed methods for the caller
+            operationId: Auth_GetAllowedMethods
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceAccessInfo'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/GetCallerScope:
+        post:
+            tags:
+                - Auth
+            description: |-
+                GetCallerScope returns the caller's resolved scope in the selected org:
+                 the org role, project roles, token scopes, and per method the roles
+                 and scopes it requires.
+            operationId: Auth_GetCallerScope
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CallerScope'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/GetProviders:
+        post:
+            tags:
+                - Auth
+            description: GetProviders returns the list of supported providers
+            operationId: Auth_GetProviders
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthProvidersRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthProvidersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/GetUserToken:
+        post:
+            tags:
+                - Auth
+            description: GetUserToken returns the user token info
+            operationId: Auth_GetUserToken
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/RevokeToken:
+        post:
+            tags:
+                - Auth
+            description: RevokeToken revokes the user token
+            operationId: Auth_RevokeToken
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Auth/SelectOrg:
+        post:
+            tags:
+                - Auth
+            description: |-
+                SelectOrg verifies the caller's access to the org and returns a new
+                 token scoped to it. This is the only tenant request that carries OrgID.
+            operationId: Auth_SelectOrg
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SelectOrgRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        AllowedMethods:
+            type: object
+            properties:
+                Service:
+                    type: string
+                    description: Service is the name of the service
+                Methods:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/KVPair'
+                    description: |-
+                        Methods is the list of methods that are allowed.
+                         The key is the short method name, the value is the full method name.
+        AuthProvidersRequest:
+            type: object
+            properties:
+                Email:
+                    type: string
+                    description: Email specifies optional email to use for login
+            description: AuthProvidersRequest specifies request to get list of supported IDP
+        AuthProvidersResponse:
+            type: object
+            properties:
+                AuthURL:
+                    type: string
+                    description: AuthURL specifies URL to start authentication flow
+                Providers:
+                    type: array
+                    items:
+                        type: integer
+                        format: enum
+                    description: Providers specifies the list of supported IDPs
+                ProviderNames:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        ProviderNames specifies the list of supported IDP names,
+                         this can be used to display the list of supported IDPs to the user,
+                         or for REST clients that are not aware of enum values.
+            description: AuthProvidersResponse provides list of supported IDP
+        CallerScope:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                    description: OrgID is the org selected in the token
+                ProjectID:
+                    type: string
+                    description: ProjectID is the project an API key is restricted to
+                Role:
+                    type: integer
+                    description: Role is the resolved role at org scope
+                    format: enum
+                RoleSource:
+                    type: integer
+                    description: RoleSource tells how the org role was resolved
+                    format: enum
+                ProjectRoles:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: |-
+                        ProjectRoles maps the IDs of the projects with an explicit grant to
+                         the granted role
+                Scopes:
+                    type: array
+                    items:
+                        type: string
+                    description: Scopes are the scopes of an API key or a scoped token
+                IsAPIKey:
+                    type: boolean
+                    description: IsAPIKey is true when the caller is an API key
+                Methods:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/MethodAccess'
+                    description: Methods lists the access rules of every public method
+            description: CallerScope is the resolved scope of the caller in the selected org
+        CallerStatusResponse:
+            type: object
+            properties:
+                Subject:
+                    type: string
+                    description: Subject of the caller.
+                Role:
+                    type: string
+                    description: |-
+                        Role is the application of the caller.
+                         The role of a specific Org can be found in Claims.
+                Claims:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/KVPair'
+                    description: Claims from the token, converted to KVPair.
+            description: CallerStatusResponse returns the caller information
+        ExchangeCodeRequest:
+            type: object
+            properties:
+                Code:
+                    type: string
+                    description: Code is the code to be exchanged for a token
+                Verifier:
+                    type: string
+                    description: Verifier is the code verifier for the code_challenge
+            description: |-
+                ExchangeCodeRequest exchanges the one-time code for a token.
+                 The Code is returned as part of OAuth flow and valid for 30 seconds.
+                 It must be exchanged to Access Token following code_challenge verification.
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        KVPair:
+            type: object
+            properties:
+                Key:
+                    type: string
+                    description: Key is a key of the pair
+                Value:
+                    type: string
+                    description: Value is a value of the pair
+            description: KVPair provides generic key-value pair
+        MethodAccess:
+            type: object
+            properties:
+                Method:
+                    type: string
+                    description: Method is the full method name
+                AllowedRoles:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        AllowedRoles are the minimum roles at Org or Project scope; a caller with
+                         a role that can assume any of them is allowed. Empty means any
+                         authenticated caller.
+                Scopes:
+                    type: array
+                    items:
+                        type: string
+                    description: Scopes are required from an API key or a token with a scope claim
+                Allowed:
+                    type: boolean
+                    description: Allowed is true when the caller may call the method at org scope
+            description: |-
+                MethodAccess describes the access rules of a method and whether the caller
+                 satisfies them at org scope
+        SelectOrgRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                    description: OrgID specifies the Org to switch to
+                RememberMe:
+                    type: boolean
+                    description: |-
+                        RememberMe specifies if the cookie should be set for the user.
+                         Otherwise, if the cookie is used, it will be set for the session only.
+            description: SelectOrgRequest specifies a request to switch the token to a specific Org
+        ServiceAccessInfo:
+            type: object
+            properties:
+                Allowed:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AllowedMethods'
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        Token:
+            type: object
+            properties:
+                TokenType:
+                    type: string
+                AccessToken:
+                    type: string
+                Jkt:
+                    type: string
+                ExpiresAt:
+                    type: string
+                    description: ExpiresAt returns time in RFC3339 format
+                IssuedAt:
+                    type: string
+                    description: IssuedAt returns time in RFC3339 format
+                Issuer:
+                    type: string
+                Audience:
+                    type: string
+                Provider:
+                    type: integer
+                    format: enum
+                ExpiresIn:
+                    type: integer
+                    format: uint32
+            description: Token is returned to the client
+        UserInfo:
+            type: object
+            properties:
+                ID:
+                    type: string
+                Name:
+                    type: string
+                Email:
+                    type: string
+                EmailVerified:
+                    type: boolean
+                Role:
+                    type: string
+                    description: |-
+                        Role is the role of the user in the application.
+                         For most of the users, the role is "user".
+                Orgs:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: Orgs maps the IDs of the orgs the user can select to the resolved role
+                OrgID:
+                    type: string
+                    description: OrgID is the org selected in the token
+                OrgRole:
+                    type: string
+                    description: |-
+                        OrgRole is the resolved role in the selected org: the explicit org-wide
+                         role, or Viewer derived from project grants
+                OrgRoleSource:
+                    type: string
+                    description: |-
+                        OrgRoleSource is "direct" for an explicit org-wide grant or "project"
+                         for a derived Viewer classification
+            description: UserInfo provides basic info about user
+        UserTokenResponse:
+            type: object
+            properties:
+                Token:
+                    $ref: '#/components/schemas/Token'
+                UserInfo:
+                    $ref: '#/components/schemas/UserInfo'
+            description: UserTokenResponse provides response with Token and UserInfo
+tags:
+    - name: Auth

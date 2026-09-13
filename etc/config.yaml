@@ -1,0 +1,22 @@
+---
+clients:
+  local_wfe:
+    host: https://localhost:8880
+    tls:
+      trusted_ca: ~/.trustyca/certs/trusty_root_ca.pem
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca
+  remote_wfe_dev:
+    host: https://wfe.dev.trustyca.io
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca
+  remote_wfe_prod:
+    host: https://wfe.prod.trustyca.io
+    request:
+      retry_limit: 3
+      timeout: 6s
+    storage_folder: ~/.trustyca

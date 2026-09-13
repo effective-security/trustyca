@@ -1,0 +1,120 @@
+{{template "header" .}} {{if .RecaptchaSiteKey}}
+<script src="https://www.google.com/recaptcha/api.js?render={{.RecaptchaSiteKey}}"></script>
+{{end}}
+<h1>Sign in to Trusty</h1>
+<p class="muted">Choose an identity provider to continue.</p>
+<div id="status" class="status info">Loading providers…</div>
+<div id="providers" class="row"></div>
+{{if not .RecaptchaSiteKey}}
+<p class="muted">
+  reCAPTCHA is not configured in Trusty (auth.recaptcha_site_key).
+</p>
+{{end}}
+<script>
+  (function () {
+    'use strict';
+
+    // rendered by the server; empty when reCAPTCHA is not configured
+    var recaptchaSiteKey = {{.RecaptchaSiteKey}};
+
+    var query = new URLSearchParams(window.location.search);
+    var statusEl = document.getElementById('status');
+    var providersEl = document.getElementById('providers');
+
+    function showStatus(kind, text) {
+      statusEl.className = 'status ' + kind;
+      statusEl.textContent = text;
+      statusEl.hidden = false;
+    }
+
+    function randomString(length) {
+      var bytes = new Uint8Array(length);
+      window.crypto.getRandomValues(bytes);
+      return Array.prototype.map.call(bytes, function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+    }
+
+    // recaptchaToken resolves to a reCAPTCHA v3 token for the "login" action,
+    // or to an empty string when reCAPTCHA is not configured.
+    function recaptchaToken() {
+      if (!recaptchaSiteKey || !window.grecaptcha) {
+        return Promise.resolve('');
+      }
+      return new Promise(function (resolve) {
+        window.grecaptcha.ready(function () {
+          window.grecaptcha.execute(recaptchaSiteKey, { action: 'login' }).then(resolve, function () { resolve(''); });
+        });
+      });
+    }
+
+    // authorizeURL builds the /v1/auth/authorize URL for the provider.
+    // Parameters given to this page (by the CLI, for example) are passed
+    // through, so the flow can end at a local listener with a code
+    // instead of at /authenticated with a token.
+    function authorizeURL(authURL, provider, recaptcha) {
+      var q = new URLSearchParams();
+      q.set('client_id', 'trustyca');
+      q.set('provider', provider.toLowerCase());
+      q.set('redirect_uri', query.get('redirect_uri') || (window.location.origin + '/authenticated'));
+      q.set('response_type', query.get('response_type') || 'token');
+      q.set('response_mode', query.get('response_mode') || 'fragment');
+      q.set('scope', query.get('scope') || 'openid email profile');
+      q.set('nonce', query.get('nonce') || randomString(8));
+      ['code_challenge', 'code_challenge_method', 'login_hint', 'device_id', 'audience', 'remember_me'].forEach(function (k) {
+        if (query.has(k)) {
+          q.set(k, query.get(k));
+        }
+      });
+      if (recaptcha) {
+        q.set('recaptcha_token', recaptcha);
+      }
+      return authURL + '?' + q.toString();
+    }
+
+    function login(authURL, provider, button) {
+      Array.prototype.forEach.call(providersEl.querySelectorAll('button'), function (b) { b.disabled = true; });
+      showStatus('info', 'Redirecting to ' + displayName(provider) + '…');
+      recaptchaToken().then(function (token) {
+        window.location.assign(authorizeURL(authURL, provider, token));
+      }).catch(function (err) {
+        Array.prototype.forEach.call(providersEl.querySelectorAll('button'), function (b) { b.disabled = false; });
+        showStatus('error', 'Unable to start login: ' + err.message);
+      });
+      button.blur();
+    }
+
+    // the server reports provider names in lower case: github, google
+    function displayName(name) {
+      return name.charAt(0).toUpperCase() + name.slice(1);
+    }
+
+    function renderProviders(res) {
+      var names = res.ProviderNames || [];
+      if (names.length === 0) {
+        showStatus('error', 'No identity providers are configured on the server.');
+        return;
+      }
+      statusEl.hidden = true;
+      names.forEach(function (name) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'primary';
+        button.textContent = 'Continue with ' + displayName(name);
+        button.addEventListener('click', function () { login(res.AuthURL, name, button); });
+        providersEl.appendChild(button);
+      });
+    }
+
+    fetch('/v1/auth/providers', { headers: { 'Accept': 'application/json' } })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (body) { throw new Error(res.status + ' ' + body); });
+        }
+        return res.json();
+      })
+      .then(renderProviders)
+      .catch(function (err) {
+        showStatus('error', 'Unable to load providers: ' + err.message);
+      });
+  }());
+</script>
+{{template "footer" .}}

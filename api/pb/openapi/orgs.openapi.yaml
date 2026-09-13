@@ -1,0 +1,990 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: Orgs API
+    description: |-
+        Orgs manages organizations, projects, memberships and invites.
+
+         Tenant scoped requests do not carry OrgID: the server takes the selected
+         organization from the validated access token (see Auth.SelectOrg).
+         Requests that act on a project carry ProjectID; the authorization layer
+         verifies that the project belongs to the token organization and that the
+         caller holds the required permission through an explicit org-wide grant or
+         a project grant.
+
+         (es.api.allowed_roles) lists the minimum roles allowed to call a method at
+         org scope, or at project scope when the request carries ProjectID; a caller
+         passes when one of its roles at that scope can assume an allowed role.
+         (es.api.scopes) lists the scopes an API key must hold; API keys are only
+         allowed where allowed_roles includes APIKey. Methods without allowed_roles
+         require an authenticated caller only.
+    version: 0.0.1
+paths:
+    /pb.Orgs/AddMember:
+        post:
+            tags:
+                - Orgs
+            description: |-
+                AddMember grants a role to a user at org scope (empty ProjectID) or in
+                 a project. If the user does not exist yet, an invite is created.
+            operationId: Orgs_AddMember
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddMemberRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AddMemberResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/ChangeMemberRole:
+        post:
+            tags:
+                - Orgs
+            description: ChangeMemberRole changes the role of an existing grant at the given scope
+            operationId: Orgs_ChangeMemberRole
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ChangeMemberRoleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Membership'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/CreateAPIKey:
+        post:
+            tags:
+                - Orgs
+            description: CreateAPIKey creates a new API key
+            operationId: Orgs_CreateAPIKey
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateAPIKeyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIKey'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/DeleteAPIKey:
+        post:
+            tags:
+                - Orgs
+            description: DeleteAPIKey deletes an API key
+            operationId: Orgs_DeleteAPIKey
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/APIKeyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RecordsResult'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/DeleteInvite:
+        post:
+            tags:
+                - Orgs
+            description: DeleteInvite removes the invite at the given scope
+            operationId: Orgs_DeleteInvite
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeleteInviteRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/DeleteMember:
+        post:
+            tags:
+                - Orgs
+            description: DeleteMember removes the grant at the given scope
+            operationId: Orgs_DeleteMember
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeleteMemberRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/DeleteOrg:
+        post:
+            tags:
+                - Orgs
+            description: DeleteOrg deactivates the org selected in the token
+            operationId: Orgs_DeleteOrg
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Org'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/DeleteProject:
+        post:
+            tags:
+                - Orgs
+            description: |-
+                DeleteProject deactivates a project. Records owned by the project are
+                 kept.
+            operationId: Orgs_DeleteProject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeleteProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Project'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/GetMembers:
+        post:
+            tags:
+                - Orgs
+            description: |-
+                GetMembers returns memberships and invites of the org selected in the
+                 token. With ProjectID only the project's grants are returned; with
+                 Scope Org only the org-wide grants are returned.
+            operationId: Orgs_GetMembers
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetMembersRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MembersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/GetOrg:
+        post:
+            tags:
+                - Orgs
+            description: GetOrg returns the org selected in the token
+            operationId: Orgs_GetOrg
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Org'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/GetProject:
+        post:
+            tags:
+                - Orgs
+            description: GetProject returns a project by ID or alias
+            operationId: Orgs_GetProject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Project'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/GetUserMemberships:
+        post:
+            tags:
+                - Orgs
+            description: |-
+                GetUserMemberships returns the caller's resolved access to the org
+                 selected in the token and the caller's explicit grants in that org
+            operationId: Orgs_GetUserMemberships
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserMemberships'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/GetUserOrgs:
+        post:
+            tags:
+                - Orgs
+            description: |-
+                GetUserOrgs returns the orgs the caller can select, each once, with the
+                 resolved org role. Available before an org is selected.
+            operationId: Orgs_GetUserOrgs
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserOrgsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/ListAPIKeys:
+        post:
+            tags:
+                - Orgs
+            description: ListAPIKeys lists the API keys of the org selected in the token
+            operationId: Orgs_ListAPIKeys
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ListAPIKeysRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIKeysResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/ListProjects:
+        post:
+            tags:
+                - Orgs
+            description: |-
+                ListProjects returns the projects of the org selected in the token that
+                 the caller can access
+            operationId: Orgs_ListProjects
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ListProjectsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ProjectsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/RegisterOrg:
+        post:
+            tags:
+                - Orgs
+            description: RegisterOrg registers a new org. The caller becomes its Owner.
+            operationId: Orgs_RegisterOrg
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RegisterOrgRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Org'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/RegisterProject:
+        post:
+            tags:
+                - Orgs
+            description: RegisterProject creates a project in the org selected in the token
+            operationId: Orgs_RegisterProject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RegisterProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Project'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/UpdateOrg:
+        post:
+            tags:
+                - Orgs
+            description: UpdateOrg updates the org selected in the token
+            operationId: Orgs_UpdateOrg
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateOrgRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Org'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pb.Orgs/UpdateProject:
+        post:
+            tags:
+                - Orgs
+            description: UpdateProject updates a project
+            operationId: Orgs_UpdateProject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Project'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        APIKey:
+            type: object
+            properties:
+                ID:
+                    type: string
+                OrgID:
+                    type: string
+                ProjectID:
+                    type: string
+                Label:
+                    type: string
+                Key:
+                    type: string
+                Secret:
+                    type: string
+                Scopes:
+                    type: array
+                    items:
+                        type: string
+                Metadata:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/KVPair'
+                Status:
+                    type: integer
+                    format: enum
+                CreatedAt:
+                    type: string
+                ExpiresAt:
+                    type: string
+                UsedAt:
+                    type: string
+                UsedCount:
+                    type: integer
+                    format: uint32
+        APIKeyRequest:
+            type: object
+            properties:
+                ProjectID:
+                    type: string
+                    description: |-
+                        ProjectID is optional for project scope.
+                         It must match the project of the API key.
+                ID:
+                    type: string
+        APIKeysResponse:
+            type: object
+            properties:
+                APIKeys:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/APIKey'
+                NextPage:
+                    allOf:
+                        - $ref: '#/components/schemas/NextPage'
+                    description: |-
+                        NextPage specifies pagination information, if there are more pages to
+                         fetch. If there are no more pages to fetch, NextPage will be empty.
+        AddMemberRequest:
+            type: object
+            properties:
+                Email:
+                    type: string
+                    description: Email specifies user email to search.
+                Role:
+                    type: integer
+                    description: |-
+                        Role specifies the role to grant. The caller must be allowed to grant
+                         it at the requested scope; only an org Owner can grant Owner.
+                    format: enum
+                ProjectID:
+                    type: string
+                    description: |-
+                        ProjectID specifies the project for a Project scope grant;
+                         empty for an org-wide grant
+            description: |-
+                AddMemberRequest specifies request to grant a role in the org selected in
+                 the token (empty ProjectID) or in a project.
+                 If the user does not exist, an invite is created instead.
+        AddMemberResponse:
+            type: object
+            properties:
+                Invite:
+                    $ref: '#/components/schemas/Invite'
+                Membership:
+                    $ref: '#/components/schemas/Membership'
+            description: |-
+                AddMemberResponse provides response for AddMember request.
+                 If a user already exists, the Membership is returned.
+                 If a user is invited, the Invite is returned.
+        ChangeMemberRoleRequest:
+            type: object
+            properties:
+                UserID:
+                    type: string
+                    description: UserID specifies user ID, if Email is empty
+                Email:
+                    type: string
+                    description: Email specifies user email, if UserID is empty
+                Role:
+                    type: integer
+                    format: enum
+                ProjectID:
+                    type: string
+                    description: |-
+                        ProjectID specifies the project for a Project scope grant;
+                         empty for the org-wide grant
+            description: |-
+                ChangeMemberRoleRequest specifies request to change the role of an
+                 existing grant at the requested scope
+        CreateAPIKeyRequest:
+            type: object
+            properties:
+                ProjectID:
+                    type: string
+                    description: |-
+                        ProjectID is optional for project scope.
+                         If not provided, will use Org scope for the current token.
+                Label:
+                    type: string
+                Scopes:
+                    type: array
+                    items:
+                        type: string
+                ExpiresAt:
+                    type: string
+        DeleteInviteRequest:
+            type: object
+            properties:
+                Email:
+                    type: string
+                ProjectID:
+                    type: string
+                    description: |-
+                        ProjectID specifies the project for a Project scope invite;
+                         empty for an org-wide invite
+            description: |-
+                DeleteInviteRequest specifies request to remove an invite at the given
+                 scope
+        DeleteMemberRequest:
+            type: object
+            properties:
+                UserID:
+                    type: string
+                ProjectID:
+                    type: string
+                    description: |-
+                        ProjectID specifies the project for a Project scope grant;
+                         empty for the org-wide grant
+            description: |-
+                DeleteMemberRequest specifies request to remove a grant.
+                 With ProjectID only the project grant is removed;
+                 without ProjectID only the org-wide grant is removed.
+        DeleteProjectRequest:
+            type: object
+            properties:
+                ProjectID:
+                    type: string
+            description: DeleteProjectRequest specifies request to deactivate a project
+        GetMembersRequest:
+            type: object
+            properties:
+                ProjectID:
+                    type: string
+                    description: ProjectID limits the result to Project scope grants of the project
+                Scope:
+                    type: integer
+                    description: Scope limits the result to Org scope grants when set to Org
+                    format: enum
+            description: |-
+                GetMembersRequest specifies request to list members and invites of the
+                 org selected in the token. Without ProjectID and Scope, grants of all
+                 scopes are returned.
+        GetProjectRequest:
+            type: object
+            properties:
+                ProjectID:
+                    type: string
+                Alias:
+                    type: string
+            description: GetProjectRequest specifies a project by ID or alias
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        Invite:
+            type: object
+            properties:
+                ID:
+                    type: string
+                OrgID:
+                    type: string
+                InviterID:
+                    type: string
+                Email:
+                    type: string
+                CreatedAt:
+                    type: string
+                Role:
+                    type: integer
+                    format: enum
+                Scope:
+                    type: integer
+                    description: 'Scope of the invite: Org or Project'
+                    format: enum
+                ProjectID:
+                    type: string
+                    description: ProjectID is set for Project scope invites
+                ExpiresAt:
+                    type: string
+                    description: ExpiresAt in RFC3339 format; expired invites grant nothing
+            description: Invite provides an org or project invite
+        KVPair:
+            type: object
+            properties:
+                Key:
+                    type: string
+                    description: Key is a key of the pair
+                Value:
+                    type: string
+                    description: Value is a value of the pair
+            description: KVPair provides generic key-value pair
+        ListAPIKeysRequest:
+            type: object
+            properties:
+                ProjectID:
+                    type: string
+                    description: |-
+                        ProjectID is optional for project scope.
+                         If not provided, will use Org scope for the current token.
+                Status:
+                    type: integer
+                    format: enum
+        ListProjectsRequest:
+            type: object
+            properties:
+                Status:
+                    type: integer
+                    description: Status filters by status; Unknown returns all
+                    format: enum
+                Limit:
+                    type: integer
+                    description: Limit specifies maximum number of records to return
+                    format: uint32
+                Offset:
+                    type: integer
+                    description: Offset specifies offset for the offset-based pagination
+                    format: uint32
+                Cursor:
+                    type: string
+                    description: Cursor specifies cursor for the cursor-based pagination
+            description: ListProjectsRequest specifies a paginated list of projects
+        MembersResponse:
+            type: object
+            properties:
+                Memberships:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Membership'
+                Invites:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Invite'
+            description: MembersResponse provides list of members and invites
+        Membership:
+            type: object
+            properties:
+                ID:
+                    type: string
+                OrgID:
+                    type: string
+                OrgAlias:
+                    type: string
+                OrgName:
+                    type: string
+                UserID:
+                    type: string
+                Name:
+                    type: string
+                Email:
+                    type: string
+                Role:
+                    type: integer
+                    format: enum
+                CreatedAt:
+                    type: string
+                Scope:
+                    type: integer
+                    description: 'Scope of the grant: Org or Project'
+                    format: enum
+                ProjectID:
+                    type: string
+                    description: ProjectID is set for Project scope grants
+                ProjectAlias:
+                    type: string
+                ProjectName:
+                    type: string
+            description: |-
+                Membership is an explicit role assignment (grant).
+                 Org scope grant (empty ProjectID) is inherited by every project of the org.
+                 Project scope grant applies to the project only; grants are additive.
+        NextPage:
+            type: object
+            properties:
+                Offset:
+                    type: integer
+                    description: |-
+                        Offset is the offset of the next page for offset-based pagination.
+                         Offset is limited to 10000.
+                         To paginate for large number of records, use cursor-based pagination
+                         instead.
+                    format: uint32
+                Cursor:
+                    type: string
+                    description: |-
+                        Cursor is the cursor of the next page for cursor-based pagination.
+                         Use "initial" to start the pagination or pass the cursor returned from
+                         this response.
+            description: NextPage specifies pagination information, if there are more pages to fetch.
+        Org:
+            type: object
+            properties:
+                ID:
+                    type: string
+                Alias:
+                    type: string
+                Name:
+                    type: string
+                Description:
+                    type: string
+                CreatedAt:
+                    type: string
+                Status:
+                    type: integer
+                    format: enum
+        OrgAccess:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                OrgAlias:
+                    type: string
+                OrgName:
+                    type: string
+                Role:
+                    type: integer
+                    description: |-
+                        Role is the resolved org role: the explicit org-wide role, or Viewer
+                         when the user only has project grants
+                    format: enum
+                RoleSource:
+                    type: integer
+                    description: RoleSource explains how Role was resolved
+                    format: enum
+                ExplicitRole:
+                    type: integer
+                    description: ExplicitRole is the explicit org-wide role, None when derived
+                    format: enum
+            description: OrgAccess provides the resolved access of a user to an org
+        Project:
+            type: object
+            properties:
+                ID:
+                    type: string
+                OrgID:
+                    type: string
+                Alias:
+                    type: string
+                    description: |-
+                        Alias is a stable, org-unique identifier chosen by the client,
+                         e.g. a cloud account ID or a slug
+                Name:
+                    type: string
+                Description:
+                    type: string
+                Status:
+                    type: integer
+                    format: enum
+                CreatedAt:
+                    type: string
+                UpdatedAt:
+                    type: string
+            description: Project owns a collection of resources governed by a common access policy
+        ProjectsResponse:
+            type: object
+            properties:
+                Projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Project'
+                NextPage:
+                    allOf:
+                        - $ref: '#/components/schemas/NextPage'
+                    description: |-
+                        NextPage specifies pagination information, if there are more pages to
+                         fetch. If there are no more pages to fetch, NextPage will be empty.
+            description: ProjectsResponse returns list of projects
+        RecordsResult:
+            type: object
+            properties:
+                Created:
+                    type: string
+                Updated:
+                    type: string
+                Deleted:
+                    type: string
+            description: RecordsResult provides the number of created, updated and deleted records
+        RegisterOrgRequest:
+            type: object
+            properties:
+                Name:
+                    type: string
+                Description:
+                    type: string
+        RegisterProjectRequest:
+            type: object
+            properties:
+                Alias:
+                    type: string
+                    description: Alias is org-unique; generated when empty
+                Name:
+                    type: string
+                Description:
+                    type: string
+            description: |-
+                RegisterProjectRequest specifies request to create a project in the org
+                 selected in the token
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        UpdateOrgRequest:
+            type: object
+            properties:
+                Name:
+                    type: string
+                Description:
+                    type: string
+            description: UpdateOrgRequest updates the org selected in the token
+        UpdateProjectRequest:
+            type: object
+            properties:
+                ProjectID:
+                    type: string
+                Name:
+                    type: string
+                Description:
+                    type: string
+            description: UpdateProjectRequest specifies request to update a project
+        UserMemberships:
+            type: object
+            properties:
+                Org:
+                    allOf:
+                        - $ref: '#/components/schemas/OrgAccess'
+                    description: Org is the resolved org access
+                Memberships:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Membership'
+                    description: |-
+                        Memberships are the caller's explicit grants in the org: the org-wide
+                         grant (empty ProjectID) and one per project grant
+            description: UserMemberships provides the caller's access to the selected org
+        UserOrgsResponse:
+            type: object
+            properties:
+                Orgs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/OrgAccess'
+            description: UserOrgsResponse provides the orgs the caller can select
+tags:
+    - name: Orgs
