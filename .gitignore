@@ -10,6 +10,7 @@ bin/
 .cursor/
 .aider*
 .DS_Store
+.codebase-memory
 change_log.txt
 test_log.txt
 build_log.txt

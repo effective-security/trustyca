@@ -2,16 +2,6 @@ package authctx
 
 import "strings"
 
-// Token claims used by API keys and scoped access tokens
-const (
-	// ClaimScope lists the scopes granted to an API key or a scoped token.
-	// A method with (es.api.scopes) requires every listed scope to be
-	// granted. "*" grants everything; "certs:*" grants every certs scope.
-	ClaimScope = "scope"
-	// ClaimProject is the project an API key is restricted to, if any
-	ClaimProject = "project"
-)
-
 // Scopes are the API scopes (permissions) that can be granted to API keys.
 // A method declares the scopes it requires with (es.api.scopes).
 const (

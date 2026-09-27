@@ -15,8 +15,8 @@ var CanAssumeRoles = map[pb.Role_Enum][]pb.Role_Enum{
 	pb.Role_APIKey:   {pb.Role_APIKey},
 	pb.Role_Viewer:   {pb.Role_Viewer},
 	pb.Role_User:     {pb.Role_User, pb.Role_Viewer},
+	pb.Role_Billing:  {pb.Role_Billing, pb.Role_Viewer},
 	pb.Role_Support:  {pb.Role_Support, pb.Role_User, pb.Role_Viewer},
-	pb.Role_Billing:  {pb.Role_Billing, pb.Role_User, pb.Role_Viewer},
 	pb.Role_Security: {pb.Role_Security, pb.Role_User, pb.Role_Viewer},
 	pb.Role_Admin:    {pb.Role_Admin, pb.Role_Security, pb.Role_Support, pb.Role_User, pb.Role_Billing, pb.Role_Viewer},
 	pb.Role_Owner:    {pb.Role_Owner, pb.Role_Admin, pb.Role_Security, pb.Role_Support, pb.Role_User, pb.Role_Billing, pb.Role_Viewer},
@@ -82,14 +82,23 @@ func AllowsRole(allowedRoles []string, role pb.Role_Enum) bool {
 
 // OrgRoles are the roles that can be granted org-wide
 var OrgRoles = []pb.Role_Enum{
-	pb.Role_Viewer, pb.Role_User, pb.Role_Support, pb.Role_Billing,
-	pb.Role_Security, pb.Role_Admin, pb.Role_Owner,
+	pb.Role_Viewer,
+	pb.Role_User,
+	pb.Role_Support,
+	pb.Role_Billing,
+	pb.Role_Security,
+	pb.Role_Admin,
+	pb.Role_Owner,
 }
 
 // ProjectRoles are the roles that can be granted in a project.
 // Owner and Billing are org-wide concepts and cannot be granted per project.
 var ProjectRoles = []pb.Role_Enum{
-	pb.Role_Viewer, pb.Role_User, pb.Role_Support, pb.Role_Security, pb.Role_Admin,
+	pb.Role_Viewer,
+	pb.Role_User,
+	pb.Role_Support,
+	pb.Role_Security,
+	pb.Role_Admin,
 }
 
 // IsProjectRole returns true if the role can be granted in a project
