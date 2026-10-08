@@ -30,6 +30,7 @@ import (
 	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/jwt"
 	"github.com/effective-security/xpki/jwt/dpop"
+	"github.com/effective-security/xpki/jwt/oauth2client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -238,15 +239,24 @@ func Test_CallbackHandler(t *testing.T) {
 	server := servefiles.New(t)
 	server.SetBaseDirs("testdata")
 	ctx := context.Background()
-	prov, err := service.AuthProvider(ctx, pb.IDP_Github)
-	require.NoError(t, err)
-	o := prov.Config()
-	o.AuthURL = strings.Replace(o.AuthURL, "https://github.com", server.URL(), 1)
-	o.TokenURL = strings.Replace(o.TokenURL, "https://github.com", server.URL(), 1)
-	require.NotContains(t, o.AuthURL, "https://github.com")
-	require.NotContains(t, o.TokenURL, "https://github.com")
 
-	u, err := url.Parse(server.URL() + "/")
+	baseURL := server.URL()
+	o := &oauth2client.ClientConfig{
+		ProviderID:   strings.ToLower(pb.IDP_Github.String()),
+		ClientID:     "1234",
+		ClientSecret: "1234",
+		Scopes:       []string{"email"},
+		RedirectURL:  "http://localhost:38989",
+		ResponseType: pb.OAuthResponseTypeCode,
+		AuthURL:      baseURL + "/login/oauth/authorize",
+		TokenURL:     baseURL + "/login/oauth/access_token",
+		UserinfoURL:  baseURL + "/user",
+	}
+
+	err := service.SetAuthProvider(ctx, o)
+	require.NoError(t, err)
+
+	u, err := url.Parse(baseURL + "/")
 	require.NoError(t, err)
 
 	service.BaseURL = u
@@ -491,15 +501,24 @@ func Test_DPoPCallbackHandler(t *testing.T) {
 	server := servefiles.New(t)
 	server.SetBaseDirs("testdata")
 
-	prov, err := service.AuthProvider(ctx, pb.IDP_Google)
-	require.NoError(t, err)
-	o := prov.Config()
-	o.AuthURL = strings.Replace(o.AuthURL, "https://oauth2.googleapis.com", server.URL(), 1)
-	o.TokenURL = strings.Replace(o.TokenURL, "https://oauth2.googleapis.com", server.URL(), 1)
-	require.NotContains(t, o.AuthURL, "https://oauth2.googleapis.com")
-	require.NotContains(t, o.TokenURL, "https://oauth2.googleapis.com")
+	baseURL := server.URL()
+	o := &oauth2client.ClientConfig{
+		ProviderID:   strings.ToLower(pb.IDP_Google.String()),
+		ClientID:     "1234",
+		ClientSecret: "1234",
+		Scopes:       []string{"email"},
+		RedirectURL:  "http://localhost:38989",
+		ResponseType: pb.OAuthResponseTypeCode,
+		AuthURL:      baseURL + "/o/oauth2/v2/auth",
+		TokenURL:     baseURL + "/token",
+		UserinfoURL:  baseURL + "/v1/userinfo",
+	}
 
-	u, err := url.Parse(server.URL() + "/")
+	// override the existing client
+	err := service.SetAuthProvider(ctx, o)
+	require.NoError(t, err)
+
+	u, err := url.Parse(baseURL + "/")
 	require.NoError(t, err)
 	service.BaseURL = u
 
@@ -743,20 +762,20 @@ func Test_DPoPCallbackHandlerGoogle(t *testing.T) {
 	server := servefiles.New(t)
 	server.SetBaseDirs("testdata")
 
-	prov, err := service.AuthProvider(ctx, pb.IDP_Google)
+	baseURL := server.URL()
+	o := &oauth2client.ClientConfig{
+		ProviderID:   strings.ToLower(pb.IDP_Google.String()),
+		ClientID:     "1234",
+		ClientSecret: "1234",
+		Scopes:       []string{"email"},
+		RedirectURL:  "http://localhost:38989",
+		ResponseType: pb.OAuthResponseTypeCode,
+		AuthURL:      baseURL + "/o/oauth2/v2/auth",
+		TokenURL:     baseURL + "/token",
+		UserinfoURL:  baseURL + "/v1/userinfo",
+	}
+	err := service.SetAuthProvider(ctx, o)
 	require.NoError(t, err)
-	o := prov.Config()
-
-	o.AuthURL = strings.Replace(o.AuthURL, "https://login.microsoftonline.com", server.URL(), 1)
-	o.TokenURL = strings.Replace(o.TokenURL, "https://login.microsoftonline.com", server.URL(), 1)
-	o.UserinfoURL = strings.Replace(o.UserinfoURL, "https://graph.microsoft.com", server.URL(), 1)
-	require.NotContains(t, o.AuthURL, "https://login.microsoftonline.com")
-	require.NotContains(t, o.TokenURL, "https://login.microsoftonline.com")
-	require.NotContains(t, o.UserinfoURL, "https://graph.microsoft.com")
-
-	u, err := url.Parse(server.URL() + "/")
-	require.NoError(t, err)
-	service.BaseURL = u
 
 	t.Run("valid_state_post_token_google", func(t *testing.T) {
 		t.Parallel()
@@ -802,14 +821,20 @@ func Test_DPoPCallbackHandlerLocal(t *testing.T) {
 	server := servefiles.New(t)
 	server.SetBaseDirs("testdata")
 
-	prov, err := service.AuthProvider(ctx, pb.IDP_Local)
+	baseURL := server.URL()
+	o := &oauth2client.ClientConfig{
+		ProviderID:   strings.ToLower(pb.IDP_Local.String()),
+		ClientID:     "1234",
+		ClientSecret: "1234",
+		Scopes:       []string{"email"},
+		RedirectURL:  "http://localhost:38989",
+		ResponseType: pb.OAuthResponseTypeCode,
+		AuthURL:      baseURL + "/login/oauth/authorize",
+		TokenURL:     baseURL + "/login/oauth/access_token",
+		UserinfoURL:  baseURL + "/user",
+	}
+	err := service.SetAuthProvider(ctx, o)
 	require.NoError(t, err)
-	o := prov.Config()
-	o.AuthURL = strings.Replace(o.AuthURL, "https://localhost:8880", server.URL(), 1)
-
-	u, err := url.Parse(server.URL() + "/")
-	require.NoError(t, err)
-	service.BaseURL = u
 
 	t.Run("valid_state_post_tokenlocal", func(t *testing.T) {
 		t.Parallel()
@@ -867,7 +892,6 @@ func Test_AuthHTTPHandler(t *testing.T) {
 }
 
 func Test_DPoPCallbackHandlerGithub(t *testing.T) {
-	t.Parallel()
 	service := testServer.Service(auth.ServiceName).(*auth.Service)
 	require.NotNil(t, service)
 
@@ -877,17 +901,22 @@ func Test_DPoPCallbackHandlerGithub(t *testing.T) {
 	server := servefiles.New(t)
 	server.SetBaseDirs("testdata")
 
-	prov, err := service.AuthProvider(ctx, pb.IDP_Github)
+	baseURL := server.URL()
+	o := &oauth2client.ClientConfig{
+		ProviderID:   strings.ToLower(pb.IDP_Github.String()),
+		ClientID:     "1234",
+		ClientSecret: "1234",
+		Scopes:       []string{"email"},
+		RedirectURL:  "http://localhost:38989",
+		ResponseType: pb.OAuthResponseTypeCode,
+		AuthURL:      baseURL + "/login/oauth/authorize",
+		TokenURL:     baseURL + "/login/oauth/access_token",
+		UserinfoURL:  baseURL + "/user",
+	}
+	err := service.SetAuthProvider(ctx, o)
 	require.NoError(t, err)
-	o := prov.Config()
-	o.AuthURL = strings.Replace(o.AuthURL, "https://github.com", server.URL(), 1)
-	o.TokenURL = strings.Replace(o.TokenURL, "https://github.com", server.URL(), 1)
-	o.UserinfoURL = strings.Replace(o.UserinfoURL, "https://github.com", server.URL(), 1)
-	require.NotContains(t, o.AuthURL, "https://github.com")
-	require.NotContains(t, o.TokenURL, "https://github.com")
-	require.NotContains(t, o.UserinfoURL, "https://github.com")
 
-	u, err := url.Parse(server.URL() + "/")
+	u, err := url.Parse(baseURL + "/")
 	require.NoError(t, err)
 	service.BaseURL = u
 
@@ -1088,15 +1117,20 @@ func Test_TenantHandler(t *testing.T) {
 
 	server := servefiles.New(t)
 	server.SetBaseDirs("testdata")
-	prov, err := service.AuthProvider(ctx, pb.IDP_Google)
+	baseURL := server.URL()
+	o := &oauth2client.ClientConfig{
+		ProviderID:   strings.ToLower(pb.IDP_Google.String()),
+		ClientID:     "1234",
+		ClientSecret: "1234",
+		Scopes:       []string{"email"},
+		RedirectURL:  "http://localhost:38989",
+		ResponseType: pb.OAuthResponseTypeCode,
+		AuthURL:      baseURL + "/o/oauth2/v2/auth",
+		TokenURL:     baseURL + "/token",
+		UserinfoURL:  baseURL + "/v1/userinfo",
+	}
+	err := service.SetAuthProvider(ctx, o)
 	require.NoError(t, err)
-	o := prov.Config()
-
-	o.AuthURL = server.URL() + "/o/oauth2/v2/auth"
-	o.TokenURL = server.URL() + "/token"
-	u, err := url.Parse(server.URL() + "/")
-	require.NoError(t, err)
-	service.BaseURL = u
 
 	idToken, err := service.JwtSigner.Sign(
 		ctx,

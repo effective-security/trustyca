@@ -79,7 +79,7 @@ func TestService_GetUserMemberships(t *testing.T) {
 	assert.Equal(t, "payments", res.Memberships[0].ProjectAlias)
 
 	_, err = svc.GetUserMemberships(testCtx("42", ""), &emptypb.Empty{})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 
 	db.EXPECT().ListMemberships(gomock.Any(), gomock.Any()).Return(nil, errors.New("db failed"))
 	_, err = svc.GetUserMemberships(testCtx("42", "1"), &emptypb.Empty{})
@@ -130,7 +130,7 @@ func TestService_GetMembers(t *testing.T) {
 	assert.Equal(t, "201", res.Invites[0].ProjectID)
 
 	_, err = svc.GetMembers(testCtx("42", ""), &pb.GetMembersRequest{})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 	_, err = svc.GetMembers(admin, &pb.GetMembersRequest{ProjectID: "bad"})
 	assert.EqualError(t, err, "bad_request: invalid project ID")
 
@@ -170,7 +170,7 @@ func TestService_AddMember(t *testing.T) {
 
 	// validation
 	_, err := svc.AddMember(testCtx("42", ""), &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_User})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 	_, err = svc.AddMember(owner, &pb.AddMemberRequest{Role: pb.Role_User})
 	assert.EqualError(t, err, "bad_request: email is required")
 	_, err = svc.AddMember(owner, &pb.AddMemberRequest{Email: "a@b.c"})
@@ -180,15 +180,15 @@ func TestService_AddMember(t *testing.T) {
 
 	// grantability
 	_, err = svc.AddMember(admin, &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_Owner})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Owner org-wide")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Owner org-wide")
 	_, err = svc.AddMember(user, &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_Viewer})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Viewer org-wide")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Viewer org-wide")
 	_, err = svc.AddMember(projectAdmin, &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_Viewer})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Viewer org-wide", "project Admin cannot grant org-wide")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Viewer org-wide", "project Admin cannot grant org-wide")
 	_, err = svc.AddMember(projectAdmin, &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_Viewer, ProjectID: "202"})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Viewer in the project", "no grant in project 202")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Viewer in the project", "no grant in project 202")
 	_, err = svc.AddMember(owner, &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_Owner, ProjectID: "201"})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Owner in the project", "Owner is not a project role")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Owner in the project", "Owner is not a project role")
 
 	// org checks
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(nil, errors.New("not found"))
@@ -304,11 +304,11 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	orgScope := &query.ListMembershipsRequest{OrgID: 1, Scope: pb.Scope_Org}
 
 	_, err := svc.ChangeMemberRole(testCtx("42", ""), &pb.ChangeMemberRoleRequest{UserID: "9", Role: pb.Role_User})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 	_, err = svc.ChangeMemberRole(owner, &pb.ChangeMemberRoleRequest{UserID: "9"})
 	assert.EqualError(t, err, "bad_request: role is required")
 	_, err = svc.ChangeMemberRole(admin, &pb.ChangeMemberRoleRequest{UserID: "9", Role: pb.Role_Owner})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Owner org-wide")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Owner org-wide")
 
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(nil, errors.New("db failed"))
 	_, err = svc.ChangeMemberRole(owner, &pb.ChangeMemberRoleRequest{UserID: "9", Role: pb.Role_User})
@@ -329,7 +329,7 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	// an Admin cannot demote an Owner: revoking requires granting the current role
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	_, err = svc.ChangeMemberRole(admin, &pb.ChangeMemberRoleRequest{UserID: "42", Role: pb.Role_Admin})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Owner org-wide")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Owner org-wide")
 
 	// the last Owner cannot be demoted
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember}, nil)
@@ -388,7 +388,7 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	assert.Equal(t, "payments", res.ProjectAlias)
 
 	_, err = svc.ChangeMemberRole(projectAdmin, &pb.ChangeMemberRoleRequest{UserID: "9", Role: pb.Role_User, ProjectID: "202"})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role User in the project")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role User in the project")
 }
 
 func TestService_DeleteMember(t *testing.T) {
@@ -411,7 +411,7 @@ func TestService_DeleteMember(t *testing.T) {
 	secondOwner := &model.MembershipInfo{ID: xdb.NewID(13), OrgID: xdb.NewID(1), UserID: xdb.NewID(44), Email: "owner2@example.com", Role: pb.Role_Owner}
 
 	_, err := svc.DeleteMember(testCtx("42", ""), &pb.DeleteMemberRequest{UserID: "9"})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 	_, err = svc.DeleteMember(owner, &pb.DeleteMemberRequest{})
 	assert.EqualError(t, err, "bad_request: invalid user ID")
 
@@ -426,7 +426,7 @@ func TestService_DeleteMember(t *testing.T) {
 	// an Admin cannot remove an Owner
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	_, err = svc.DeleteMember(admin, &pb.DeleteMemberRequest{UserID: "42"})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Owner org-wide")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Owner org-wide")
 
 	// the last Owner cannot be removed
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember}, nil)
@@ -462,7 +462,7 @@ func TestService_DeleteMember(t *testing.T) {
 	// a project Admin cannot remove an org-wide grant
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{adminMember}, nil)
 	_, err = svc.DeleteMember(projectAdmin, &pb.DeleteMemberRequest{UserID: "9"})
-	assert.EqualError(t, err, "unauthorized: not allowed to grant role Admin org-wide")
+	assert.EqualError(t, err, "forbidden: not allowed to grant role Admin org-wide")
 }
 
 func TestService_DeleteInvite(t *testing.T) {
@@ -476,7 +476,7 @@ func TestService_DeleteInvite(t *testing.T) {
 	ctx := testCtx("42", "1")
 
 	_, err := svc.DeleteInvite(testCtx("42", ""), &pb.DeleteInviteRequest{Email: "a@b.c"})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 	_, err = svc.DeleteInvite(ctx, &pb.DeleteInviteRequest{})
 	assert.EqualError(t, err, "bad_request: email is required")
 	_, err = svc.DeleteInvite(ctx, &pb.DeleteInviteRequest{Email: "a@b.c", ProjectID: "bad"})

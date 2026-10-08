@@ -166,6 +166,12 @@ func (s *Service) Db() db.OrgsDb {
 	return s.db
 }
 
+// OAuthProvider returns the OAuth2 client registry.
+// Config returns a copy, so tests that retarget a provider register a new client.
+func (s *Service) OAuthProvider() *oauth2client.Provider {
+	return s.oauthProvider
+}
+
 // OAuthConfig returns oauth2client.Config,
 // to be used in tests
 func (s *Service) AuthProvider(ctx context.Context, provider pb.IDP_Enum) (*oauth2client.Client, error) {
@@ -174,6 +180,13 @@ func (s *Service) AuthProvider(ctx context.Context, provider pb.IDP_Enum) (*oaut
 		return p, nil
 	}
 	return nil, httperror.InvalidRequest("unsupported provider: %s", provider)
+}
+
+// SetAuthProvider sets the OAuth2 client for the provider,
+// override the existing client if it exists.
+// to be used in tests
+func (s *Service) SetAuthProvider(ctx context.Context, cfg *oauth2client.ClientConfig) error {
+	return s.oauthProvider.RegisterClient(cfg, true)
 }
 
 // AuthProviderForEmail checks if the email is allowed to login,

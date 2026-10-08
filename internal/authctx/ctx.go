@@ -28,6 +28,12 @@ const (
 	// ClaimOrgRoleSource is "direct" for an explicit org-wide grant or
 	// "project" for a derived Viewer classification
 	ClaimOrgRoleSource = "org_role_source"
+	// ClaimScope lists the scopes granted to an API key or a scoped token.
+	// A method with (es.api.scopes) requires every listed scope to be
+	// granted. "*" grants everything; "certs:*" grants every certs scope.
+	ClaimScope = "scope"
+	// ClaimProject is the project an API key is restricted to, if any
+	ClaimProject = "project"
 )
 
 // TrustyCtx provides trustyca context

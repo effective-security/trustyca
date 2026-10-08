@@ -117,7 +117,7 @@ servers:
       max_age: 600
       allow_credentials: true
       allowed_origins:
-        - "*"
+        - http://localhost:3000
       allowed_methods:
         - HEAD
         - OPTIONS

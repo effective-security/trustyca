@@ -5,7 +5,7 @@ import (
 	"crypto"
 	"fmt"
 	"io"
-	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os/exec"
@@ -328,7 +328,12 @@ func (a *LoginCmd) Run(app App) error {
 		logger.KV(xlog.DEBUG, "dpop", "signed", "url", startURL)
 	}
 
-	state = &svcState{
+	if a.NoBrowser {
+		fmt.Fprintf(app.Writer(), "open auth URL in browser:\n%s\n", startURL)
+		return nil
+	}
+
+	s := &svcState{
 		writer:       app.Writer(),
 		noStore:      a.NoStore,
 		dpopKey:      a.DpopKey,
@@ -336,13 +341,9 @@ func (a *LoginCmd) Run(app App) error {
 		responseType: rt,
 		client:       c,
 		codeVerifier: codeVerifier,
+		done:         make(chan struct{}),
 	}
-
-	if a.NoBrowser {
-		fmt.Fprintf(app.Writer(), "open auth URL in browser:\n%s\n", startURL)
-		return nil
-	}
-	return waitForLogin(a.ListenPort, startURL)
+	return s.waitForLogin(app.Context(), startURL)
 }
 
 // UICmd logs in via the server's web login page:
@@ -386,7 +387,7 @@ func (a *UICmd) Run(app App) error {
 	q.Set("code_challenge", certutil.SHA256Base64([]byte(codeVerifier)))
 	q.Set("code_challenge_method", "S256")
 
-	state = &svcState{
+	s := &svcState{
 		writer:       app.Writer(),
 		noStore:      a.NoStore,
 		listenPort:   a.ListenPort,
@@ -394,8 +395,9 @@ func (a *UICmd) Run(app App) error {
 		responseType: pb.OAuthResponseTypeCode,
 		client:       c,
 		codeVerifier: codeVerifier,
+		done:         make(chan struct{}),
 	}
-	return waitForLogin(a.ListenPort, loginPageURL(host, q))
+	return s.waitForLogin(app.Context(), loginPageURL(host, q))
 }
 
 // loginPageURL returns the server's login page URL with the parameters
@@ -404,33 +406,60 @@ func loginPageURL(host string, q url.Values) string {
 	return host + pb.PathForLoginPage + "?" + q.Encode()
 }
 
-var initLoginHandlerOnce sync.Once
+// loginShutdownTimeout bounds the wait for the last response
+// to reach the browser once the login completes
+const loginShutdownTimeout = 5 * time.Second
 
 // waitForLogin serves the local callback listener, opens startURL in the
 // browser and blocks until the callback completes the login.
-// state must be set before the call.
-func waitForLogin(listenPort int, startURL string) error {
-	// this must be done once
-	initLoginHandlerOnce.Do(func() {
-		http.HandleFunc("/login", loginHandler)
-		http.HandleFunc("/login/done", loginHandler)
-	})
+func (s *svcState) waitForLogin(ctx context.Context, startURL string) error {
+	// bind before opening the browser: a busy port must fail the command,
+	// not send the browser to whatever else listens on it
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", s.listenPort))
+	if err != nil {
+		return errors.WithMessagef(err, "unable to listen on port %d, use --listen-port to choose another one", s.listenPort)
+	}
 
-	state.wg.Add(1)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/login", s.loginHandler)
+	mux.HandleFunc("/login/done", s.loginHandler)
+	srv := &http.Server{
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	serveErr := make(chan error, 1)
 	go func() {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", listenPort), nil))
+		serveErr <- srv.Serve(ln)
+	}()
+	defer func() {
+		// Shutdown waits for the handler that completed the login,
+		// so its page reaches the browser before the process exits
+		sctx, cancel := context.WithTimeout(context.Background(), loginShutdownTimeout)
+		defer cancel()
+		if err := srv.Shutdown(sctx); err != nil {
+			logger.KV(xlog.DEBUG, "reason", "shutdown", "err", err.Error())
+		}
+		// Shutdown misses the listener if Serve has not started yet
+		_ = ln.Close()
 	}()
 
-	err := openBrowserFn(startURL)
+	err = openBrowserFn(startURL)
 	if err != nil {
 		return err
 	}
-	state.wg.Wait()
-	return nil
+
+	select {
+	case <-s.done:
+		return s.err
+	case err = <-serveErr:
+		return errors.WithMessage(err, "login listener stopped")
+	case <-ctx.Done():
+		return errors.WithStack(ctx.Err())
+	}
 }
 
 type svcState struct {
-	wg         sync.WaitGroup
 	writer     io.Writer
 	noStore    bool
 	dpopKey    string
@@ -441,30 +470,28 @@ type svcState struct {
 	responseType string
 	client       *retriable.Client
 	codeVerifier string
+
+	// done is closed when the login completes, err is its result
+	done     chan struct{}
+	doneOnce sync.Once
+	err      error
 }
 
-// complete releases the waiting command.
-// The process may exit right after wg.Done, so the response
-// is flushed first to make sure the page reaches the browser.
-func (s *svcState) complete(w http.ResponseWriter) {
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
-	}
-	s.wg.Done()
+// complete records the login result and releases the waiting command.
+// Only the first call counts, so a reloaded page does not change the result.
+func (s *svcState) complete(err error) {
+	s.doneOnce.Do(func() {
+		s.err = err
+		close(s.done)
+	})
 }
 
-var state *svcState
-
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	if state == nil {
-		panic("invalid state")
-	}
-
+func (s *svcState) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	done := r.URL.Path == "/login/done"
 	defer func() {
 		if done || err != nil {
-			state.complete(w)
+			s.complete(err)
 		}
 	}()
 
@@ -489,13 +516,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		token = r.Form.Get(state.responseType)
+		token = r.Form.Get(s.responseType)
 		expiresIn = r.Form.Get("expires_in")
 		errCode = r.Form.Get("error")
 		errDescr = r.Form.Get("error_description")
 	} else {
 		vals := r.URL.Query()
-		token = urlutil.GetValue(vals, state.responseType)
+		token = urlutil.GetValue(vals, s.responseType)
 		expiresIn = urlutil.GetValue(vals, "expires_in")
 		errCode = urlutil.GetValue(vals, "error")
 		errDescr = urlutil.GetValue(vals, "error_description")
@@ -512,11 +539,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if state.responseType == pb.OAuthResponseTypeCode {
+	if s.responseType == pb.OAuthResponseTypeCode {
 		var res pb.Token
-		_, _, err = state.client.Post(context.Background(), pb.Auth_ExchangeCode_FullMethodName, &pb.ExchangeCodeRequest{
+		_, _, err = s.client.Post(context.Background(), pb.Auth_ExchangeCode_FullMethodName, &pb.ExchangeCodeRequest{
 			Code:     token,
-			Verifier: state.codeVerifier,
+			Verifier: s.codeVerifier,
 		}, &res)
 		if err != nil {
 			//logger.KV(xlog.ERROR, "reason", "exchange_code", "err", err.Error())
@@ -529,9 +556,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set(header.ContentType, header.TextPlain)
-	fmt.Fprintf(state.writer, "Authenticated! You can close the browser now.\n")
+	fmt.Fprintf(s.writer, "Authenticated! You can close the browser now.\n")
 
-	if state.noStore {
+	if s.noStore {
 		// the token is shown in the browser, nothing else to wait for
 		done = true
 		fmt.Fprintf(w, "\nTo use the token with the server, run:\nexport TRUSTYCA_AUTH_TOKEN=%s\n", token)
@@ -541,8 +568,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	vals := url.Values{
 		"access_token": {token},
 	}
-	if state.dpopKey != "" {
-		vals["dpop_jkt"] = []string{state.dpopKey}
+	if s.dpopKey != "" {
+		vals["dpop_jkt"] = []string{s.dpopKey}
 	}
 	if expiresIn != "" {
 		ux, err := strconv.ParseInt(expiresIn, 10, 64)
@@ -552,15 +579,19 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fn, err := state.client.Storage().SaveAuthToken(vals.Encode())
+	fn, err := s.client.Storage().SaveAuthToken(vals.Encode())
 	if err != nil {
-		fmt.Fprint(state.writer, err.Error())
+		// the login fails here, so the browser gets the error
+		// instead of a redirect to the listener that is shutting down
+		err = errors.WithMessage(err, "unable to store token")
+		marshal.WriteJSON(w, r, httperror.Unexpected("%s", err.Error()))
+		return
 	}
 	logger.KV(xlog.DEBUG, "token_saved", fn)
 
-	doneURL := state.doneURL
+	doneURL := s.doneURL
 	if doneURL == "" {
-		doneURL = fmt.Sprintf("http://localhost:%d/login/done", state.listenPort)
+		doneURL = fmt.Sprintf("http://localhost:%d/login/done", s.listenPort)
 	} else {
 		// the server's page does not call back to this listener,
 		// so the login is complete once the browser is redirected

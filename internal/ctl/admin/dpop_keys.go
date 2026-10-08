@@ -13,7 +13,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/pkg/retriable"
 	"github.com/effective-security/xpki/jwt/dpop"
-	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v4"
 	"github.com/olekukonko/tablewriter"
 )
 

@@ -56,7 +56,7 @@ func TestService_Org(t *testing.T) {
 	assert.Equal(t, "1", org.ID)
 
 	_, err = svc.GetOrg(noOrg, &emptypb.Empty{})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(nil, errors.New("not found"))
 	_, err = svc.GetOrg(ctx, &emptypb.Empty{})
@@ -74,7 +74,7 @@ func TestService_Org(t *testing.T) {
 	assert.Equal(t, "Updated Org", org.Name)
 
 	_, err = svc.UpdateOrg(noOrg, &pb.UpdateOrgRequest{Name: "x"})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 
 	db.EXPECT().UpdateOrg(gomock.Any(), gomock.Any()).Return(nil, errors.New("not found"))
 	_, err = svc.UpdateOrg(ctx, &pb.UpdateOrgRequest{Name: "x"})
@@ -87,7 +87,7 @@ func TestService_Org(t *testing.T) {
 	assert.Equal(t, "1", org.ID)
 
 	_, err = svc.DeleteOrg(noOrg, &emptypb.Empty{})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 
 	db.EXPECT().UpdateOrg(gomock.Any(), gomock.Any()).Return(nil, errors.New("not found"))
 	_, err = svc.DeleteOrg(ctx, &emptypb.Empty{})

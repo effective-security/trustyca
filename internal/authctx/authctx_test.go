@@ -344,7 +344,7 @@ func Test_CheckAccess(t *testing.T) {
 	t.Run("org_not_selected", func(t *testing.T) {
 		ctx := requestCtx(identityFor(ownerID.String(), "", ""))
 		err := authctx.CheckAccess(ctx, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg")
-		assert.EqualError(t, err, "unauthorized: org not selected, action: /pb.Orgs/GetOrg")
+		assert.EqualError(t, err, "forbidden: org not selected, action: /pb.Orgs/GetOrg")
 	})
 
 	t.Run("org_scope_roles", func(t *testing.T) {
@@ -356,31 +356,31 @@ func Test_CheckAccess(t *testing.T) {
 		assert.NoError(t, authctx.CheckAccess(admin, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers"))
 		assert.NoError(t, authctx.CheckAccess(admin, a, &pb.CreateAPIKeyRequest{Label: "k"}, "/pb.Orgs/CreateAPIKey"))
 		err := authctx.CheckAccess(admin, a, &emptypb.Empty{}, "/pb.Orgs/DeleteOrg")
-		assert.EqualError(t, err, "unauthorized: insufficient role, action: /pb.Orgs/DeleteOrg")
+		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/DeleteOrg")
 
 		// Security assumes Support for GetMembers, but not Admin
 		security := requestCtx(identityFor(securityID.String(), org, "Security"))
 		assert.NoError(t, authctx.CheckAccess(security, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers"))
 		err = authctx.CheckAccess(security, a, &pb.RegisterProjectRequest{Name: "x"}, "/pb.Orgs/RegisterProject")
-		assert.EqualError(t, err, "unauthorized: insufficient role, action: /pb.Orgs/RegisterProject")
+		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/RegisterProject")
 
 		user := requestCtx(identityFor(userID.String(), org, "User"))
 		assert.NoError(t, authctx.CheckAccess(user, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg"))
 		err = authctx.CheckAccess(user, a, &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_User}, "/pb.Orgs/AddMember")
-		assert.EqualError(t, err, "unauthorized: insufficient role, action: /pb.Orgs/AddMember")
+		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/AddMember")
 		err = authctx.CheckAccess(user, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers")
-		assert.EqualError(t, err, "unauthorized: insufficient role, action: /pb.Orgs/GetMembers")
+		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/GetMembers")
 
 		// derived Viewer: minimal org context only
 		derived := requestCtx(identityFor(projOnlyID.String(), org, "Viewer"))
 		assert.NoError(t, authctx.CheckAccess(derived, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg"))
 		assert.NoError(t, authctx.CheckAccess(derived, a, &pb.ListProjectsRequest{}, "/pb.Orgs/ListProjects"))
 		err = authctx.CheckAccess(derived, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers")
-		assert.EqualError(t, err, "unauthorized: insufficient role, action: /pb.Orgs/GetMembers")
+		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/GetMembers")
 
 		stranger := requestCtx(identityFor(strangerID.String(), org, ""))
 		err = authctx.CheckAccess(stranger, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg")
-		assert.EqualError(t, err, "unauthorized: insufficient role, action: /pb.Orgs/GetOrg")
+		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/GetOrg")
 	})
 
 	t.Run("project_scope_roles", func(t *testing.T) {
@@ -390,21 +390,21 @@ func Test_CheckAccess(t *testing.T) {
 		assert.NoError(t, authctx.CheckAccess(user, a, &pb.GetMembersRequest{ProjectID: "201"}, "/pb.Orgs/GetMembers"))
 		// but not in 202, where only the org User grant applies
 		err := authctx.CheckAccess(user, a, &pb.AddMemberRequest{ProjectID: "202", Email: "a@b.c", Role: pb.Role_User}, "/pb.Orgs/AddMember")
-		assert.EqualError(t, err, "unauthorized: insufficient role, action: /pb.Orgs/AddMember")
+		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/AddMember")
 		assert.NoError(t, authctx.CheckAccess(user, a, &pb.GetProjectRequest{ProjectID: "202"}, "/pb.Orgs/GetProject"))
 
 		// project-only member
 		derived := requestCtx(identityFor(projOnlyID.String(), org, "Viewer"))
 		assert.NoError(t, authctx.CheckAccess(derived, a, &pb.UpdateProjectRequest{ProjectID: "201", Name: "n"}, "/pb.Orgs/UpdateProject"))
 		err = authctx.CheckAccess(derived, a, &pb.GetProjectRequest{ProjectID: "202"}, "/pb.Orgs/GetProject")
-		assert.EqualError(t, err, "unauthorized: insufficient role, action: /pb.Orgs/GetProject")
+		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/GetProject")
 
 		// cross-org and inactive projects are rejected even for the Owner
 		owner := requestCtx(identityFor(ownerID.String(), org, "Owner"))
 		err = authctx.CheckAccess(owner, a, &pb.GetProjectRequest{ProjectID: "301"}, "/pb.Orgs/GetProject")
-		assert.EqualError(t, err, "unauthorized: access denied, action: /pb.Orgs/GetProject")
+		assert.EqualError(t, err, "forbidden: access denied, action: /pb.Orgs/GetProject")
 		err = authctx.CheckAccess(owner, a, &pb.GetProjectRequest{ProjectID: "203"}, "/pb.Orgs/GetProject")
-		assert.EqualError(t, err, "unauthorized: access denied, action: /pb.Orgs/GetProject")
+		assert.EqualError(t, err, "forbidden: access denied, action: /pb.Orgs/GetProject")
 		err = authctx.CheckAccess(owner, a, &pb.GetProjectRequest{ProjectID: "not-a-number"}, "/pb.Orgs/GetProject")
 		assert.EqualError(t, err, "bad_request: invalid project ID")
 	})
@@ -414,7 +414,7 @@ func Test_CheckAccess(t *testing.T) {
 		assert.NoError(t, authctx.CheckAccess(owner, a, &orgReq{orgID: org}, "/pb.Orgs/GetOrg"))
 		assert.NoError(t, authctx.CheckAccess(owner, a, &orgReq{}, "/pb.Orgs/GetOrg"))
 		err := authctx.CheckAccess(owner, a, &orgReq{orgID: otherOrgID.String()}, "/pb.Orgs/GetOrg")
-		assert.EqualError(t, err, "unauthorized: org mismatch, action: /pb.Orgs/GetOrg")
+		assert.EqualError(t, err, "forbidden: org mismatch, action: /pb.Orgs/GetOrg")
 	})
 
 	t.Run("api_key", func(t *testing.T) {
@@ -424,15 +424,15 @@ func Test_CheckAccess(t *testing.T) {
 		assert.NoError(t, authctx.CheckAccess(key, a, &pb.GetProjectRequest{ProjectID: "201"}, "/pb.Orgs/GetProject"))
 		// the method does not allow API keys at all
 		err := authctx.CheckAccess(key, a, &pb.CreateAPIKeyRequest{Label: "k"}, "/pb.Orgs/CreateAPIKey")
-		assert.EqualError(t, err, "unauthorized: API key not allowed, action: /pb.Orgs/CreateAPIKey")
+		assert.EqualError(t, err, "forbidden: API key not allowed, action: /pb.Orgs/CreateAPIKey")
 		err = authctx.CheckAccess(key, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers")
-		assert.EqualError(t, err, "unauthorized: API key not allowed, action: /pb.Orgs/GetMembers")
+		assert.EqualError(t, err, "forbidden: API key not allowed, action: /pb.Orgs/GetMembers")
 		// the key lacks the method scope
 		err = authctx.CheckAccess(key, a, &pb.SignCertificateRequest{OrgID: org}, "/pb.CA/SignCertificate")
-		assert.EqualError(t, err, "unauthorized: insufficient scope, action: /pb.CA/SignCertificate")
+		assert.EqualError(t, err, "forbidden: insufficient scope, action: /pb.CA/SignCertificate")
 		// inactive or foreign project
 		err = authctx.CheckAccess(key, a, &pb.GetProjectRequest{ProjectID: "203"}, "/pb.Orgs/GetProject")
-		assert.EqualError(t, err, "unauthorized: access denied, action: /pb.Orgs/GetProject")
+		assert.EqualError(t, err, "forbidden: access denied, action: /pb.Orgs/GetProject")
 
 		// wildcard scopes
 		wide := requestCtx(apiKeyIdentity("778", org, "", "*"))
@@ -440,14 +440,14 @@ func Test_CheckAccess(t *testing.T) {
 		certs := requestCtx(apiKeyIdentity("779", org, "", "certs:*"))
 		assert.NoError(t, authctx.CheckAccess(certs, a, &pb.SignCertificateRequest{OrgID: org}, "/pb.CA/SignCertificate"))
 		err = authctx.CheckAccess(certs, a, &pb.ListIssuersRequest{OrgID: org}, "/pb.CA/ListIssuers")
-		assert.EqualError(t, err, "unauthorized: insufficient scope, action: /pb.CA/ListIssuers")
+		assert.EqualError(t, err, "forbidden: insufficient scope, action: /pb.CA/ListIssuers")
 
 		// project scoped key acts in its project only
 		pkey := requestCtx(apiKeyIdentity("780", org, "201", "project:read", "certs:issue"))
 		assert.NoError(t, authctx.CheckAccess(pkey, a, &pb.GetProjectRequest{ProjectID: "201"}, "/pb.Orgs/GetProject"))
 		assert.NoError(t, authctx.CheckAccess(pkey, a, &pb.SignCertificateRequest{OrgID: org}, "/pb.CA/SignCertificate"), "no ProjectID defaults to the key project")
 		err = authctx.CheckAccess(pkey, a, &pb.GetProjectRequest{ProjectID: "202"}, "/pb.Orgs/GetProject")
-		assert.EqualError(t, err, "unauthorized: project mismatch, action: /pb.Orgs/GetProject")
+		assert.EqualError(t, err, "forbidden: project mismatch, action: /pb.Orgs/GetProject")
 	})
 
 	t.Run("scoped_user_token", func(t *testing.T) {
@@ -461,7 +461,7 @@ func Test_CheckAccess(t *testing.T) {
 		ctx := requestCtx(uid)
 		assert.NoError(t, authctx.CheckAccess(ctx, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg"))
 		err := authctx.CheckAccess(ctx, a, &pb.GetProjectRequest{ProjectID: "201"}, "/pb.Orgs/GetProject")
-		assert.EqualError(t, err, "unauthorized: insufficient scope, action: /pb.Orgs/GetProject")
+		assert.EqualError(t, err, "forbidden: insufficient scope, action: /pb.Orgs/GetProject")
 		// methods without scopes are limited by roles only
 		assert.NoError(t, authctx.CheckAccess(ctx, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers"))
 	})
@@ -478,11 +478,11 @@ func Test_CheckAccess(t *testing.T) {
 		viewer := requestCtx(identity.NewIdentity("trustyca-viewer", "1", "", nil, "", "", identity.MethodJWT))
 		assert.NoError(t, authctx.CheckAccess(viewer, a, &emptypb.Empty{}, "/privpb.Admin/ListOrgs"))
 		err := authctx.CheckAccess(viewer, a, &emptypb.Empty{}, "/privpb.Admin/DeleteOrg")
-		assert.EqualError(t, err, "unauthorized: access denied")
+		assert.EqualError(t, err, "forbidden: access denied")
 
 		user := requestCtx(identityFor(ownerID.String(), org, "Owner"))
 		err = authctx.CheckAccess(user, a, &emptypb.Empty{}, "/privpb.Admin/ListOrgs")
-		assert.EqualError(t, err, "unauthorized: access denied")
+		assert.EqualError(t, err, "forbidden: access denied")
 		assert.NoError(t, authctx.CheckAccess(user, a, &emptypb.Empty{}, "/pb.Status/Version"))
 	})
 }
