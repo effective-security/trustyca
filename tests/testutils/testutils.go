@@ -3,14 +3,16 @@ package testutils
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/cockroachdb/errors"
-	"github.com/effective-security/porto/tests/testutils"
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/x/configloader"
 	"github.com/effective-security/x/fileutil/resolve"
@@ -84,53 +86,61 @@ func ResolveConfigFile(configFile string, searchDirs []string) (absConfigFile, b
 	return
 }
 
-// CreateURL returns URL with a random port
-func CreateURL(scheme, host string) string {
-	bind := testutils.CreateBindAddr(host)
+// portAttempts bounds how many probed ports reservePort tries before it
+// gives up on finding one this process has not handed out yet.
+const portAttempts = 10
 
-	return fmt.Sprintf("%s://%s", scheme, bind)
-}
+// reservedPorts records every port CreateURL, CreateURLs and CreateBindAddr
+// handed out in this process, so that parallel tests never get the same
+// one. It cannot reserve a port at the OS: another process may bind it
+// after the probe listener closes.
+var reservedPorts = struct {
+	sync.Mutex
+	ports map[int]struct{}
+}{ports: map[int]struct{}{}}
 
-var usedPorts = map[int]bool{}
-
-func findFreePort(host string, maxAttempts int) int {
-	for i := 0; i < maxAttempts; i++ {
+// reservePort probes for a free port on host that this process has not
+// handed out yet, and records it. It panics when none is found.
+func reservePort(host string) int {
+	for range portAttempts {
 		port, err := netutil.FindFreePort(host, 5)
 		if err != nil {
 			panic("unable to find free port: " + err.Error())
 		}
-		if usedPorts[port] {
-			continue
+		reservedPorts.Lock()
+		_, used := reservedPorts.ports[port]
+		if !used {
+			reservedPorts.ports[port] = struct{}{}
 		}
-		usedPorts[port] = true
-		return port
+		reservedPorts.Unlock()
+		if !used {
+			return port
+		}
 	}
 	panic("unable to find free port")
 }
 
-// CreateURLs returns list of URL with a random port
-func CreateURLs(scheme, host string, len int) []string {
-	list := make([]string, len)
-	port := findFreePort(host, 5)
-	for i := 0; i < len; i++ {
-		if usedPorts[port] {
-			port = findFreePort(host, 5)
-		}
-		list[i] = fmt.Sprintf("%s://%s:%d", scheme, host, port)
+// CreateURL returns a URL with a free port on host that no other caller
+// in this process got
+func CreateURL(scheme, host string) string {
+	return fmt.Sprintf("%s://%s", scheme, CreateBindAddr(host))
+}
+
+// CreateURLs returns count URLs, each with its own free port on host that
+// no other caller in this process got
+func CreateURLs(scheme, host string, count int) []string {
+	list := make([]string, count)
+	for i := range list {
+		list[i] = fmt.Sprintf("%s://%s", scheme, CreateBindAddr(host))
 		logger.KV(xlog.DEBUG, "allocated", list[i])
-		port++
 	}
 	return list
 }
 
-// CreateBindAddr returns a bind address with a random port
+// CreateBindAddr returns a bind address with a free port on host that no
+// other caller in this process got
 func CreateBindAddr(host string) string {
-	port, err := netutil.FindFreePort(host, 5)
-	if err != nil {
-		panic("unable to find free port: " + err.Error())
-	}
-
-	return fmt.Sprintf("%s:%d", host, port)
+	return net.JoinHostPort(host, strconv.Itoa(reservePort(host)))
 }
 
 // JSON returns json string

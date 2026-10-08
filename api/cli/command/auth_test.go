@@ -54,7 +54,15 @@ func (s *testSuiteRest) TestAuthLogin() {
 
 	err := a.Run(s.Ctl)
 	s.Require().NoError(err)
-	//s.CapturePrint()
+
+	out := s.Out.String()
+	s.Contains(out, "open auth URL in browser:")
+	// without the local listener the flow ends on the server's page
+	// with the token in the fragment, not on a server end-point
+	s.Contains(out, "redirect_uri="+url.QueryEscape(s.Ctl.Server+"/authenticated"))
+	s.Contains(out, "response_type=token")
+	s.Contains(out, "response_mode=fragment")
+	s.NotContains(out, "code_challenge")
 }
 
 func (s *testSuiteRest) TestAuthUI() {

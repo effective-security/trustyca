@@ -27,6 +27,7 @@ type TestSuiteGrpc struct {
 // SetupSuite called once to setup
 func (s *TestSuiteGrpc) SetupSuite() {
 	pb.RegisterPrintOnce()
+	s.setGoldenFile()
 
 	s.Folder = filepath.Join(os.TempDir(), "test", "trustyca-grpcclient")
 

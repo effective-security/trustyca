@@ -148,43 +148,45 @@ func (m *mockGrants) GetProject(_ context.Context, id uint64) (*model.Project, e
 	return nil, sql.ErrNoRows
 }
 
-var (
-	orgID      = xdb.NewID(100)
-	otherOrgID = xdb.NewID(101)
-	ownerID    = xdb.NewID(304)
-	adminID    = xdb.NewID(302)
-	userID     = xdb.NewID(300)
-	projOnlyID = xdb.NewID(301)
-	viewerID   = xdb.NewID(303)
-	securityID = xdb.NewID(306)
-	strangerID = xdb.NewID(999)
-)
+// The fixture IDs are constructors, not shared variables: an xdb.ID
+// caches its string form lazily without synchronization, so parallel
+// tests that share one race on that cache. Each call returns an
+// independent ID.
+func orgID() xdb.ID      { return xdb.NewID(100) }
+func otherOrgID() xdb.ID { return xdb.NewID(101) }
+func ownerID() xdb.ID    { return xdb.NewID(304) }
+func adminID() xdb.ID    { return xdb.NewID(302) }
+func userID() xdb.ID     { return xdb.NewID(300) }
+func projOnlyID() xdb.ID { return xdb.NewID(301) }
+func viewerID() xdb.ID   { return xdb.NewID(303) }
+func securityID() xdb.ID { return xdb.NewID(306) }
+func strangerID() xdb.ID { return xdb.NewID(999) }
 
 // specGrants implements the spec example: org 100 with projects 201, 202,
 // 203 (inactive); org 101 has project 301.
 func specGrants() *mockGrants {
 	return &mockGrants{
 		byUser: map[uint64]model.MembershipInfoSlice{
-			ownerID.UInt64(): {{ID: xdb.NewID(1), OrgID: orgID, UserID: ownerID, Role: pb.Role_Owner}},
-			adminID.UInt64(): {
-				{ID: xdb.NewID(2), OrgID: orgID, UserID: adminID, Role: pb.Role_Admin},
-				{ID: xdb.NewID(3), OrgID: orgID, ProjectID: xdb.NewID(201), UserID: adminID, Role: pb.Role_Viewer},
+			ownerID().UInt64(): {{ID: xdb.NewID(1), OrgID: orgID(), UserID: ownerID(), Role: pb.Role_Owner}},
+			adminID().UInt64(): {
+				{ID: xdb.NewID(2), OrgID: orgID(), UserID: adminID(), Role: pb.Role_Admin},
+				{ID: xdb.NewID(3), OrgID: orgID(), ProjectID: xdb.NewID(201), UserID: adminID(), Role: pb.Role_Viewer},
 			},
-			userID.UInt64(): {
-				{ID: xdb.NewID(4), OrgID: orgID, UserID: userID, Role: pb.Role_User},
-				{ID: xdb.NewID(5), OrgID: orgID, ProjectID: xdb.NewID(201), UserID: userID, Role: pb.Role_Admin},
+			userID().UInt64(): {
+				{ID: xdb.NewID(4), OrgID: orgID(), UserID: userID(), Role: pb.Role_User},
+				{ID: xdb.NewID(5), OrgID: orgID(), ProjectID: xdb.NewID(201), UserID: userID(), Role: pb.Role_Admin},
 			},
-			projOnlyID.UInt64(): {
-				{ID: xdb.NewID(6), OrgID: orgID, ProjectID: xdb.NewID(201), UserID: projOnlyID, Role: pb.Role_Admin},
+			projOnlyID().UInt64(): {
+				{ID: xdb.NewID(6), OrgID: orgID(), ProjectID: xdb.NewID(201), UserID: projOnlyID(), Role: pb.Role_Admin},
 			},
-			viewerID.UInt64():   {{ID: xdb.NewID(7), OrgID: orgID, UserID: viewerID, Role: pb.Role_Viewer}},
-			securityID.UInt64(): {{ID: xdb.NewID(8), OrgID: orgID, UserID: securityID, Role: pb.Role_Security}},
+			viewerID().UInt64():   {{ID: xdb.NewID(7), OrgID: orgID(), UserID: viewerID(), Role: pb.Role_Viewer}},
+			securityID().UInt64(): {{ID: xdb.NewID(8), OrgID: orgID(), UserID: securityID(), Role: pb.Role_Security}},
 		},
 		projects: map[uint64]*model.Project{
-			201: {ID: xdb.NewID(201), OrgID: orgID, Alias: "p1", Name: "P1", Status: pb.ItemStatus_Active},
-			202: {ID: xdb.NewID(202), OrgID: orgID, Alias: "p2", Name: "P2", Status: pb.ItemStatus_Active},
-			203: {ID: xdb.NewID(203), OrgID: orgID, Alias: "p3", Name: "P3", Status: pb.ItemStatus_Inactive},
-			301: {ID: xdb.NewID(301), OrgID: otherOrgID, Alias: "foreign", Name: "Foreign", Status: pb.ItemStatus_Active},
+			201: {ID: xdb.NewID(201), OrgID: orgID(), Alias: "p1", Name: "P1", Status: pb.ItemStatus_Active},
+			202: {ID: xdb.NewID(202), OrgID: orgID(), Alias: "p2", Name: "P2", Status: pb.ItemStatus_Active},
+			203: {ID: xdb.NewID(203), OrgID: orgID(), Alias: "p3", Name: "P3", Status: pb.ItemStatus_Inactive},
+			301: {ID: xdb.NewID(301), OrgID: otherOrgID(), Alias: "foreign", Name: "Foreign", Status: pb.ItemStatus_Active},
 		},
 	}
 }
@@ -196,122 +198,122 @@ func Test_Authorizer(t *testing.T) {
 	a := authctx.NewAuthorizer(provider)
 
 	t.Run("grants_and_cache", func(t *testing.T) {
-		g, err := a.Grants(ctx, orgID, userID)
+		g, err := a.Grants(ctx, orgID(), userID())
 		require.NoError(t, err)
 		assert.Equal(t, pb.Role_User, g.OrgRole)
 		assert.Equal(t, pb.Role_Admin, g.ProjectRoles[201])
 		calls := provider.calls
 
-		g, err = a.Grants(ctx, orgID, userID)
+		g, err = a.Grants(ctx, orgID(), userID())
 		require.NoError(t, err)
 		assert.True(t, g.IsMember())
 		assert.Equal(t, calls, provider.calls, "served from cache")
 
-		a.InvalidateUser(ctx, userID.String())
-		_, err = a.Grants(ctx, orgID, userID)
+		a.InvalidateUser(ctx, userID().String())
+		_, err = a.Grants(ctx, orgID(), userID())
 		require.NoError(t, err)
 		assert.Equal(t, calls+1, provider.calls)
 
-		g, err = a.Grants(ctx, orgID, strangerID)
+		g, err = a.Grants(ctx, orgID(), strangerID())
 		require.NoError(t, err)
 		assert.False(t, g.IsMember())
 
-		_, err = a.Grants(ctx, xdb.ID{}, userID)
+		_, err = a.Grants(ctx, xdb.ID{}, userID())
 		assert.ErrorIs(t, err, authctx.ErrOrgNotSelected)
 	})
 
 	t.Run("project", func(t *testing.T) {
-		p, err := a.Project(ctx, orgID, xdb.NewID(201))
+		p, err := a.Project(ctx, orgID(), xdb.NewID(201))
 		require.NoError(t, err)
 		assert.Equal(t, "p1", p.Alias)
 		calls := provider.projectCalls
-		_, err = a.Project(ctx, orgID, xdb.NewID(201))
+		_, err = a.Project(ctx, orgID(), xdb.NewID(201))
 		require.NoError(t, err)
 		assert.Equal(t, calls, provider.projectCalls, "served from cache")
 		a.InvalidateProject(ctx, "201")
-		_, err = a.Project(ctx, orgID, xdb.NewID(201))
+		_, err = a.Project(ctx, orgID(), xdb.NewID(201))
 		require.NoError(t, err)
 		assert.Equal(t, calls+1, provider.projectCalls)
 
 		// inactive, foreign and unknown projects are all denied the same way
-		_, err = a.Project(ctx, orgID, xdb.NewID(203))
+		_, err = a.Project(ctx, orgID(), xdb.NewID(203))
 		assert.ErrorIs(t, err, authctx.ErrAccessDenied)
-		_, err = a.Project(ctx, orgID, xdb.NewID(301))
+		_, err = a.Project(ctx, orgID(), xdb.NewID(301))
 		assert.ErrorIs(t, err, authctx.ErrAccessDenied)
-		_, err = a.Project(ctx, orgID, xdb.NewID(999))
+		_, err = a.Project(ctx, orgID(), xdb.NewID(999))
 		assert.ErrorIs(t, err, authctx.ErrAccessDenied)
 		_, err = a.Project(ctx, xdb.ID{}, xdb.NewID(201))
 		assert.ErrorIs(t, err, authctx.ErrOrgNotSelected)
 	})
 
 	t.Run("check_role_org_scope", func(t *testing.T) {
-		role, _, err := a.CheckRole(ctx, orgID, xdb.ID{}, ownerID, "Owner")
+		role, _, err := a.CheckRole(ctx, orgID(), xdb.ID{}, ownerID(), "Owner")
 		require.NoError(t, err)
 		assert.Equal(t, pb.Role_Owner, role)
-		_, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, adminID, "Owner")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, adminID(), "Owner")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
-		role, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, adminID, "Owner", "Admin")
+		role, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, adminID(), "Owner", "Admin")
 		require.NoError(t, err, "any of the allowed roles")
 		assert.Equal(t, pb.Role_Admin, role)
 		// minimum roles: Security assumes User, Viewer does not
-		_, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, securityID, "User", "APIKey")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, securityID(), "User", "APIKey")
 		require.NoError(t, err)
-		_, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, viewerID, "User", "APIKey")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, viewerID(), "User", "APIKey")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
 		// derived Viewer has the minimal org context only
-		role, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, projOnlyID, "Viewer")
+		role, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, projOnlyID(), "Viewer")
 		require.NoError(t, err)
 		assert.Equal(t, pb.Role_Viewer, role)
-		_, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, projOnlyID, "User")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, projOnlyID(), "User")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
 		// project Admin never becomes org Admin
-		_, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, userID, "Admin")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, userID(), "Admin")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
 		// stranger
-		_, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, strangerID, "Viewer")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, strangerID(), "Viewer")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
-		_, _, err = a.CheckRole(ctx, orgID, xdb.ID{}, strangerID)
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, strangerID())
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole, "membership is required even without allowed roles")
 	})
 
 	t.Run("check_role_project_scope", func(t *testing.T) {
 		// 300: User org-wide + Admin in 201
-		role, _, err := a.CheckRole(ctx, orgID, xdb.NewID(201), userID, "Admin")
+		role, _, err := a.CheckRole(ctx, orgID(), xdb.NewID(201), userID(), "Admin")
 		require.NoError(t, err)
 		assert.Equal(t, pb.Role_Admin, role)
-		_, _, err = a.CheckRole(ctx, orgID, xdb.NewID(202), userID, "Admin")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(202), userID(), "Admin")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
-		role, _, err = a.CheckRole(ctx, orgID, xdb.NewID(202), userID, "User")
+		role, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(202), userID(), "User")
 		require.NoError(t, err, "inherited from org User")
 		assert.Equal(t, pb.Role_User, role)
 		// 301: project only
-		_, _, err = a.CheckRole(ctx, orgID, xdb.NewID(201), projOnlyID, "Admin")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(201), projOnlyID(), "Admin")
 		require.NoError(t, err)
-		_, _, err = a.CheckRole(ctx, orgID, xdb.NewID(202), projOnlyID, "Viewer")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(202), projOnlyID(), "Viewer")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
 		// 302: org Admin keeps Admin despite project Viewer
-		role, _, err = a.CheckRole(ctx, orgID, xdb.NewID(201), adminID, "Admin")
+		role, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(201), adminID(), "Admin")
 		require.NoError(t, err)
 		assert.Equal(t, pb.Role_Admin, role)
 		// 303: org Viewer reads every project, including one without grants
-		_, _, err = a.CheckRole(ctx, orgID, xdb.NewID(202), viewerID, "Viewer")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(202), viewerID(), "Viewer")
 		require.NoError(t, err)
-		_, _, err = a.CheckRole(ctx, orgID, xdb.NewID(202), viewerID, "User")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(202), viewerID(), "User")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
 		// project of another org, inactive project
-		_, _, err = a.CheckRole(ctx, orgID, xdb.NewID(301), ownerID, "Viewer")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(301), ownerID(), "Viewer")
 		assert.ErrorIs(t, err, authctx.ErrAccessDenied)
-		_, _, err = a.CheckRole(ctx, orgID, xdb.NewID(203), ownerID, "Viewer")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.NewID(203), ownerID(), "Viewer")
 		assert.ErrorIs(t, err, authctx.ErrAccessDenied)
 	})
 
 	t.Run("provider_error", func(t *testing.T) {
 		failing := authctx.NewAuthorizer(&mockGrants{err: errors.New("db down")})
-		_, err := failing.Grants(ctx, orgID, adminID)
+		_, err := failing.Grants(ctx, orgID(), adminID())
 		assert.ErrorContains(t, err, "unable to get user memberships")
-		_, err = failing.Project(ctx, orgID, xdb.NewID(201))
+		_, err = failing.Project(ctx, orgID(), xdb.NewID(201))
 		assert.ErrorContains(t, err, "unable to get project")
-		_, _, err = failing.CheckRole(ctx, orgID, xdb.ID{}, adminID, "Viewer")
+		_, _, err = failing.CheckRole(ctx, orgID(), xdb.ID{}, adminID(), "Viewer")
 		assert.ErrorContains(t, err, "unable to get user memberships")
 	})
 }
@@ -319,10 +321,10 @@ func Test_Authorizer(t *testing.T) {
 func Test_CheckAccess(t *testing.T) {
 	t.Parallel()
 	a := authctx.NewAuthorizer(specGrants())
-	org := orgID.String()
+	org := orgID().String()
 
 	t.Run("no_allowed_roles_requires_nothing", func(t *testing.T) {
-		ctx := requestCtx(identityFor(strangerID.String(), "", ""))
+		ctx := requestCtx(identityFor(strangerID().String(), "", ""))
 		assert.NoError(t, authctx.CheckAccess(ctx, a, &emptypb.Empty{}, "/pb.Notfound"))
 		assert.NoError(t, authctx.CheckAccess(ctx, a, &pb.RegisterOrgRequest{Name: "x"}, "/pb.Orgs/RegisterOrg"))
 		assert.NoError(t, authctx.CheckAccess(ctx, a, &emptypb.Empty{}, "/pb.Orgs/GetUserOrgs"))
@@ -342,29 +344,29 @@ func Test_CheckAccess(t *testing.T) {
 	})
 
 	t.Run("org_not_selected", func(t *testing.T) {
-		ctx := requestCtx(identityFor(ownerID.String(), "", ""))
+		ctx := requestCtx(identityFor(ownerID().String(), "", ""))
 		err := authctx.CheckAccess(ctx, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg")
 		assert.EqualError(t, err, "forbidden: org not selected, action: /pb.Orgs/GetOrg")
 	})
 
 	t.Run("org_scope_roles", func(t *testing.T) {
-		owner := requestCtx(identityFor(ownerID.String(), org, "Owner"))
+		owner := requestCtx(identityFor(ownerID().String(), org, "Owner"))
 		assert.NoError(t, authctx.CheckAccess(owner, a, &emptypb.Empty{}, "/pb.Orgs/DeleteOrg"))
 		assert.NoError(t, authctx.CheckAccess(owner, a, &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_User}, "/pb.Orgs/AddMember"))
 
-		admin := requestCtx(identityFor(adminID.String(), org, "Admin"))
+		admin := requestCtx(identityFor(adminID().String(), org, "Admin"))
 		assert.NoError(t, authctx.CheckAccess(admin, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers"))
 		assert.NoError(t, authctx.CheckAccess(admin, a, &pb.CreateAPIKeyRequest{Label: "k"}, "/pb.Orgs/CreateAPIKey"))
 		err := authctx.CheckAccess(admin, a, &emptypb.Empty{}, "/pb.Orgs/DeleteOrg")
 		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/DeleteOrg")
 
 		// Security assumes Support for GetMembers, but not Admin
-		security := requestCtx(identityFor(securityID.String(), org, "Security"))
+		security := requestCtx(identityFor(securityID().String(), org, "Security"))
 		assert.NoError(t, authctx.CheckAccess(security, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers"))
 		err = authctx.CheckAccess(security, a, &pb.RegisterProjectRequest{Name: "x"}, "/pb.Orgs/RegisterProject")
 		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/RegisterProject")
 
-		user := requestCtx(identityFor(userID.String(), org, "User"))
+		user := requestCtx(identityFor(userID().String(), org, "User"))
 		assert.NoError(t, authctx.CheckAccess(user, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg"))
 		err = authctx.CheckAccess(user, a, &pb.AddMemberRequest{Email: "a@b.c", Role: pb.Role_User}, "/pb.Orgs/AddMember")
 		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/AddMember")
@@ -372,19 +374,19 @@ func Test_CheckAccess(t *testing.T) {
 		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/GetMembers")
 
 		// derived Viewer: minimal org context only
-		derived := requestCtx(identityFor(projOnlyID.String(), org, "Viewer"))
+		derived := requestCtx(identityFor(projOnlyID().String(), org, "Viewer"))
 		assert.NoError(t, authctx.CheckAccess(derived, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg"))
 		assert.NoError(t, authctx.CheckAccess(derived, a, &pb.ListProjectsRequest{}, "/pb.Orgs/ListProjects"))
 		err = authctx.CheckAccess(derived, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers")
 		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/GetMembers")
 
-		stranger := requestCtx(identityFor(strangerID.String(), org, ""))
+		stranger := requestCtx(identityFor(strangerID().String(), org, ""))
 		err = authctx.CheckAccess(stranger, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg")
 		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/GetOrg")
 	})
 
 	t.Run("project_scope_roles", func(t *testing.T) {
-		user := requestCtx(identityFor(userID.String(), org, "User"))
+		user := requestCtx(identityFor(userID().String(), org, "User"))
 		// project Admin in 201 manages grants there
 		assert.NoError(t, authctx.CheckAccess(user, a, &pb.AddMemberRequest{ProjectID: "201", Email: "a@b.c", Role: pb.Role_User}, "/pb.Orgs/AddMember"))
 		assert.NoError(t, authctx.CheckAccess(user, a, &pb.GetMembersRequest{ProjectID: "201"}, "/pb.Orgs/GetMembers"))
@@ -394,13 +396,13 @@ func Test_CheckAccess(t *testing.T) {
 		assert.NoError(t, authctx.CheckAccess(user, a, &pb.GetProjectRequest{ProjectID: "202"}, "/pb.Orgs/GetProject"))
 
 		// project-only member
-		derived := requestCtx(identityFor(projOnlyID.String(), org, "Viewer"))
+		derived := requestCtx(identityFor(projOnlyID().String(), org, "Viewer"))
 		assert.NoError(t, authctx.CheckAccess(derived, a, &pb.UpdateProjectRequest{ProjectID: "201", Name: "n"}, "/pb.Orgs/UpdateProject"))
 		err = authctx.CheckAccess(derived, a, &pb.GetProjectRequest{ProjectID: "202"}, "/pb.Orgs/GetProject")
 		assert.EqualError(t, err, "forbidden: insufficient role, action: /pb.Orgs/GetProject")
 
 		// cross-org and inactive projects are rejected even for the Owner
-		owner := requestCtx(identityFor(ownerID.String(), org, "Owner"))
+		owner := requestCtx(identityFor(ownerID().String(), org, "Owner"))
 		err = authctx.CheckAccess(owner, a, &pb.GetProjectRequest{ProjectID: "301"}, "/pb.Orgs/GetProject")
 		assert.EqualError(t, err, "forbidden: access denied, action: /pb.Orgs/GetProject")
 		err = authctx.CheckAccess(owner, a, &pb.GetProjectRequest{ProjectID: "203"}, "/pb.Orgs/GetProject")
@@ -410,10 +412,10 @@ func Test_CheckAccess(t *testing.T) {
 	})
 
 	t.Run("explicit_org_must_match_token", func(t *testing.T) {
-		owner := requestCtx(identityFor(ownerID.String(), org, "Owner"))
+		owner := requestCtx(identityFor(ownerID().String(), org, "Owner"))
 		assert.NoError(t, authctx.CheckAccess(owner, a, &orgReq{orgID: org}, "/pb.Orgs/GetOrg"))
 		assert.NoError(t, authctx.CheckAccess(owner, a, &orgReq{}, "/pb.Orgs/GetOrg"))
-		err := authctx.CheckAccess(owner, a, &orgReq{orgID: otherOrgID.String()}, "/pb.Orgs/GetOrg")
+		err := authctx.CheckAccess(owner, a, &orgReq{orgID: otherOrgID().String()}, "/pb.Orgs/GetOrg")
 		assert.EqualError(t, err, "forbidden: org mismatch, action: /pb.Orgs/GetOrg")
 	})
 
@@ -452,12 +454,12 @@ func Test_CheckAccess(t *testing.T) {
 
 	t.Run("scoped_user_token", func(t *testing.T) {
 		c := map[string]any{
-			"sub":                ownerID.String(),
+			"sub":                ownerID().String(),
 			authctx.ClaimOrg:     org,
 			authctx.ClaimOrgRole: "Owner",
 			authctx.ClaimScope:   []string{"org:read"},
 		}
-		uid := identity.NewIdentity("user", ownerID.String(), org, c, "tok", "Bearer", identity.MethodJWT)
+		uid := identity.NewIdentity("user", ownerID().String(), org, c, "tok", "Bearer", identity.MethodJWT)
 		ctx := requestCtx(uid)
 		assert.NoError(t, authctx.CheckAccess(ctx, a, &emptypb.Empty{}, "/pb.Orgs/GetOrg"))
 		err := authctx.CheckAccess(ctx, a, &pb.GetProjectRequest{ProjectID: "201"}, "/pb.Orgs/GetProject")
@@ -480,7 +482,7 @@ func Test_CheckAccess(t *testing.T) {
 		err := authctx.CheckAccess(viewer, a, &emptypb.Empty{}, "/privpb.Admin/DeleteOrg")
 		assert.EqualError(t, err, "forbidden: access denied")
 
-		user := requestCtx(identityFor(ownerID.String(), org, "Owner"))
+		user := requestCtx(identityFor(ownerID().String(), org, "Owner"))
 		err = authctx.CheckAccess(user, a, &emptypb.Empty{}, "/privpb.Admin/ListOrgs")
 		assert.EqualError(t, err, "forbidden: access denied")
 		assert.NoError(t, authctx.CheckAccess(user, a, &emptypb.Empty{}, "/pb.Status/Version"))
@@ -490,7 +492,7 @@ func Test_CheckAccess(t *testing.T) {
 func Test_GetAllowedMethods(t *testing.T) {
 	t.Parallel()
 	a := authctx.NewAuthorizer(specGrants())
-	org := orgID.String()
+	org := orgID().String()
 
 	find := func(res *pb.ServiceAccessInfo, service, method string) bool {
 		for _, si := range res.Allowed {
@@ -506,21 +508,21 @@ func Test_GetAllowedMethods(t *testing.T) {
 		return false
 	}
 
-	res, err := authctx.GetAllowedMethods(requestCtx(identityFor(ownerID.String(), org, "Owner")), a)
+	res, err := authctx.GetAllowedMethods(requestCtx(identityFor(ownerID().String(), org, "Owner")), a)
 	require.NoError(t, err)
 	assert.True(t, find(res, "Orgs", "DeleteOrg"))
 	assert.True(t, find(res, "Orgs", "RegisterOrg"), "methods without roles are listed")
 	assert.True(t, find(res, "Auth", "SelectOrg"))
 	assert.False(t, find(res, "Admin", "ListOrgs"), "admin service is for service roles")
 
-	res, err = authctx.GetAllowedMethods(requestCtx(identityFor(viewerID.String(), org, "Viewer")), a)
+	res, err = authctx.GetAllowedMethods(requestCtx(identityFor(viewerID().String(), org, "Viewer")), a)
 	require.NoError(t, err)
 	assert.True(t, find(res, "Orgs", "GetOrg"))
 	assert.False(t, find(res, "Orgs", "DeleteOrg"))
 	assert.False(t, find(res, "Orgs", "GetMembers"))
 
 	// project-only member at org scope: minimal context
-	res, err = authctx.GetAllowedMethods(requestCtx(identityFor(projOnlyID.String(), org, "Viewer")), a)
+	res, err = authctx.GetAllowedMethods(requestCtx(identityFor(projOnlyID().String(), org, "Viewer")), a)
 	require.NoError(t, err)
 	assert.True(t, find(res, "Orgs", "ListProjects"))
 	assert.False(t, find(res, "Orgs", "UpdateProject"), "project roles are judged per request")
@@ -538,7 +540,7 @@ func Test_GetAllowedMethods(t *testing.T) {
 	assert.True(t, find(res, "Admin", "ListOrgs"))
 
 	// no org selected: identity methods only
-	res, err = authctx.GetAllowedMethods(requestCtx(identityFor(ownerID.String(), "", "")), a)
+	res, err = authctx.GetAllowedMethods(requestCtx(identityFor(ownerID().String(), "", "")), a)
 	require.NoError(t, err)
 	assert.True(t, find(res, "Auth", "SelectOrg"))
 	assert.False(t, find(res, "Orgs", "GetOrg"))
@@ -547,7 +549,7 @@ func Test_GetAllowedMethods(t *testing.T) {
 func Test_GetCallerScope(t *testing.T) {
 	t.Parallel()
 	a := authctx.NewAuthorizer(specGrants())
-	org := orgID.String()
+	org := orgID().String()
 
 	find := func(res *pb.CallerScope, method string) *pb.MethodAccess {
 		for _, m := range res.Methods {
@@ -559,7 +561,7 @@ func Test_GetCallerScope(t *testing.T) {
 	}
 
 	// 300: org User with an Admin grant in project 201
-	res, err := authctx.GetCallerScope(requestCtx(identityFor(userID.String(), org, "User")), a)
+	res, err := authctx.GetCallerScope(requestCtx(identityFor(userID().String(), org, "User")), a)
 	require.NoError(t, err)
 	assert.Equal(t, org, res.OrgID)
 	assert.Empty(t, res.ProjectID)
@@ -581,7 +583,7 @@ func Test_GetCallerScope(t *testing.T) {
 	assert.True(t, find(res, "/pb.Auth/SelectOrg").Allowed)
 
 	// project-only member: derived Viewer
-	res, err = authctx.GetCallerScope(requestCtx(identityFor(projOnlyID.String(), org, "Viewer")), a)
+	res, err = authctx.GetCallerScope(requestCtx(identityFor(projOnlyID().String(), org, "Viewer")), a)
 	require.NoError(t, err)
 	assert.Equal(t, pb.Role_Viewer, res.Role)
 	assert.Equal(t, pb.RoleSource_Project, res.RoleSource)
@@ -600,7 +602,7 @@ func Test_GetCallerScope(t *testing.T) {
 	assert.False(t, find(res, "/pb.Orgs/CreateAPIKey").Allowed)
 
 	// no org selected
-	res, err = authctx.GetCallerScope(requestCtx(identityFor(ownerID.String(), "", "")), a)
+	res, err = authctx.GetCallerScope(requestCtx(identityFor(ownerID().String(), "", "")), a)
 	require.NoError(t, err)
 	assert.Empty(t, res.OrgID)
 	assert.Equal(t, pb.Role_None, res.Role)
@@ -608,7 +610,7 @@ func Test_GetCallerScope(t *testing.T) {
 	assert.True(t, find(res, "/pb.Orgs/RegisterOrg").Allowed)
 
 	// provider failure
-	_, err = authctx.GetCallerScope(requestCtx(identityFor(ownerID.String(), org, "Owner")), authctx.NewAuthorizer(&mockGrants{err: errors.New("db down")}))
+	_, err = authctx.GetCallerScope(requestCtx(identityFor(ownerID().String(), org, "Owner")), authctx.NewAuthorizer(&mockGrants{err: errors.New("db down")}))
 	assert.ErrorContains(t, err, "unable to get user memberships")
 }
 
@@ -621,19 +623,19 @@ func Test_NewAuthUnaryInterceptor(t *testing.T) {
 	handler := func(ctx context.Context, req any) (any, error) {
 		handlerCalled = true
 		tctx := authctx.FromContext(ctx)
-		assert.Equal(t, ownerID.UInt64(), tctx.UserID().UInt64())
-		assert.Equal(t, orgID.UInt64(), tctx.OrgID().UInt64())
+		assert.Equal(t, ownerID().UInt64(), tctx.UserID().UInt64())
+		assert.Equal(t, orgID().UInt64(), tctx.OrgID().UInt64())
 		return "ok", nil
 	}
 
-	ctx := identity.AddToContext(context.Background(), identity.NewRequestContext(identityFor(ownerID.String(), orgID.String(), "Owner"), "/pb.Orgs/GetMembers"))
+	ctx := identity.AddToContext(context.Background(), identity.NewRequestContext(identityFor(ownerID().String(), orgID().String(), "Owner"), "/pb.Orgs/GetMembers"))
 	res, err := interceptor(ctx, &pb.GetMembersRequest{}, &grpc.UnaryServerInfo{FullMethod: "/pb.Orgs/GetMembers"}, handler)
 	require.NoError(t, err)
 	assert.Equal(t, "ok", res)
 	assert.True(t, handlerCalled)
 
 	handlerCalled = false
-	ctx = identity.AddToContext(context.Background(), identity.NewRequestContext(identityFor(strangerID.String(), orgID.String(), ""), "/pb.Orgs/GetMembers"))
+	ctx = identity.AddToContext(context.Background(), identity.NewRequestContext(identityFor(strangerID().String(), orgID().String(), ""), "/pb.Orgs/GetMembers"))
 	_, err = interceptor(ctx, &pb.GetMembersRequest{}, &grpc.UnaryServerInfo{FullMethod: "/pb.Orgs/GetMembers"}, handler)
 	require.Error(t, err)
 	assert.Equal(t, codes.PermissionDenied, status.Code(err))

@@ -37,7 +37,7 @@ func TestService_Projects(t *testing.T) {
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(&model.Org{ID: xdb.NewID(1), Status: pb.ItemStatus_Inactive}, nil)
 	_, err = svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: "Payments"})
-	assert.EqualError(t, err, "unexpected: org is deleted")
+	assert.EqualError(t, err, "conflict: org is deleted")
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
 	db.EXPECT().RegisterProject(gomock.Any(), gomock.Any()).DoAndReturn(func(_ any, p *model.Project) (*model.Project, error) {

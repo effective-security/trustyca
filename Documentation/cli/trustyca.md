@@ -28,6 +28,7 @@ Commands:
   auth org                        select the org for the session and store the
                                   new token
   auth allowed                    print allowed methods
+  auth scope                      print the caller scope and method access rules
   caller                          print caller info
   caller-ping                     ping caller info for duration with intervals
   member list                     List members of the selected org
@@ -52,6 +53,9 @@ Commands:
   project member delete           remove a project grant
   project member change           change the project role of a member
   project member delete-invite    delete a project invite
+  api-key create                  create an API key; the secret is shown once
+  api-key list                    list API keys
+  api-key delete                  delete an API key
   version                         print remote server version
 
 Run "trustyca <command> --help" for more information on a command.

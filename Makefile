@@ -235,13 +235,17 @@ proto-priv:
 
 docs:
 	echo "*** generating Docs"
-	# generate the docs using specific packages
-	gomarkdoc ./internal/db/model > ./Documentation/db/trustyca-model.md
-	gomarkdoc ./internal/db/schema > ./Documentation/db/trustyca-schema.md
-	gomarkdoc ./api/client > ./Documentation/api/client.md
+	rm -rf Documentation/api
+	mkdir -p Documentation/api
+	for pkg in $$(go list ./... | grep -v '/tests/' | grep -v '/mocks/' | grep -v '/pb/' | grep -v '/privpb/'); do \
+		out=Documentation/api/$$(echo $$pkg | sed 's#${REPO_NAME}/##; s#/#_#g').md; \
+		gomarkdoc --output $$out --repository.default-branch main $$pkg || exit 1; \
+	done
+	echo "API reference written to Documentation/api"
 	echo "\`\`\`bash" > ./Documentation/cli/trustyca.md
 	bin/trustyca --help >> ./Documentation/cli/trustyca.md
 	echo "\`\`\`" >> ./Documentation/cli/trustyca.md
 	echo "\`\`\`bash" > ./Documentation/cli/trustycactl.md
 	bin/trustycactl --help >> ./Documentation/cli/trustycactl.md
 	echo "\`\`\`" >> ./Documentation/cli/trustycactl.md
+	echo "CLI reference written to Documentation/cli"

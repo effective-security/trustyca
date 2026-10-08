@@ -83,21 +83,26 @@ func Test_Scopes(t *testing.T) {
 // user 303: org Viewer
 // user 304: org Owner
 // user 305: org Billing
-var specRows = model.MembershipInfoSlice{
-	{ID: xdb.NewID(1), OrgID: xdb.NewID(100), UserID: xdb.NewID(300), Role: pb.Role_User},
-	{ID: xdb.NewID(2), OrgID: xdb.NewID(100), ProjectID: xdb.NewID(201), UserID: xdb.NewID(300), Role: pb.Role_Admin},
-	{ID: xdb.NewID(3), OrgID: xdb.NewID(100), ProjectID: xdb.NewID(201), UserID: xdb.NewID(301), Role: pb.Role_Admin},
-	{ID: xdb.NewID(4), OrgID: xdb.NewID(100), UserID: xdb.NewID(302), Role: pb.Role_Admin},
-	{ID: xdb.NewID(5), OrgID: xdb.NewID(100), ProjectID: xdb.NewID(201), UserID: xdb.NewID(302), Role: pb.Role_Viewer},
-	{ID: xdb.NewID(6), OrgID: xdb.NewID(100), UserID: xdb.NewID(303), Role: pb.Role_Viewer},
-	{ID: xdb.NewID(7), OrgID: xdb.NewID(100), UserID: xdb.NewID(304), Role: pb.Role_Owner},
-	{ID: xdb.NewID(8), OrgID: xdb.NewID(100), UserID: xdb.NewID(305), Role: pb.Role_Billing},
-	// noise from another org
-	{ID: xdb.NewID(9), OrgID: xdb.NewID(101), UserID: xdb.NewID(300), Role: pb.Role_Owner},
+//
+// It returns new rows on each call: parallel tests must not share an
+// xdb.ID, whose string cache is not synchronized.
+func specRows() model.MembershipInfoSlice {
+	return model.MembershipInfoSlice{
+		{ID: xdb.NewID(1), OrgID: xdb.NewID(100), UserID: xdb.NewID(300), Role: pb.Role_User},
+		{ID: xdb.NewID(2), OrgID: xdb.NewID(100), ProjectID: xdb.NewID(201), UserID: xdb.NewID(300), Role: pb.Role_Admin},
+		{ID: xdb.NewID(3), OrgID: xdb.NewID(100), ProjectID: xdb.NewID(201), UserID: xdb.NewID(301), Role: pb.Role_Admin},
+		{ID: xdb.NewID(4), OrgID: xdb.NewID(100), UserID: xdb.NewID(302), Role: pb.Role_Admin},
+		{ID: xdb.NewID(5), OrgID: xdb.NewID(100), ProjectID: xdb.NewID(201), UserID: xdb.NewID(302), Role: pb.Role_Viewer},
+		{ID: xdb.NewID(6), OrgID: xdb.NewID(100), UserID: xdb.NewID(303), Role: pb.Role_Viewer},
+		{ID: xdb.NewID(7), OrgID: xdb.NewID(100), UserID: xdb.NewID(304), Role: pb.Role_Owner},
+		{ID: xdb.NewID(8), OrgID: xdb.NewID(100), UserID: xdb.NewID(305), Role: pb.Role_Billing},
+		// noise from another org
+		{ID: xdb.NewID(9), OrgID: xdb.NewID(101), UserID: xdb.NewID(300), Role: pb.Role_Owner},
+	}
 }
 
 func grantsOf(user uint64) *authctx.Grants {
-	return authctx.GrantsFromMemberships(specRows, xdb.NewID(100), xdb.NewID(user))
+	return authctx.GrantsFromMemberships(specRows(), xdb.NewID(100), xdb.NewID(user))
 }
 
 func Test_Grants(t *testing.T) {

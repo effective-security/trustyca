@@ -1,12 +1,11 @@
 # Trusty CA Implementation Plan
 
-Execution plan for [DESIGN.md](DESIGN.md). Phases are ordered by dependency;
+Execution plan for [DESIGN.md](design/DESIGN.md). Phases are ordered by dependency;
 each phase ends with a green `make build test lint`.
 
 ## Phase 0: design artifacts (done)
 
-- `Documentation/DESIGN.md`, this plan, and the membership baseline
-  `Documentation/membership-authorization-spec.md`.
+- `Documentation/design/DESIGN.md`, this plan.
 - `sql/trustycadb/migrations/1_tables.up.sql` and `1_tables.down.sql`: `project`,
   `issuer`, `root_certificate`, `certificate_profile`, `certificate`, `revoked`,
   `crl`; nullable `(org_id, project_id)` tenancy with `UNIQUE NULLS NOT DISTINCT`
@@ -159,5 +158,5 @@ Follow-ups in this area:
 - `make proto` (when protos change), `go generate ./...`, `make build`,
   `make test`, `make lint`.
 - Schema changes: `make drop-sql start-sql gen-sql-schema docs` and commit the
-  regenerated `internal/db/model`, `internal/db/schema`, `internal/db/README.md`,
-  `Documentation/db/*.md`.
+  regenerated `internal/db/model`, `internal/db/schema`, `internal/db/README.md`
+  and `Documentation/api/internal_db_*.md`.

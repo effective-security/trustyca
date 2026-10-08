@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,7 +24,6 @@ import (
 	"github.com/effective-security/trustyca/api/cli/command/uname"
 	"github.com/effective-security/trustyca/api/client"
 	"github.com/effective-security/trustyca/api/pb"
-	"github.com/effective-security/x/slices"
 	"github.com/effective-security/x/urlutil"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/certutil"
@@ -252,13 +252,20 @@ func (a *LoginCmd) Run(app App) error {
 		return errors.Errorf("unsupported provider: choose from: %v", urlRes.Providers)
 	}
 
+	// without the local listener nothing can exchange a code, so the
+	// token is shown on the server's authenticated page instead; it is
+	// delivered in the URL fragment, which keeps it out of the server's
+	// access logs, and the page removes it from the browser history
+	useCode := a.Code && !a.NoBrowser
+	responseMode := "form_post"
 	redirURL := fmt.Sprintf("http://localhost:%d/login", a.ListenPort)
 	if a.NoBrowser {
-		redirURL = c.CurrentHost() + pb.PathForAuthDone
+		responseMode = "fragment"
+		redirURL = c.CurrentHost() + pb.PathForAuthenticatedPage
 	}
 	conf := &oauth2.Config{
 		ClientID:    "trustyca",
-		RedirectURL: redirURL, // o.RedirectURL,
+		RedirectURL: redirURL,
 		Scopes:      []string{"openid", "email", "profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL: urlRes.AuthURL,
@@ -277,14 +284,14 @@ func (a *LoginCmd) Run(app App) error {
 		conf.Scopes = append(conf.Scopes, "dpop")
 	}
 
-	rt := "token"
-	if a.Code {
-		rt = "code"
+	rt := pb.OAuthResponseTypeToken
+	if useCode {
+		rt = pb.OAuthResponseTypeCode
 	}
 
 	codeVerifier := certutil.RandomString(48)
 	opts := []oauth2.AuthCodeOption{
-		oauth2.SetAuthURLParam("response_mode", "form_post"),
+		oauth2.SetAuthURLParam("response_mode", responseMode),
 		oauth2.SetAuthURLParam("response_type", rt),
 		oauth2.SetAuthURLParam("nonce", certutil.RandomString(8)),
 	}
@@ -296,7 +303,7 @@ func (a *LoginCmd) Run(app App) error {
 	if a.Hint != "" {
 		opts = append(opts, oauth2.SetAuthURLParam("login_hint", a.Hint))
 	}
-	if a.Code {
+	if useCode {
 		opts = append(opts,
 			oauth2.SetAuthURLParam("code_challenge", certutil.SHA256Base64([]byte(codeVerifier))),
 			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
@@ -318,13 +325,16 @@ func (a *LoginCmd) Run(app App) error {
 			return errors.WithMessagef(err, "unable to create DPoP signer")
 		}
 
-		r, _ := http.NewRequest(http.MethodGet, startURL, nil)
-		dpop, err := dpop.ForRequest(signer, r, nil)
+		r, err := http.NewRequest(http.MethodGet, startURL, nil)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		proof, err := dpop.ForRequest(signer, r, nil)
 		if err != nil {
 			return err
 		}
 		// Add DPoP to the query string
-		startURL += "&dpop=" + dpop
+		startURL += "&dpop=" + proof
 		logger.KV(xlog.DEBUG, "dpop", "signed", "url", startURL)
 	}
 
@@ -420,6 +430,8 @@ func (s *svcState) waitForLogin(ctx context.Context, startURL string) error {
 		return errors.WithMessagef(err, "unable to listen on port %d, use --listen-port to choose another one", s.listenPort)
 	}
 
+	// a dedicated mux: the handlers must not leak into
+	// http.DefaultServeMux between logins
 	mux := http.NewServeMux()
 	mux.HandleFunc("/login", s.loginHandler)
 	mux.HandleFunc("/login/done", s.loginHandler)
@@ -431,17 +443,21 @@ func (s *svcState) waitForLogin(ctx context.Context, startURL string) error {
 	serveErr := make(chan error, 1)
 	go func() {
 		serveErr <- srv.Serve(ln)
+		close(serveErr)
 	}()
 	defer func() {
 		// Shutdown waits for the handler that completed the login,
-		// so its page reaches the browser before the process exits
+		// so its page reaches the browser before the command returns
 		sctx, cancel := context.WithTimeout(context.Background(), loginShutdownTimeout)
 		defer cancel()
 		if err := srv.Shutdown(sctx); err != nil {
 			logger.KV(xlog.DEBUG, "reason", "shutdown", "err", err.Error())
 		}
-		// Shutdown misses the listener if Serve has not started yet
+		// Shutdown misses the listener if Serve has not started yet,
+		// so close it here and wait for Serve to exit
 		_ = ln.Close()
+		for range serveErr {
+		}
 	}()
 
 	err = openBrowserFn(startURL)
@@ -453,7 +469,7 @@ func (s *svcState) waitForLogin(ctx context.Context, startURL string) error {
 	case <-s.done:
 		return s.err
 	case err = <-serveErr:
-		return errors.WithMessage(err, "login listener stopped")
+		return errors.WithMessage(err, "login listener failed")
 	case <-ctx.Done():
 		return errors.WithStack(ctx.Err())
 	}
@@ -541,12 +557,11 @@ func (s *svcState) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if s.responseType == pb.OAuthResponseTypeCode {
 		var res pb.Token
-		_, _, err = s.client.Post(context.Background(), pb.Auth_ExchangeCode_FullMethodName, &pb.ExchangeCodeRequest{
+		_, _, err = s.client.Post(r.Context(), pb.Auth_ExchangeCode_FullMethodName, &pb.ExchangeCodeRequest{
 			Code:     token,
 			Verifier: s.codeVerifier,
 		}, &res)
 		if err != nil {
-			//logger.KV(xlog.ERROR, "reason", "exchange_code", "err", err.Error())
 			err = httperror.New(http.StatusUnauthorized, "unauthorized", "failed to exchange code: %s", err.Error())
 			marshal.WriteJSON(w, r, err)
 			return

@@ -197,7 +197,7 @@ func TestService_AddMember(t *testing.T) {
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(&model.Org{ID: xdb.NewID(1), Status: pb.ItemStatus_Inactive}, nil)
 	_, err = svc.AddMember(owner, &pb.AddMemberRequest{Email: "user@example.com", Role: pb.Role_Admin})
-	assert.EqualError(t, err, "unexpected: org is deleted")
+	assert.EqualError(t, err, "conflict: org is deleted")
 
 	// project of another org
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
@@ -335,7 +335,7 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	db.EXPECT().ListMemberships(gomock.Any(), &query.ListMembershipsRequest{OrgID: 1, Scope: pb.Scope_Org, Role: pb.Role_Owner}).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	_, err = svc.ChangeMemberRole(owner, &pb.ChangeMemberRoleRequest{UserID: "42", Role: pb.Role_Admin})
-	assert.EqualError(t, err, "unexpected: the org must keep at least one owner")
+	assert.EqualError(t, err, "conflict: the org must keep at least one owner")
 
 	// same role is a no-op
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{adminMember}, nil)
@@ -432,7 +432,7 @@ func TestService_DeleteMember(t *testing.T) {
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	db.EXPECT().ListMemberships(gomock.Any(), &query.ListMembershipsRequest{OrgID: 1, Scope: pb.Scope_Org, Role: pb.Role_Owner}).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	_, err = svc.DeleteMember(owner, &pb.DeleteMemberRequest{UserID: "42"})
-	assert.EqualError(t, err, "unexpected: the org must keep at least one owner")
+	assert.EqualError(t, err, "conflict: the org must keep at least one owner")
 
 	// an Owner can be removed when another Owner remains
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember, secondOwner}, nil)

@@ -131,7 +131,9 @@ func (c *Cli) WithErrWriter(out io.Writer) *Cli {
 // 	return c
 // }
 
-// AfterApply hook loads config
+// AfterApply hook loads config. It sets the process-wide log formatter, log
+// level and time format, so two CLIs must not be parsed concurrently in one
+// process.
 func (c *Cli) AfterApply(app *kong.Kong, vars kong.Vars) error {
 	xlog.SetFormatter(xlog.NewPrettyFormatter(c.ErrWriter()))
 	if c.Debug {

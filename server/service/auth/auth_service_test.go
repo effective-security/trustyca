@@ -37,6 +37,10 @@ import (
 )
 
 var (
+	// testServer runs the one auth service of the package. Tests that
+	// change its configuration - BaseURL and the providers registered with
+	// SetAuthProvider - must not call t.Parallel: they run in the
+	// sequential phase, before the parallel tests that read it resume.
 	testServer gserver.GServer
 	dpopSigner dpop.Signer
 	authClient pb.AuthServer
@@ -230,7 +234,7 @@ func Test_AuthDoneHandler(t *testing.T) {
 }
 
 func Test_CallbackHandler(t *testing.T) {
-	t.Parallel()
+	// not parallel: it changes BaseURL and the Github provider of testServer
 	service := testServer.Service(auth.ServiceName).(*auth.Service)
 	require.NotNil(t, service)
 

@@ -295,7 +295,7 @@ func (p *APIKeyResult) GetTableInfo() *xdbschema.TableInfo
 
 
 <a name="APIKeyResult.NextPage"></a>
-### func \(\*APIKeyResult\) [NextPage](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/apikey.go#L65>)
+### func \(\*APIKeyResult\) [NextPage](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/apikey.go#L66>)
 
 ```go
 func (m *APIKeyResult) NextPage() *pb.NextPage
@@ -304,7 +304,7 @@ func (m *APIKeyResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="APIKeyResult.Pb"></a>
-### func \(\*APIKeyResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/apikey.go#L76>)
+### func \(\*APIKeyResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/apikey.go#L77>)
 
 ```go
 func (m *APIKeyResult) Pb() *pb.APIKeysResponse
