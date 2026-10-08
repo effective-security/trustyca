@@ -30,7 +30,7 @@ func TestService_Projects(t *testing.T) {
 
 	// register
 	_, err := svc.RegisterProject(noOrg, &pb.RegisterProjectRequest{Name: "Payments"})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 
 	_, err = svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: "  "})
 	assert.EqualError(t, err, "bad_request: name is required")

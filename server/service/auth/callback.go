@@ -259,7 +259,7 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 		token, err = conf.Exchange(ctx, code)
 		if err != nil {
 			err = errors.WithStack(err)
-			logger.KV(xlog.DEBUG,
+			logger.KV(xlog.ERROR,
 				"reason", "exchange",
 				"redirect_url", conf.RedirectURL,
 				"token_url", o.TokenURL,

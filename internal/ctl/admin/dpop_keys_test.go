@@ -10,7 +10,7 @@ import (
 	"github.com/effective-security/trustyca/internal/ctl/admin"
 	"github.com/effective-security/trustyca/internal/ctl/ctlsuite"
 	"github.com/effective-security/xpki/certutil"
-	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

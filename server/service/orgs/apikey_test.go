@@ -33,7 +33,7 @@ func TestService_APIKeys(t *testing.T) {
 
 	// validation
 	_, err = svc.CreateAPIKey(testCtx("42", ""), &pb.CreateAPIKeyRequest{Label: "k"})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 	_, err = svc.CreateAPIKey(ctx, &pb.CreateAPIKeyRequest{})
 	assert.EqualError(t, err, "bad_request: label is required")
 	_, err = svc.CreateAPIKey(ctx, &pb.CreateAPIKeyRequest{Label: "k", Scopes: []string{"billing:write"}})
@@ -83,7 +83,7 @@ func TestService_APIKeys(t *testing.T) {
 	assert.Equal(t, "sk_1_x", list.APIKeys[0].Key)
 
 	_, err = svc.ListAPIKeys(testCtx("42", ""), &pb.ListAPIKeysRequest{})
-	assert.EqualError(t, err, "unauthorized: org not selected")
+	assert.EqualError(t, err, "forbidden: org not selected")
 	db.EXPECT().ListAPIKeys(gomock.Any(), gomock.Any()).Return(nil, errors.New("db failed"))
 	_, err = svc.ListAPIKeys(ctx, &pb.ListAPIKeysRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list API keys")
