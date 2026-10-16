@@ -31,14 +31,15 @@ func parseOptionalID(ctx context.Context, val, what string) (xdb.ID, error) {
 	return id, nil
 }
 
-// getActiveOrg returns the org, or an error if it does not exist or is deleted
+// getActiveOrg returns the org, or an error if it does not exist; a deleted
+// org is a precondition failure (preconditionFailed)
 func (s *Service) getActiveOrg(ctx context.Context, orgID xdb.ID) (*model.Org, error) {
 	org, err := s.db.GetOrg(ctx, orgID.UInt64())
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "unable to find org")
 	}
 	if org.Status == pb.ItemStatus_Inactive {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.FailedPrecondition, "org is deleted")
+		return nil, preconditionFailed(ctx, "org is deleted")
 	}
 	return org, nil
 }

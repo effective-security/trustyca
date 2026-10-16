@@ -1,9 +1,8 @@
 # Trusty CA Design
 
 Status: accepted design for v1. Companion documents:
-[PLAN.md](PLAN.md) (execution plan) and
-[membership-authorization-spec.md](membership-authorization-spec.md)
-(the membership and authorization baseline this design implements).
+[PLAN.md](../PLAN.md) (execution plan) and
+[codemap.md](../codemap.md) (where the code lives).
 
 ## 1. Scope
 

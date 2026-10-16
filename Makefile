@@ -7,8 +7,6 @@ export TRUSTYCA_GITHUB_CLIENT_ID=testclientid
 export TRUSTYCA_GITHUB_CLIENT_SECRET=testclientsecret
 export TRUSTYCA_GOOGLE_CLIENT_ID=testclientid
 export TRUSTYCA_GOOGLE_CLIENT_SECRET=testclientsecret
-#export TRUSTYCA_STRIPE_API_KEY=sk_test_teststripeapikey
-#export TRUSTYCA_STRIPE_WEBHOOK_SECRET=teststripewebhooksecret
 
 export COVERAGE_EXCLUSIONS="tests|third_party|api/pb/|main\.go|clisuite|testsuite\.go|mocks\.go|\.pb\.go|\.gen\.go"
 export TRUSTYCA_DIR=${PROJ_ROOT}
@@ -39,8 +37,8 @@ clean:
 
 tools:
 	echo "*** installing tools"
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
-	go install github.com/effective-security/golangci-linters/cmd/custom-linters@v0.1.10
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+	go install github.com/effective-security/golangci-linters/cmd/custom-linters@v0.1.11
 	go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
 	go install github.com/effective-security/cov-report/cmd/cov-report@latest
 	go install github.com/effective-security/xpki/cmd/hsm-tool@latest
@@ -235,13 +233,17 @@ proto-priv:
 
 docs:
 	echo "*** generating Docs"
-	# generate the docs using specific packages
-	gomarkdoc ./internal/db/model > ./Documentation/db/trustyca-model.md
-	gomarkdoc ./internal/db/schema > ./Documentation/db/trustyca-schema.md
-	gomarkdoc ./api/client > ./Documentation/api/client.md
+	rm -rf Documentation/api
+	mkdir -p Documentation/api
+	for pkg in $$(go list ./... | grep -v '/tests/' | grep -v '/mocks/' | grep -v '/pb/' | grep -v '/privpb/'); do \
+		out=Documentation/api/$$(echo $$pkg | sed 's#${REPO_NAME}/##; s#/#_#g').md; \
+		gomarkdoc --output $$out --repository.default-branch main $$pkg || exit 1; \
+	done
+	echo "API reference written to Documentation/api"
 	echo "\`\`\`bash" > ./Documentation/cli/trustyca.md
 	bin/trustyca --help >> ./Documentation/cli/trustyca.md
 	echo "\`\`\`" >> ./Documentation/cli/trustyca.md
 	echo "\`\`\`bash" > ./Documentation/cli/trustycactl.md
 	bin/trustycactl --help >> ./Documentation/cli/trustycactl.md
 	echo "\`\`\`" >> ./Documentation/cli/trustycactl.md
+	echo "CLI reference written to Documentation/cli"

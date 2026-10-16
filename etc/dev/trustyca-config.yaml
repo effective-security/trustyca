@@ -185,7 +185,6 @@ servers:
         - /v1/status/node
         - /v1/status/server
         - /v1/status/version
-        - /v1/webhooks/stripe
       cookies:
         auth: avn_trustyca_access_token
         csrf: avn_trustyca_csrf_token

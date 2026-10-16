@@ -64,5 +64,4 @@ func (s *Service) RegisterRoute(r restserver.Router) {
 	r.GET("/", s.indexHandler())
 	r.GET(pb.PathForLoginPage, s.PageHandler(pb.PathForLoginPage))
 	r.GET(pb.PathForAuthenticatedPage, s.PageHandler(pb.PathForAuthenticatedPage))
-	r.GET(pb.PathForPaymentPage, s.PageHandler(pb.PathForPaymentPage))
 }

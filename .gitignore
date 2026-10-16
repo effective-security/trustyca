@@ -14,8 +14,11 @@ bin/
 change_log.txt
 test_log.txt
 build_log.txt
+
 CLAUDE.md
+INTENT.md
 FINDINGS.md
+REVIEW.md
 
 __debug_bin
 __debug_bin*

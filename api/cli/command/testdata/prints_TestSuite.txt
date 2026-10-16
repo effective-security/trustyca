@@ -1,0 +1,24 @@
+- TestSuite/TestCaller/json:
+{
+	"Subject": "127.0.0.1",
+	"Role": "guest"
+}
+
+- TestSuite/TestCaller/txt:
+ Subject │ 127.0.0.1 
+ Role    │ guest     
+
+┌───────┬───────┐
+│ CLAIM │ VALUE │
+└───────┴───────┘
+
+
+- TestSuite/TestVersion/json:
+{
+	"Build": "0.1.18",
+	"Runtime": "go1.17"
+}
+
+- TestSuite/TestVersion/txt:
+0.1.18 (go1.17)
+

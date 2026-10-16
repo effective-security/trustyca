@@ -3,6 +3,7 @@ package orgs
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
@@ -21,6 +22,20 @@ func tokenOrg(ctx context.Context) (xdb.ID, error) {
 		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org not selected")
 	}
 	return orgID, nil
+}
+
+// preconditionFailed returns the error of a request that the current state
+// of the org or its resources refuses, and that the caller can make pass by
+// changing that state: HTTP 409 Conflict with code "conflict", and gRPC
+// FailedPrecondition. The pinned porto maps FailedPrecondition to HTTP 500,
+// which also hides the message from a REST client, so the error carries
+// both statuses instead of being built by NewGrpcFromCtx. Return it as is:
+// httperror.Wrap with a message rebuilds it from its code, and gRPC gets
+// AlreadyExists. A Go client of the gRPC API still converts it to a 500.
+func preconditionFailed(ctx context.Context, msgFormat string, vals ...any) *httperror.Error {
+	e := httperror.NewFromCtx(ctx, http.StatusConflict, httperror.CodeConflict, msgFormat, vals...)
+	e.RPCStatus = codes.FailedPrecondition
+	return e
 }
 
 // event records an audit event asynchronously

@@ -272,7 +272,8 @@ func (s *Service) findMember(ctx context.Context, orgID, projectID xdb.ID, userI
 	return member, nil
 }
 
-// checkLastOwner refuses to remove or demote the last org Owner
+// checkLastOwner refuses to remove or demote the last org Owner with a
+// precondition failure (preconditionFailed)
 func (s *Service) checkLastOwner(ctx context.Context, orgID xdb.ID, member *model.MembershipInfo) error {
 	if member.ProjectID.UInt64() != 0 || member.Role != pb.Role_Owner {
 		return nil
@@ -286,7 +287,7 @@ func (s *Service) checkLastOwner(ctx context.Context, orgID xdb.ID, member *mode
 		return httperror.WrapWithCtx(ctx, err, "request failed")
 	}
 	if owners.CountOrgRole(orgID.UInt64(), pb.Role_Owner) <= 1 {
-		return httperror.NewGrpcFromCtx(ctx, codes.FailedPrecondition, "the org must keep at least one owner")
+		return preconditionFailed(ctx, "the org must keep at least one owner")
 	}
 	return nil
 }

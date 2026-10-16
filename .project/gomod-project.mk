@@ -159,13 +159,12 @@ list:
 #
 vars:
 	echo "PATH=$(PATH)"
+	echo "REPO_NAME=$(REPO_NAME)"
 	echo "PROJ_NAME=$(PROJ_NAME)"
 	echo "PROJ_DIR=$(PROJ_DIR)"
 	echo "PROJ_DATA_DIR=$(PROJ_DATA_DIR)"
-	echo "PROJ_REPO_TARGET=$(PROJ_REPO_TARGET)"
 	echo "GOBIN=$(GOBIN)"
 	echo "PROJ_PACKAGE=$(PROJ_PACKAGE)"
-	echo "TOOLS_PATH=$(TOOLS_PATH)"
 	echo "GIT_VERSION=$(GIT_VERSION)"
 	go version
 

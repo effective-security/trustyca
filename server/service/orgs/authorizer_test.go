@@ -22,8 +22,8 @@ var (
 	testProject = &model.Project{
 		ID:     xdb.NewID(201),
 		OrgID:  xdb.NewID(1),
-		Alias:  "payments",
-		Name:   "Payments",
+		Alias:  "test",
+		Name:   "Test",
 		Status: pb.ItemStatus_Active,
 	}
 	inactiveProject = &model.Project{
@@ -132,7 +132,7 @@ func projectGrant(userID uint64, projectID uint64, role pb.Role_Enum) *model.Mem
 		OrgID:        testOrg.ID,
 		OrgName:      testOrg.Name,
 		ProjectID:    xdb.NewID(projectID),
-		ProjectAlias: "payments",
+		ProjectAlias: "test",
 		UserID:       xdb.NewID(userID),
 		Email:        "user" + xdb.NewID(userID).String() + "@example.com",
 		Role:         role,

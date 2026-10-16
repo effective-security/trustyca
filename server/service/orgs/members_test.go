@@ -64,7 +64,7 @@ func TestService_GetUserMemberships(t *testing.T) {
 	svc := Service{db: db, authorizer: newFakeAuthorizer()}
 
 	rows := model.MembershipInfoSlice{
-		{ID: xdb.NewID(11), OrgID: xdb.NewID(1), OrgName: "Test Org", ProjectID: xdb.NewID(201), ProjectAlias: "payments", UserID: xdb.NewID(42), Role: pb.Role_Admin},
+		{ID: xdb.NewID(11), OrgID: xdb.NewID(1), OrgName: "Test Org", ProjectID: xdb.NewID(201), ProjectAlias: "test", UserID: xdb.NewID(42), Role: pb.Role_Admin},
 	}
 	db.EXPECT().ListMemberships(gomock.Any(), &query.ListMembershipsRequest{OrgID: 1, UserID: 42, OrgStatus: pb.ItemStatus_Active}).Return(rows, nil)
 
@@ -76,7 +76,7 @@ func TestService_GetUserMemberships(t *testing.T) {
 	assert.Equal(t, "Test Org", res.Org.OrgName)
 	require.Len(t, res.Memberships, 1)
 	assert.Equal(t, pb.Scope_Project, res.Memberships[0].Scope)
-	assert.Equal(t, "payments", res.Memberships[0].ProjectAlias)
+	assert.Equal(t, "test", res.Memberships[0].ProjectAlias)
 
 	_, err = svc.GetUserMemberships(testCtx("42", ""), &emptypb.Empty{})
 	assert.EqualError(t, err, "forbidden: org not selected")
@@ -197,7 +197,7 @@ func TestService_AddMember(t *testing.T) {
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(&model.Org{ID: xdb.NewID(1), Status: pb.ItemStatus_Inactive}, nil)
 	_, err = svc.AddMember(owner, &pb.AddMemberRequest{Email: "user@example.com", Role: pb.Role_Admin})
-	assert.EqualError(t, err, "unexpected: org is deleted")
+	assert.EqualError(t, err, "conflict: org is deleted")
 
 	// project of another org
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
@@ -233,7 +233,7 @@ func TestService_AddMember(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "12", res.Membership.ID)
 	assert.Equal(t, pb.Scope_Project, res.Membership.Scope)
-	assert.Equal(t, "payments", res.Membership.ProjectAlias)
+	assert.Equal(t, "test", res.Membership.ProjectAlias)
 	assert.Equal(t, "Test Org", res.Membership.OrgName)
 	assert.Contains(t, az.invalidated, "user:7")
 
@@ -335,7 +335,7 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	db.EXPECT().ListMemberships(gomock.Any(), &query.ListMembershipsRequest{OrgID: 1, Scope: pb.Scope_Org, Role: pb.Role_Owner}).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	_, err = svc.ChangeMemberRole(owner, &pb.ChangeMemberRoleRequest{UserID: "42", Role: pb.Role_Admin})
-	assert.EqualError(t, err, "unexpected: the org must keep at least one owner")
+	assert.EqualError(t, err, "conflict: the org must keep at least one owner")
 
 	// same role is a no-op
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{adminMember}, nil)
@@ -385,7 +385,7 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	res, err = svc.ChangeMemberRole(projectAdmin, &pb.ChangeMemberRoleRequest{UserID: "9", Role: pb.Role_User, ProjectID: "201"})
 	require.NoError(t, err)
 	assert.Equal(t, pb.Scope_Project, res.Scope)
-	assert.Equal(t, "payments", res.ProjectAlias)
+	assert.Equal(t, "test", res.ProjectAlias)
 
 	_, err = svc.ChangeMemberRole(projectAdmin, &pb.ChangeMemberRoleRequest{UserID: "9", Role: pb.Role_User, ProjectID: "202"})
 	assert.EqualError(t, err, "forbidden: not allowed to grant role User in the project")
@@ -432,7 +432,7 @@ func TestService_DeleteMember(t *testing.T) {
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	db.EXPECT().ListMemberships(gomock.Any(), &query.ListMembershipsRequest{OrgID: 1, Scope: pb.Scope_Org, Role: pb.Role_Owner}).Return(model.MembershipInfoSlice{ownerMember}, nil)
 	_, err = svc.DeleteMember(owner, &pb.DeleteMemberRequest{UserID: "42"})
-	assert.EqualError(t, err, "unexpected: the org must keep at least one owner")
+	assert.EqualError(t, err, "conflict: the org must keep at least one owner")
 
 	// an Owner can be removed when another Owner remains
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{ownerMember, secondOwner}, nil)
