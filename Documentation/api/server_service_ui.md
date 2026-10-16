@@ -84,7 +84,7 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.PageHandler"></a>
-### func \(\*Service\) [PageHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/ui/pages.go#L93>)
+### func \(\*Service\) [PageHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/ui/pages.go#L84>)
 
 ```go
 func (s *Service) PageHandler(path string) restserver.Handle

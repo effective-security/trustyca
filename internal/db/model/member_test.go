@@ -192,13 +192,13 @@ func TestMembershipPb(t *testing.T) {
 }
 
 func TestProjectValidate(t *testing.T) {
-	p := &Project{OrgID: xdb.NewID(1), Alias: "payments", Name: "Payments"}
+	p := &Project{OrgID: xdb.NewID(1), Alias: "test", Name: "Test"}
 	assert.NoError(t, p.Validate())
 	assert.EqualError(t, (&Project{Alias: "a", Name: "n"}).Validate(), "invalid org_id")
 	assert.EqualError(t, (&Project{OrgID: xdb.NewID(1), Alias: " a", Name: "n"}).Validate(), `invalid alias: " a"`)
 	assert.EqualError(t, (&Project{OrgID: xdb.NewID(1), Alias: "a"}).Validate(), `invalid name: ""`)
 
 	pm := p.Pb()
-	assert.Equal(t, "payments", pm.Alias)
+	assert.Equal(t, "test", pm.Alias)
 	assert.Equal(t, "1", pm.OrgID)
 }

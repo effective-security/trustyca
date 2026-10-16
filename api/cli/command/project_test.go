@@ -11,9 +11,9 @@ import (
 var testProject = &pb.Project{
 	ID:          "201",
 	OrgID:       "100",
-	Alias:       "payments",
-	Name:        "Payments",
-	Description: "Payments project",
+	Alias:       "test",
+	Name:        "Test",
+	Description: "Test project",
 	Status:      pb.ItemStatus_Active,
 }
 
@@ -36,18 +36,18 @@ func (s *testSuiteGrpc) runPrinted(run func() error) {
 
 func (s *testSuiteGrpc) Test_ProjectCreateCmd() {
 	s.MockOrgs.SetResponse(testProject)
-	a := command.ProjectCreateCmd{Name: "Payments", Alias: "payments"}
+	a := command.ProjectCreateCmd{Name: "Test", Alias: "test"}
 	s.runPrinted(func() error { return a.Run(s.Ctl) })
 }
 
 func (s *testSuiteGrpc) Test_ProjectUpdateCmd() {
 	s.MockOrgs.SetResponse(testProject)
-	a := command.ProjectUpdateCmd{Project: "201", Name: "Payments"}
+	a := command.ProjectUpdateCmd{Project: "201", Name: "Test"}
 	s.runPrinted(func() error { return a.Run(s.Ctl) })
 }
 
 func (s *testSuiteGrpc) Test_ProjectDeleteCmd() {
-	s.MockOrgs.SetResponse(&pb.Project{ID: "201", OrgID: "100", Alias: "payments", Name: "Payments", Status: pb.ItemStatus_Inactive})
+	s.MockOrgs.SetResponse(&pb.Project{ID: "201", OrgID: "100", Alias: "test", Name: "Test", Status: pb.ItemStatus_Inactive})
 	a := command.ProjectDeleteCmd{Project: "201"}
 	s.runPrinted(func() error { return a.Run(s.Ctl) })
 }
@@ -64,7 +64,7 @@ func (s *testSuiteGrpc) Test_ProjectListCmd() {
 
 func (s *testSuiteGrpc) Test_ProjectGetCmd() {
 	s.MockOrgs.SetResponse(testProject)
-	a := command.ProjectGetCmd{Alias: "payments"}
+	a := command.ProjectGetCmd{Alias: "test"}
 	s.runPrinted(func() error { return a.Run(s.Ctl) })
 
 	a = command.ProjectGetCmd{}
@@ -79,7 +79,7 @@ func (s *testSuiteGrpc) Test_ProjectMembersListCmd() {
 				ID:           "1",
 				OrgID:        "100",
 				ProjectID:    "201",
-				ProjectAlias: "payments",
+				ProjectAlias: "test",
 				Scope:        pb.Scope_Project,
 				Name:         "Test Member",
 				Email:        "test@example.com",

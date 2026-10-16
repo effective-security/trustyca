@@ -55,11 +55,6 @@ func TestMain(m *testing.M) {
 			Auth: config.Auth{
 				RecaptchaSiteKey: testRecaptchaSiteKey,
 			},
-			// TrustyRA: config.TrustyRA{
-			// 	Payments: &payment.Config{
-			// 		PublishableKey: testPublishableKey,
-			// 	},
-			// },
 		}).
 		WithDiscovery(discovery.New()).
 		Container()
@@ -162,22 +157,6 @@ func TestAuthenticatedPage(t *testing.T) {
 	assert.Contains(t, body, "export TRUSTYCA_AUTH_TOKEN=")
 }
 
-func TestPaymentPage(t *testing.T) {
-	t.Parallel()
-	hdr, w := getPage(t, pb.PathForPaymentPage, nil)
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, hdr.Get(header.ContentType), "text/html")
-
-	body := w.Body.String()
-	assert.Contains(t, body, "<title>Payment · Trusty</title>")
-	assert.Contains(t, body, `<script src="https://js.stripe.com/v3/"></script>`)
-	assert.NotContains(t, body, `var publishableKey = "`+testPublishableKey+`";`)
-	assert.Contains(t, body, `fragment.get('`+pb.CheckoutClientSecretParam+`')`)
-	assert.Contains(t, body, "stripe.confirmPayment(")
-	// the secret API key must never be rendered
-	assert.NotContains(t, body, "sk_")
-}
-
 // The pages must render when the optional keys are not configured,
 // telling the tester what is missing instead of failing.
 func TestPages_NotConfigured(t *testing.T) {
@@ -185,7 +164,6 @@ func TestPages_NotConfigured(t *testing.T) {
 
 	for _, cfg := range []*config.Configuration{
 		{},
-		//{RA: config.TrustyRA{Payments: &payment.Config{}}},
 	} {
 		svc := ui.New(cfg)
 
@@ -196,13 +174,6 @@ func TestPages_NotConfigured(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "reCAPTCHA is not configured in Trusty (auth.recaptcha_site_key)")
 		assert.Contains(t, w.Body.String(), `var recaptchaSiteKey = "";`)
 		assert.NotContains(t, w.Body.String(), "recaptcha/api.js")
-
-		w = httptest.NewRecorder()
-		r = httptest.NewRequest(http.MethodGet, pb.PathForPaymentPage, nil)
-		svc.PageHandler(pb.PathForPaymentPage)(w, r, nil)
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Body.String(), `var publishableKey = "";`)
-		assert.Contains(t, w.Body.String(), "Stripe is not configured on the server (trustyca.payments.publishable_key)")
 	}
 }
 

@@ -7,8 +7,6 @@ export TRUSTYCA_GITHUB_CLIENT_ID=testclientid
 export TRUSTYCA_GITHUB_CLIENT_SECRET=testclientsecret
 export TRUSTYCA_GOOGLE_CLIENT_ID=testclientid
 export TRUSTYCA_GOOGLE_CLIENT_SECRET=testclientsecret
-#export TRUSTYCA_STRIPE_API_KEY=sk_test_teststripeapikey
-#export TRUSTYCA_STRIPE_WEBHOOK_SECRET=teststripewebhooksecret
 
 export COVERAGE_EXCLUSIONS="tests|third_party|api/pb/|main\.go|clisuite|testsuite\.go|mocks\.go|\.pb\.go|\.gen\.go"
 export TRUSTYCA_DIR=${PROJ_ROOT}
@@ -39,8 +37,8 @@ clean:
 
 tools:
 	echo "*** installing tools"
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
-	go install github.com/effective-security/golangci-linters/cmd/custom-linters@v0.1.10
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+	go install github.com/effective-security/golangci-linters/cmd/custom-linters@v0.1.11
 	go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
 	go install github.com/effective-security/cov-report/cmd/cov-report@latest
 	go install github.com/effective-security/xpki/cmd/hsm-tool@latest

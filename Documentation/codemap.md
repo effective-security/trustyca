@@ -35,33 +35,33 @@ etc/             service configuration, CA bootstrap and development certificate
 
 ## Concept index
 
-| Concept | Owning file(s) | Entry points / read next |
-| --- | --- | --- |
-| Application startup, DI and cleanup | `server/app/app.go`, `server/appcontainer/appcontainer.go`, `server/appcontainer/closer.go` | NewApp, App.Run, NewContainerFactory, CreateContainerWithDependencies, Closer.Close |
-| Service YAML, host overrides and secrets | `internal/config/config.go`, `internal/config/loader.go` | Configuration, Load, LoadForHostName, LoadWithOverride; etc/dev/trustyca-config.yaml, trustyca-config.yaml.hostmap |
-| Listeners, middleware and interceptors per server | `server/app/app.go`, `server/service/service.go` | App.Run (wfe, backend, router), Factories; servers.*.services in the YAML |
-| Token claims and the request's tenant context | `internal/authctx/ctx.go` | TrustyCtx, NewTrustyCtx, FromContext, Handler, NewAuthUnaryBackendInterceptor, ClaimOrg, ClaimScope |
-| Roles, grants and API key scopes | `internal/authctx/roles.go`, `grants.go`, `scopes.go` | CanAssumeRoles, GrantsFromMemberships, Grants.HighestRole, CanGrantOrgRole, ParseScopes, HasScopes; [DESIGN.md §3](design/DESIGN.md) |
-| Method authorization (allowed_roles, scopes, service roles) | `internal/authctx/authz.go`, `authorizer.go`, `allowed.go` | CheckAccess, NewAuthUnaryInterceptor, NewAuthorizer, Authorizer.CheckRole, GetAllowedMethods, GetCallerScope |
-| OAuth login, DPoP and code exchange | `server/service/auth/authorize.go`, `callback.go` | AuthorizeHandler, CallbackHandler, handleToken, writeOauthResponse, ExchangeCode, AuthDoneHandler |
-| Org selection, token revocation and auth cookies | `server/service/auth/tenant.go`, `userinfo.go`, `cookies.go` | initialOrg, SelectOrg, RevokeToken, RevokeTokenHandler, RemoveCookieHandler, setAuthCookie |
-| API keys: issue and authenticate | `server/service/orgs/apikey.go`, `server/service/auth/apikey.go`, `internal/db/pgsql/apikey.go` | CreateAPIKey, AuthenticateAPIKey, AuthenticateAPIKeyHandler, validateHMAC, UseAPIKey |
-| Orgs, projects, members and invites APIs | `server/service/orgs/org.go`, `projects.go`, `members.go` | RegisterOrg, RegisterProject, AddMember, ChangeMemberRole, DeleteMember, checkLastOwner |
-| Refusals the org's state causes: HTTP 409, gRPC FailedPrecondition | `server/service/orgs/org.go` | preconditionFailed; precondition_test.go |
-| CA API: issuers, roots, profiles, certificates, CRL, signing | `server/service/ca/ca_service.go`, `issuer.go`, `cert.go`, `signer.go` | stubs; [PLAN.md](PLAN.md) phases 2-4, [DESIGN.md §5-8](design/DESIGN.md) |
-| Certificate information: AIA, CRL and OCSP | `server/service/cis/cis_service.go`, `cis.go`, `rest.go` | stubs, not in service.Factories; PLAN.md phase 5 |
-| Admin API | `server/service/admin/admin_service.go`, `orgs.go`, `privpb/protos/admin.proto` | Service.ListOrgs; trustyca-admin role |
-| DB interfaces and the PostgreSQL provider | `internal/db/trustycadb.go`, `internal/db/pgsql/provider.go` | OrgsReadonlyDb, OrgsDb, Provider, New |
-| Query builders, request structs and pagination | `internal/db/pgsql/query/common.go`, `member.go`, `org.go` | BuildQueryFunc, ListMembershipsRequest.QueryParams, ListOrgsRequest |
-| SQL migrations, models and schema generation | `internal/db/model/model.gen.go`, `internal/db/schema/schema.gen.go`, `internal/db/schema/typesmap.yaml` | sql/trustycadb/migrations/N_tables.{up,down}.sql; make gen-sql-schema; do not edit generated files |
-| Audit events | `internal/db/pgsql/event.go`, `server/service/orgs/org.go` | TryCreateEvent, CreateEvent, ListEvents, Service.event |
-| Metrics descriptors | `internal/metricskey/metricskey.go` | Metrics, PerfDbOperation, LoginCount |
-| Public/private API contracts and generated output | `api/pb/protos/*.proto`, `privpb/protos/admin.proto` | pb.Auth, pb.Orgs, pb.CA, pb.CIS, pb.Status, privpb.Admin; make proto |
-| Public CLI / admin CTL command trees | `api/cli/cli.go`, `api/cli/command/command.go`, `internal/ctl/ctl.go`, `internal/ctl/admin/admin.go` | Cli, App; cmd/trustyca/main.go, cmd/trustycactl/main.go |
-| CLI login: browser, local listener, --no-browser | `api/cli/command/auth.go` | LoginCmd.Run, svcState.waitForLogin, loginHandler; auth_internal_test.go |
-| CLI test suites and golden output | `api/cli/clisuite/suite_http.go`, `internal/ctl/ctlsuite/suite_http.go`, `tests/testutils/golden.go` | CapturePrint, CheckGolden; `TRUSTYCA_UPDATE_GOLDEN=1 go test ./api/cli/command` rewrites testdata/prints_<suite test>.txt |
-| Test setup, ports and container fixtures | `tests/testutils/testutils.go`, `tests/mockappcontainer/builder.go` | LoadConfig, CreateURL, CreateBindAddr, NewBuilder; etc/dev/trustyca-config.unittest.yaml |
-| Scheduled tasks | `server/tasks/tasks.go`, `server/app/app.go` | Factories (empty), App.scheduleTasks |
+| Concept                                                            | Owning file(s)                                                                                           | Entry points / read next                                                                                                             |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Application startup, DI and cleanup                                | `server/app/app.go`, `server/appcontainer/appcontainer.go`, `server/appcontainer/closer.go`              | NewApp, App.Run, NewContainerFactory, CreateContainerWithDependencies, Closer.Close                                                  |
+| Service YAML, host overrides and secrets                           | `internal/config/config.go`, `internal/config/loader.go`                                                 | Configuration, Load, LoadForHostName, LoadWithOverride; etc/dev/trustyca-config.yaml, trustyca-config.yaml.hostmap                   |
+| Listeners, middleware and interceptors per server                  | `server/app/app.go`, `server/service/service.go`                                                         | App.Run (wfe, backend, router), Factories; servers.\*.services in the YAML                                                           |
+| Token claims and the request's tenant context                      | `internal/authctx/ctx.go`                                                                                | TrustyCtx, NewTrustyCtx, FromContext, Handler, NewAuthUnaryBackendInterceptor, ClaimOrg, ClaimScope                                  |
+| Roles, grants and API key scopes                                   | `internal/authctx/roles.go`, `grants.go`, `scopes.go`                                                    | CanAssumeRoles, GrantsFromMemberships, Grants.HighestRole, CanGrantOrgRole, ParseScopes, HasScopes; [DESIGN.md §3](design/DESIGN.md) |
+| Method authorization (allowed_roles, scopes, service roles)        | `internal/authctx/authz.go`, `authorizer.go`, `allowed.go`                                               | CheckAccess, NewAuthUnaryInterceptor, NewAuthorizer, Authorizer.CheckRole, GetAllowedMethods, GetCallerScope                         |
+| OAuth login, DPoP and code exchange                                | `server/service/auth/authorize.go`, `callback.go`                                                        | AuthorizeHandler, CallbackHandler, handleToken, writeOauthResponse, ExchangeCode, AuthDoneHandler                                    |
+| Org selection, token revocation and auth cookies                   | `server/service/auth/tenant.go`, `userinfo.go`, `cookies.go`                                             | initialOrg, SelectOrg, RevokeToken, RevokeTokenHandler, RemoveCookieHandler, setAuthCookie                                           |
+| API keys: issue and authenticate                                   | `server/service/orgs/apikey.go`, `server/service/auth/apikey.go`, `internal/db/pgsql/apikey.go`          | CreateAPIKey, AuthenticateAPIKey, AuthenticateAPIKeyHandler, validateHMAC, UseAPIKey                                                 |
+| Orgs, projects, members and invites APIs                           | `server/service/orgs/org.go`, `projects.go`, `members.go`                                                | RegisterOrg, RegisterProject, AddMember, ChangeMemberRole, DeleteMember, checkLastOwner                                              |
+| Refusals the org's state causes: HTTP 409, gRPC FailedPrecondition | `server/service/orgs/org.go`                                                                             | preconditionFailed; precondition_test.go                                                                                             |
+| CA API: issuers, roots, profiles, certificates, CRL, signing       | `server/service/ca/ca_service.go`, `issuer.go`, `cert.go`, `signer.go`                                   | stubs; [PLAN.md](PLAN.md) phases 2-4, [DESIGN.md §5-8](design/DESIGN.md)                                                             |
+| Certificate information: AIA, CRL and OCSP                         | `server/service/cis/cis_service.go`, `cis.go`, `rest.go`                                                 | stubs, not in service.Factories; PLAN.md phase 5                                                                                     |
+| Admin API                                                          | `server/service/admin/admin_service.go`, `orgs.go`, `privpb/protos/admin.proto`                          | Service.ListOrgs; trustyca-admin role                                                                                                |
+| DB interfaces and the PostgreSQL provider                          | `internal/db/trustycadb.go`, `internal/db/pgsql/provider.go`                                             | OrgsReadonlyDb, OrgsDb, Provider, New                                                                                                |
+| Query builders, request structs and pagination                     | `internal/db/pgsql/query/common.go`, `member.go`, `org.go`                                               | BuildQueryFunc, ListMembershipsRequest.QueryParams, ListOrgsRequest                                                                  |
+| SQL migrations, models and schema generation                       | `internal/db/model/model.gen.go`, `internal/db/schema/schema.gen.go`, `internal/db/schema/typesmap.yaml` | sql/trustycadb/migrations/N_tables.{up,down}.sql; make gen-sql-schema; do not edit generated files                                   |
+| Audit events                                                       | `internal/db/pgsql/event.go`, `server/service/orgs/org.go`                                               | TryCreateEvent, CreateEvent, ListEvents, Service.event                                                                               |
+| Metrics descriptors                                                | `internal/metricskey/metricskey.go`                                                                      | Metrics, PerfDbOperation, LoginCount                                                                                                 |
+| Public/private API contracts and generated output                  | `api/pb/protos/*.proto`, `privpb/protos/admin.proto`                                                     | pb.Auth, pb.Orgs, pb.CA, pb.CIS, pb.Status, privpb.Admin; make proto                                                                 |
+| Public CLI / admin CTL command trees                               | `api/cli/cli.go`, `api/cli/command/command.go`, `internal/ctl/ctl.go`, `internal/ctl/admin/admin.go`     | Cli, App; cmd/trustyca/main.go, cmd/trustycactl/main.go                                                                              |
+| CLI login: browser, local listener, --no-browser                   | `api/cli/command/auth.go`                                                                                | LoginCmd.Run, svcState.waitForLogin, loginHandler; auth_internal_test.go                                                             |
+| CLI test suites and golden output                                  | `api/cli/clisuite/suite_http.go`, `internal/ctl/ctlsuite/suite_http.go`, `tests/testutils/golden.go`     | CapturePrint, CheckGolden; `TRUSTYCA_UPDATE_GOLDEN=1 go test ./api/cli/command` rewrites testdata/prints\_<suite test>.txt           |
+| Test setup, ports and container fixtures                           | `tests/testutils/testutils.go`, `tests/mockappcontainer/builder.go`                                      | LoadConfig, CreateURL, CreateBindAddr, NewBuilder; etc/dev/trustyca-config.unittest.yaml                                             |
+| Scheduled tasks                                                    | `server/tasks/tasks.go`, `server/app/app.go`                                                             | Factories (empty), App.scheduleTasks                                                                                                 |
 
 ## Internal dependency direction
 
@@ -73,53 +73,53 @@ boundary. `internal/authctx` imports `internal/db/model` and
 `internal/db/pgsql/query` for row types only: the DB layer never imports
 authorization code.
 
-| Package | Direct module imports |
-| --- | --- |
-| api/cli | api/pb, api/pb/proxypb, api/version |
-| api/cli/clisuite | api/cli, api/pb, api/pb/mockpb, api/version, tests/testutils |
-| api/cli/command | api/cli/command/uname, api/client, api/pb |
-| api/cli/command/uname | none |
-| api/client | api/pb, api/pb/proxypb |
-| api/pb | none |
-| api/pb/httppb | api/pb |
-| api/pb/mockpb | api/pb |
-| api/pb/modelpb | none |
-| api/pb/proxypb | api/pb |
-| api/version | none |
-| cmd/trustyca | api/cli, api/cli/command, api/version |
-| cmd/trustycactl | api/cli/command, api/version, internal/ctl, internal/ctl/admin |
-| cmd/trustycasvc | server/app |
-| internal/authctx | api/pb, internal/db/model, internal/db/pgsql/query, privpb |
-| internal/config | api/client |
-| internal/ctl | api/pb, api/pb/proxypb, api/version, privpb, privpb/proxypb |
-| internal/ctl/admin | api/pb, privpb |
-| internal/ctl/ctlsuite | api/pb, api/pb/mockpb, api/version, internal/ctl, privpb, privpb/mockpb, tests/testutils |
-| internal/db | internal/db/model, internal/db/pgsql, internal/db/pgsql/query |
-| internal/db/model | api/pb, internal/db/schema |
-| internal/db/pgsql | api/pb, internal/db/model, internal/db/pgsql/query, internal/db/schema, internal/metricskey |
-| internal/db/pgsql/query | api/pb, internal/db/schema |
-| internal/db/schema | none |
-| internal/metricskey | none |
-| mocks/mockclient | api/client, api/pb |
-| mocks/mockpb | api/pb |
-| mocks/mocktrustycadb | internal/db/model, internal/db/pgsql/query |
-| privpb | api/pb |
-| privpb/httppb | privpb |
-| privpb/mockpb | api/pb, privpb |
-| privpb/proxypb | api/pb, privpb |
-| server/app | api/version, internal/authctx, internal/config, internal/db, internal/metricskey, server/appcontainer, server/service, server/tasks |
-| server/appcontainer | api/client, internal/authctx, internal/config, internal/db |
-| server/service | server/service/admin, server/service/auth, server/service/ca, server/service/orgs, server/service/status, server/service/ui |
-| server/service/admin | api/pb, internal/db, internal/db/pgsql/query, privpb, privpb/httppb |
-| server/service/auth | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db, internal/db/model, internal/metricskey |
-| server/service/ca | api/pb, internal/authctx, internal/config, internal/db |
-| server/service/cis | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db |
-| server/service/orgs | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db, internal/db/model, internal/db/pgsql/query |
-| server/service/status | api/pb, api/version |
-| server/service/ui | api/pb, internal/config |
-| server/tasks | none |
-| tests/mockappcontainer | internal/config |
-| tests/testutils | internal/authctx, internal/config |
+| Package                 | Direct module imports                                                                                                               |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| api/cli                 | api/pb, api/pb/proxypb, api/version                                                                                                 |
+| api/cli/clisuite        | api/cli, api/pb, api/pb/mockpb, api/version, tests/testutils                                                                        |
+| api/cli/command         | api/cli/command/uname, api/client, api/pb                                                                                           |
+| api/cli/command/uname   | none                                                                                                                                |
+| api/client              | api/pb, api/pb/proxypb                                                                                                              |
+| api/pb                  | none                                                                                                                                |
+| api/pb/httppb           | api/pb                                                                                                                              |
+| api/pb/mockpb           | api/pb                                                                                                                              |
+| api/pb/modelpb          | none                                                                                                                                |
+| api/pb/proxypb          | api/pb                                                                                                                              |
+| api/version             | none                                                                                                                                |
+| cmd/trustyca            | api/cli, api/cli/command, api/version                                                                                               |
+| cmd/trustycactl         | api/cli/command, api/version, internal/ctl, internal/ctl/admin                                                                      |
+| cmd/trustycasvc         | server/app                                                                                                                          |
+| internal/authctx        | api/pb, internal/db/model, internal/db/pgsql/query, privpb                                                                          |
+| internal/config         | api/client                                                                                                                          |
+| internal/ctl            | api/pb, api/pb/proxypb, api/version, privpb, privpb/proxypb                                                                         |
+| internal/ctl/admin      | api/pb, privpb                                                                                                                      |
+| internal/ctl/ctlsuite   | api/pb, api/pb/mockpb, api/version, internal/ctl, privpb, privpb/mockpb, tests/testutils                                            |
+| internal/db             | internal/db/model, internal/db/pgsql, internal/db/pgsql/query                                                                       |
+| internal/db/model       | api/pb, internal/db/schema                                                                                                          |
+| internal/db/pgsql       | api/pb, internal/db/model, internal/db/pgsql/query, internal/db/schema, internal/metricskey                                         |
+| internal/db/pgsql/query | api/pb, internal/db/schema                                                                                                          |
+| internal/db/schema      | none                                                                                                                                |
+| internal/metricskey     | none                                                                                                                                |
+| mocks/mockclient        | api/client, api/pb                                                                                                                  |
+| mocks/mockpb            | api/pb                                                                                                                              |
+| mocks/mocktrustycadb    | internal/db/model, internal/db/pgsql/query                                                                                          |
+| privpb                  | api/pb                                                                                                                              |
+| privpb/httppb           | privpb                                                                                                                              |
+| privpb/mockpb           | api/pb, privpb                                                                                                                      |
+| privpb/proxypb          | api/pb, privpb                                                                                                                      |
+| server/app              | api/version, internal/authctx, internal/config, internal/db, internal/metricskey, server/appcontainer, server/service, server/tasks |
+| server/appcontainer     | api/client, internal/authctx, internal/config, internal/db                                                                          |
+| server/service          | server/service/admin, server/service/auth, server/service/ca, server/service/orgs, server/service/status, server/service/ui         |
+| server/service/admin    | api/pb, internal/db, internal/db/pgsql/query, privpb, privpb/httppb                                                                 |
+| server/service/auth     | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db, internal/db/model, internal/metricskey                       |
+| server/service/ca       | api/pb, internal/authctx, internal/config, internal/db                                                                              |
+| server/service/cis      | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db                                                               |
+| server/service/orgs     | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db, internal/db/model, internal/db/pgsql/query                   |
+| server/service/status   | api/pb, api/version                                                                                                                 |
+| server/service/ui       | api/pb, internal/config                                                                                                             |
+| server/tasks            | none                                                                                                                                |
+| tests/mockappcontainer  | internal/config                                                                                                                     |
+| tests/testutils         | internal/authctx, internal/config                                                                                                   |
 
 ## Packages
 
@@ -144,7 +144,7 @@ CLI test suites with fixture-backed HTTP servers and gRPC mocks.
 - suite_grpc.go: TestSuiteGrpc, SetupSuite, SetupMockGRPC, SetupTest
 - suite_http.go: TestSuite, CapturePrint, HasNoText, SetupSuite, TearDownSuite
 
-Invariant: CapturePrint records output with the mock server address replaced by `{server}`; TearDownSuite compares it with the suite's golden file, testdata/prints_<suite test>.txt (testutils.CheckGolden), and rewrites the file only with TRUSTYCA_UPDATE_GOLDEN=1. The gRPC suite listens on an ephemeral port and replaces format.NowFunc per test. Suites share CLI globals, so they are not parallel.
+Invariant: CapturePrint records output with the mock server address replaced by `{server}`; TearDownSuite compares it with the suite's golden file, testdata/prints\_<suite test>.txt (testutils.CheckGolden), and rewrites the file only with TRUSTYCA_UPDATE_GOLDEN=1. The gRPC suite listens on an ephemeral port and replaces format.NowFunc per test. Suites share CLI globals, so they are not parallel.
 
 ### api/cli/command
 
@@ -190,7 +190,7 @@ Public protobuf API with handwritten conversion, print helpers and REST paths.
 - print.go: RegisterPrintOnce, PrintKVPairs, PrintMembers, PrintMethodAccesses, Print methods
 - rest.go: PathFor* routes, OAuthResponseType* values
 
-Invariant: Edit protos/, then make proto. Methods declare minimum roles with `(es.api.allowed_roles)` and API key scopes with `(es.api.scopes)`; the generated allocator.pb.go (GetMethodInfo) is what authctx.CheckAccess reads. RegisterPrintOnce registers process-wide printers once. rest.go still declares Stripe webhook and payment page paths carried over from cynos; trustyca has no backend for them.
+Invariant: Edit protos/, then make proto. Methods declare minimum roles with `(es.api.allowed_roles)` and API key scopes with `(es.api.scopes)`; the generated allocator.pb.go (GetMethodInfo) is what authctx.CheckAccess reads. RegisterPrintOnce registers process-wide printers once.
 
 ### api/pb/httppb
 
@@ -236,10 +236,10 @@ Tenant context, grants, roles, scopes and API authorization.
 - allowed.go: GetAllowedMethods, GetCallerScope, ProjectFromRequest
 - authorizer.go: GrantsProvider, Authorizer, NewAuthorizer, ErrInsufficientRole, ErrAccessDenied, ErrOrgNotSelected
 - authz.go: OrgRequester, ProjectRequester, ServiceRolePrefix, NewAuthUnaryInterceptor, CheckAccess
-- ctx.go: TrustyCtx, Claim*, Handler, FromContext, FromRequest, NewTrustyCtx, NewAuthUnaryBackendInterceptor
+- ctx.go: TrustyCtx, Claim\*, Handler, FromContext, FromRequest, NewTrustyCtx, NewAuthUnaryBackendInterceptor
 - grants.go: Grants, GrantsFromMemberships, ResolvedOrgRole, Roles, HighestRole, CanGrantOrgRole, CanGrantProjectRole
 - roles.go: CanAssumeRoles, ParseRole, CanAssumeRole, AllowsRole, OrgRoles, ProjectRoles
-- scopes.go: Scope* constants, DefaultAPIKeyScopes, ParseScopes, HasScope, HasScopes, IsKnownScope
+- scopes.go: Scope\* constants, DefaultAPIKeyScopes, ParseScopes, HasScope, HasScopes, IsKnownScope
 
 Invariants:
 
@@ -276,7 +276,7 @@ Administrative org listing and DPoP key commands.
 - dpop_keys.go: DpopKeysCmd, DpopKeyGenCmd, DpopKeyListCmd, KeyInfo, NewKeyInfo, PrintKeys
 - org.go: OrgCmd, OrgListCmd
 
-Invariant: App supplies clients and input/output. testdata/model_catalog.csv and model_keys.csv are unused cynos carry-overs.
+Invariant: App supplies clients and input/output.
 
 ### internal/ctl/ctlsuite
 
@@ -285,7 +285,7 @@ Admin CLI test suites with HTTP fixtures and gRPC mocks.
 - suite_grpc.go: TestSuiteGrpc, SetupSuite, SetupMockGRPC, SetupTest
 - suite_http.go: TestSuite, CapturePrint, HasNoText, SetupSuite, TearDownSuite
 
-Invariant: As api/cli/clisuite: CapturePrint output, with the mock server address replaced by `{server}`, is compared with testdata/prints_<suite test>.txt (testutils.CheckGolden) and rewritten only with TRUSTYCA_UPDATE_GOLDEN=1. A suite that captures nothing has no golden file. AfterApply changes global formatting, so suites are not parallel.
+Invariant: As api/cli/clisuite: CapturePrint output, with the mock server address replaced by `{server}`, is compared with testdata/prints\_<suite test>.txt (testutils.CheckGolden) and rewritten only with TRUSTYCA_UPDATE_GOLDEN=1. A suite that captures nothing has no golden file. AfterApply changes global formatting, so suites are not parallel.
 
 ### internal/db
 
@@ -399,7 +399,7 @@ Invariant: Run starts each enabled server of `servers` with service.Factories. T
 
 Service dependency graph and ordered resource cleanup.
 
-- appcontainer.go: ContainerFactory, NewContainerFactory, With*Provider, CreateContainerWithDependencies
+- appcontainer.go: ContainerFactory, NewContainerFactory, With\*Provider, CreateContainerWithDependencies
 - closer.go: Closer, NewCloser, OnClose, Close
 
 Invariant: The container provides configuration, discovery, scheduler, JWT (accesstoken over dataprotection), DB, client factory, dataprotection, cache, one Authorizer and OAuth2 clients. provideDp fails without TRUSTYCA_DP_SEED. The cache root key is `/trustyca`. Closer runs cleanup in reverse order.
@@ -498,7 +498,7 @@ Embedded UI pages.
 - pages.go: PageHandler
 - ui_service.go: Service, Factory, New, RegisterRoute
 
-Invariant: pages.go serves the templated pages of static/ (login, authenticated, payment); authenticated.html reads the token from the fragment or query and removes it from the browser history. The payment page is a cynos carry-over without a backend here. New allows direct configuration in tests.
+Invariant: pages.go serves the templated pages of static/ (login, authenticated, payment); authenticated.html reads the token from the fragment or query and removes it from the browser history.
 
 ### server/tasks
 
@@ -530,7 +530,7 @@ Invariant: Config paths resolve against repository fixtures (etc/dev). JSON and 
 - Go 1.27 (`go.mod`). `make tools` installs the lint, coverage, docs, PKI,
   schema, migrate and mock tools listed in `Makefile`.
 - `mocks/` and `api/version/current.go` are gitignored: run `make generate
-  version` on a fresh checkout before building or testing.
+version` on a fresh checkout before building or testing.
 - `make build` builds `trustyca`, `trustycactl`, `trustycasvc`. `make generate`
   runs `go generate ./...` (gomock); `make proto` generates public and private
   protobuf artifacts in Docker; run `make proto generate` when mocks or

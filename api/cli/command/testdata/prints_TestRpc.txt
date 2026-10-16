@@ -177,7 +177,7 @@ Invites:
 			"Role": 7,
 			"Scope": 2,
 			"ProjectID": "201",
-			"ProjectAlias": "payments"
+			"ProjectAlias": "test"
 		}
 	]
 }
@@ -286,33 +286,33 @@ Invites:
 {
 	"ID": "201",
 	"OrgID": "100",
-	"Alias": "payments",
-	"Name": "Payments",
-	"Description": "Payments project",
+	"Alias": "test",
+	"Name": "Test",
+	"Description": "Test project",
 	"Status": 2
 }
 
 - TestRpc/Test_ProjectCreateCmd/txt:
- ID      │ 201      
- Alias   │ payments 
- Name    │ Payments 
- Status  │ Active   
- Created │          
+ ID      │ 201    
+ Alias   │ test   
+ Name    │ Test   
+ Status  │ Active 
+ Created │        
 
 
 - TestRpc/Test_ProjectDeleteCmd/json:
 {
 	"ID": "201",
 	"OrgID": "100",
-	"Alias": "payments",
-	"Name": "Payments",
+	"Alias": "test",
+	"Name": "Test",
 	"Status": 1
 }
 
 - TestRpc/Test_ProjectDeleteCmd/txt:
  ID      │ 201      
- Alias   │ payments 
- Name    │ Payments 
+ Alias   │ test     
+ Name    │ Test     
  Status  │ Inactive 
  Created │          
 
@@ -321,18 +321,18 @@ Invites:
 {
 	"ID": "201",
 	"OrgID": "100",
-	"Alias": "payments",
-	"Name": "Payments",
-	"Description": "Payments project",
+	"Alias": "test",
+	"Name": "Test",
+	"Description": "Test project",
 	"Status": 2
 }
 
 - TestRpc/Test_ProjectGetCmd/txt:
- ID      │ 201      
- Alias   │ payments 
- Name    │ Payments 
- Status  │ Active   
- Created │          
+ ID      │ 201    
+ Alias   │ test   
+ Name    │ Test   
+ Status  │ Active 
+ Created │        
 
 
 - TestRpc/Test_ProjectInviteDeleteCmd/json:
@@ -347,20 +347,20 @@ Invites:
 		{
 			"ID": "201",
 			"OrgID": "100",
-			"Alias": "payments",
-			"Name": "Payments",
-			"Description": "Payments project",
+			"Alias": "test",
+			"Name": "Test",
+			"Description": "Test project",
 			"Status": 2
 		}
 	]
 }
 
 - TestRpc/Test_ProjectListCmd/txt:
-┌─────┬──────────┬──────────┬────────┬─────────┐
-│ ID  │  ALIAS   │   NAME   │ STATUS │ CREATED │
-├─────┼──────────┼──────────┼────────┼─────────┤
-│ 201 │ payments │ Payments │ Active │         │
-└─────┴──────────┴──────────┴────────┴─────────┘
+┌─────┬───────┬──────┬────────┬─────────┐
+│ ID  │ ALIAS │ NAME │ STATUS │ CREATED │
+├─────┼───────┼──────┼────────┼─────────┤
+│ 201 │ test  │ Test │ Active │         │
+└─────┴───────┴──────┴────────┴─────────┘
 
 
 - TestRpc/Test_ProjectMemberAddCmd/json:
@@ -426,7 +426,7 @@ Invites:
 			"Role": 7,
 			"Scope": 2,
 			"ProjectID": "201",
-			"ProjectAlias": "payments"
+			"ProjectAlias": "test"
 		}
 	],
 	"Invites": [
@@ -461,18 +461,18 @@ Invites:
 {
 	"ID": "201",
 	"OrgID": "100",
-	"Alias": "payments",
-	"Name": "Payments",
-	"Description": "Payments project",
+	"Alias": "test",
+	"Name": "Test",
+	"Description": "Test project",
 	"Status": 2
 }
 
 - TestRpc/Test_ProjectUpdateCmd/txt:
- ID      │ 201      
- Alias   │ payments 
- Name    │ Payments 
- Status  │ Active   
- Created │          
+ ID      │ 201    
+ Alias   │ test   
+ Name    │ Test   
+ Status  │ Active 
+ Created │        
 
 
 - TestRpc/Test_ScopeCmd/json:

@@ -27,7 +27,6 @@ const (
 	indexPage         = "index.html"
 	loginPage         = "login.html"
 	authenticatedPage = "authenticated.html"
-	paymentPage       = "payment.html"
 )
 
 // pageTitles provides the <title> for each page
@@ -35,7 +34,6 @@ var pageTitles = map[string]string{
 	indexPage:         "Trusty",
 	loginPage:         "Login",
 	authenticatedPage: "Authenticated",
-	paymentPage:       "Payment",
 }
 
 // pagesByPath maps a route to the page template it renders
@@ -43,7 +41,6 @@ var pagesByPath = map[string]string{
 	"/":                         indexPage,
 	pb.PathForLoginPage:         loginPage,
 	pb.PathForAuthenticatedPage: authenticatedPage,
-	pb.PathForPaymentPage:       paymentPage,
 }
 
 var alive = []byte("ALIVE")
@@ -55,8 +52,6 @@ type pageData struct {
 	Title string
 	// RecaptchaSiteKey is the reCAPTCHA v3 site key; empty disables reCAPTCHA on the login page
 	RecaptchaSiteKey string
-	// StripePublishableKey is the Stripe publishable key for Stripe.js; empty disables the checkout widget
-	StripePublishableKey string
 }
 
 func (s *Service) pageData(name string) pageData {
@@ -65,10 +60,6 @@ func (s *Service) pageData(name string) pageData {
 	}
 	if s.cfg != nil {
 		d.RecaptchaSiteKey = s.cfg.Auth.RecaptchaSiteKey
-		// TODO: payments?
-		// if s.cfg.TrustyRA.Payments != nil {
-		// 	d.StripePublishableKey = s.cfg.Trusty.Payments.PublishableKey
-		// }
 	}
 	return d
 }

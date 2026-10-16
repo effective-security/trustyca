@@ -2190,18 +2190,6 @@ const (
 )
 ```
 
-<a name="PathForWebhooks"></a>Webhooks
-
-```go
-const (
-    // PathForWebhooks provides the base path for webhooks
-    PathForWebhooks = "/v1/webhooks/:actions"
-
-    // PathForWebhooksStripe provides the base path for stripe webhooks
-    PathForWebhooksStripe = "/v1/webhooks/stripe"
-)
-```
-
 <a name="OAuthResponseTypeIDToken"></a>List of supported Types
 
 ```go
@@ -2230,19 +2218,6 @@ const (
     // Verbs: GET
     // Response: text/html
     PathForAuthenticatedPage = "/authenticated"
-
-    // PathForPaymentPage renders the Stripe checkout widget.
-    // The PaymentIntent client secret is passed in the URL fragment,
-    // see CheckoutClientSecretParam.
-    //
-    // Verbs: GET
-    // Response: text/html
-    PathForPaymentPage = "/payment"
-
-    // CheckoutClientSecretParam is the URL fragment parameter of PathForPaymentPage
-    // that carries PaymentOrderResponse.ClientSecret:
-    // /payment#checkout_client_secret=<secret>
-    CheckoutClientSecretParam = "checkout_client_secret"
 )
 ```
 
@@ -2295,6 +2270,15 @@ const IssuerStatus_Enum_SupportedNamesHelp = "Unknown,Pending,Active,Archived,De
 
 ```go
 const ItemStatus_Enum_SupportedNamesHelp = "Unknown,Inactive,Active,Invalid"
+```
+
+<a name="PathForWebhooks"></a>Webhooks
+
+```go
+const (
+    // PathForWebhooks provides the base path for webhooks
+    PathForWebhooks = "/v1/webhooks/:actions"
+)
 ```
 
 <a name="ReasonCode_Enum_SupportedNamesHelp"></a>

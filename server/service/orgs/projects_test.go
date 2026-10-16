@@ -29,31 +29,31 @@ func TestService_Projects(t *testing.T) {
 	noOrg := testCtx("42", "")
 
 	// register
-	_, err := svc.RegisterProject(noOrg, &pb.RegisterProjectRequest{Name: "Payments"})
+	_, err := svc.RegisterProject(noOrg, &pb.RegisterProjectRequest{Name: "Test"})
 	assert.EqualError(t, err, "forbidden: org not selected")
 
 	_, err = svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: "  "})
 	assert.EqualError(t, err, "bad_request: name is required")
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(&model.Org{ID: xdb.NewID(1), Status: pb.ItemStatus_Inactive}, nil)
-	_, err = svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: "Payments"})
+	_, err = svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: "Test"})
 	assert.EqualError(t, err, "conflict: org is deleted")
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
 	db.EXPECT().RegisterProject(gomock.Any(), gomock.Any()).DoAndReturn(func(_ any, p *model.Project) (*model.Project, error) {
 		assert.Equal(t, uint64(1), p.OrgID.UInt64())
-		assert.Equal(t, "payments", p.Alias)
-		assert.Equal(t, "Payments", p.Name)
+		assert.Equal(t, "test", p.Alias)
+		assert.Equal(t, "Test", p.Name)
 		return testProject, nil
 	})
-	project, err := svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: " Payments ", Alias: "payments"})
+	project, err := svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: " Test ", Alias: "test"})
 	require.NoError(t, err)
 	assert.Equal(t, "201", project.ID)
 	assert.Equal(t, "1", project.OrgID)
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
 	db.EXPECT().RegisterProject(gomock.Any(), gomock.Any()).Return(nil, errors.New("duplicate"))
-	_, err = svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: "Payments"})
+	_, err = svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: "Test"})
 	assert.EqualError(t, err, "unexpected: failed to register project")
 
 	// update
@@ -65,7 +65,7 @@ func TestService_Projects(t *testing.T) {
 	assert.EqualError(t, err, "not_found: project not found", "inactive project")
 
 	db.EXPECT().UpdateProject(gomock.Any(), &query.UpdateProjectRequest{ID: 201, Name: "Renamed", Description: "d"}).Return(&model.Project{
-		ID: xdb.NewID(201), OrgID: xdb.NewID(1), Alias: "payments", Name: "Renamed", Status: pb.ItemStatus_Active,
+		ID: xdb.NewID(201), OrgID: xdb.NewID(1), Alias: "test", Name: "Renamed", Status: pb.ItemStatus_Active,
 	}, nil)
 	project, err = svc.UpdateProject(ctx, &pb.UpdateProjectRequest{ProjectID: "201", Name: " Renamed ", Description: "d"})
 	require.NoError(t, err)
@@ -75,13 +75,13 @@ func TestService_Projects(t *testing.T) {
 	// get by ID and by alias
 	project, err = svc.GetProject(ctx, &pb.GetProjectRequest{ProjectID: "201"})
 	require.NoError(t, err)
-	assert.Equal(t, "payments", project.Alias)
+	assert.Equal(t, "test", project.Alias)
 
 	_, err = svc.GetProject(ctx, &pb.GetProjectRequest{})
 	assert.EqualError(t, err, "bad_request: project ID or alias is required")
 
-	db.EXPECT().FindProject(gomock.Any(), uint64(1), "payments").Return(testProject, nil)
-	project, err = svc.GetProject(ctx, &pb.GetProjectRequest{Alias: "payments"})
+	db.EXPECT().FindProject(gomock.Any(), uint64(1), "test").Return(testProject, nil)
+	project, err = svc.GetProject(ctx, &pb.GetProjectRequest{Alias: "test"})
 	require.NoError(t, err)
 	assert.Equal(t, "201", project.ID)
 
@@ -92,8 +92,8 @@ func TestService_Projects(t *testing.T) {
 	// by alias resolves the project and authorizes project:read for it:
 	// a project-only member of 201 cannot read project 203 by alias
 	projectOnly := Service{db: db, authorizer: newFakeAuthorizer(projectGrant(7, 201, pb.Role_Admin))}
-	db.EXPECT().FindProject(gomock.Any(), uint64(1), "payments").Return(testProject, nil)
-	project, err = projectOnly.GetProject(testCtx("7", "1"), &pb.GetProjectRequest{Alias: "payments"})
+	db.EXPECT().FindProject(gomock.Any(), uint64(1), "test").Return(testProject, nil)
+	project, err = projectOnly.GetProject(testCtx("7", "1"), &pb.GetProjectRequest{Alias: "test"})
 	require.NoError(t, err)
 	assert.Equal(t, "201", project.ID)
 	other := &model.Project{ID: xdb.NewID(202), OrgID: xdb.NewID(1), Alias: "other", Name: "Other", Status: pb.ItemStatus_Active}
@@ -128,7 +128,7 @@ func TestService_Projects(t *testing.T) {
 
 	// delete deactivates
 	db.EXPECT().UpdateProject(gomock.Any(), &query.UpdateProjectRequest{ID: 201, Status: pb.ItemStatus_Inactive}).Return(&model.Project{
-		ID: xdb.NewID(201), OrgID: xdb.NewID(1), Alias: "payments", Name: "Payments", Status: pb.ItemStatus_Inactive,
+		ID: xdb.NewID(201), OrgID: xdb.NewID(1), Alias: "test", Name: "Test", Status: pb.ItemStatus_Inactive,
 	}, nil)
 	project, err = svc.DeleteProject(ctx, &pb.DeleteProjectRequest{ProjectID: "201"})
 	require.NoError(t, err)

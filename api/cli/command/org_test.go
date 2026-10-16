@@ -161,7 +161,7 @@ func (s *testSuiteGrpc) Test_OrgAccessCmd() {
 				ID:           "1",
 				OrgID:        "1",
 				ProjectID:    "201",
-				ProjectAlias: "payments",
+				ProjectAlias: "test",
 				Scope:        pb.Scope_Project,
 				Role:         pb.Role_Admin,
 			},

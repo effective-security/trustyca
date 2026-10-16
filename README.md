@@ -1,6 +1,6 @@
 # trustyca
 
-LLM Semantic Router
+Lightweight Certification Authority
 
 ## Requirements
 
@@ -11,19 +11,6 @@ Install manually or using VS Code extension for `Golang Tools`:
 2. Postgresql Client and pg_restore 15.7+
 
 Install posgresql client & restore, for data import locally. Needed for pg_restore to run.
-
-3. Obtain credential for cyres_primary from AWS Console (should have access to AWS Dev) & export the same before run.
-
-```sh
-go install golang.org/x/tools/cmd/stringer@latest
-go install golang.org/x/tools/cmd/gorename@latest
-go install golang.org/x/tools/cmd/godoc@latest
-go install golang.org/x/tools/cmd/guru@latest
-go install golang.org/x/tools/cmd/goimports@latest
-go install github.com/go-delve/delve/cmd/dlv@latest
-go install golang.org/x/tools/gopls@latest
-go install honnef.co/go/tools/cmd/staticcheck@latest
-```
 
 ## go mod
 
@@ -147,20 +134,3 @@ clients:
       timeout: 6s
     storage_folder: ~/.trustyca
 ```
-
-## Stripe
-
-- https://stripe.com/docs/stripe-cli
-- https://stripe.com/docs/payments/payment-intents/verifying-status
-
-To install the Stripe CLI on Linux without a package manager:
-
-- Download the latest linux tar.gz file from https://github.com/stripe/stripe-cli/releases/latest
-- Unzip the file: tar -xvf stripe_X.X.X_linux_x86_64.tar.gz
-- Move ./stripe to your execution path.
-
-Login
-
-stripe login --api-key $TRUSTYCA_STRIPE_API_KEY
-stripe listen --skip-verify --forward-to https://localhost:8880/v1/webhooks/stripe
-export TRUSTYCA_STRIPE_WEBHOOK_SECRET=c1..aw

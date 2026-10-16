@@ -68,7 +68,7 @@ func TestService_RegisterProject_PreconditionContract(t *testing.T) {
 		svc, ctx := deletedOrg(t)
 
 		r := httptest.NewRequestWithContext(ctx, http.MethodPost, pb.Orgs_RegisterProject_FullMethodName,
-			strings.NewReader(`{"Name":"Payments"}`))
+			strings.NewReader(`{"Name":"Test"}`))
 		w := httptest.NewRecorder()
 		svc.OrgsHTTPHandler()(w, r, nil)
 		assert.Equal(t, http.StatusConflict, w.Code)
@@ -99,7 +99,7 @@ func TestService_RegisterProject_PreconditionContract(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = conn.Close() })
 
-		_, err = pb.NewOrgsClient(conn).RegisterProject(context.Background(), &pb.RegisterProjectRequest{Name: "Payments"})
+		_, err = pb.NewOrgsClient(conn).RegisterProject(context.Background(), &pb.RegisterProjectRequest{Name: "Test"})
 		st, ok := status.FromError(err)
 		require.True(t, ok, "%v", err)
 		assert.Equal(t, codes.FailedPrecondition, st.Code())
@@ -108,6 +108,6 @@ func TestService_RegisterProject_PreconditionContract(t *testing.T) {
 		// this fails once porto maps FailedPrecondition to 409
 		converted := httperror.NewFromPb(err)
 		assert.Equal(t, "org is deleted", converted.Message)
-		assert.Equal(t, http.StatusInternalServerError, converted.HTTPStatus, "porto maps FailedPrecondition to 500")
+		assert.Equal(t, http.StatusBadRequest, converted.HTTPStatus, "porto maps FailedPrecondition to 400")
 	})
 }
