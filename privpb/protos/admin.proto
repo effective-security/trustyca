@@ -10,12 +10,59 @@ import "types.proto";
 import "orgs.proto";
 
 service Admin {
+    // ListOrgs lists orgs
     rpc ListOrgs(ListOrgsRequest) returns (pb.OrgsResponse) {
         option (google.api.http) = {
             post: "/privpb.Admin/ListOrgs",
             body: "*"
         };
-        option (es.api.cli_cmd) = "admin org list";
+        option (es.api.cli_cmd) = "org list";
+    }
+
+    // TODO
+    /*
+    // GetOrg returns an org with its budget
+    rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+        option (google.api.http) = {
+            post: "/privpb.Admin/GetOrganization",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org get";
+    }
+    // CreateOrg creates an org owned by an existing user
+    rpc CreateOrg(CreateOrgRequest)
+        returns (pb.Organization) {
+        option (google.api.http) = {
+            post: "/privpb.Admin/CreateOrganization",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org create";
+    }
+    // UpdateOrg updates an org
+    rpc UpdateOrg(UpdateOrgRequest)
+        returns (pb.Organization) {
+        option (google.api.http) = {
+            post: "/privpb.Admin/UpdateOrganization",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org update";
+    }
+    // DeleteOrg deletes an org that has no projects
+    rpc DeleteOrg(DeleteOrgRequest)
+        returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/privpb.Admin/DeleteOrganization",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "org delete";
+    }
+*/
+    rpc ListProjects(ListProjectsRequest) returns (pb.ProjectsResponse) {
+        option (google.api.http) = {
+            post: "/privpb.Admin/ListProjects",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "project list";
     }
 }
 
@@ -35,4 +82,24 @@ message ListOrgsRequest {
     // Status specifies on optional status of the item to filter by.
     // If not specified, all items will be listed.
     pb.ItemStatus.Enum Status = 4 [json_name = "Status"];
+}
+
+// ListProjectsRequest specifies list projects request
+message ListProjectsRequest {
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 1 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination.
+    // Which is limited to 10000.
+    // To paginate for large number of records, use cursor-based pagination
+    // instead.
+    uint32 Offset = 2 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    string Cursor = 3 [json_name = "Cursor"];
+    // Status specifies on optional status of the item to filter by.
+    // If not specified, all items will be listed.
+    pb.ItemStatus.Enum Status = 4 [json_name = "Status"];
+    // OrgID specifies optional org ID to filter by.
+    string OrgID = 5 [json_name = "OrgID"];
 }

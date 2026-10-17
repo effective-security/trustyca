@@ -13,6 +13,7 @@ import (
 	"github.com/effective-security/porto/xhttp/marshal"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/authctx"
+	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/x/values"
 	"github.com/effective-security/xpki/jwt"
 	"google.golang.org/grpc/codes"
@@ -156,21 +157,24 @@ func (s *Service) revoke(ctx context.Context) error {
 		return httperror.WrapWithCtx(ctx, err, "request failed")
 	}
 
-	// TODO: events
-	// email := mapclaims.String("email")
-	// evt := &model.Event{
-	// 	Type:        pb.EventType_TokenRevoked,
-	// 	Email:       xdb.NULLString(email),
-	// 	Source:      xdb.NULLString(ictx.Target()),
-	// 	Title:       "Revoked token",
-	// 	Description: xdb.NULLString(fmt.Sprintf("User %s revoked token: %s", mapclaims.String("sub"), mapclaims.String("jti"))),
-	// }
+	tctx := authctx.FromContext(ctx)
+	jti := mapclaims.String("jti")
+	if tctx.IsAPIKey() {
+		// the subject of an API key token is the key: no user signs out
+		events.New(ctx, ServiceName, pb.EventType_TokenRevoked, "Token revoked").
+			Org(tctx.OrgID()).
+			Project(tctx.ProjectID()).
+			Reference(tctx.UserID()).
+			Description("API key token %s revoked", jti).
+			Emit(s.db)
+		return nil
+	}
 
-	// if id := mapclaims.UInt64("org"); id > 0 {
-	// 	evt.OrgID = xdb.NewID(id)
-	// }
-
-	// s.db.TryCreateEvent(evt)
+	events.New(ctx, ServiceName, pb.EventType_UserSignedOut, "User signed out").
+		Org(tctx.OrgID()).
+		Reference(tctx.UserID()).
+		Description("%s signed out and revoked token %s", tctx.Email(), jti).
+		Emit(s.db)
 
 	return nil
 }

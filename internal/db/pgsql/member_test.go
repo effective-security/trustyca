@@ -287,9 +287,19 @@ func Test_ProjectMembership(t *testing.T) {
 	assert.Equal(t, project1.ID.UInt64(), accepted.ProjectID.UInt64())
 	assert.Equal(t, pb.Role_User, accepted.Role)
 
-	n, err := provider.AcceptInvites(ctx, invitee)
+	// the project invite is consumed; the org-wide one is left to accept
+	acceptedAll, err := provider.AcceptInvites(ctx, invitee)
 	require.NoError(t, err)
-	assert.EqualValues(t, 1, n)
+	require.Len(t, acceptedAll, 1)
+	assert.Equal(t, org.ID.UInt64(), acceptedAll[0].OrgID.UInt64())
+	assert.Zero(t, acceptedAll[0].ProjectID.UInt64(), "org-wide grant")
+	assert.Equal(t, invitee.ID.UInt64(), acceptedAll[0].UserID.UInt64())
+	assert.Equal(t, pb.Role_Billing, acceptedAll[0].Role)
+
+	// nothing is left to accept
+	acceptedAll, err = provider.AcceptInvites(ctx, invitee)
+	require.NoError(t, err)
+	assert.Empty(t, acceptedAll)
 
 	inviteeMemberships, err := provider.ListMemberships(ctx, &query.ListMembershipsRequest{OrgID: org.ID.UInt64(), UserID: invitee.ID.UInt64()})
 	require.NoError(t, err)

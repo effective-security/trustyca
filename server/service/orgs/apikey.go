@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/effective-security/porto/xhttp/httperror"
@@ -12,6 +13,7 @@ import (
 	"github.com/effective-security/trustyca/internal/authctx"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
+	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/dataprotection"
@@ -95,8 +97,12 @@ func (s *Service) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest)
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to register API key")
 	}
-	s.event(ctx, orgID, projectID, a.ID, pb.EventType_APIKeyCreated,
-		fmt.Sprintf("API key %s created", a.Label))
+	events.New(ctx, ServiceName, pb.EventType_APIKeyCreated, "API key created").
+		Org(orgID).
+		Project(projectID).
+		Reference(a.ID).
+		Description("API key %q created with scopes %s", a.Label, strings.Join(a.Scopes, ",")).
+		Emit(s.db)
 
 	res := a.Pb()
 	// the secret is returned only once
@@ -154,8 +160,12 @@ func (s *Service) DeleteAPIKey(ctx context.Context, req *pb.APIKeyRequest) (*pb.
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "unable to delete API key")
 	}
-	s.event(ctx, orgID, key.ProjectID, key.ID, pb.EventType_APIKeyDeleted,
-		fmt.Sprintf("API key %s deleted", key.Label))
+	events.New(ctx, ServiceName, pb.EventType_APIKeyDeleted, "API key deleted").
+		Org(orgID).
+		Project(key.ProjectID).
+		Reference(key.ID).
+		Description("API key %q deleted", key.Label).
+		Emit(s.db)
 
 	return &pb.RecordsResult{Deleted: res}, nil
 }

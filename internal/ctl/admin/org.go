@@ -13,6 +13,8 @@ type OrgCmd struct {
 
 type OrgListCmd struct {
 	Status string `help:"the status to filter by"`
+	Limit  uint32 `help:"the maximum number of records to return"`
+	Offset uint32 `help:"the offset for the offset-based pagination"`
 }
 
 // Run the command
@@ -22,7 +24,10 @@ func (a *OrgListCmd) Run(app App) error {
 		return err
 	}
 
-	req := &privpb.ListOrgsRequest{}
+	req := &privpb.ListOrgsRequest{
+		Limit:  a.Limit,
+		Offset: a.Offset,
+	}
 	if a.Status != "" {
 		req.Status = pb.ItemStatus_Unknown.Parse(a.Status)
 		if req.Status == pb.ItemStatus_Unknown {

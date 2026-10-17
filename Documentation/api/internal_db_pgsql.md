@@ -15,7 +15,7 @@ import "github.com/effective-security/trustyca/internal/db/pgsql"
 - [type Provider](<#Provider>)
   - [func New\(p xdb.Provider\) \(\*Provider, error\)](<#New>)
   - [func \(p \*Provider\) AcceptInvite\(ctx context.Context, inviteID, userID uint64\) \(\*model.Membership, error\)](<#Provider.AcceptInvite>)
-  - [func \(p \*Provider\) AcceptInvites\(ctx context.Context, user \*model.User\) \(int64, error\)](<#Provider.AcceptInvites>)
+  - [func \(p \*Provider\) AcceptInvites\(ctx context.Context, user \*model.User\) \(model.MembershipSlice, error\)](<#Provider.AcceptInvites>)
   - [func \(p \*Provider\) AddMember\(ctx context.Context, member \*model.Membership\) \(\*model.Membership, error\)](<#Provider.AddMember>)
   - [func \(p \*Provider\) BeginTx\(ctx context.Context, opts \*sql.TxOptions\) \(xdb.Provider, error\)](<#Provider.BeginTx>)
   - [func \(p \*Provider\) Builder\(\) xsql.SQLDialect](<#Provider.Builder>)
@@ -141,13 +141,13 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 AcceptInvite accepts an invite for a user, adds the user as a member at the invite's scope with the invited role, and removes the invite.
 
 <a name="Provider.AcceptInvites"></a>
-### func \(\*Provider\) [AcceptInvites](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/invite.go#L205>)
+### func \(\*Provider\) [AcceptInvites](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/invite.go#L208>)
 
 ```go
-func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (int64, error)
+func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error)
 ```
 
-AcceptInvites moves invites to memberships at the invites' scopes
+AcceptInvites moves the pending invites for a user's email to grants at the invites' scopes, and returns the grants it created. An invite whose grant fails is logged and skipped; a grant whose invite is not deleted is still returned.
 
 <a name="Provider.AddMember"></a>
 ### func \(\*Provider\) [AddMember](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/member.go#L18>)
@@ -217,7 +217,7 @@ func (p *Provider) ConnectionString() string
 
 
 <a name="Provider.CreateEvent"></a>
-### func \(\*Provider\) [CreateEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L29>)
+### func \(\*Provider\) [CreateEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L32>)
 
 ```go
 func (p *Provider) CreateEvent(ctx context.Context, m *model.Event) (*model.Event, error)
@@ -271,7 +271,7 @@ func (p *Provider) DeleteInviteByID(ctx context.Context, id uint64) (int64, erro
 DeleteInviteByID deletes an invite by ID
 
 <a name="Provider.DeleteLogin"></a>
-### func \(\*Provider\) [DeleteLogin](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L136>)
+### func \(\*Provider\) [DeleteLogin](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L139>)
 
 ```go
 func (p *Provider) DeleteLogin(ctx context.Context, id uint64) (int64, error)
@@ -298,7 +298,7 @@ func (p *Provider) DeleteOrg(ctx context.Context, id uint64) (map[string]int64, 
 DeleteOrg deletes an org and all its members
 
 <a name="Provider.DeleteUser"></a>
-### func \(\*Provider\) [DeleteUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L99>)
+### func \(\*Provider\) [DeleteUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L102>)
 
 ```go
 func (p *Provider) DeleteUser(ctx context.Context, id uint64) (map[string]int64, error)
@@ -307,7 +307,7 @@ func (p *Provider) DeleteUser(ctx context.Context, id uint64) (map[string]int64,
 DeleteUser deletes user and logins by user ID
 
 <a name="Provider.DeleteUserByEmail"></a>
-### func \(\*Provider\) [DeleteUserByEmail](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L74>)
+### func \(\*Provider\) [DeleteUserByEmail](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L77>)
 
 ```go
 func (p *Provider) DeleteUserByEmail(ctx context.Context, email string) (map[string]int64, error)
@@ -352,7 +352,7 @@ func (p *Provider) GetAPIKey(ctx context.Context, orgID, id uint64) (*model.APIK
 GetAPIKey returns an API key of the org by ID
 
 <a name="Provider.GetEvent"></a>
-### func \(\*Provider\) [GetEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L75>)
+### func \(\*Provider\) [GetEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L78>)
 
 ```go
 func (p *Provider) GetEvent(ctx context.Context, id uint64) (*model.Event, error)
@@ -379,7 +379,7 @@ func (p *Provider) GetInviteByOrgAndEmail(ctx context.Context, orgID, projectID 
 GetInviteByOrgAndEmail returns an invite by org, scope and email. projectID 0 returns the Org scope invite.
 
 <a name="Provider.GetLogin"></a>
-### func \(\*Provider\) [GetLogin](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L124>)
+### func \(\*Provider\) [GetLogin](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L127>)
 
 ```go
 func (p *Provider) GetLogin(ctx context.Context, id uint64) (*model.Login, error)
@@ -388,7 +388,7 @@ func (p *Provider) GetLogin(ctx context.Context, id uint64) (*model.Login, error
 GetLogin returns a login by ID
 
 <a name="Provider.GetLoginsByEmail"></a>
-### func \(\*Provider\) [GetLoginsByEmail](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L175>)
+### func \(\*Provider\) [GetLoginsByEmail](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L178>)
 
 ```go
 func (p *Provider) GetLoginsByEmail(ctx context.Context, email string) (model.LoginSlice, error)
@@ -424,7 +424,7 @@ func (p *Provider) GetProject(ctx context.Context, id uint64) (*model.Project, e
 GetProject returns Project by ID
 
 <a name="Provider.GetUser"></a>
-### func \(\*Provider\) [GetUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L148>)
+### func \(\*Provider\) [GetUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L151>)
 
 ```go
 func (p *Provider) GetUser(ctx context.Context, id uint64) (*model.User, error)
@@ -433,7 +433,7 @@ func (p *Provider) GetUser(ctx context.Context, id uint64) (*model.User, error)
 GetUser returns user
 
 <a name="Provider.GetUserByEmail"></a>
-### func \(\*Provider\) [GetUserByEmail](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L161>)
+### func \(\*Provider\) [GetUserByEmail](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L164>)
 
 ```go
 func (p *Provider) GetUserByEmail(ctx context.Context, email string) (*model.User, error)
@@ -487,7 +487,7 @@ func (p *Provider) ListAPIKeys(ctx context.Context, r *query.ListAPIKeysRequest)
 ListAPIKeys lists API keys of an org
 
 <a name="Provider.ListEvents"></a>
-### func \(\*Provider\) [ListEvents](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L61>)
+### func \(\*Provider\) [ListEvents](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L64>)
 
 ```go
 func (p *Provider) ListEvents(ctx context.Context, r *query.ListEventsRequest) (*model.EventResult, error)
@@ -496,7 +496,7 @@ func (p *Provider) ListEvents(ctx context.Context, r *query.ListEventsRequest) (
 ListEvents returns events
 
 <a name="Provider.ListLogins"></a>
-### func \(\*Provider\) [ListLogins](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L189>)
+### func \(\*Provider\) [ListLogins](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L192>)
 
 ```go
 func (p *Provider) ListLogins(ctx context.Context, limit, offset uint32) (model.LoginSlice, uint32, error)
@@ -532,13 +532,13 @@ func (p *Provider) ListProjects(ctx context.Context, req *query.ListProjectsRequ
 ListProjects lists projects of an org
 
 <a name="Provider.LoginUser"></a>
-### func \(\*Provider\) [LoginUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L19>)
+### func \(\*Provider\) [LoginUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L22>)
 
 ```go
 func (p *Provider) LoginUser(ctx context.Context, m *model.Login) (*model.Login, *model.User, error)
 ```
 
-LoginUser returns logged in model.User
+LoginUser registers the login and its user and returns both. A new login and a new user are inserted under one new ID; on a conflict each row keeps its ID, so only the first login of a new user returns both with the same ID.
 
 <a name="Provider.Name"></a>
 ### func \(\*Provider\) [Name](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L49>)
@@ -622,13 +622,13 @@ func (p *Provider) Rollback() error
 
 
 <a name="Provider.TryCreateEvent"></a>
-### func \(\*Provider\) [TryCreateEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L15>)
+### func \(\*Provider\) [TryCreateEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L18>)
 
 ```go
 func (p *Provider) TryCreateEvent(evt *model.Event)
 ```
 
-
+TryCreateEvent creates the event on its own goroutine with a background context, so the caller's cancellation does not drop it, and logs a failure instead of returning it
 
 <a name="Provider.Tx"></a>
 ### func \(\*Provider\) [Tx](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L86>)
@@ -667,7 +667,7 @@ func (p *Provider) UpdateProject(ctx context.Context, req *query.UpdateProjectRe
 UpdateProject updates a project's name, description or status
 
 <a name="Provider.UpdateUser"></a>
-### func \(\*Provider\) [UpdateUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L108>)
+### func \(\*Provider\) [UpdateUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L111>)
 
 ```go
 func (p *Provider) UpdateUser(ctx context.Context, id uint64, name string, emailVerified bool) (*model.User, error)

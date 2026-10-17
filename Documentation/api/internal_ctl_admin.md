@@ -22,6 +22,9 @@ import "github.com/effective-security/trustyca/internal/ctl/admin"
 - [type OrgCmd](<#OrgCmd>)
 - [type OrgListCmd](<#OrgListCmd>)
   - [func \(a \*OrgListCmd\) Run\(app App\) error](<#OrgListCmd.Run>)
+- [type ProjectCmd](<#ProjectCmd>)
+- [type ProjectListCmd](<#ProjectListCmd>)
+  - [func \(a \*ProjectListCmd\) Run\(app App\) error](<#ProjectListCmd.Run>)
 
 
 <a name="PrintKeys"></a>
@@ -160,21 +163,57 @@ type OrgCmd struct {
 ```
 
 <a name="OrgListCmd"></a>
-## type [OrgListCmd](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/org.go#L14-L16>)
+## type [OrgListCmd](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/org.go#L14-L18>)
 
 
 
 ```go
 type OrgListCmd struct {
     Status string `help:"the status to filter by"`
+    Limit  uint32 `help:"the maximum number of records to return"`
+    Offset uint32 `help:"the offset for the offset-based pagination"`
 }
 ```
 
 <a name="OrgListCmd.Run"></a>
-### func \(\*OrgListCmd\) [Run](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/org.go#L19>)
+### func \(\*OrgListCmd\) [Run](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/org.go#L21>)
 
 ```go
 func (a *OrgListCmd) Run(app App) error
+```
+
+Run the command
+
+<a name="ProjectCmd"></a>
+## type [ProjectCmd](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/project.go#L10-L13>)
+
+ProjectCmd is the base command for project operations
+
+```go
+type ProjectCmd struct {
+    List ProjectListCmd `cmd:""  help:"list projects"`
+}
+```
+
+<a name="ProjectListCmd"></a>
+## type [ProjectListCmd](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/project.go#L15-L20>)
+
+
+
+```go
+type ProjectListCmd struct {
+    Status string `help:"the status to filter by"`
+    Org    string `help:"the org ID to filter by"`
+    Limit  uint32 `help:"the maximum number of records to return"`
+    Offset uint32 `help:"the offset for the offset-based pagination"`
+}
+```
+
+<a name="ProjectListCmd.Run"></a>
+### func \(\*ProjectListCmd\) [Run](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/project.go#L23>)
+
+```go
+func (a *ProjectListCmd) Run(app App) error
 ```
 
 Run the command

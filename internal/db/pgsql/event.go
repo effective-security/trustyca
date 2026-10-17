@@ -12,6 +12,9 @@ import (
 	"github.com/effective-security/xlog"
 )
 
+// TryCreateEvent creates the event on its own goroutine with a background
+// context, so the caller's cancellation does not drop it, and logs a failure
+// instead of returning it
 func (p *Provider) TryCreateEvent(evt *model.Event) {
 	go func(evt *model.Event) {
 		_, err := p.CreateEvent(context.Background(), evt)
@@ -44,7 +47,7 @@ func (p *Provider) CreateEvent(ctx context.Context, m *model.Event) (*model.Even
 		m.Type,
 		slices.StringUpto(m.Title, 254),
 		m.Description,
-		m.Metadata,
+		metadataArg(m.Metadata),
 		m.ReferenceID.UInt64(),
 		m.Email,
 		m.Source,

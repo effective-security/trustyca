@@ -151,7 +151,7 @@ func TestService_AddMember(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mocktrustycadb.NewMockOrgsDb(ctrl)
-	db.EXPECT().TryCreateEvent(gomock.Any()).AnyTimes()
+	events := recordEvents(db)
 	// 42: Owner; 43: Admin; 7: project 201 Admin only; 8: org User
 	az := newFakeAuthorizer(
 		orgGrant(42, pb.Role_Owner),
@@ -212,6 +212,7 @@ func TestService_AddMember(t *testing.T) {
 	res, err := svc.AddMember(owner, &pb.AddMemberRequest{Email: "  User@Example.com ", Role: pb.Role_Admin})
 	require.NoError(t, err)
 	assert.Equal(t, "11", res.Membership.ID)
+	events.requireNone(t)
 
 	// existing grant with another role conflicts
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
@@ -236,6 +237,14 @@ func TestService_AddMember(t *testing.T) {
 	assert.Equal(t, "test", res.Membership.ProjectAlias)
 	assert.Equal(t, "Test Org", res.Membership.OrgName)
 	assert.Contains(t, az.invalidated, "user:7")
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_ProjectMemberAdded,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 7,
+		Title:       "Member added",
+		Description: "user@example.com added as Security",
+	})
 
 	// org-wide grant by an Admin
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
@@ -247,6 +256,13 @@ func TestService_AddMember(t *testing.T) {
 	assert.Equal(t, "10", res.Membership.ID)
 	assert.Equal(t, pb.Scope_Org, res.Membership.Scope)
 	assert.Equal(t, "user@example.com", res.Membership.Email)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_OrgMemberAdded,
+		OrgID:       1,
+		ReferenceID: 7,
+		Title:       "Member added",
+		Description: "user@example.com added as Admin",
+	})
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
 	db.EXPECT().GetUserByEmail(gomock.Any(), "user@example.com").Return(target, nil)
@@ -260,6 +276,7 @@ func TestService_AddMember(t *testing.T) {
 	db.EXPECT().AddMember(gomock.Any(), gomock.Any()).Return(nil, errors.New("db failed"))
 	_, err = svc.AddMember(owner, &pb.AddMemberRequest{Email: "user@example.com", Role: pb.Role_Admin})
 	assert.EqualError(t, err, "unexpected: request failed")
+	events.requireNone(t)
 
 	// unknown user gets an invite at the requested scope
 	invite := &model.Invite{ID: xdb.NewID(20), OrgID: xdb.NewID(1), ProjectID: xdb.NewID(201), InviterID: xdb.NewID(7), Email: "new@example.com", Role: pb.Role_User}
@@ -276,12 +293,38 @@ func TestService_AddMember(t *testing.T) {
 	assert.Equal(t, "20", res.Invite.ID)
 	assert.Equal(t, pb.Scope_Project, res.Invite.Scope)
 	assert.Nil(t, res.Membership)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_ProjectMemberInvited,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 20,
+		Title:       "Member invited",
+		Description: "new@example.com invited as User",
+	})
+
+	// an org-wide invite
+	orgInvite := &model.Invite{ID: xdb.NewID(21), OrgID: xdb.NewID(1), InviterID: xdb.NewID(42), Email: "new@example.com", Role: pb.Role_Viewer}
+	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
+	db.EXPECT().GetUserByEmail(gomock.Any(), "new@example.com").Return(nil, sql.ErrNoRows)
+	db.EXPECT().CreateInvite(gomock.Any(), gomock.Any()).Return(orgInvite, nil)
+	res, err = svc.AddMember(owner, &pb.AddMemberRequest{Email: "new@example.com", Role: pb.Role_Viewer})
+	require.NoError(t, err)
+	require.NotNil(t, res.Invite)
+	assert.Equal(t, pb.Scope_Org, res.Invite.Scope)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_OrgMemberInvited,
+		OrgID:       1,
+		ReferenceID: 21,
+		Title:       "Member invited",
+		Description: "new@example.com invited as Viewer",
+	})
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
 	db.EXPECT().GetUserByEmail(gomock.Any(), "new@example.com").Return(nil, errors.New("connection failed"))
 	db.EXPECT().CreateInvite(gomock.Any(), gomock.Any()).Return(nil, errors.New("db failed"))
 	_, err = svc.AddMember(owner, &pb.AddMemberRequest{Email: "new@example.com", Role: pb.Role_User})
 	assert.EqualError(t, err, "unexpected: request failed")
+	events.requireNone(t)
 }
 
 func TestService_ChangeMemberRole(t *testing.T) {
@@ -291,7 +334,7 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mocktrustycadb.NewMockOrgsDb(ctrl)
-	db.EXPECT().TryCreateEvent(gomock.Any()).AnyTimes()
+	events := recordEvents(db)
 	az := newFakeAuthorizer(orgGrant(42, pb.Role_Owner), orgGrant(43, pb.Role_Admin), projectGrant(7, 201, pb.Role_Admin))
 	svc := Service{db: db, authorizer: az}
 	owner := testCtx("42", "1")
@@ -342,6 +385,7 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	res, err := svc.ChangeMemberRole(owner, &pb.ChangeMemberRoleRequest{Email: "User@example.com", Role: pb.Role_Admin})
 	require.NoError(t, err)
 	assert.Equal(t, "10", res.ID)
+	events.requireNone(t)
 
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{adminMember}, nil)
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(nil, errors.New("not found"))
@@ -360,6 +404,7 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	db.EXPECT().UpdateMemberRole(gomock.Any(), &query.UpdateMemberRoleRequest{OrgID: 1, UserID: 9, Role: pb.Role_User}).Return(nil, errors.New("db failed"))
 	_, err = svc.ChangeMemberRole(owner, &pb.ChangeMemberRoleRequest{UserID: "9", Role: pb.Role_User})
 	assert.EqualError(t, err, "unexpected: request failed")
+	events.requireNone(t)
 
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{adminMember}, nil)
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
@@ -372,6 +417,13 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	assert.Equal(t, pb.Role_User, res.Role)
 	assert.Equal(t, "Test Org", res.OrgName)
 	assert.Contains(t, az.invalidated, "user:9")
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_OrgMemberRoleChanged,
+		OrgID:       1,
+		ReferenceID: 9,
+		Title:       "Member role changed",
+		Description: "role of user@example.com changed from Admin to User",
+	})
 
 	// project scope by a project Admin
 	projectScope := &query.ListMembershipsRequest{OrgID: 1, ProjectID: 201, Scope: pb.Scope_Project}
@@ -386,6 +438,14 @@ func TestService_ChangeMemberRole(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, pb.Scope_Project, res.Scope)
 	assert.Equal(t, "test", res.ProjectAlias)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_ProjectMemberRoleChanged,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 9,
+		Title:       "Member role changed",
+		Description: "role of user@example.com changed from Viewer to User",
+	})
 
 	_, err = svc.ChangeMemberRole(projectAdmin, &pb.ChangeMemberRoleRequest{UserID: "9", Role: pb.Role_User, ProjectID: "202"})
 	assert.EqualError(t, err, "forbidden: not allowed to grant role User in the project")
@@ -398,7 +458,7 @@ func TestService_DeleteMember(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mocktrustycadb.NewMockOrgsDb(ctrl)
-	db.EXPECT().TryCreateEvent(gomock.Any()).AnyTimes()
+	events := recordEvents(db)
 	az := newFakeAuthorizer(orgGrant(42, pb.Role_Owner), orgGrant(43, pb.Role_Admin), projectGrant(7, 201, pb.Role_Admin))
 	svc := Service{db: db, authorizer: az}
 	owner := testCtx("42", "1")
@@ -440,29 +500,53 @@ func TestService_DeleteMember(t *testing.T) {
 	db.EXPECT().DeleteMember(gomock.Any(), &query.DeleteMemberRequest{OrgID: 1, UserID: 44, Scope: pb.Scope_Org}).Return(int64(1), nil)
 	_, err = svc.DeleteMember(owner, &pb.DeleteMemberRequest{UserID: "44"})
 	require.NoError(t, err)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_OrgMemberRemoved,
+		OrgID:       1,
+		ReferenceID: 44,
+		Title:       "Member removed",
+		Description: "owner2@example.com removed as Owner",
+	})
 
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{adminMember}, nil)
 	db.EXPECT().DeleteMember(gomock.Any(), &query.DeleteMemberRequest{OrgID: 1, UserID: 9, Scope: pb.Scope_Org}).Return(int64(0), errors.New("db failed"))
 	_, err = svc.DeleteMember(admin, &pb.DeleteMemberRequest{UserID: "9"})
 	assert.EqualError(t, err, "unexpected: request failed")
+	events.requireNone(t)
 
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{adminMember}, nil)
 	db.EXPECT().DeleteMember(gomock.Any(), &query.DeleteMemberRequest{OrgID: 1, UserID: 9, Scope: pb.Scope_Org}).Return(int64(1), nil)
 	_, err = svc.DeleteMember(admin, &pb.DeleteMemberRequest{UserID: "9"})
 	require.NoError(t, err)
 	assert.Contains(t, az.invalidated, "user:9")
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_OrgMemberRemoved,
+		OrgID:       1,
+		ReferenceID: 9,
+		Title:       "Member removed",
+		Description: "user@example.com removed as Admin",
+	})
 
 	// project grant removed by a project Admin; the org-wide grant is untouched
-	projectMember := &model.MembershipInfo{ID: xdb.NewID(12), OrgID: xdb.NewID(1), ProjectID: xdb.NewID(201), UserID: xdb.NewID(9), Role: pb.Role_User}
+	projectMember := &model.MembershipInfo{ID: xdb.NewID(12), OrgID: xdb.NewID(1), ProjectID: xdb.NewID(201), UserID: xdb.NewID(9), Email: "user@example.com", Role: pb.Role_User}
 	db.EXPECT().ListMemberships(gomock.Any(), &query.ListMembershipsRequest{OrgID: 1, ProjectID: 201, Scope: pb.Scope_Project}).Return(model.MembershipInfoSlice{projectMember}, nil)
 	db.EXPECT().DeleteMember(gomock.Any(), &query.DeleteMemberRequest{OrgID: 1, ProjectID: 201, UserID: 9, Scope: pb.Scope_Project}).Return(int64(1), nil)
 	_, err = svc.DeleteMember(projectAdmin, &pb.DeleteMemberRequest{UserID: "9", ProjectID: "201"})
 	require.NoError(t, err)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_ProjectMemberRemoved,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 9,
+		Title:       "Member removed",
+		Description: "user@example.com removed as User",
+	})
 
 	// a project Admin cannot remove an org-wide grant
 	db.EXPECT().ListMemberships(gomock.Any(), orgScope).Return(model.MembershipInfoSlice{adminMember}, nil)
 	_, err = svc.DeleteMember(projectAdmin, &pb.DeleteMemberRequest{UserID: "9"})
 	assert.EqualError(t, err, "forbidden: not allowed to grant role Admin org-wide")
+	events.requireNone(t)
 }
 
 func TestService_DeleteInvite(t *testing.T) {

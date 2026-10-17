@@ -49,9 +49,55 @@ func (m *MockAdminServer) next() proto.Message {
 	return m.Resps[idx]
 }
 
+// ListOrgs lists orgs
+
 func (m *MockAdminServer) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*pb.OrgsResponse, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	return m.next().(*pb.OrgsResponse), nil
+}
+
+//
+//// GetOrg returns an org with its budget
+//rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+//option (google.api.http) = {
+//post: "/privpb.Admin/GetOrganization",
+//body: "*"
+//};
+//option (es.api.cli_cmd) = "org get";
+//}
+//// CreateOrg creates an org owned by an existing user
+//rpc CreateOrg(CreateOrgRequest)
+//returns (pb.Organization) {
+//option (google.api.http) = {
+//post: "/privpb.Admin/CreateOrganization",
+//body: "*"
+//};
+//option (es.api.cli_cmd) = "org create";
+//}
+//// UpdateOrg updates an org
+//rpc UpdateOrg(UpdateOrgRequest)
+//returns (pb.Organization) {
+//option (google.api.http) = {
+//post: "/privpb.Admin/UpdateOrganization",
+//body: "*"
+//};
+//option (es.api.cli_cmd) = "org update";
+//}
+//// DeleteOrg deletes an org that has no projects
+//rpc DeleteOrg(DeleteOrgRequest)
+//returns (google.protobuf.Empty) {
+//option (google.api.http) = {
+//post: "/privpb.Admin/DeleteOrganization",
+//body: "*"
+//};
+//option (es.api.cli_cmd) = "org delete";
+//}
+
+func (m *MockAdminServer) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest) (*pb.ProjectsResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.ProjectsResponse), nil
 }

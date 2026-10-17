@@ -177,11 +177,35 @@ const (
 	// ProjectMemberAccepted indicates that a project member accepted an
 	// invitation
 	EventType_ProjectMemberAccepted EventType_Enum = 16
-	EventType_UserLogin             EventType_Enum = 20
-	EventType_TokenRevoked          EventType_Enum = 21
-	EventType_APIKeyCreated         EventType_Enum = 31
-	EventType_APIKeyDeleted         EventType_Enum = 32
-	EventType_APIKeyLogin           EventType_Enum = 33
+	// UserSignup indicates that a user signed up on the platform
+	EventType_UserSignup EventType_Enum = 20
+	// UserSignedOut indicates that a user signed out of the platform and
+	// revoked the token
+	EventType_UserSignedOut EventType_Enum = 21
+	// UserSignedIn indicates that a user signed in to the platform, or
+	// selected an organization for the session
+	EventType_UserSignedIn EventType_Enum = 22
+	// UserDisabled indicates that a service admin disabled a user: the
+	// user can no longer sign in or call the API
+	EventType_UserDisabled EventType_Enum = 23
+	// UserEnabled indicates that a service admin enabled a disabled user
+	// again
+	EventType_UserEnabled EventType_Enum = 24
+	// TokenRevoked indicates that a token was revoked
+	EventType_TokenRevoked EventType_Enum = 25
+	// APIKeyCreated indicates that an API key was created
+	EventType_APIKeyCreated EventType_Enum = 31
+	// APIKeyDeleted indicates that an API key was deleted
+	EventType_APIKeyDeleted EventType_Enum = 32
+	// APIKeyLogin indicates that an API key was used to sign in to the
+	// platform
+	EventType_APIKeyLogin EventType_Enum = 33
+	// OrganizationDisabled indicates that a service admin disabled an
+	// organization with its projects and API keys
+	EventType_OrganizationDisabled EventType_Enum = 36
+	// OrganizationEnabled indicates that a service admin enabled a
+	// disabled organization with the projects and API keys it disabled
+	EventType_OrganizationEnabled EventType_Enum = 37
 	// IssuerRegistered indicates that an issuer was registered or imported
 	EventType_IssuerRegistered EventType_Enum = 100
 	// IssuerActivated indicates that a Pending issuer was activated
@@ -223,11 +247,17 @@ var (
 		14:  "ProjectMemberRoleChanged",
 		15:  "ProjectMemberInvited",
 		16:  "ProjectMemberAccepted",
-		20:  "UserLogin",
-		21:  "TokenRevoked",
+		20:  "UserSignup",
+		21:  "UserSignedOut",
+		22:  "UserSignedIn",
+		23:  "UserDisabled",
+		24:  "UserEnabled",
+		25:  "TokenRevoked",
 		31:  "APIKeyCreated",
 		32:  "APIKeyDeleted",
 		33:  "APIKeyLogin",
+		36:  "OrganizationDisabled",
+		37:  "OrganizationEnabled",
 		100: "IssuerRegistered",
 		101: "IssuerActivated",
 		102: "IssuerUpdated",
@@ -256,11 +286,17 @@ var (
 		"ProjectMemberRoleChanged": 14,
 		"ProjectMemberInvited":     15,
 		"ProjectMemberAccepted":    16,
-		"UserLogin":                20,
-		"TokenRevoked":             21,
+		"UserSignup":               20,
+		"UserSignedOut":            21,
+		"UserSignedIn":             22,
+		"UserDisabled":             23,
+		"UserEnabled":              24,
+		"TokenRevoked":             25,
 		"APIKeyCreated":            31,
 		"APIKeyDeleted":            32,
 		"APIKeyLogin":              33,
+		"OrganizationDisabled":     36,
+		"OrganizationEnabled":      37,
 		"IssuerRegistered":         100,
 		"IssuerActivated":          101,
 		"IssuerUpdated":            102,
@@ -802,8 +838,8 @@ const file_types_proto_rawDesc = "" +
 	"\x04Enum\x12\r\n" +
 	"\tUndefined\x10\x00\x12\a\n" +
 	"\x03Org\x10\x01\x12\v\n" +
-	"\aProject\x10\x02\x1a\x04\x88\xaf\x1a\x01\"\x99\x05\n" +
-	"\tEventType\"\x8b\x05\n" +
+	"\aProject\x10\x02\x1a\x04\x88\xaf\x1a\x01\"\x95\x06\n" +
+	"\tEventType\"\x87\x06\n" +
 	"\x04Enum\x12\v\n" +
 	"\aUnknown\x10\x00\x12\x0e\n" +
 	"\n" +
@@ -825,12 +861,19 @@ const file_types_proto_rawDesc = "" +
 	"\x14ProjectMemberRemoved\x10\r\x12\x1c\n" +
 	"\x18ProjectMemberRoleChanged\x10\x0e\x12\x18\n" +
 	"\x14ProjectMemberInvited\x10\x0f\x12\x19\n" +
-	"\x15ProjectMemberAccepted\x10\x10\x12\r\n" +
-	"\tUserLogin\x10\x14\x12\x10\n" +
-	"\fTokenRevoked\x10\x15\x12\x11\n" +
+	"\x15ProjectMemberAccepted\x10\x10\x12\x0e\n" +
+	"\n" +
+	"UserSignup\x10\x14\x12\x11\n" +
+	"\rUserSignedOut\x10\x15\x12\x10\n" +
+	"\fUserSignedIn\x10\x16\x12\x10\n" +
+	"\fUserDisabled\x10\x17\x12\x0f\n" +
+	"\vUserEnabled\x10\x18\x12\x10\n" +
+	"\fTokenRevoked\x10\x19\x12\x11\n" +
 	"\rAPIKeyCreated\x10\x1f\x12\x11\n" +
 	"\rAPIKeyDeleted\x10 \x12\x0f\n" +
-	"\vAPIKeyLogin\x10!\x12\x14\n" +
+	"\vAPIKeyLogin\x10!\x12\x18\n" +
+	"\x14OrganizationDisabled\x10$\x12\x17\n" +
+	"\x13OrganizationEnabled\x10%\x12\x14\n" +
 	"\x10IssuerRegistered\x10d\x12\x13\n" +
 	"\x0fIssuerActivated\x10e\x12\x11\n" +
 	"\rIssuerUpdated\x10f\x12\x15\n" +

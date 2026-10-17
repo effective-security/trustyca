@@ -133,12 +133,37 @@ message EventType {
         // invitation
         ProjectMemberAccepted = 16;
 
-        UserLogin    = 20;
-        TokenRevoked = 21;
+        // UserSignup indicates that a user signed up on the platform
+        UserSignup = 20;
+        // UserSignedOut indicates that a user signed out of the platform and
+        // revoked the token
+        UserSignedOut = 21;
+        // UserSignedIn indicates that a user signed in to the platform, or
+        // selected an organization for the session
+        UserSignedIn = 22;
+        // UserDisabled indicates that a service admin disabled a user: the
+        // user can no longer sign in or call the API
+        UserDisabled = 23;
+        // UserEnabled indicates that a service admin enabled a disabled user
+        // again
+        UserEnabled = 24;
+        // TokenRevoked indicates that a token was revoked
+        TokenRevoked = 25;
 
+        // APIKeyCreated indicates that an API key was created
         APIKeyCreated = 31;
+        // APIKeyDeleted indicates that an API key was deleted
         APIKeyDeleted = 32;
-        APIKeyLogin   = 33;
+        // APIKeyLogin indicates that an API key was used to sign in to the
+        // platform
+        APIKeyLogin = 33;
+
+        // OrganizationDisabled indicates that a service admin disabled an
+        // organization with its projects and API keys
+        OrganizationDisabled = 36;
+        // OrganizationEnabled indicates that a service admin enabled a
+        // disabled organization with the projects and API keys it disabled
+        OrganizationEnabled = 37;
 
         // IssuerRegistered indicates that an issuer was registered or imported
         IssuerRegistered = 100;

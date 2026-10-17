@@ -105,6 +105,94 @@ func (x *ListOrgsRequest) GetStatus() pb.ItemStatus_Enum {
 	return pb.ItemStatus_Enum(0)
 }
 
+// ListProjectsRequest specifies list projects request
+type ListProjectsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Limit specifies maximum number of records to return
+	Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Offset specifies offset for the offset-based pagination.
+	// Which is limited to 10000.
+	// To paginate for large number of records, use cursor-based pagination
+	// instead.
+	Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
+	// Cursor specifies cursor for the cursor-based pagination.
+	// Use "initial" to start the pagination or pass the cursor returned from
+	// the previous request.
+	Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	// Status specifies on optional status of the item to filter by.
+	// If not specified, all items will be listed.
+	Status pb.ItemStatus_Enum `protobuf:"varint,4,opt,name=Status,proto3,enum=pb.ItemStatus_Enum" json:"Status,omitempty"`
+	// OrgID specifies optional org ID to filter by.
+	OrgID         string `protobuf:"bytes,5,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProjectsRequest) Reset() {
+	*x = ListProjectsRequest{}
+	mi := &file_admin_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProjectsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProjectsRequest) ProtoMessage() {}
+
+func (x *ListProjectsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProjectsRequest.ProtoReflect.Descriptor instead.
+func (*ListProjectsRequest) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ListProjectsRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListProjectsRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *ListProjectsRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+func (x *ListProjectsRequest) GetStatus() pb.ItemStatus_Enum {
+	if x != nil {
+		return x.Status
+	}
+	return pb.ItemStatus_Enum(0)
+}
+
+func (x *ListProjectsRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
 var File_admin_proto protoreflect.FileDescriptor
 
 const file_admin_proto_rawDesc = "" +
@@ -115,9 +203,16 @@ const file_admin_proto_rawDesc = "" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12+\n" +
-	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status2r\n" +
-	"\x05Admin\x12i\n" +
-	"\bListOrgs\x12\x17.privpb.ListOrgsRequest\x1a\x10.pb.OrgsResponse\"2\x82C\x0eadmin org list\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/privpb.Admin/ListOrgsB/Z-github.com/effective-security/trustyca/privpbb\x06proto3"
+	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\"\x9e\x01\n" +
+	"\x13ListProjectsRequest\x12\x14\n" +
+	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
+	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12+\n" +
+	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\x12\x14\n" +
+	"\x05OrgID\x18\x05 \x01(\tR\x05OrgID2\xe5\x01\n" +
+	"\x05Admin\x12c\n" +
+	"\bListOrgs\x12\x17.privpb.ListOrgsRequest\x1a\x10.pb.OrgsResponse\",\x82C\borg list\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/privpb.Admin/ListOrgs\x12w\n" +
+	"\fListProjects\x12\x1b.privpb.ListProjectsRequest\x1a\x14.pb.ProjectsResponse\"4\x82C\fproject list\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/privpb.Admin/ListProjectsB/Z-github.com/effective-security/trustyca/privpbb\x06proto3"
 
 var (
 	file_admin_proto_rawDescOnce sync.Once
@@ -131,21 +226,26 @@ func file_admin_proto_rawDescGZIP() []byte {
 	return file_admin_proto_rawDescData
 }
 
-var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_admin_proto_goTypes = []any{
-	(*ListOrgsRequest)(nil), // 0: privpb.ListOrgsRequest
-	(pb.ItemStatus_Enum)(0), // 1: pb.ItemStatus.Enum
-	(*pb.OrgsResponse)(nil), // 2: pb.OrgsResponse
+	(*ListOrgsRequest)(nil),     // 0: privpb.ListOrgsRequest
+	(*ListProjectsRequest)(nil), // 1: privpb.ListProjectsRequest
+	(pb.ItemStatus_Enum)(0),     // 2: pb.ItemStatus.Enum
+	(*pb.OrgsResponse)(nil),     // 3: pb.OrgsResponse
+	(*pb.ProjectsResponse)(nil), // 4: pb.ProjectsResponse
 }
 var file_admin_proto_depIdxs = []int32{
-	1, // 0: privpb.ListOrgsRequest.Status:type_name -> pb.ItemStatus.Enum
-	0, // 1: privpb.Admin.ListOrgs:input_type -> privpb.ListOrgsRequest
-	2, // 2: privpb.Admin.ListOrgs:output_type -> pb.OrgsResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 0: privpb.ListOrgsRequest.Status:type_name -> pb.ItemStatus.Enum
+	2, // 1: privpb.ListProjectsRequest.Status:type_name -> pb.ItemStatus.Enum
+	0, // 2: privpb.Admin.ListOrgs:input_type -> privpb.ListOrgsRequest
+	1, // 3: privpb.Admin.ListProjects:input_type -> privpb.ListProjectsRequest
+	3, // 4: privpb.Admin.ListOrgs:output_type -> pb.OrgsResponse
+	4, // 5: privpb.Admin.ListProjects:output_type -> pb.ProjectsResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_admin_proto_init() }
@@ -159,7 +259,7 @@ func file_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_proto_rawDesc), len(file_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

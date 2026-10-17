@@ -201,19 +201,23 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 	return membership, nil
 }
 
-// AcceptInvites moves invites to memberships at the invites' scopes
-func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (int64, error) {
+// AcceptInvites moves the pending invites for a user's email to grants at
+// the invites' scopes, and returns the grants it created. An invite whose
+// grant fails is logged and skipped; a grant whose invite is not deleted is
+// still returned.
+func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error) {
 	invites, err := p.GetUserInvites(ctx, user.Email)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	logger.ContextKV(ctx, xlog.TRACE,
 		"user_id", user.ID,
 		"email", user.Email,
 		"invites", len(invites))
 
+	accepted := make(model.MembershipSlice, 0, len(invites))
 	for _, inv := range invites {
-		_, err = p.AddMember(ctx, &model.Membership{
+		m, err := p.AddMember(ctx, &model.Membership{
 			OrgID:     inv.OrgID,
 			ProjectID: inv.ProjectID,
 			UserID:    user.ID,
@@ -223,11 +227,11 @@ func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (int64, 
 			logger.ContextKV(ctx, xlog.ERROR, "role", inv.Role, "user", user.ID.UnderscoreString(), "err", err.Error())
 			continue
 		}
+		accepted = append(accepted, m)
 		_, err = p.DeleteInviteByID(ctx, inv.ID.UInt64())
 		if err != nil {
 			logger.ContextKV(ctx, xlog.ERROR, "role", inv.Role, "user", user.ID.UnderscoreString(), "err", err.Error())
-			continue
 		}
 	}
-	return int64(len(invites)), nil
+	return accepted, nil
 }

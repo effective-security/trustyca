@@ -15,7 +15,10 @@ import (
 	"github.com/effective-security/xlog"
 )
 
-// LoginUser returns logged in model.User
+// LoginUser registers the login and its user and returns both. A new login
+// and a new user are inserted under one new ID; on a conflict each row keeps
+// its ID, so only the first login of a new user returns both with the same
+// ID.
 func (p *Provider) LoginUser(ctx context.Context, m *model.Login) (*model.Login, *model.User, error) {
 	id := p.NextID()
 

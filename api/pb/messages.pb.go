@@ -342,7 +342,7 @@ var AuthProvidersRequest_MessageDescription = &api.MessageDescription{
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
+			Max:           160,
 			Documentation: `Email specifies optional email to use for login`,
 		},
 	},

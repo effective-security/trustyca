@@ -35,6 +35,20 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(x \*ListOrgsRequest\) String\(\) string](<#ListOrgsRequest.String>)
   - [func \(msg \*ListOrgsRequest\) UnmarshalJSON\(b \[\]byte\) error](<#ListOrgsRequest.UnmarshalJSON>)
   - [func \(m \*ListOrgsRequest\) Validate\(ctx context.Context\) error](<#ListOrgsRequest.Validate>)
+- [type ListProjectsRequest](<#ListProjectsRequest>)
+  - [func \(\*ListProjectsRequest\) Descriptor\(\) \(\[\]byte, \[\]int\)](<#ListProjectsRequest.Descriptor>)
+  - [func \(x \*ListProjectsRequest\) GetCursor\(\) string](<#ListProjectsRequest.GetCursor>)
+  - [func \(x \*ListProjectsRequest\) GetLimit\(\) uint32](<#ListProjectsRequest.GetLimit>)
+  - [func \(x \*ListProjectsRequest\) GetOffset\(\) uint32](<#ListProjectsRequest.GetOffset>)
+  - [func \(x \*ListProjectsRequest\) GetOrgID\(\) string](<#ListProjectsRequest.GetOrgID>)
+  - [func \(x \*ListProjectsRequest\) GetStatus\(\) pb.ItemStatus\_Enum](<#ListProjectsRequest.GetStatus>)
+  - [func \(msg \*ListProjectsRequest\) MarshalJSON\(\) \(\[\]byte, error\)](<#ListProjectsRequest.MarshalJSON>)
+  - [func \(\*ListProjectsRequest\) ProtoMessage\(\)](<#ListProjectsRequest.ProtoMessage>)
+  - [func \(x \*ListProjectsRequest\) ProtoReflect\(\) protoreflect.Message](<#ListProjectsRequest.ProtoReflect>)
+  - [func \(x \*ListProjectsRequest\) Reset\(\)](<#ListProjectsRequest.Reset>)
+  - [func \(x \*ListProjectsRequest\) String\(\) string](<#ListProjectsRequest.String>)
+  - [func \(msg \*ListProjectsRequest\) UnmarshalJSON\(b \[\]byte\) error](<#ListProjectsRequest.UnmarshalJSON>)
+  - [func \(m \*ListProjectsRequest\) Validate\(ctx context.Context\) error](<#ListProjectsRequest.Validate>)
 - [type MessageAllocator](<#MessageAllocator>)
 - [type MethodInfo](<#MethodInfo>)
   - [func GetMethodInfo\(method string\) \*MethodInfo](<#GetMethodInfo>)
@@ -42,6 +56,7 @@ import "github.com/effective-security/trustyca/privpb"
 - [type RequestAllocator](<#RequestAllocator>)
 - [type UnimplementedAdminServer](<#UnimplementedAdminServer>)
   - [func \(UnimplementedAdminServer\) ListOrgs\(context.Context, \*ListOrgsRequest\) \(\*pb.OrgsResponse, error\)](<#UnimplementedAdminServer.ListOrgs>)
+  - [func \(UnimplementedAdminServer\) ListProjects\(context.Context, \*ListProjectsRequest\) \(\*pb.ProjectsResponse, error\)](<#UnimplementedAdminServer.ListProjects>)
 - [type UnsafeAdminServer](<#UnsafeAdminServer>)
 
 
@@ -51,7 +66,8 @@ import "github.com/effective-security/trustyca/privpb"
 
 ```go
 const (
-    Admin_ListOrgs_FullMethodName = "/privpb.Admin/ListOrgs"
+    Admin_ListOrgs_FullMethodName     = "/privpb.Admin/ListOrgs"
+    Admin_ListProjects_FullMethodName = "/privpb.Admin/ListProjects"
 )
 ```
 
@@ -67,6 +83,10 @@ var Admin_ServiceDesc = grpc.ServiceDesc{
         {
             MethodName: "ListOrgs",
             Handler:    _Admin_ListOrgs_Handler,
+        },
+        {
+            MethodName: "ListProjects",
+            Handler:    _Admin_ListProjects_Handler,
         },
     },
     Streams:  []grpc.StreamDesc{},
@@ -153,6 +173,67 @@ the previous request.`,
             EnumDescription: pb.ItemStatus_Enum_EnumDescription,
             Documentation: `Status specifies on optional status of the item to filter by.
 If not specified, all items will be listed.`,
+        },
+    },
+}
+```
+
+<a name="ListProjectsRequest_MessageDescription"></a>
+
+```go
+var ListProjectsRequest_MessageDescription = &api.MessageDescription{
+    Name:          "ListProjectsRequest",
+    Display:       "List Projects Request",
+    FullName:      "privpb.ListProjectsRequest",
+    Documentation: `ListProjectsRequest specifies list projects request`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "Limit",
+            FullName:      "privpb.ListProjectsRequest.Limit",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Limit specifies maximum number of records to return`,
+        },
+        {
+            Name:          "Offset",
+            FullName:      "privpb.ListProjectsRequest.Offset",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Offset specifies offset for the offset-based pagination.
+Which is limited to 10000.
+To paginate for large number of records, use cursor-based pagination
+instead.`,
+        },
+        {
+            Name:          "Cursor",
+            FullName:      "privpb.ListProjectsRequest.Cursor",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Cursor specifies cursor for the cursor-based pagination.
+Use "initial" to start the pagination or pass the cursor returned from
+the previous request.`,
+        },
+        {
+            Name:            "Status",
+            FullName:        "privpb.ListProjectsRequest.Status",
+            Type:            "int32",
+            SearchType:      "integer",
+            SearchOptions:   api.SearchOption_Sortable,
+            EnumDescription: pb.ItemStatus_Enum_EnumDescription,
+            Documentation: `Status specifies on optional status of the item to filter by.
+If not specified, all items will be listed.`,
+        },
+        {
+            Name:          "OrgID",
+            FullName:      "privpb.ListProjectsRequest.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `OrgID specifies optional org ID to filter by.`,
         },
     },
 }
@@ -276,8 +357,112 @@ fetch. If there are no more pages to fetch, NextPage will be empty.`,
 }
 ```
 
+<a name="Project_MessageDescription"></a>
+
+```go
+var Project_MessageDescription = &api.MessageDescription{
+    Name:          "Project",
+    FullName:      "pb.Project",
+    Documentation: `Project owns a collection of resources governed by a common access policy`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "ID",
+            FullName:      "pb.Project.ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "OrgID",
+            FullName:      "pb.Project.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "Alias",
+            FullName:      "pb.Project.Alias",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Alias is a stable, org-unique identifier chosen by the client,
+e.g. a cloud account ID or a slug`,
+        },
+        {
+            Name:          "Name",
+            FullName:      "pb.Project.Name",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "Description",
+            FullName:      "pb.Project.Description",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:            "Status",
+            FullName:        "pb.Project.Status",
+            Type:            "int32",
+            SearchType:      "integer",
+            SearchOptions:   api.SearchOption_Sortable,
+            EnumDescription: pb.ItemStatus_Enum_EnumDescription,
+        },
+        {
+            Name:          "CreatedAt",
+            FullName:      "pb.Project.CreatedAt",
+            Display:       "Created At",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "UpdatedAt",
+            FullName:      "pb.Project.UpdatedAt",
+            Display:       "Updated At",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+    },
+}
+```
+
+<a name="ProjectsResponse_MessageDescription"></a>
+
+```go
+var ProjectsResponse_MessageDescription = &api.MessageDescription{
+    Name:          "ProjectsResponse",
+    Display:       "Projects Response",
+    FullName:      "pb.ProjectsResponse",
+    Documentation: `ProjectsResponse returns list of projects`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:       "Projects",
+            FullName:   "pb.ProjectsResponse.Projects",
+            Type:       "[]struct",
+            StructName: "pb.Project",
+            SearchType: "flat_object",
+        },
+        {
+            Name:       "NextPage",
+            FullName:   "pb.ProjectsResponse.NextPage",
+            Display:    "Next Page",
+            Type:       "struct",
+            StructName: "pb.NextPage",
+            SearchType: "flat_object",
+            Documentation: `NextPage specifies pagination information, if there are more pages to
+fetch. If there are no more pages to fetch, NextPage will be empty.`,
+        },
+    },
+}
+```
+
 <a name="CreateMessage"></a>
-## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L208>)
+## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L370>)
 
 ```go
 func CreateMessage(fullname string) any
@@ -295,7 +480,7 @@ func GetAdminMethodsInfo() map[string]*MethodInfo
 GetAdminMethodsInfo returns the methods info for the admin service. It filters out the methods that are not prefixed with "/privpb.Admin/".
 
 <a name="GetMessageDescription"></a>
-## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L216>)
+## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L378>)
 
 ```go
 func GetMessageDescription(fullname string) *api.MessageDescription
@@ -304,7 +489,7 @@ func GetMessageDescription(fullname string) *api.MessageDescription
 
 
 <a name="GetMessageDescriptions"></a>
-## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L192>)
+## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L354>)
 
 ```go
 func GetMessageDescriptions() map[string]*api.MessageDescription
@@ -340,7 +525,7 @@ func MarshalJSON(v any) ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RegisterAdminServer"></a>
-## func [RegisterAdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L78>)
+## func [RegisterAdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L168>)
 
 ```go
 func RegisterAdminServer(s grpc.ServiceRegistrar, srv AdminServer)
@@ -349,7 +534,7 @@ func RegisterAdminServer(s grpc.ServiceRegistrar, srv AdminServer)
 
 
 <a name="AdminClient"></a>
-## type [AdminClient](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L30-L32>)
+## type [AdminClient](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L31-L71>)
 
 AdminClient is the client API for Admin service.
 
@@ -357,12 +542,50 @@ For semantics around ctx use and closing/ending streaming RPCs, please refer to 
 
 ```go
 type AdminClient interface {
+    // ListOrgs lists orgs
     ListOrgs(ctx context.Context, in *ListOrgsRequest, opts ...grpc.CallOption) (*pb.OrgsResponse, error)
+    //
+    //// GetOrg returns an org with its budget
+    //rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+    //option (google.api.http) = {
+    //post: "/privpb.Admin/GetOrganization",
+    //body: "*"
+    //};
+    //option (es.api.cli_cmd) = "org get";
+    //}
+    //// CreateOrg creates an org owned by an existing user
+    //rpc CreateOrg(CreateOrgRequest)
+    //returns (pb.Organization) {
+    //option (google.api.http) = {
+    //post: "/privpb.Admin/CreateOrganization",
+    //body: "*"
+    //};
+    //option (es.api.cli_cmd) = "org create";
+    //}
+    //// UpdateOrg updates an org
+    //rpc UpdateOrg(UpdateOrgRequest)
+    //returns (pb.Organization) {
+    //option (google.api.http) = {
+    //post: "/privpb.Admin/UpdateOrganization",
+    //body: "*"
+    //};
+    //option (es.api.cli_cmd) = "org update";
+    //}
+    //// DeleteOrg deletes an org that has no projects
+    //rpc DeleteOrg(DeleteOrgRequest)
+    //returns (google.protobuf.Empty) {
+    //option (google.api.http) = {
+    //post: "/privpb.Admin/DeleteOrganization",
+    //body: "*"
+    //};
+    //option (es.api.cli_cmd) = "org delete";
+    //}
+    ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*pb.ProjectsResponse, error)
 }
 ```
 
 <a name="NewAdminClient"></a>
-### func [NewAdminClient](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L38>)
+### func [NewAdminClient](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L77>)
 
 ```go
 func NewAdminClient(cc grpc.ClientConnInterface) AdminClient
@@ -371,13 +594,51 @@ func NewAdminClient(cc grpc.ClientConnInterface) AdminClient
 
 
 <a name="AdminServer"></a>
-## type [AdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L55-L57>)
+## type [AdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L104-L144>)
 
 AdminServer is the server API for Admin service. All implementations should embed UnimplementedAdminServer for forward compatibility.
 
 ```go
 type AdminServer interface {
+    // ListOrgs lists orgs
     ListOrgs(context.Context, *ListOrgsRequest) (*pb.OrgsResponse, error)
+    //
+    //// GetOrg returns an org with its budget
+    //rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+    //option (google.api.http) = {
+    //post: "/privpb.Admin/GetOrganization",
+    //body: "*"
+    //};
+    //option (es.api.cli_cmd) = "org get";
+    //}
+    //// CreateOrg creates an org owned by an existing user
+    //rpc CreateOrg(CreateOrgRequest)
+    //returns (pb.Organization) {
+    //option (google.api.http) = {
+    //post: "/privpb.Admin/CreateOrganization",
+    //body: "*"
+    //};
+    //option (es.api.cli_cmd) = "org create";
+    //}
+    //// UpdateOrg updates an org
+    //rpc UpdateOrg(UpdateOrgRequest)
+    //returns (pb.Organization) {
+    //option (google.api.http) = {
+    //post: "/privpb.Admin/UpdateOrganization",
+    //body: "*"
+    //};
+    //option (es.api.cli_cmd) = "org update";
+    //}
+    //// DeleteOrg deletes an org that has no projects
+    //rpc DeleteOrg(DeleteOrgRequest)
+    //returns (google.protobuf.Empty) {
+    //option (google.api.http) = {
+    //post: "/privpb.Admin/DeleteOrganization",
+    //body: "*"
+    //};
+    //option (es.api.cli_cmd) = "org delete";
+    //}
+    ListProjects(context.Context, *ListProjectsRequest) (*pb.ProjectsResponse, error)
 }
 ```
 
@@ -516,7 +777,7 @@ func (msg *ListOrgsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListOrgsRequest.Validate"></a>
-### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L188>)
+### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L347>)
 
 ```go
 func (m *ListOrgsRequest) Validate(ctx context.Context) error
@@ -524,8 +785,153 @@ func (m *ListOrgsRequest) Validate(ctx context.Context) error
 
 
 
+<a name="ListProjectsRequest"></a>
+## type [ListProjectsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L109-L129>)
+
+ListProjectsRequest specifies list projects request
+
+```go
+type ListProjectsRequest struct {
+
+    // Limit specifies maximum number of records to return
+    Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
+    // Offset specifies offset for the offset-based pagination.
+    // Which is limited to 10000.
+    // To paginate for large number of records, use cursor-based pagination
+    // instead.
+    Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+    // Status specifies on optional status of the item to filter by.
+    // If not specified, all items will be listed.
+    Status pb.ItemStatus_Enum `protobuf:"varint,4,opt,name=Status,proto3,enum=pb.ItemStatus_Enum" json:"Status,omitempty"`
+    // OrgID specifies optional org ID to filter by.
+    OrgID string `protobuf:"bytes,5,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+    // contains filtered or unexported fields
+}
+```
+
+<a name="ListProjectsRequest.Descriptor"></a>
+### func \(\*ListProjectsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L157>)
+
+```go
+func (*ListProjectsRequest) Descriptor() ([]byte, []int)
+```
+
+Deprecated: Use ListProjectsRequest.ProtoReflect.Descriptor instead.
+
+<a name="ListProjectsRequest.GetCursor"></a>
+### func \(\*ListProjectsRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L175>)
+
+```go
+func (x *ListProjectsRequest) GetCursor() string
+```
+
+
+
+<a name="ListProjectsRequest.GetLimit"></a>
+### func \(\*ListProjectsRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L161>)
+
+```go
+func (x *ListProjectsRequest) GetLimit() uint32
+```
+
+
+
+<a name="ListProjectsRequest.GetOffset"></a>
+### func \(\*ListProjectsRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L168>)
+
+```go
+func (x *ListProjectsRequest) GetOffset() uint32
+```
+
+
+
+<a name="ListProjectsRequest.GetOrgID"></a>
+### func \(\*ListProjectsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L189>)
+
+```go
+func (x *ListProjectsRequest) GetOrgID() string
+```
+
+
+
+<a name="ListProjectsRequest.GetStatus"></a>
+### func \(\*ListProjectsRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L182>)
+
+```go
+func (x *ListProjectsRequest) GetStatus() pb.ItemStatus_Enum
+```
+
+
+
+<a name="ListProjectsRequest.MarshalJSON"></a>
+### func \(\*ListProjectsRequest\) [MarshalJSON](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.json.pb.go#L43>)
+
+```go
+func (msg *ListProjectsRequest) MarshalJSON() ([]byte, error)
+```
+
+MarshalJSON implements json.Marshaler
+
+<a name="ListProjectsRequest.ProtoMessage"></a>
+### func \(\*ListProjectsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L142>)
+
+```go
+func (*ListProjectsRequest) ProtoMessage()
+```
+
+
+
+<a name="ListProjectsRequest.ProtoReflect"></a>
+### func \(\*ListProjectsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L144>)
+
+```go
+func (x *ListProjectsRequest) ProtoReflect() protoreflect.Message
+```
+
+
+
+<a name="ListProjectsRequest.Reset"></a>
+### func \(\*ListProjectsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L131>)
+
+```go
+func (x *ListProjectsRequest) Reset()
+```
+
+
+
+<a name="ListProjectsRequest.String"></a>
+### func \(\*ListProjectsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L138>)
+
+```go
+func (x *ListProjectsRequest) String() string
+```
+
+
+
+<a name="ListProjectsRequest.UnmarshalJSON"></a>
+### func \(\*ListProjectsRequest\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.json.pb.go#L48>)
+
+```go
+func (msg *ListProjectsRequest) UnmarshalJSON(b []byte) error
+```
+
+UnmarshalJSON implements json.Unmarshaler
+
+<a name="ListProjectsRequest.Validate"></a>
+### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L350>)
+
+```go
+func (m *ListProjectsRequest) Validate(ctx context.Context) error
+```
+
+
+
 <a name="MessageAllocator"></a>
-## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L169>)
+## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L322>)
 
 MessageAllocator defines constructor to allocate Protobuf message
 
@@ -576,7 +982,7 @@ type RequestAllocator func() any
 ```
 
 <a name="UnimplementedAdminServer"></a>
-## type [UnimplementedAdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L64>)
+## type [UnimplementedAdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L151>)
 
 UnimplementedAdminServer should be embedded to have forward compatible implementations.
 
@@ -587,7 +993,7 @@ type UnimplementedAdminServer struct{}
 ```
 
 <a name="UnimplementedAdminServer.ListOrgs"></a>
-### func \(UnimplementedAdminServer\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L66>)
+### func \(UnimplementedAdminServer\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L153>)
 
 ```go
 func (UnimplementedAdminServer) ListOrgs(context.Context, *ListOrgsRequest) (*pb.OrgsResponse, error)
@@ -595,8 +1001,17 @@ func (UnimplementedAdminServer) ListOrgs(context.Context, *ListOrgsRequest) (*pb
 
 
 
+<a name="UnimplementedAdminServer.ListProjects"></a>
+### func \(UnimplementedAdminServer\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L156>)
+
+```go
+func (UnimplementedAdminServer) ListProjects(context.Context, *ListProjectsRequest) (*pb.ProjectsResponse, error)
+```
+
+
+
 <a name="UnsafeAdminServer"></a>
-## type [UnsafeAdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L74-L76>)
+## type [UnsafeAdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L164-L166>)
 
 UnsafeAdminServer may be embedded to opt out of forward compatibility for this service. Use of this interface is not recommended, as added methods to AdminServer will result in compilation errors.
 

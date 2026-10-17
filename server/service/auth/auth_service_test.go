@@ -23,11 +23,13 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/api/pb/proxypb"
 	"github.com/effective-security/trustyca/internal/config"
+	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/server/appcontainer"
 	"github.com/effective-security/trustyca/server/service/auth"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/x/urlutil"
 	"github.com/effective-security/xpki/certutil"
+	"github.com/effective-security/xpki/dataprotection"
 	"github.com/effective-security/xpki/jwt"
 	"github.com/effective-security/xpki/jwt/dpop"
 	"github.com/effective-security/xpki/jwt/oauth2client"
@@ -45,6 +47,10 @@ var (
 	dpopSigner dpop.Signer
 	authClient pb.AuthServer
 	httpAddr   string
+	// testDb and testDp are the DB and data protection of the test
+	// server, for fixtures and to read the events it records
+	testDb db.OrgsDb
+	testDp dataprotection.Provider
 )
 
 var jsonContentHeaders = map[string]string{
@@ -78,6 +84,13 @@ func TestMain(m *testing.M) {
 			return testutils.LoadConfig("UNIT_TEST")
 		})
 	container, err := f.CreateContainerWithDependencies()
+	if err != nil {
+		panic(errors.WithStack(err))
+	}
+	err = container.Invoke(func(orgsDb db.OrgsDb, dp dataprotection.Provider) {
+		testDb = orgsDb
+		testDp = dp
+	})
 	if err != nil {
 		panic(errors.WithStack(err))
 	}

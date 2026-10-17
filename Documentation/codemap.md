@@ -54,7 +54,7 @@ etc/             service configuration, CA bootstrap and development certificate
 | DB interfaces and the PostgreSQL provider                          | `internal/db/trustycadb.go`, `internal/db/pgsql/provider.go`                                             | OrgsReadonlyDb, OrgsDb, Provider, New                                                                                                |
 | Query builders, request structs and pagination                     | `internal/db/pgsql/query/common.go`, `member.go`, `org.go`                                               | BuildQueryFunc, ListMembershipsRequest.QueryParams, ListOrgsRequest                                                                  |
 | SQL migrations, models and schema generation                       | `internal/db/model/model.gen.go`, `internal/db/schema/schema.gen.go`, `internal/db/schema/typesmap.yaml` | sql/trustycadb/migrations/N_tables.{up,down}.sql; make gen-sql-schema; do not edit generated files                                   |
-| Audit events                                                       | `internal/db/pgsql/event.go`, `server/service/orgs/org.go`                                               | TryCreateEvent, CreateEvent, ListEvents, Service.event                                                                               |
+| Audit events: build, emit and store                                | `internal/events/events.go`, `internal/db/pgsql/event.go`                                                | events.New, Event.Emit, Recorder, TryCreateEvent, CreateEvent, ListEvents; emitters in server/service/auth and orgs                  |
 | Metrics descriptors                                                | `internal/metricskey/metricskey.go`                                                                      | Metrics, PerfDbOperation, LoginCount                                                                                                 |
 | Public/private API contracts and generated output                  | `api/pb/protos/*.proto`, `privpb/protos/admin.proto`                                                     | pb.Auth, pb.Orgs, pb.CA, pb.CIS, pb.Status, privpb.Admin; make proto                                                                 |
 | Public CLI / admin CTL command trees                               | `api/cli/cli.go`, `api/cli/command/command.go`, `internal/ctl/ctl.go`, `internal/ctl/admin/admin.go`     | Cli, App; cmd/trustyca/main.go, cmd/trustycactl/main.go                                                                              |
@@ -99,6 +99,7 @@ authorization code.
 | internal/db/pgsql       | api/pb, internal/db/model, internal/db/pgsql/query, internal/db/schema, internal/metricskey                                         |
 | internal/db/pgsql/query | api/pb, internal/db/schema                                                                                                          |
 | internal/db/schema      | none                                                                                                                                |
+| internal/events         | api/pb, internal/authctx, internal/db/model                                                                                         |
 | internal/metricskey     | none                                                                                                                                |
 | mocks/mockclient        | api/client, api/pb                                                                                                                  |
 | mocks/mockpb            | api/pb                                                                                                                              |
@@ -111,10 +112,10 @@ authorization code.
 | server/appcontainer     | api/client, internal/authctx, internal/config, internal/db                                                                          |
 | server/service          | server/service/admin, server/service/auth, server/service/ca, server/service/orgs, server/service/status, server/service/ui         |
 | server/service/admin    | api/pb, internal/db, internal/db/pgsql/query, privpb, privpb/httppb                                                                 |
-| server/service/auth     | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db, internal/db/model, internal/metricskey                       |
+| server/service/auth     | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db, internal/db/model, internal/events, internal/metricskey      |
 | server/service/ca       | api/pb, internal/authctx, internal/config, internal/db                                                                              |
 | server/service/cis      | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db                                                               |
-| server/service/orgs     | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db, internal/db/model, internal/db/pgsql/query                   |
+| server/service/orgs     | api/pb, api/pb/httppb, internal/authctx, internal/config, internal/db, internal/db/model, internal/db/pgsql/query, internal/events  |
 | server/service/status   | api/pb, api/version                                                                                                                 |
 | server/service/ui       | api/pb, internal/config                                                                                                             |
 | server/tasks            | none                                                                                                                                |
@@ -127,7 +128,8 @@ Tests live beside the source (`<file>_test.go`, fixtures in `testdata/`);
 read them before expanding scope. Test notes below list only what is not
 discoverable from file names. Most packages have no `doc.go` yet: the ones
 that do are api/cli, api/cli/clisuite, internal/ctl/ctlsuite,
-internal/db/schema and tests/testutils. Add one when you change a package.
+internal/db/schema, internal/events and tests/testutils. Add one when you
+change a package.
 
 ### api/cli
 
@@ -323,7 +325,7 @@ PostgreSQL queries for users, logins, orgs, projects, members, invites, API keys
 - provider.go: Provider, New, BeginTx, Tx, NextID, DbMeasureSince, CheckErrIDConflict, NewNotificationsListener
 - user.go: LoginUser, GetUser, GetUserByEmail, UpdateUser, DeleteUser, ListLogins
 
-Invariant: TryCreateEvent writes on its own goroutine with a background context and only logs failures. A method that writes more than one row opens a transaction with BeginTx and must run every statement on the returned provider (AcceptInvite); RegisterOrg runs its org insert on the outer provider, outside the transaction of the owner membership. Tests need the configured PostgreSQL database (provider_test.go TestMain).
+Invariant: TryCreateEvent writes on its own goroutine with a background context and only logs failures. The metadata jsonb columns of event and certificate are NOT NULL and xdb.Metadata writes an empty map as NULL, so CreateEvent passes metadataArg (provider.go), which writes `{}`; a certificate insert needs it too. A method that writes more than one row opens a transaction with BeginTx and must run every statement on the returned provider (AcceptInvite); RegisterOrg runs its org insert on the outer provider, outside the transaction of the owner membership, and AcceptInvites adds each grant and deletes its invite without a transaction, returning the grants it created. LoginUser inserts a new login and user under one ID, so only a new user's first login returns both with the same ID. Tests need the configured PostgreSQL database (provider_test.go TestMain).
 
 ### internal/db/pgsql/query
 
@@ -347,6 +349,18 @@ Generated table and column metadata for query builders.
 - schema.go: init
 
 Invariant: make gen-sql-schema generates schema.gen.go and model/model.gen.go from a recreated local database (`--view vw_membership_info`); typesmap.yaml controls type conversion. xdb's TableInfo.AllColumns caches its result without a lock, so init warms every table of TrustycadbTables while the process is single-threaded.
+
+### internal/events
+
+Audit event builder for org, project, member, user and API key actions.
+
+- events.go: Recorder, Event, New, Org, Project, Reference, Email, Description, Meta, Model, Emit, ParseTimeRange
+
+Invariants:
+
+- New takes the event type, a static title and the source, the name of the emitting service (`auth`, `orgs`); the actor email comes from the authctx caller unless Email overrides it, as flows without a token (OAuth callback, API key sign-in) do. Meta skips empty values.
+- Emit hands the event to a Recorder (db.OrgsDb.TryCreateEvent), which writes it in the background and only logs a failure: emit after the action succeeded, never inside a transaction.
+- ref_id follows the action: the org, project or API key acted on, the user for member, sign-up, sign-in and sign-out events, and the invite for an invitation.
 
 ### internal/metricskey
 
@@ -440,8 +454,9 @@ Invariants:
 - SelectOrg returns a new token with the original expiry; it does not set a cookie. RevokeTokenHandler (GET and DELETE) clears the auth cookie before revoking.
 - Auth cookies are HttpOnly, Secure and SameSite=None, with a readable CSRF companion cookie; names and domain come from the server's identity_map.cookies.
 - AuthDoneHandler (`/v1/auth/done`, GET and POST, skip_auth) renders the token it is given as plain text.
+- Events (internal/events, source `auth`): the callback records UserSignup for a new user's first login (LoginUser returns the login and user with one ID), OrgMemberAccepted / ProjectMemberAccepted for each accepted invite, OrgCreated and ProjectCreated for the default org and project (initialOrg), and UserSignedIn once the token is issued; SelectOrg records UserSignedIn in the org; RevokeToken records UserSignedOut, or TokenRevoked for an API key token; AuthenticateAPIKey records APIKeyLogin after it signs the token.
 
-Tests: auth_service_test.go TestMain starts one auth service over the configured database and Redis. A test that changes its BaseURL or registers a provider with SetAuthProvider is not parallel.
+Tests: auth_service_test.go TestMain starts one auth service over the configured database and Redis and exposes its DB and data protection as testDb and testDp. A test that changes its BaseURL, registers a provider with SetAuthProvider or replaces the parser's revocation is not parallel. events_test.go reads the recorded events back with ListEvents under require.Eventually, since TryCreateEvent writes in the background; its OAuth stub signs in the email passed as the code, as the GitLab provider.
 
 ### server/service/ca
 
@@ -468,7 +483,7 @@ pb.Orgs: orgs, projects, members, invites and API keys of the org selected in th
 
 - apikey.go: CreateAPIKey, ListAPIKeys, DeleteAPIKey
 - members.go: GetUserOrgs, GetUserMemberships, GetMembers, AddMember, ChangeMemberRole, DeleteMember, DeleteInvite, checkLastOwner
-- org.go: tokenOrg, preconditionFailed, event, RegisterOrg, GetOrg, UpdateOrg, DeleteOrg
+- org.go: tokenOrg, preconditionFailed, RegisterOrg, GetOrg, UpdateOrg, DeleteOrg
 - orgs_service.go: Service, Factory, OrgsHTTPHandler, RegisterRoute
 - projects.go: parseOptionalID, getActiveOrg, getProject, RegisterProject, UpdateProject, GetProject, ListProjects, DeleteProject
 
@@ -478,8 +493,9 @@ Invariants:
 - Grants follow authctx.Grants.CanGrantOrgRole / CanGrantProjectRole; an org always keeps an org-wide Owner (checkLastOwner). Every membership mutation invalidates the user's cached grants.
 - A refusal the org's state causes (deleted org, last Owner) is preconditionFailed: HTTP 409 `conflict` with the message, gRPC FailedPrecondition. Do not use NewGrpcFromCtx with FailedPrecondition: the pinned porto maps it to HTTP 500 and hides the message. Return the error unwrapped: httperror.Wrap with a message rebuilds it from its code. A Go client of the gRPC API (proxypb, httperror.NewFromPb) still sees a 500.
 - DeleteProject deactivates the project; memberships and invites are kept.
+- Every successful org, project, member, invite and API key mutation records one event (internal/events, source `orgs`) after the DB call; a refused or failed call records none. DeleteInvite has no event type and records nothing.
 
-Tests: service tests use the fakeAuthorizer and fixtures in authorizer_test.go with mocktrustycadb; precondition_test.go checks the 409/FailedPrecondition contract over REST and gRPC.
+Tests: service tests use the fakeAuthorizer and fixtures in authorizer_test.go with mocktrustycadb; events_test.go captures the emitted events from the mock (recordEvents) and checks each one field by field (requireEvent, requireNone). precondition_test.go checks the 409/FailedPrecondition contract over REST and gRPC.
 
 ### server/service/status
 

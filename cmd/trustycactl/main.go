@@ -20,7 +20,8 @@ type app struct {
 	Caller  command.CallerCmd  `cmd:"" help:"print caller info"`
 	DpopKey admin.DpopKeysCmd  `cmd:"" help:"DPoP key management"`
 
-	Project admin.OrgCmd `cmd:"" help:"project commands"`
+	Org     admin.OrgCmd     `cmd:"" help:"org commands"`
+	Project admin.ProjectCmd `cmd:"" help:"project commands"`
 }
 
 func main() {

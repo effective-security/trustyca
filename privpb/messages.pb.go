@@ -117,6 +117,102 @@ fetch. If there are no more pages to fetch, NextPage will be empty.`,
 	},
 }
 
+var Project_MessageDescription = &api.MessageDescription{
+	Name:          "Project",
+	FullName:      "pb.Project",
+	Documentation: `Project owns a collection of resources governed by a common access policy`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "ID",
+			FullName:      "pb.Project.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "OrgID",
+			FullName:      "pb.Project.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "Alias",
+			FullName:      "pb.Project.Alias",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Alias is a stable, org-unique identifier chosen by the client,
+e.g. a cloud account ID or a slug`,
+		},
+		{
+			Name:          "Name",
+			FullName:      "pb.Project.Name",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "Description",
+			FullName:      "pb.Project.Description",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:            "Status",
+			FullName:        "pb.Project.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.ItemStatus_Enum_EnumDescription,
+		},
+		{
+			Name:          "CreatedAt",
+			FullName:      "pb.Project.CreatedAt",
+			Display:       "Created At",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "UpdatedAt",
+			FullName:      "pb.Project.UpdatedAt",
+			Display:       "Updated At",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+	},
+}
+
+var ProjectsResponse_MessageDescription = &api.MessageDescription{
+	Name:          "ProjectsResponse",
+	Display:       "Projects Response",
+	FullName:      "pb.ProjectsResponse",
+	Documentation: `ProjectsResponse returns list of projects`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:       "Projects",
+			FullName:   "pb.ProjectsResponse.Projects",
+			Type:       "[]struct",
+			StructName: "pb.Project",
+			SearchType: "flat_object",
+		},
+		{
+			Name:       "NextPage",
+			FullName:   "pb.ProjectsResponse.NextPage",
+			Display:    "Next Page",
+			Type:       "struct",
+			StructName: "pb.NextPage",
+			SearchType: "flat_object",
+			Documentation: `NextPage specifies pagination information, if there are more pages to
+fetch. If there are no more pages to fetch, NextPage will be empty.`,
+		},
+	},
+}
+
 var ListOrgsRequest_MessageDescription = &api.MessageDescription{
 	Name:          "ListOrgsRequest",
 	Display:       "List Orgs Request",
@@ -165,28 +261,94 @@ If not specified, all items will be listed.`,
 	},
 }
 
+var ListProjectsRequest_MessageDescription = &api.MessageDescription{
+	Name:          "ListProjectsRequest",
+	Display:       "List Projects Request",
+	FullName:      "privpb.ListProjectsRequest",
+	Documentation: `ListProjectsRequest specifies list projects request`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Limit",
+			FullName:      "privpb.ListProjectsRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return`,
+		},
+		{
+			Name:          "Offset",
+			FullName:      "privpb.ListProjectsRequest.Offset",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Offset specifies offset for the offset-based pagination.
+Which is limited to 10000.
+To paginate for large number of records, use cursor-based pagination
+instead.`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "privpb.ListProjectsRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor specifies cursor for the cursor-based pagination.
+Use "initial" to start the pagination or pass the cursor returned from
+the previous request.`,
+		},
+		{
+			Name:            "Status",
+			FullName:        "privpb.ListProjectsRequest.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.ItemStatus_Enum_EnumDescription,
+			Documentation: `Status specifies on optional status of the item to filter by.
+If not specified, all items will be listed.`,
+		},
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ListProjectsRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `OrgID specifies optional org ID to filter by.`,
+		},
+	},
+}
+
 // MessageAllocator defines constructor to allocate Protobuf message
 type MessageAllocator func() any
 
 var (
 	initMessageDescriptionOnce sync.Once
 	messageDescriptions        = map[string]*api.MessageDescription{
-		"pb.NextPage":            NextPage_MessageDescription,
-		"pb.Org":                 Org_MessageDescription,
-		"pb.OrgsResponse":        OrgsResponse_MessageDescription,
-		"privpb.ListOrgsRequest": ListOrgsRequest_MessageDescription,
+		"pb.NextPage":                NextPage_MessageDescription,
+		"pb.Org":                     Org_MessageDescription,
+		"pb.OrgsResponse":            OrgsResponse_MessageDescription,
+		"pb.Project":                 Project_MessageDescription,
+		"pb.ProjectsResponse":        ProjectsResponse_MessageDescription,
+		"privpb.ListOrgsRequest":     ListOrgsRequest_MessageDescription,
+		"privpb.ListProjectsRequest": ListProjectsRequest_MessageDescription,
 	}
 
 	messageAllocators = map[string]MessageAllocator{
-		"pb.NextPage":            func() any { return new(pb.NextPage) },
-		"pb.Org":                 func() any { return new(pb.Org) },
-		"pb.OrgsResponse":        func() any { return new(pb.OrgsResponse) },
-		"privpb.ListOrgsRequest": func() any { return new(ListOrgsRequest) },
+		"pb.NextPage":                func() any { return new(pb.NextPage) },
+		"pb.Org":                     func() any { return new(pb.Org) },
+		"pb.OrgsResponse":            func() any { return new(pb.OrgsResponse) },
+		"pb.Project":                 func() any { return new(pb.Project) },
+		"pb.ProjectsResponse":        func() any { return new(pb.ProjectsResponse) },
+		"privpb.ListOrgsRequest":     func() any { return new(ListOrgsRequest) },
+		"privpb.ListProjectsRequest": func() any { return new(ListProjectsRequest) },
 	}
 )
 
 func (m *ListOrgsRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, ListOrgsRequest_MessageDescription)
+}
+func (m *ListProjectsRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ListProjectsRequest_MessageDescription)
 }
 
 func GetMessageDescriptions() map[string]*api.MessageDescription {

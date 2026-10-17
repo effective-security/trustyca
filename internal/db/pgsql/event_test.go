@@ -200,6 +200,47 @@ func Test_Event(t *testing.T) {
 	})
 }
 
+// Test_EventWithoutMetadata covers events built without metadata, as most
+// services emit them: the NOT NULL metadata column gets an empty object
+func Test_EventWithoutMetadata(t *testing.T) {
+	owner, org := setupOwnerAndOrg(t, "Test_EventWithoutMetadata")
+
+	event, err := provider.CreateEvent(ctx, &model.Event{
+		OrgID:       org.ID,
+		Type:        pb.EventType_OrgUpdated,
+		Title:       "Org updated",
+		ReferenceID: org.ID,
+	})
+	require.NoError(t, err)
+	assert.Empty(t, event.Metadata)
+
+	// TryCreateEvent writes in the background
+	refID := provider.NextID()
+	provider.TryCreateEvent(&model.Event{
+		OrgID:       org.ID,
+		Type:        pb.EventType_OrgMemberAdded,
+		Title:       "Member added",
+		ReferenceID: refID,
+		Email:       xdb.NULLString(owner.Email),
+	})
+	var rows model.EventSlice
+	require.Eventually(t, func() bool {
+		res, err := provider.ListEvents(ctx, &query.ListEventsRequest{
+			OrgID:       org.ID.UInt64(),
+			ReferenceID: refID.UInt64(),
+		})
+		if err != nil {
+			return false
+		}
+		rows = res.Rows
+		return len(rows) > 0
+	}, 5*time.Second, 20*time.Millisecond)
+	require.Len(t, rows, 1)
+	assert.Equal(t, pb.EventType_OrgMemberAdded, rows[0].Type)
+	assert.Equal(t, owner.Email, rows[0].Email.String())
+	assert.Empty(t, rows[0].Metadata)
+}
+
 func reverseEvents(events model.EventSlice) model.EventSlice {
 	out := make(model.EventSlice, len(events))
 	for i, event := range events {
