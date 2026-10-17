@@ -54,6 +54,7 @@ func NewHTTPAdminClient(client retriable.PostRequester) privpb.AdminServer {
 	}
 }
 
+// ListOrgs lists orgs
 func (s *proxyAdminServer) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest, opts ...grpc.CallOption) (*pb.OrgsResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -63,6 +64,8 @@ func (s *proxyAdminServer) ListOrgs(ctx context.Context, req *privpb.ListOrgsReq
 	}
 	return res, nil
 }
+
+// ListOrgs lists orgs
 func (s *proxyAdminClient) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*pb.OrgsResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -72,9 +75,146 @@ func (s *proxyAdminClient) ListOrgs(ctx context.Context, req *privpb.ListOrgsReq
 	}
 	return res, nil
 }
+
+// ListOrgs lists orgs
 func (s *postproxyAdminClient) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*pb.OrgsResponse, error) {
 	var res pb.OrgsResponse
 	path := privpb.Admin_ListOrgs_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// // GetOrg returns an org with its budget
+// rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/GetOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org get";
+// }
+// // CreateOrg creates an org owned by an existing user
+// rpc CreateOrg(CreateOrgRequest)
+// returns (pb.Organization) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/CreateOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org create";
+// }
+// // UpdateOrg updates an org
+// rpc UpdateOrg(UpdateOrgRequest)
+// returns (pb.Organization) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/UpdateOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org update";
+// }
+// // DeleteOrg deletes an org that has no projects
+// rpc DeleteOrg(DeleteOrgRequest)
+// returns (google.protobuf.Empty) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/DeleteOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org delete";
+// }
+func (s *proxyAdminServer) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest, opts ...grpc.CallOption) (*pb.ProjectsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListProjects(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// // GetOrg returns an org with its budget
+// rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/GetOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org get";
+// }
+// // CreateOrg creates an org owned by an existing user
+// rpc CreateOrg(CreateOrgRequest)
+// returns (pb.Organization) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/CreateOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org create";
+// }
+// // UpdateOrg updates an org
+// rpc UpdateOrg(UpdateOrgRequest)
+// returns (pb.Organization) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/UpdateOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org update";
+// }
+// // DeleteOrg deletes an org that has no projects
+// rpc DeleteOrg(DeleteOrgRequest)
+// returns (google.protobuf.Empty) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/DeleteOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org delete";
+// }
+func (s *proxyAdminClient) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest) (*pb.ProjectsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListProjects(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// // GetOrg returns an org with its budget
+// rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/GetOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org get";
+// }
+// // CreateOrg creates an org owned by an existing user
+// rpc CreateOrg(CreateOrgRequest)
+// returns (pb.Organization) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/CreateOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org create";
+// }
+// // UpdateOrg updates an org
+// rpc UpdateOrg(UpdateOrgRequest)
+// returns (pb.Organization) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/UpdateOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org update";
+// }
+// // DeleteOrg deletes an org that has no projects
+// rpc DeleteOrg(DeleteOrgRequest)
+// returns (google.protobuf.Empty) {
+// option (google.api.http) = {
+// post: "/privpb.Admin/DeleteOrganization",
+// body: "*"
+// };
+// option (es.api.cli_cmd) = "org delete";
+// }
+func (s *postproxyAdminClient) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest) (*pb.ProjectsResponse, error) {
+	var res pb.ProjectsResponse
+	path := privpb.Admin_ListProjects_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
 	if err != nil {
 		return nil, err

@@ -38,3 +38,13 @@ func (msg *ListOrgsRequest) MarshalJSON() ([]byte, error) {
 func (msg *ListOrgsRequest) UnmarshalJSON(b []byte) error {
 	return JsonUnmarshalOptions.Unmarshal(b, msg)
 }
+
+// MarshalJSON implements json.Marshaler
+func (msg *ListProjectsRequest) MarshalJSON() ([]byte, error) {
+	return JsonMarshalOptions.Marshal(msg)
+}
+
+// UnmarshalJSON implements json.Unmarshaler
+func (msg *ListProjectsRequest) UnmarshalJSON(b []byte) error {
+	return JsonUnmarshalOptions.Unmarshal(b, msg)
+}

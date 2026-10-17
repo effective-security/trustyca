@@ -21,14 +21,53 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Admin_ListOrgs_FullMethodName = "/privpb.Admin/ListOrgs"
+	Admin_ListOrgs_FullMethodName     = "/privpb.Admin/ListOrgs"
+	Admin_ListProjects_FullMethodName = "/privpb.Admin/ListProjects"
 )
 
 // AdminClient is the client API for Admin service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AdminClient interface {
+	// ListOrgs lists orgs
 	ListOrgs(ctx context.Context, in *ListOrgsRequest, opts ...grpc.CallOption) (*pb.OrgsResponse, error)
+	//
+	//// GetOrg returns an org with its budget
+	//rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+	//option (google.api.http) = {
+	//post: "/privpb.Admin/GetOrganization",
+	//body: "*"
+	//};
+	//option (es.api.cli_cmd) = "org get";
+	//}
+	//// CreateOrg creates an org owned by an existing user
+	//rpc CreateOrg(CreateOrgRequest)
+	//returns (pb.Organization) {
+	//option (google.api.http) = {
+	//post: "/privpb.Admin/CreateOrganization",
+	//body: "*"
+	//};
+	//option (es.api.cli_cmd) = "org create";
+	//}
+	//// UpdateOrg updates an org
+	//rpc UpdateOrg(UpdateOrgRequest)
+	//returns (pb.Organization) {
+	//option (google.api.http) = {
+	//post: "/privpb.Admin/UpdateOrganization",
+	//body: "*"
+	//};
+	//option (es.api.cli_cmd) = "org update";
+	//}
+	//// DeleteOrg deletes an org that has no projects
+	//rpc DeleteOrg(DeleteOrgRequest)
+	//returns (google.protobuf.Empty) {
+	//option (google.api.http) = {
+	//post: "/privpb.Admin/DeleteOrganization",
+	//body: "*"
+	//};
+	//option (es.api.cli_cmd) = "org delete";
+	//}
+	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*pb.ProjectsResponse, error)
 }
 
 type adminClient struct {
@@ -49,11 +88,59 @@ func (c *adminClient) ListOrgs(ctx context.Context, in *ListOrgsRequest, opts ..
 	return out, nil
 }
 
+func (c *adminClient) ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*pb.ProjectsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.ProjectsResponse)
+	err := c.cc.Invoke(ctx, Admin_ListProjects_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServer is the server API for Admin service.
 // All implementations should embed UnimplementedAdminServer
 // for forward compatibility.
 type AdminServer interface {
+	// ListOrgs lists orgs
 	ListOrgs(context.Context, *ListOrgsRequest) (*pb.OrgsResponse, error)
+	//
+	//// GetOrg returns an org with its budget
+	//rpc GetOrg(GetOrgRequest) returns (pb.Org) {
+	//option (google.api.http) = {
+	//post: "/privpb.Admin/GetOrganization",
+	//body: "*"
+	//};
+	//option (es.api.cli_cmd) = "org get";
+	//}
+	//// CreateOrg creates an org owned by an existing user
+	//rpc CreateOrg(CreateOrgRequest)
+	//returns (pb.Organization) {
+	//option (google.api.http) = {
+	//post: "/privpb.Admin/CreateOrganization",
+	//body: "*"
+	//};
+	//option (es.api.cli_cmd) = "org create";
+	//}
+	//// UpdateOrg updates an org
+	//rpc UpdateOrg(UpdateOrgRequest)
+	//returns (pb.Organization) {
+	//option (google.api.http) = {
+	//post: "/privpb.Admin/UpdateOrganization",
+	//body: "*"
+	//};
+	//option (es.api.cli_cmd) = "org update";
+	//}
+	//// DeleteOrg deletes an org that has no projects
+	//rpc DeleteOrg(DeleteOrgRequest)
+	//returns (google.protobuf.Empty) {
+	//option (google.api.http) = {
+	//post: "/privpb.Admin/DeleteOrganization",
+	//body: "*"
+	//};
+	//option (es.api.cli_cmd) = "org delete";
+	//}
+	ListProjects(context.Context, *ListProjectsRequest) (*pb.ProjectsResponse, error)
 }
 
 // UnimplementedAdminServer should be embedded to have
@@ -65,6 +152,9 @@ type UnimplementedAdminServer struct{}
 
 func (UnimplementedAdminServer) ListOrgs(context.Context, *ListOrgsRequest) (*pb.OrgsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListOrgs not implemented")
+}
+func (UnimplementedAdminServer) ListProjects(context.Context, *ListProjectsRequest) (*pb.ProjectsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListProjects not implemented")
 }
 func (UnimplementedAdminServer) testEmbeddedByValue() {}
 
@@ -104,6 +194,24 @@ func _Admin_ListOrgs_Handler(srv any, ctx context.Context, dec func(any) error, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Admin_ListProjects_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServer).ListProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Admin_ListProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(AdminServer).ListProjects(ctx, req.(*ListProjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Admin_ServiceDesc is the grpc.ServiceDesc for Admin service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +222,10 @@ var Admin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListOrgs",
 			Handler:    _Admin_ListOrgs_Handler,
+		},
+		{
+			MethodName: "ListProjects",
+			Handler:    _Admin_ListProjects_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

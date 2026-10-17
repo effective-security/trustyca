@@ -10,11 +10,12 @@ import (
 )
 
 func (s *Service) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*pb.OrgsResponse, error) {
-	orgs, err := s.db.ListOrgs(ctx, &query.ListOrgsRequest{
+	qreq := &query.ListOrgsRequest{
 		Status: req.Status,
 		Limit:  req.Limit,
 		Offset: req.Offset,
-	})
+	}
+	orgs, err := s.db.ListOrgs(ctx, qreq)
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to list orgs")
 	}

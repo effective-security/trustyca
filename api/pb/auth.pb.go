@@ -1085,9 +1085,9 @@ const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
 	"auth.proto\x12\x02pb\x1a\vtypes.proto\x1a\n" +
-	"orgs.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x18es/api/annotations.proto\"2\n" +
-	"\x14AuthProvidersRequest\x12\x1a\n" +
-	"\x05Email\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05Email\"\x83\x01\n" +
+	"orgs.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x18es/api/annotations.proto\"3\n" +
+	"\x14AuthProvidersRequest\x12\x1b\n" +
+	"\x05Email\x18\x01 \x01(\tB\x05\x80\xf4\x18\xa0\x01R\x05Email\"\x83\x01\n" +
 	"\x15AuthProvidersResponse\x12\x18\n" +
 	"\aAuthURL\x18\x01 \x01(\tR\aAuthURL\x12*\n" +
 	"\tProviders\x18\x02 \x03(\x0e2\f.pb.IDP.EnumR\tProviders\x12$\n" +

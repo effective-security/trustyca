@@ -15,6 +15,7 @@ import "github.com/effective-security/trustyca/server/service/admin"
   - [func \(s \*Service\) Close\(\)](<#Service.Close>)
   - [func \(s \*Service\) IsReady\(\) bool](<#Service.IsReady>)
   - [func \(s \*Service\) ListOrgs\(ctx context.Context, req \*privpb.ListOrgsRequest\) \(\*pb.OrgsResponse, error\)](<#Service.ListOrgs>)
+  - [func \(s \*Service\) ListProjects\(ctx context.Context, req \*privpb.ListProjectsRequest\) \(\*pb.ProjectsResponse, error\)](<#Service.ListProjects>)
   - [func \(s \*Service\) Name\(\) string](<#Service.Name>)
   - [func \(s \*Service\) RegisterGRPC\(r \*grpc.Server\)](<#Service.RegisterGRPC>)
   - [func \(s \*Service\) RegisterRoute\(r restserver.Router\)](<#Service.RegisterRoute>)
@@ -80,6 +81,15 @@ IsReady indicates that the service is ready to serve its end\-points
 
 ```go
 func (s *Service) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*pb.OrgsResponse, error)
+```
+
+
+
+<a name="Service.ListProjects"></a>
+### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/projects.go#L13>)
+
+```go
+func (s *Service) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest) (*pb.ProjectsResponse, error)
 ```
 
 

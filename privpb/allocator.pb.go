@@ -69,6 +69,11 @@ var methods = map[string]*MethodInfo{
 
 	Admin_ListOrgs_FullMethodName: {
 		Allocator: func() any { return new(ListOrgsRequest) },
-		CliCmd:    "admin org list",
+		CliCmd:    "org list",
+	},
+
+	Admin_ListProjects_FullMethodName: {
+		Allocator: func() any { return new(ListProjectsRequest) },
+		CliCmd:    "project list",
 	},
 }

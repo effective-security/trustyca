@@ -104,7 +104,7 @@ service Auth {
 // AuthProvidersRequest specifies request to get list of supported IDP
 message AuthProvidersRequest {
     // Email specifies optional email to use for login
-    string Email = 1 [json_name = "Email", (es.api.required) = true];
+    string Email = 1 [json_name = "Email", (es.api.max) = 160];
 }
 
 // AuthProvidersResponse provides list of supported IDP
