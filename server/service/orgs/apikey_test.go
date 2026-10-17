@@ -26,7 +26,7 @@ func TestService_APIKeys(t *testing.T) {
 	require.NoError(t, err)
 
 	db := mocktrustycadb.NewMockOrgsDb(ctrl)
-	db.EXPECT().TryCreateEvent(gomock.Any()).AnyTimes()
+	events := recordEvents(db)
 	db.EXPECT().NextID().Return(xdb.NewID(555)).AnyTimes()
 	svc := Service{db: db, authorizer: newFakeAuthorizer(orgGrant(42, pb.Role_Admin)), dataprotection: dp}
 	ctx := testCtx("42", "1")
@@ -68,10 +68,19 @@ func TestService_APIKeys(t *testing.T) {
 	assert.Equal(t, "201", key.ProjectID)
 	assert.Len(t, key.Secret, 32, "the clear secret is returned once")
 	assert.Equal(t, []string{"org:read", "project:read", "ca:read"}, key.Scopes)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_APIKeyCreated,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 555,
+		Title:       "API key created",
+		Description: `API key "ci" created with scopes org:read,project:read,ca:read`,
+	})
 
 	db.EXPECT().RegisterAPIKey(gomock.Any(), gomock.Any()).Return(nil, errors.New("db failed"))
 	_, err = svc.CreateAPIKey(ctx, &pb.CreateAPIKeyRequest{Label: "ci", Scopes: []string{"certs:*"}, ExpiresAt: time.Now().Add(time.Hour).Format(time.RFC3339)})
 	assert.EqualError(t, err, "unexpected: failed to register API key")
+	events.requireNone(t)
 
 	// list
 	stored := &model.APIKey{ID: xdb.NewID(555), OrgID: xdb.NewID(1), ProjectID: xdb.NewID(201), Label: "ci", Key: "sk_1_x", Secret: "protected", Scopes: []string{"org:read"}, Status: pb.ItemStatus_Active}
@@ -104,4 +113,18 @@ func TestService_APIKeys(t *testing.T) {
 	res, err := svc.DeleteAPIKey(ctx, &pb.APIKeyRequest{ID: "555", ProjectID: "201"})
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, res.Deleted)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_APIKeyDeleted,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 555,
+		Title:       "API key deleted",
+		Description: `API key "ci" deleted`,
+	})
+
+	db.EXPECT().GetAPIKey(gomock.Any(), uint64(1), uint64(555)).Return(stored, nil)
+	db.EXPECT().DeleteAPIKey(gomock.Any(), uint64(1), uint64(555)).Return(int64(0), errors.New("db failed"))
+	_, err = svc.DeleteAPIKey(ctx, &pb.APIKeyRequest{ID: "555"})
+	assert.EqualError(t, err, "unexpected: unable to delete API key")
+	events.requireNone(t)
 }

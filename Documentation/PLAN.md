@@ -36,7 +36,10 @@ Implements the spec end to end; see DESIGN.md section 3.
   project, key, scopes and status filters, `UseAPIKey`, `DeleteAPIKey`).
 - Auth service: `SelectOrg`, initial org selection at login, default org and
   project creation, `UserInfo` with org fields, `AuthenticateAPIKey`,
-  `GetAllowedMethods`, `GetCallerScope`.
+  `GetAllowedMethods`, `GetCallerScope`, user lifecycle events (sign-up,
+  sign-in, sign-out, accepted invites, API key sign-in).
+- `internal/events`: the event builder every service emits audit events
+  with (DESIGN.md section 11).
 - Orgs service: token-scoped org RPCs, `GetUserOrgs`, `GetUserMemberships`,
   project RPCs with grant-filtered `ListProjects`, member RPCs with
   grantability checks and last-Owner protection, `CreateAPIKey`,
@@ -47,8 +50,10 @@ Implements the spec end to end; see DESIGN.md section 3.
 - Tests: `internal/authctx` (hierarchy, grants, scopes, authorizer,
   `CheckAccess` for users, API keys, scoped tokens and service roles,
   `GetAllowedMethods`, `GetCallerScope`), query builders, DB integration
-  (`Test_ProjectMembership`, `Test_APIKey`), service tests with a fake
-  authorizer including API keys, CLI with golden output.
+  (`Test_ProjectMembership`, `Test_APIKey`, `Test_EventWithoutMetadata`),
+  service tests with a fake authorizer including API keys and the exact
+  event of each mutation, auth event integration tests, CLI with golden
+  output.
 
 Acceptance criteria from the spec covered by tests: 1, 2, 3, 4, 5, 6, 7, 8, 9,
 11, 12, 13, 14. Criterion 10 (revocation bound) is the 3 minute cache TTL

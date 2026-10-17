@@ -18,6 +18,7 @@ import (
 	"github.com/effective-security/porto/xhttp/marshal"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/model"
+	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/trustyca/internal/metricskey"
 	"github.com/effective-security/x/urlutil"
 	"github.com/effective-security/x/values"
@@ -365,19 +366,44 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 		// 	}
 		// }()
 
+		// LoginUser inserts the login and the user under one new ID, and on
+		// a conflict each row keeps its own: only the first login of a new
+		// user returns both with the same ID. The first login of an existing
+		// user with another provider is not a sign-up.
+		if login.ID.UInt64() == u.ID.UInt64() {
+			events.New(ctx, ServiceName, pb.EventType_UserSignup, "User signed up").
+				Reference(u.ID).
+				Email(u.Email).
+				Description("%s signed up with %s", u.Email, st.Provider.String()).
+				Emit(s.db)
+		}
+
 		// This operation makes sense only for new users,
 		// as existing users shall be added to Members directly
-		count, err := s.db.AcceptInvites(ctx, u)
+		accepted, err := s.db.AcceptInvites(ctx, u)
 		if err != nil {
-			logger.KV(xlog.ERROR, "reason", "AcceptInvites", "err", err.Error())
-		} else if count > 0 {
-			logger.KV(xlog.INFO, "reason", "AcceptInvites", "count", count)
+			logger.ContextKV(ctx, xlog.ERROR, "reason", "AcceptInvites", "err", err.Error())
+		} else if len(accepted) > 0 {
+			s.authorizer.InvalidateUser(ctx, u.ID.String())
+			logger.ContextKV(ctx, xlog.INFO, "reason", "AcceptInvites", "count", len(accepted))
+			for _, m := range accepted {
+				events.New(ctx, ServiceName,
+					values.Select(m.ProjectID.UInt64() == 0, pb.EventType_OrgMemberAccepted, pb.EventType_ProjectMemberAccepted),
+					"Member accepted invitation").
+					Org(m.OrgID).
+					Project(m.ProjectID).
+					Reference(u.ID).
+					Email(u.Email).
+					Description("%s accepted the invitation as %s", u.Email, m.Role.DisplayName()).
+					Emit(s.db)
+			}
 		}
 	}
 
 	// select the initial org for the session; the token carries the org and
 	// the resolved role, permissions are resolved from grants at request time
-	s.initialOrg(ctx, u).setOrgClaims(claims)
+	sel := s.initialOrg(ctx, u)
+	sel.setOrgClaims(claims)
 
 	tokenStr, err := s.JwtSigner.Sign(ctx, claims)
 	if err != nil {
@@ -433,18 +459,17 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 		}
 	}
 
-	// TODO: teams or projects?
-	// if !orgID.IsZero() {
-	// 	name := values.StringsCoalesce(u.Name, u.Email)
-	// 	s.db.TryCreateEvent(&model.Event{
-	// 		OrgID:       orgID,
-	// 		Type:        pb.EventType_UserLogin,
-	// 		Email:       xdb.NULLString(ui.Email),
-	// 		Source:      "OAuthCallback",
-	// 		Title:       "login",
-	// 		Description: xdb.NULLString(fmt.Sprintf("User %s logged in from %s", name, r.RemoteAddr)),
-	// 	})
-	// }
+	// the session starts in the selected org, when the user has one
+	signedIn := events.New(ctx, ServiceName, pb.EventType_UserSignedIn, "User signed in").
+		Reference(u.ID).
+		Email(u.Email)
+	if sel != nil {
+		signedIn.Org(sel.OrgID).
+			Description("%s signed in with %s as %s", u.Email, st.Provider.String(), sel.Role.DisplayName())
+	} else {
+		signedIn.Description("%s signed in with %s without an org", u.Email, st.Provider.String())
+	}
+	signedIn.Emit(s.db)
 
 	writeOauthResponse(w, r, st, vals)
 }

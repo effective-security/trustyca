@@ -15,7 +15,7 @@ import "github.com/effective-security/trustyca/internal/db"
 
 
 <a name="OrgsDb"></a>
-## type [OrgsDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L78-L138>)
+## type [OrgsDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L78-L140>)
 
 OrgsDb defines an interface for CRUD operations on Orgs
 
@@ -23,7 +23,8 @@ OrgsDb defines an interface for CRUD operations on Orgs
 type OrgsDb interface {
     OrgsReadonlyDb
 
-    // LoginUser returns User
+    // LoginUser registers the login and its user. Only the first login of a
+    // new user returns the login and the user with the same ID.
     LoginUser(ctx context.Context, login *model.Login) (*model.Login, *model.User, error)
     // DeleteUserByEmail deletes user and logins
     DeleteUserByEmail(ctx context.Context, email string) (map[string]int64, error)
@@ -62,8 +63,9 @@ type OrgsDb interface {
     DeleteInvite(ctx context.Context, r *query.DeleteInviteRequest) (int64, error)
     // AcceptInvite accepts an org invite for a user
     AcceptInvite(ctx context.Context, inviteID, userID uint64) (*model.Membership, error)
-    // AcceptInvites moves invites to membership
-    AcceptInvites(ctx context.Context, user *model.User) (int64, error)
+    // AcceptInvites moves the pending invites for a user's email to grants
+    // and returns the grants it created
+    AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error)
 
     // CreateEvent returns new Event
     CreateEvent(ctx context.Context, m *model.Event) (*model.Event, error)
@@ -144,7 +146,7 @@ type OrgsReadonlyDb interface {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L141-L145>)
+## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L143-L147>)
 
 Provider provides complete DB access
 
@@ -157,7 +159,7 @@ type Provider interface {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L148>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L150>)
 
 ```go
 func New(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator) (Provider, error)

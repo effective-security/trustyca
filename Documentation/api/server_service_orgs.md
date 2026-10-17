@@ -76,7 +76,7 @@ func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.
 AddMember grants a role org\-wide \(empty ProjectID\) or in a project. If the user does not exist yet, an invite is created at the same scope.
 
 <a name="Service.ChangeMemberRole"></a>
-### func \(\*Service\) [ChangeMemberRole](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/members.go#L298>)
+### func \(\*Service\) [ChangeMemberRole](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/members.go#L306>)
 
 ```go
 func (s *Service) ChangeMemberRole(ctx context.Context, req *pb.ChangeMemberRoleRequest) (*pb.Membership, error)
@@ -94,7 +94,7 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.CreateAPIKey"></a>
-### func \(\*Service\) [CreateAPIKey](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/apikey.go#L31>)
+### func \(\*Service\) [CreateAPIKey](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/apikey.go#L33>)
 
 ```go
 func (s *Service) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest) (*pb.APIKey, error)
@@ -103,7 +103,7 @@ func (s *Service) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest)
 CreateAPIKey creates a new API key in the org selected in the token, optionally restricted to a project. The public key is encoded as sk\_\<OrgID\>\_\<protectedKeyID\>, where the key ID is protected with the dataprotection key \(TODO: per org key\); the secret is stored protected and returned to the caller only once.
 
 <a name="Service.DeleteAPIKey"></a>
-### func \(\*Service\) [DeleteAPIKey](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/apikey.go#L135>)
+### func \(\*Service\) [DeleteAPIKey](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/apikey.go#L141>)
 
 ```go
 func (s *Service) DeleteAPIKey(ctx context.Context, req *pb.APIKeyRequest) (*pb.RecordsResult, error)
@@ -112,7 +112,7 @@ func (s *Service) DeleteAPIKey(ctx context.Context, req *pb.APIKeyRequest) (*pb.
 DeleteAPIKey deletes an API key of the org selected in the token. When ProjectID is set it must match the project of the key.
 
 <a name="Service.DeleteInvite"></a>
-### func \(\*Service\) [DeleteInvite](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/members.go#L408>)
+### func \(\*Service\) [DeleteInvite](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/members.go#L424>)
 
 ```go
 func (s *Service) DeleteInvite(ctx context.Context, req *pb.DeleteInviteRequest) (*emptypb.Empty, error)
@@ -121,7 +121,7 @@ func (s *Service) DeleteInvite(ctx context.Context, req *pb.DeleteInviteRequest)
 DeleteInvite deletes the invite at the requested scope
 
 <a name="Service.DeleteMember"></a>
-### func \(\*Service\) [DeleteMember](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/members.go#L364>)
+### func \(\*Service\) [DeleteMember](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/members.go#L376>)
 
 ```go
 func (s *Service) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest) (*emptypb.Empty, error)
@@ -130,7 +130,7 @@ func (s *Service) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest)
 DeleteMember removes the grant at the requested scope: the project grant with ProjectID, otherwise the org\-wide grant. The caller must be allowed to grant the member's role at that scope.
 
 <a name="Service.DeleteOrg"></a>
-### func \(\*Service\) [DeleteOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/org.go#L104>)
+### func \(\*Service\) [DeleteOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/org.go#L97>)
 
 ```go
 func (s *Service) DeleteOrg(ctx context.Context, _ *emptypb.Empty) (*pb.Org, error)
@@ -139,7 +139,7 @@ func (s *Service) DeleteOrg(ctx context.Context, _ *emptypb.Empty) (*pb.Org, err
 DeleteOrg deactivates the org selected in the token
 
 <a name="Service.DeleteProject"></a>
-### func \(\*Service\) [DeleteProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L220>)
+### func \(\*Service\) [DeleteProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L228>)
 
 ```go
 func (s *Service) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.Project, error)
@@ -157,7 +157,7 @@ func (s *Service) GetMembers(ctx context.Context, req *pb.GetMembersRequest) (*p
 GetMembers returns grants and invites of the org selected in the token. With ProjectID only the project's grants are returned; with Scope Org only the org\-wide grants are returned.
 
 <a name="Service.GetOrg"></a>
-### func \(\*Service\) [GetOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/org.go#L77>)
+### func \(\*Service\) [GetOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/org.go#L66>)
 
 ```go
 func (s *Service) GetOrg(ctx context.Context, _ *emptypb.Empty) (*pb.Org, error)
@@ -166,7 +166,7 @@ func (s *Service) GetOrg(ctx context.Context, _ *emptypb.Empty) (*pb.Org, error)
 GetOrg returns the org selected in the token
 
 <a name="Service.GetProject"></a>
-### func \(\*Service\) [GetProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L131>)
+### func \(\*Service\) [GetProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L139>)
 
 ```go
 func (s *Service) GetProject(ctx context.Context, req *pb.GetProjectRequest) (*pb.Project, error)
@@ -202,7 +202,7 @@ func (s *Service) IsReady() bool
 IsReady indicates that the service is ready to serve its end\-points
 
 <a name="Service.ListAPIKeys"></a>
-### func \(\*Service\) [ListAPIKeys](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/apikey.go#L109>)
+### func \(\*Service\) [ListAPIKeys](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/apikey.go#L115>)
 
 ```go
 func (s *Service) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*pb.APIKeysResponse, error)
@@ -211,7 +211,7 @@ func (s *Service) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (
 ListAPIKeys lists the API keys of the org selected in the token, or of a project when ProjectID is set
 
 <a name="Service.ListProjects"></a>
-### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L173>)
+### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L181>)
 
 ```go
 func (s *Service) ListProjects(ctx context.Context, req *pb.ListProjectsRequest) (*pb.ProjectsResponse, error)
@@ -247,7 +247,7 @@ func (s *Service) RegisterGRPC(r *grpc.Server)
 RegisterGRPC registers gRPC handler
 
 <a name="Service.RegisterOrg"></a>
-### func \(\*Service\) [RegisterOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/org.go#L56>)
+### func \(\*Service\) [RegisterOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/org.go#L42>)
 
 ```go
 func (s *Service) RegisterOrg(ctx context.Context, req *pb.RegisterOrgRequest) (*pb.Org, error)
@@ -274,7 +274,7 @@ func (s *Service) RegisterRoute(r restserver.Router)
 RegisterRoute adds the Status API endpoints to the overall URL router
 
 <a name="Service.UpdateOrg"></a>
-### func \(\*Service\) [UpdateOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/org.go#L90>)
+### func \(\*Service\) [UpdateOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/org.go#L79>)
 
 ```go
 func (s *Service) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRequest) (*pb.Org, error)
@@ -283,7 +283,7 @@ func (s *Service) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRequest) (*pb.
 UpdateOrg updates the org selected in the token
 
 <a name="Service.UpdateProject"></a>
-### func \(\*Service\) [UpdateProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L102>)
+### func \(\*Service\) [UpdateProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L106>)
 
 ```go
 func (s *Service) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.Project, error)

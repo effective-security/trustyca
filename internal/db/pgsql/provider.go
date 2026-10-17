@@ -174,3 +174,17 @@ func (p *Provider) CheckErrIDConflict(ctx context.Context, err error, id uint64)
 func (p *Provider) NewNotificationsListener() notifier.Listener {
 	return notifier.NewListener(p, 10*time.Millisecond, time.Minute)
 }
+
+// emptyMetadata is the value of a NOT NULL jsonb metadata column without
+// entries
+const emptyMetadata = "{}"
+
+// metadataArg returns the value of a NOT NULL jsonb metadata column:
+// xdb.Metadata.Value() returns NULL for an empty map, so an explicit empty
+// object is written instead
+func metadataArg(m xdb.Metadata) any {
+	if len(m) == 0 {
+		return emptyMetadata
+	}
+	return m
+}

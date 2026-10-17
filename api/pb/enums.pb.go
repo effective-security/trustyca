@@ -42,11 +42,17 @@ const (
 	Display_EventType_ProjectMemberRoleChanged = "Project Member Role Changed"
 	Display_EventType_ProjectMemberInvited     = "Project Member Invited"
 	Display_EventType_ProjectMemberAccepted    = "Project Member Accepted"
-	Display_EventType_UserLogin                = "User Login"
+	Display_EventType_UserSignup               = "User Signup"
+	Display_EventType_UserSignedOut            = "User Signed Out"
+	Display_EventType_UserSignedIn             = "User Signed In"
+	Display_EventType_UserDisabled             = "User Disabled"
+	Display_EventType_UserEnabled              = "User Enabled"
 	Display_EventType_TokenRevoked             = "Token Revoked"
 	Display_EventType_APIKeyCreated            = "API Key Created"
 	Display_EventType_APIKeyDeleted            = "API Key Deleted"
 	Display_EventType_APIKeyLogin              = "API Key Login"
+	Display_EventType_OrganizationDisabled     = "Organization Disabled"
+	Display_EventType_OrganizationEnabled      = "Organization Enabled"
 	Display_EventType_IssuerRegistered         = "Issuer Registered"
 	Display_EventType_IssuerActivated          = "Issuer Activated"
 	Display_EventType_IssuerUpdated            = "Issuer Updated"
@@ -721,7 +727,7 @@ var EncodingFormat_Enum_Meta = map[EncodingFormat_Enum]*api.EnumMeta{
 
 type EventType_EnumSlice []EventType_Enum
 
-const EventType_Enum_SupportedNamesHelp = "Unknown,OrgCreated,OrgUpdated,OrgDeleted,OrgMemberAdded,OrgMemberRemoved,OrgMemberRoleChanged,OrgMemberInvited,OrgMemberAccepted,ProjectCreated,ProjectUpdated,ProjectDeleted,ProjectMemberAdded,ProjectMemberRemoved,ProjectMemberRoleChanged,ProjectMemberInvited,ProjectMemberAccepted,UserLogin,TokenRevoked,APIKeyCreated,APIKeyDeleted,APIKeyLogin,IssuerRegistered,IssuerActivated,IssuerUpdated,ProfileRegistered,ProfileDeleted,CertificateIssued,CertificateRevoked,CrlPublished,RootRegistered"
+const EventType_Enum_SupportedNamesHelp = "Unknown,OrgCreated,OrgUpdated,OrgDeleted,OrgMemberAdded,OrgMemberRemoved,OrgMemberRoleChanged,OrgMemberInvited,OrgMemberAccepted,ProjectCreated,ProjectUpdated,ProjectDeleted,ProjectMemberAdded,ProjectMemberRemoved,ProjectMemberRoleChanged,ProjectMemberInvited,ProjectMemberAccepted,UserSignup,UserSignedOut,UserSignedIn,UserDisabled,UserEnabled,TokenRevoked,APIKeyCreated,APIKeyDeleted,APIKeyLogin,OrganizationDisabled,OrganizationEnabled,IssuerRegistered,IssuerActivated,IssuerUpdated,ProfileRegistered,ProfileDeleted,CertificateIssued,CertificateRevoked,CrlPublished,RootRegistered"
 
 // ValuesMap returns a map of enum values
 func (s EventType_Enum) ValuesMap() map[string]int32 {
@@ -857,11 +863,17 @@ var EventType_Enum_Name = map[EventType_Enum]string{
 	EventType_ProjectMemberRoleChanged: "ProjectMemberRoleChanged",
 	EventType_ProjectMemberInvited:     "ProjectMemberInvited",
 	EventType_ProjectMemberAccepted:    "ProjectMemberAccepted",
-	EventType_UserLogin:                "UserLogin",
+	EventType_UserSignup:               "UserSignup",
+	EventType_UserSignedOut:            "UserSignedOut",
+	EventType_UserSignedIn:             "UserSignedIn",
+	EventType_UserDisabled:             "UserDisabled",
+	EventType_UserEnabled:              "UserEnabled",
 	EventType_TokenRevoked:             "TokenRevoked",
 	EventType_APIKeyCreated:            "APIKeyCreated",
 	EventType_APIKeyDeleted:            "APIKeyDeleted",
 	EventType_APIKeyLogin:              "APIKeyLogin",
+	EventType_OrganizationDisabled:     "OrganizationDisabled",
+	EventType_OrganizationEnabled:      "OrganizationEnabled",
 	EventType_IssuerRegistered:         "IssuerRegistered",
 	EventType_IssuerActivated:          "IssuerActivated",
 	EventType_IssuerUpdated:            "IssuerUpdated",
@@ -891,11 +903,17 @@ var EventType_Enum_Value = map[string]EventType_Enum{
 	"ProjectMemberRoleChanged": EventType_ProjectMemberRoleChanged,
 	"ProjectMemberInvited":     EventType_ProjectMemberInvited,
 	"ProjectMemberAccepted":    EventType_ProjectMemberAccepted,
-	"UserLogin":                EventType_UserLogin,
+	"UserSignup":               EventType_UserSignup,
+	"UserSignedOut":            EventType_UserSignedOut,
+	"UserSignedIn":             EventType_UserSignedIn,
+	"UserDisabled":             EventType_UserDisabled,
+	"UserEnabled":              EventType_UserEnabled,
 	"TokenRevoked":             EventType_TokenRevoked,
 	"APIKeyCreated":            EventType_APIKeyCreated,
 	"APIKeyDeleted":            EventType_APIKeyDeleted,
 	"APIKeyLogin":              EventType_APIKeyLogin,
+	"OrganizationDisabled":     EventType_OrganizationDisabled,
+	"OrganizationEnabled":      EventType_OrganizationEnabled,
 	"IssuerRegistered":         EventType_IssuerRegistered,
 	"IssuerActivated":          EventType_IssuerActivated,
 	"IssuerUpdated":            EventType_IssuerUpdated,
@@ -925,11 +943,17 @@ var EventType_Enum_DisplayName = map[EventType_Enum]string{
 	EventType_ProjectMemberRoleChanged: Display_EventType_ProjectMemberRoleChanged,
 	EventType_ProjectMemberInvited:     Display_EventType_ProjectMemberInvited,
 	EventType_ProjectMemberAccepted:    Display_EventType_ProjectMemberAccepted,
-	EventType_UserLogin:                Display_EventType_UserLogin,
+	EventType_UserSignup:               Display_EventType_UserSignup,
+	EventType_UserSignedOut:            Display_EventType_UserSignedOut,
+	EventType_UserSignedIn:             Display_EventType_UserSignedIn,
+	EventType_UserDisabled:             Display_EventType_UserDisabled,
+	EventType_UserEnabled:              Display_EventType_UserEnabled,
 	EventType_TokenRevoked:             Display_EventType_TokenRevoked,
 	EventType_APIKeyCreated:            Display_EventType_APIKeyCreated,
 	EventType_APIKeyDeleted:            Display_EventType_APIKeyDeleted,
 	EventType_APIKeyLogin:              Display_EventType_APIKeyLogin,
+	EventType_OrganizationDisabled:     Display_EventType_OrganizationDisabled,
+	EventType_OrganizationEnabled:      Display_EventType_OrganizationEnabled,
 	EventType_IssuerRegistered:         Display_EventType_IssuerRegistered,
 	EventType_IssuerActivated:          Display_EventType_IssuerActivated,
 	EventType_IssuerUpdated:            Display_EventType_IssuerUpdated,
@@ -959,11 +983,17 @@ var EventType_Enum_displayName = map[int32]string{
 	14:  Display_EventType_ProjectMemberRoleChanged,
 	15:  Display_EventType_ProjectMemberInvited,
 	16:  Display_EventType_ProjectMemberAccepted,
-	20:  Display_EventType_UserLogin,
-	21:  Display_EventType_TokenRevoked,
+	20:  Display_EventType_UserSignup,
+	21:  Display_EventType_UserSignedOut,
+	22:  Display_EventType_UserSignedIn,
+	23:  Display_EventType_UserDisabled,
+	24:  Display_EventType_UserEnabled,
+	25:  Display_EventType_TokenRevoked,
 	31:  Display_EventType_APIKeyCreated,
 	32:  Display_EventType_APIKeyDeleted,
 	33:  Display_EventType_APIKeyLogin,
+	36:  Display_EventType_OrganizationDisabled,
+	37:  Display_EventType_OrganizationEnabled,
 	100: Display_EventType_IssuerRegistered,
 	101: Display_EventType_IssuerActivated,
 	102: Display_EventType_IssuerUpdated,
@@ -1104,34 +1134,88 @@ changed`,
 invitation`,
 		},
 		{
-			Value:    20,
-			Name:     "UserLogin",
-			FullName: "pb.EventType.UserLogin",
-			Display:  Display_EventType_UserLogin,
+			Value:         20,
+			Name:          "UserSignup",
+			FullName:      "pb.EventType.UserSignup",
+			Display:       Display_EventType_UserSignup,
+			Documentation: `UserSignup indicates that a user signed up on the platform`,
 		},
 		{
 			Value:    21,
-			Name:     "TokenRevoked",
-			FullName: "pb.EventType.TokenRevoked",
-			Display:  Display_EventType_TokenRevoked,
+			Name:     "UserSignedOut",
+			FullName: "pb.EventType.UserSignedOut",
+			Display:  Display_EventType_UserSignedOut,
+			Documentation: `UserSignedOut indicates that a user signed out of the platform and
+revoked the token`,
 		},
 		{
-			Value:    31,
-			Name:     "APIKeyCreated",
-			FullName: "pb.EventType.APIKeyCreated",
-			Display:  Display_EventType_APIKeyCreated,
+			Value:    22,
+			Name:     "UserSignedIn",
+			FullName: "pb.EventType.UserSignedIn",
+			Display:  Display_EventType_UserSignedIn,
+			Documentation: `UserSignedIn indicates that a user signed in to the platform, or
+selected an organization for the session`,
 		},
 		{
-			Value:    32,
-			Name:     "APIKeyDeleted",
-			FullName: "pb.EventType.APIKeyDeleted",
-			Display:  Display_EventType_APIKeyDeleted,
+			Value:    23,
+			Name:     "UserDisabled",
+			FullName: "pb.EventType.UserDisabled",
+			Display:  Display_EventType_UserDisabled,
+			Documentation: `UserDisabled indicates that a service admin disabled a user: the
+user can no longer sign in or call the API`,
+		},
+		{
+			Value:    24,
+			Name:     "UserEnabled",
+			FullName: "pb.EventType.UserEnabled",
+			Display:  Display_EventType_UserEnabled,
+			Documentation: `UserEnabled indicates that a service admin enabled a disabled user
+again`,
+		},
+		{
+			Value:         25,
+			Name:          "TokenRevoked",
+			FullName:      "pb.EventType.TokenRevoked",
+			Display:       Display_EventType_TokenRevoked,
+			Documentation: `TokenRevoked indicates that a token was revoked`,
+		},
+		{
+			Value:         31,
+			Name:          "APIKeyCreated",
+			FullName:      "pb.EventType.APIKeyCreated",
+			Display:       Display_EventType_APIKeyCreated,
+			Documentation: `APIKeyCreated indicates that an API key was created`,
+		},
+		{
+			Value:         32,
+			Name:          "APIKeyDeleted",
+			FullName:      "pb.EventType.APIKeyDeleted",
+			Display:       Display_EventType_APIKeyDeleted,
+			Documentation: `APIKeyDeleted indicates that an API key was deleted`,
 		},
 		{
 			Value:    33,
 			Name:     "APIKeyLogin",
 			FullName: "pb.EventType.APIKeyLogin",
 			Display:  Display_EventType_APIKeyLogin,
+			Documentation: `APIKeyLogin indicates that an API key was used to sign in to the
+platform`,
+		},
+		{
+			Value:    36,
+			Name:     "OrganizationDisabled",
+			FullName: "pb.EventType.OrganizationDisabled",
+			Display:  Display_EventType_OrganizationDisabled,
+			Documentation: `OrganizationDisabled indicates that a service admin disabled an
+organization with its projects and API keys`,
+		},
+		{
+			Value:    37,
+			Name:     "OrganizationEnabled",
+			FullName: "pb.EventType.OrganizationEnabled",
+			Display:  Display_EventType_OrganizationEnabled,
+			Documentation: `OrganizationEnabled indicates that a service admin enabled a
+disabled organization with the projects and API keys it disabled`,
 		},
 		{
 			Value:         100,
@@ -1219,20 +1303,26 @@ var EventType_Enum_Meta = map[EventType_Enum]*api.EnumMeta{
 	EventType_ProjectMemberRoleChanged: EventType_Enum_EnumDescription.Enums[14],
 	EventType_ProjectMemberInvited:     EventType_Enum_EnumDescription.Enums[15],
 	EventType_ProjectMemberAccepted:    EventType_Enum_EnumDescription.Enums[16],
-	EventType_UserLogin:                EventType_Enum_EnumDescription.Enums[17],
-	EventType_TokenRevoked:             EventType_Enum_EnumDescription.Enums[18],
-	EventType_APIKeyCreated:            EventType_Enum_EnumDescription.Enums[19],
-	EventType_APIKeyDeleted:            EventType_Enum_EnumDescription.Enums[20],
-	EventType_APIKeyLogin:              EventType_Enum_EnumDescription.Enums[21],
-	EventType_IssuerRegistered:         EventType_Enum_EnumDescription.Enums[22],
-	EventType_IssuerActivated:          EventType_Enum_EnumDescription.Enums[23],
-	EventType_IssuerUpdated:            EventType_Enum_EnumDescription.Enums[24],
-	EventType_ProfileRegistered:        EventType_Enum_EnumDescription.Enums[25],
-	EventType_ProfileDeleted:           EventType_Enum_EnumDescription.Enums[26],
-	EventType_CertificateIssued:        EventType_Enum_EnumDescription.Enums[27],
-	EventType_CertificateRevoked:       EventType_Enum_EnumDescription.Enums[28],
-	EventType_CrlPublished:             EventType_Enum_EnumDescription.Enums[29],
-	EventType_RootRegistered:           EventType_Enum_EnumDescription.Enums[30],
+	EventType_UserSignup:               EventType_Enum_EnumDescription.Enums[17],
+	EventType_UserSignedOut:            EventType_Enum_EnumDescription.Enums[18],
+	EventType_UserSignedIn:             EventType_Enum_EnumDescription.Enums[19],
+	EventType_UserDisabled:             EventType_Enum_EnumDescription.Enums[20],
+	EventType_UserEnabled:              EventType_Enum_EnumDescription.Enums[21],
+	EventType_TokenRevoked:             EventType_Enum_EnumDescription.Enums[22],
+	EventType_APIKeyCreated:            EventType_Enum_EnumDescription.Enums[23],
+	EventType_APIKeyDeleted:            EventType_Enum_EnumDescription.Enums[24],
+	EventType_APIKeyLogin:              EventType_Enum_EnumDescription.Enums[25],
+	EventType_OrganizationDisabled:     EventType_Enum_EnumDescription.Enums[26],
+	EventType_OrganizationEnabled:      EventType_Enum_EnumDescription.Enums[27],
+	EventType_IssuerRegistered:         EventType_Enum_EnumDescription.Enums[28],
+	EventType_IssuerActivated:          EventType_Enum_EnumDescription.Enums[29],
+	EventType_IssuerUpdated:            EventType_Enum_EnumDescription.Enums[30],
+	EventType_ProfileRegistered:        EventType_Enum_EnumDescription.Enums[31],
+	EventType_ProfileDeleted:           EventType_Enum_EnumDescription.Enums[32],
+	EventType_CertificateIssued:        EventType_Enum_EnumDescription.Enums[33],
+	EventType_CertificateRevoked:       EventType_Enum_EnumDescription.Enums[34],
+	EventType_CrlPublished:             EventType_Enum_EnumDescription.Enums[35],
+	EventType_RootRegistered:           EventType_Enum_EnumDescription.Enums[36],
 }
 
 //

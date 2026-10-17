@@ -1974,11 +1974,17 @@ const (
     Display_EventType_ProjectMemberRoleChanged = "Project Member Role Changed"
     Display_EventType_ProjectMemberInvited     = "Project Member Invited"
     Display_EventType_ProjectMemberAccepted    = "Project Member Accepted"
-    Display_EventType_UserLogin                = "User Login"
+    Display_EventType_UserSignup               = "User Signup"
+    Display_EventType_UserSignedOut            = "User Signed Out"
+    Display_EventType_UserSignedIn             = "User Signed In"
+    Display_EventType_UserDisabled             = "User Disabled"
+    Display_EventType_UserEnabled              = "User Enabled"
     Display_EventType_TokenRevoked             = "Token Revoked"
     Display_EventType_APIKeyCreated            = "API Key Created"
     Display_EventType_APIKeyDeleted            = "API Key Deleted"
     Display_EventType_APIKeyLogin              = "API Key Login"
+    Display_EventType_OrganizationDisabled     = "Organization Disabled"
+    Display_EventType_OrganizationEnabled      = "Organization Enabled"
     Display_EventType_IssuerRegistered         = "Issuer Registered"
     Display_EventType_IssuerActivated          = "Issuer Activated"
     Display_EventType_IssuerUpdated            = "Issuer Updated"
@@ -2251,7 +2257,7 @@ const EncodingFormat_Enum_SupportedNamesHelp = "PEM,DER,PKCS7"
 <a name="EventType_Enum_SupportedNamesHelp"></a>
 
 ```go
-const EventType_Enum_SupportedNamesHelp = "Unknown,OrgCreated,OrgUpdated,OrgDeleted,OrgMemberAdded,OrgMemberRemoved,OrgMemberRoleChanged,OrgMemberInvited,OrgMemberAccepted,ProjectCreated,ProjectUpdated,ProjectDeleted,ProjectMemberAdded,ProjectMemberRemoved,ProjectMemberRoleChanged,ProjectMemberInvited,ProjectMemberAccepted,UserLogin,TokenRevoked,APIKeyCreated,APIKeyDeleted,APIKeyLogin,IssuerRegistered,IssuerActivated,IssuerUpdated,ProfileRegistered,ProfileDeleted,CertificateIssued,CertificateRevoked,CrlPublished,RootRegistered"
+const EventType_Enum_SupportedNamesHelp = "Unknown,OrgCreated,OrgUpdated,OrgDeleted,OrgMemberAdded,OrgMemberRemoved,OrgMemberRoleChanged,OrgMemberInvited,OrgMemberAccepted,ProjectCreated,ProjectUpdated,ProjectDeleted,ProjectMemberAdded,ProjectMemberRemoved,ProjectMemberRoleChanged,ProjectMemberInvited,ProjectMemberAccepted,UserSignup,UserSignedOut,UserSignedIn,UserDisabled,UserEnabled,TokenRevoked,APIKeyCreated,APIKeyDeleted,APIKeyLogin,OrganizationDisabled,OrganizationEnabled,IssuerRegistered,IssuerActivated,IssuerUpdated,ProfileRegistered,ProfileDeleted,CertificateIssued,CertificateRevoked,CrlPublished,RootRegistered"
 ```
 
 <a name="IDP_Enum_SupportedNamesHelp"></a>
@@ -2566,11 +2572,17 @@ var (
         14:  "ProjectMemberRoleChanged",
         15:  "ProjectMemberInvited",
         16:  "ProjectMemberAccepted",
-        20:  "UserLogin",
-        21:  "TokenRevoked",
+        20:  "UserSignup",
+        21:  "UserSignedOut",
+        22:  "UserSignedIn",
+        23:  "UserDisabled",
+        24:  "UserEnabled",
+        25:  "TokenRevoked",
         31:  "APIKeyCreated",
         32:  "APIKeyDeleted",
         33:  "APIKeyLogin",
+        36:  "OrganizationDisabled",
+        37:  "OrganizationEnabled",
         100: "IssuerRegistered",
         101: "IssuerActivated",
         102: "IssuerUpdated",
@@ -2599,11 +2611,17 @@ var (
         "ProjectMemberRoleChanged": 14,
         "ProjectMemberInvited":     15,
         "ProjectMemberAccepted":    16,
-        "UserLogin":                20,
-        "TokenRevoked":             21,
+        "UserSignup":               20,
+        "UserSignedOut":            21,
+        "UserSignedIn":             22,
+        "UserDisabled":             23,
+        "UserEnabled":              24,
+        "TokenRevoked":             25,
         "APIKeyCreated":            31,
         "APIKeyDeleted":            32,
         "APIKeyLogin":              33,
+        "OrganizationDisabled":     36,
+        "OrganizationEnabled":      37,
         "IssuerRegistered":         100,
         "IssuerActivated":          101,
         "IssuerUpdated":            102,
@@ -4754,11 +4772,17 @@ var EventType_Enum_DisplayName = map[EventType_Enum]string{
     EventType_ProjectMemberRoleChanged: Display_EventType_ProjectMemberRoleChanged,
     EventType_ProjectMemberInvited:     Display_EventType_ProjectMemberInvited,
     EventType_ProjectMemberAccepted:    Display_EventType_ProjectMemberAccepted,
-    EventType_UserLogin:                Display_EventType_UserLogin,
+    EventType_UserSignup:               Display_EventType_UserSignup,
+    EventType_UserSignedOut:            Display_EventType_UserSignedOut,
+    EventType_UserSignedIn:             Display_EventType_UserSignedIn,
+    EventType_UserDisabled:             Display_EventType_UserDisabled,
+    EventType_UserEnabled:              Display_EventType_UserEnabled,
     EventType_TokenRevoked:             Display_EventType_TokenRevoked,
     EventType_APIKeyCreated:            Display_EventType_APIKeyCreated,
     EventType_APIKeyDeleted:            Display_EventType_APIKeyDeleted,
     EventType_APIKeyLogin:              Display_EventType_APIKeyLogin,
+    EventType_OrganizationDisabled:     Display_EventType_OrganizationDisabled,
+    EventType_OrganizationEnabled:      Display_EventType_OrganizationEnabled,
     EventType_IssuerRegistered:         Display_EventType_IssuerRegistered,
     EventType_IssuerActivated:          Display_EventType_IssuerActivated,
     EventType_IssuerUpdated:            Display_EventType_IssuerUpdated,
@@ -4903,34 +4927,88 @@ changed`,
 invitation`,
         },
         {
-            Value:    20,
-            Name:     "UserLogin",
-            FullName: "pb.EventType.UserLogin",
-            Display:  Display_EventType_UserLogin,
+            Value:         20,
+            Name:          "UserSignup",
+            FullName:      "pb.EventType.UserSignup",
+            Display:       Display_EventType_UserSignup,
+            Documentation: `UserSignup indicates that a user signed up on the platform`,
         },
         {
             Value:    21,
-            Name:     "TokenRevoked",
-            FullName: "pb.EventType.TokenRevoked",
-            Display:  Display_EventType_TokenRevoked,
+            Name:     "UserSignedOut",
+            FullName: "pb.EventType.UserSignedOut",
+            Display:  Display_EventType_UserSignedOut,
+            Documentation: `UserSignedOut indicates that a user signed out of the platform and
+revoked the token`,
         },
         {
-            Value:    31,
-            Name:     "APIKeyCreated",
-            FullName: "pb.EventType.APIKeyCreated",
-            Display:  Display_EventType_APIKeyCreated,
+            Value:    22,
+            Name:     "UserSignedIn",
+            FullName: "pb.EventType.UserSignedIn",
+            Display:  Display_EventType_UserSignedIn,
+            Documentation: `UserSignedIn indicates that a user signed in to the platform, or
+selected an organization for the session`,
         },
         {
-            Value:    32,
-            Name:     "APIKeyDeleted",
-            FullName: "pb.EventType.APIKeyDeleted",
-            Display:  Display_EventType_APIKeyDeleted,
+            Value:    23,
+            Name:     "UserDisabled",
+            FullName: "pb.EventType.UserDisabled",
+            Display:  Display_EventType_UserDisabled,
+            Documentation: `UserDisabled indicates that a service admin disabled a user: the
+user can no longer sign in or call the API`,
+        },
+        {
+            Value:    24,
+            Name:     "UserEnabled",
+            FullName: "pb.EventType.UserEnabled",
+            Display:  Display_EventType_UserEnabled,
+            Documentation: `UserEnabled indicates that a service admin enabled a disabled user
+again`,
+        },
+        {
+            Value:         25,
+            Name:          "TokenRevoked",
+            FullName:      "pb.EventType.TokenRevoked",
+            Display:       Display_EventType_TokenRevoked,
+            Documentation: `TokenRevoked indicates that a token was revoked`,
+        },
+        {
+            Value:         31,
+            Name:          "APIKeyCreated",
+            FullName:      "pb.EventType.APIKeyCreated",
+            Display:       Display_EventType_APIKeyCreated,
+            Documentation: `APIKeyCreated indicates that an API key was created`,
+        },
+        {
+            Value:         32,
+            Name:          "APIKeyDeleted",
+            FullName:      "pb.EventType.APIKeyDeleted",
+            Display:       Display_EventType_APIKeyDeleted,
+            Documentation: `APIKeyDeleted indicates that an API key was deleted`,
         },
         {
             Value:    33,
             Name:     "APIKeyLogin",
             FullName: "pb.EventType.APIKeyLogin",
             Display:  Display_EventType_APIKeyLogin,
+            Documentation: `APIKeyLogin indicates that an API key was used to sign in to the
+platform`,
+        },
+        {
+            Value:    36,
+            Name:     "OrganizationDisabled",
+            FullName: "pb.EventType.OrganizationDisabled",
+            Display:  Display_EventType_OrganizationDisabled,
+            Documentation: `OrganizationDisabled indicates that a service admin disabled an
+organization with its projects and API keys`,
+        },
+        {
+            Value:    37,
+            Name:     "OrganizationEnabled",
+            FullName: "pb.EventType.OrganizationEnabled",
+            Display:  Display_EventType_OrganizationEnabled,
+            Documentation: `OrganizationEnabled indicates that a service admin enabled a
+disabled organization with the projects and API keys it disabled`,
         },
         {
             Value:         100,
@@ -5022,20 +5100,26 @@ var EventType_Enum_Meta = map[EventType_Enum]*api.EnumMeta{
     EventType_ProjectMemberRoleChanged: EventType_Enum_EnumDescription.Enums[14],
     EventType_ProjectMemberInvited:     EventType_Enum_EnumDescription.Enums[15],
     EventType_ProjectMemberAccepted:    EventType_Enum_EnumDescription.Enums[16],
-    EventType_UserLogin:                EventType_Enum_EnumDescription.Enums[17],
-    EventType_TokenRevoked:             EventType_Enum_EnumDescription.Enums[18],
-    EventType_APIKeyCreated:            EventType_Enum_EnumDescription.Enums[19],
-    EventType_APIKeyDeleted:            EventType_Enum_EnumDescription.Enums[20],
-    EventType_APIKeyLogin:              EventType_Enum_EnumDescription.Enums[21],
-    EventType_IssuerRegistered:         EventType_Enum_EnumDescription.Enums[22],
-    EventType_IssuerActivated:          EventType_Enum_EnumDescription.Enums[23],
-    EventType_IssuerUpdated:            EventType_Enum_EnumDescription.Enums[24],
-    EventType_ProfileRegistered:        EventType_Enum_EnumDescription.Enums[25],
-    EventType_ProfileDeleted:           EventType_Enum_EnumDescription.Enums[26],
-    EventType_CertificateIssued:        EventType_Enum_EnumDescription.Enums[27],
-    EventType_CertificateRevoked:       EventType_Enum_EnumDescription.Enums[28],
-    EventType_CrlPublished:             EventType_Enum_EnumDescription.Enums[29],
-    EventType_RootRegistered:           EventType_Enum_EnumDescription.Enums[30],
+    EventType_UserSignup:               EventType_Enum_EnumDescription.Enums[17],
+    EventType_UserSignedOut:            EventType_Enum_EnumDescription.Enums[18],
+    EventType_UserSignedIn:             EventType_Enum_EnumDescription.Enums[19],
+    EventType_UserDisabled:             EventType_Enum_EnumDescription.Enums[20],
+    EventType_UserEnabled:              EventType_Enum_EnumDescription.Enums[21],
+    EventType_TokenRevoked:             EventType_Enum_EnumDescription.Enums[22],
+    EventType_APIKeyCreated:            EventType_Enum_EnumDescription.Enums[23],
+    EventType_APIKeyDeleted:            EventType_Enum_EnumDescription.Enums[24],
+    EventType_APIKeyLogin:              EventType_Enum_EnumDescription.Enums[25],
+    EventType_OrganizationDisabled:     EventType_Enum_EnumDescription.Enums[26],
+    EventType_OrganizationEnabled:      EventType_Enum_EnumDescription.Enums[27],
+    EventType_IssuerRegistered:         EventType_Enum_EnumDescription.Enums[28],
+    EventType_IssuerActivated:          EventType_Enum_EnumDescription.Enums[29],
+    EventType_IssuerUpdated:            EventType_Enum_EnumDescription.Enums[30],
+    EventType_ProfileRegistered:        EventType_Enum_EnumDescription.Enums[31],
+    EventType_ProfileDeleted:           EventType_Enum_EnumDescription.Enums[32],
+    EventType_CertificateIssued:        EventType_Enum_EnumDescription.Enums[33],
+    EventType_CertificateRevoked:       EventType_Enum_EnumDescription.Enums[34],
+    EventType_CrlPublished:             EventType_Enum_EnumDescription.Enums[35],
+    EventType_RootRegistered:           EventType_Enum_EnumDescription.Enums[36],
 }
 ```
 
@@ -5060,11 +5144,17 @@ var EventType_Enum_Name = map[EventType_Enum]string{
     EventType_ProjectMemberRoleChanged: "ProjectMemberRoleChanged",
     EventType_ProjectMemberInvited:     "ProjectMemberInvited",
     EventType_ProjectMemberAccepted:    "ProjectMemberAccepted",
-    EventType_UserLogin:                "UserLogin",
+    EventType_UserSignup:               "UserSignup",
+    EventType_UserSignedOut:            "UserSignedOut",
+    EventType_UserSignedIn:             "UserSignedIn",
+    EventType_UserDisabled:             "UserDisabled",
+    EventType_UserEnabled:              "UserEnabled",
     EventType_TokenRevoked:             "TokenRevoked",
     EventType_APIKeyCreated:            "APIKeyCreated",
     EventType_APIKeyDeleted:            "APIKeyDeleted",
     EventType_APIKeyLogin:              "APIKeyLogin",
+    EventType_OrganizationDisabled:     "OrganizationDisabled",
+    EventType_OrganizationEnabled:      "OrganizationEnabled",
     EventType_IssuerRegistered:         "IssuerRegistered",
     EventType_IssuerActivated:          "IssuerActivated",
     EventType_IssuerUpdated:            "IssuerUpdated",
@@ -5098,11 +5188,17 @@ var EventType_Enum_Value = map[string]EventType_Enum{
     "ProjectMemberRoleChanged": EventType_ProjectMemberRoleChanged,
     "ProjectMemberInvited":     EventType_ProjectMemberInvited,
     "ProjectMemberAccepted":    EventType_ProjectMemberAccepted,
-    "UserLogin":                EventType_UserLogin,
+    "UserSignup":               EventType_UserSignup,
+    "UserSignedOut":            EventType_UserSignedOut,
+    "UserSignedIn":             EventType_UserSignedIn,
+    "UserDisabled":             EventType_UserDisabled,
+    "UserEnabled":              EventType_UserEnabled,
     "TokenRevoked":             EventType_TokenRevoked,
     "APIKeyCreated":            EventType_APIKeyCreated,
     "APIKeyDeleted":            EventType_APIKeyDeleted,
     "APIKeyLogin":              EventType_APIKeyLogin,
+    "OrganizationDisabled":     EventType_OrganizationDisabled,
+    "OrganizationEnabled":      EventType_OrganizationEnabled,
     "IssuerRegistered":         EventType_IssuerRegistered,
     "IssuerActivated":          EventType_IssuerActivated,
     "IssuerUpdated":            EventType_IssuerUpdated,
@@ -5136,11 +5232,17 @@ var EventType_Enum_displayName = map[int32]string{
     14:  Display_EventType_ProjectMemberRoleChanged,
     15:  Display_EventType_ProjectMemberInvited,
     16:  Display_EventType_ProjectMemberAccepted,
-    20:  Display_EventType_UserLogin,
-    21:  Display_EventType_TokenRevoked,
+    20:  Display_EventType_UserSignup,
+    21:  Display_EventType_UserSignedOut,
+    22:  Display_EventType_UserSignedIn,
+    23:  Display_EventType_UserDisabled,
+    24:  Display_EventType_UserEnabled,
+    25:  Display_EventType_TokenRevoked,
     31:  Display_EventType_APIKeyCreated,
     32:  Display_EventType_APIKeyDeleted,
     33:  Display_EventType_APIKeyLogin,
+    36:  Display_EventType_OrganizationDisabled,
+    37:  Display_EventType_OrganizationEnabled,
     100: Display_EventType_IssuerRegistered,
     101: Display_EventType_IssuerActivated,
     102: Display_EventType_IssuerUpdated,
@@ -11424,7 +11526,7 @@ const (
 ```
 
 <a name="AuthorityType_Enum.Describe"></a>
-### func \(AuthorityType\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L228>)
+### func \(AuthorityType\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L234>)
 
 ```go
 func (s AuthorityType_Enum) Describe() map[AuthorityType_Enum]*api.EnumMeta
@@ -11442,7 +11544,7 @@ func (AuthorityType_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="AuthorityType_Enum.DisplayName"></a>
-### func \(AuthorityType\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L215>)
+### func \(AuthorityType\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L221>)
 
 ```go
 func (s AuthorityType_Enum) DisplayName() string
@@ -11451,7 +11553,7 @@ func (s AuthorityType_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="AuthorityType_Enum.DisplayNames"></a>
-### func \(AuthorityType\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L198>)
+### func \(AuthorityType\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L204>)
 
 ```go
 func (s AuthorityType_Enum) DisplayNames() []string
@@ -11460,7 +11562,7 @@ func (s AuthorityType_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="AuthorityType_Enum.DisplayNamesMap"></a>
-### func \(AuthorityType\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L137>)
+### func \(AuthorityType\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L143>)
 
 ```go
 func (s AuthorityType_Enum) DisplayNamesMap() map[int32]string
@@ -11487,7 +11589,7 @@ func (AuthorityType_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use AuthorityType\_Enum.Descriptor instead.
 
 <a name="AuthorityType_Enum.Flags"></a>
-### func \(AuthorityType\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L157>)
+### func \(AuthorityType\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L163>)
 
 ```go
 func (s AuthorityType_Enum) Flags() []AuthorityType_Enum
@@ -11496,7 +11598,7 @@ func (s AuthorityType_Enum) Flags() []AuthorityType_Enum
 Flags returns list of Enum values
 
 <a name="AuthorityType_Enum.FlagsInt"></a>
-### func \(AuthorityType\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L162>)
+### func \(AuthorityType\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L168>)
 
 ```go
 func (s AuthorityType_Enum) FlagsInt() []int32
@@ -11505,7 +11607,7 @@ func (s AuthorityType_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="AuthorityType_Enum.GetDescription"></a>
-### func \(AuthorityType\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L233>)
+### func \(AuthorityType\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L239>)
 
 ```go
 func (s AuthorityType_Enum) GetDescription() *api.EnumDescription
@@ -11514,7 +11616,7 @@ func (s AuthorityType_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="AuthorityType_Enum.Meta"></a>
-### func \(AuthorityType\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L223>)
+### func \(AuthorityType\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L229>)
 
 ```go
 func (s AuthorityType_Enum) Meta() *api.EnumMeta
@@ -11523,7 +11625,7 @@ func (s AuthorityType_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="AuthorityType_Enum.NamesMap"></a>
-### func \(AuthorityType\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L132>)
+### func \(AuthorityType\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L138>)
 
 ```go
 func (s AuthorityType_Enum) NamesMap() map[int32]string
@@ -11541,7 +11643,7 @@ func (x AuthorityType_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="AuthorityType_Enum.Parse"></a>
-### func \(AuthorityType\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L238>)
+### func \(AuthorityType\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L244>)
 
 ```go
 func (_ AuthorityType_Enum) Parse(val any) AuthorityType_Enum
@@ -11559,7 +11661,7 @@ func (x AuthorityType_Enum) String() string
 
 
 <a name="AuthorityType_Enum.SupportedNames"></a>
-### func \(AuthorityType\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L142>)
+### func \(AuthorityType\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L148>)
 
 ```go
 func (s AuthorityType_Enum) SupportedNames() string
@@ -11577,7 +11679,7 @@ func (AuthorityType_Enum) Type() protoreflect.EnumType
 
 
 <a name="AuthorityType_Enum.UnmarshalJSON"></a>
-### func \(\*AuthorityType\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L188>)
+### func \(\*AuthorityType\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L194>)
 
 ```go
 func (s *AuthorityType_Enum) UnmarshalJSON(b []byte) error
@@ -11586,7 +11688,7 @@ func (s *AuthorityType_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="AuthorityType_Enum.UnmarshalYAML"></a>
-### func \(\*AuthorityType\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L167>)
+### func \(\*AuthorityType\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L173>)
 
 ```go
 func (s *AuthorityType_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -11595,7 +11697,7 @@ func (s *AuthorityType_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="AuthorityType_Enum.ValueNames"></a>
-### func \(AuthorityType\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L147>)
+### func \(AuthorityType\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L153>)
 
 ```go
 func (s AuthorityType_Enum) ValueNames() []string
@@ -11604,7 +11706,7 @@ func (s AuthorityType_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="AuthorityType_Enum.ValueString"></a>
-### func \(AuthorityType\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L152>)
+### func \(AuthorityType\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L158>)
 
 ```go
 func (s AuthorityType_Enum) ValueString() string
@@ -11613,7 +11715,7 @@ func (s AuthorityType_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="AuthorityType_Enum.ValuesMap"></a>
-### func \(AuthorityType\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L127>)
+### func \(AuthorityType\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L133>)
 
 ```go
 func (s AuthorityType_Enum) ValuesMap() map[string]int32
@@ -11622,7 +11724,7 @@ func (s AuthorityType_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="AuthorityType_EnumSlice"></a>
-## type [AuthorityType\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L122>)
+## type [AuthorityType\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L128>)
 
 
 
@@ -13569,7 +13671,7 @@ const (
 ```
 
 <a name="CertificateStatus_Enum.Describe"></a>
-### func \(CertificateStatus\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L449>)
+### func \(CertificateStatus\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L455>)
 
 ```go
 func (s CertificateStatus_Enum) Describe() map[CertificateStatus_Enum]*api.EnumMeta
@@ -13587,7 +13689,7 @@ func (CertificateStatus_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="CertificateStatus_Enum.DisplayName"></a>
-### func \(CertificateStatus\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L436>)
+### func \(CertificateStatus\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L442>)
 
 ```go
 func (s CertificateStatus_Enum) DisplayName() string
@@ -13596,7 +13698,7 @@ func (s CertificateStatus_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="CertificateStatus_Enum.DisplayNames"></a>
-### func \(CertificateStatus\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L419>)
+### func \(CertificateStatus\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L425>)
 
 ```go
 func (s CertificateStatus_Enum) DisplayNames() []string
@@ -13605,7 +13707,7 @@ func (s CertificateStatus_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="CertificateStatus_Enum.DisplayNamesMap"></a>
-### func \(CertificateStatus\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L358>)
+### func \(CertificateStatus\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L364>)
 
 ```go
 func (s CertificateStatus_Enum) DisplayNamesMap() map[int32]string
@@ -13632,7 +13734,7 @@ func (CertificateStatus_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use CertificateStatus\_Enum.Descriptor instead.
 
 <a name="CertificateStatus_Enum.Flags"></a>
-### func \(CertificateStatus\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L378>)
+### func \(CertificateStatus\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L384>)
 
 ```go
 func (s CertificateStatus_Enum) Flags() []CertificateStatus_Enum
@@ -13641,7 +13743,7 @@ func (s CertificateStatus_Enum) Flags() []CertificateStatus_Enum
 Flags returns list of Enum values
 
 <a name="CertificateStatus_Enum.FlagsInt"></a>
-### func \(CertificateStatus\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L383>)
+### func \(CertificateStatus\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L389>)
 
 ```go
 func (s CertificateStatus_Enum) FlagsInt() []int32
@@ -13650,7 +13752,7 @@ func (s CertificateStatus_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="CertificateStatus_Enum.GetDescription"></a>
-### func \(CertificateStatus\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L454>)
+### func \(CertificateStatus\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L460>)
 
 ```go
 func (s CertificateStatus_Enum) GetDescription() *api.EnumDescription
@@ -13659,7 +13761,7 @@ func (s CertificateStatus_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="CertificateStatus_Enum.Meta"></a>
-### func \(CertificateStatus\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L444>)
+### func \(CertificateStatus\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L450>)
 
 ```go
 func (s CertificateStatus_Enum) Meta() *api.EnumMeta
@@ -13668,7 +13770,7 @@ func (s CertificateStatus_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="CertificateStatus_Enum.NamesMap"></a>
-### func \(CertificateStatus\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L353>)
+### func \(CertificateStatus\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L359>)
 
 ```go
 func (s CertificateStatus_Enum) NamesMap() map[int32]string
@@ -13686,7 +13788,7 @@ func (x CertificateStatus_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="CertificateStatus_Enum.Parse"></a>
-### func \(CertificateStatus\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L459>)
+### func \(CertificateStatus\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L465>)
 
 ```go
 func (_ CertificateStatus_Enum) Parse(val any) CertificateStatus_Enum
@@ -13704,7 +13806,7 @@ func (x CertificateStatus_Enum) String() string
 
 
 <a name="CertificateStatus_Enum.SupportedNames"></a>
-### func \(CertificateStatus\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L363>)
+### func \(CertificateStatus\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L369>)
 
 ```go
 func (s CertificateStatus_Enum) SupportedNames() string
@@ -13722,7 +13824,7 @@ func (CertificateStatus_Enum) Type() protoreflect.EnumType
 
 
 <a name="CertificateStatus_Enum.UnmarshalJSON"></a>
-### func \(\*CertificateStatus\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L409>)
+### func \(\*CertificateStatus\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L415>)
 
 ```go
 func (s *CertificateStatus_Enum) UnmarshalJSON(b []byte) error
@@ -13731,7 +13833,7 @@ func (s *CertificateStatus_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="CertificateStatus_Enum.UnmarshalYAML"></a>
-### func \(\*CertificateStatus\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L388>)
+### func \(\*CertificateStatus\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L394>)
 
 ```go
 func (s *CertificateStatus_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -13740,7 +13842,7 @@ func (s *CertificateStatus_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="CertificateStatus_Enum.ValueNames"></a>
-### func \(CertificateStatus\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L368>)
+### func \(CertificateStatus\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L374>)
 
 ```go
 func (s CertificateStatus_Enum) ValueNames() []string
@@ -13749,7 +13851,7 @@ func (s CertificateStatus_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="CertificateStatus_Enum.ValueString"></a>
-### func \(CertificateStatus\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L373>)
+### func \(CertificateStatus\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L379>)
 
 ```go
 func (s CertificateStatus_Enum) ValueString() string
@@ -13758,7 +13860,7 @@ func (s CertificateStatus_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="CertificateStatus_Enum.ValuesMap"></a>
-### func \(CertificateStatus\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L348>)
+### func \(CertificateStatus\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L354>)
 
 ```go
 func (s CertificateStatus_Enum) ValuesMap() map[string]int32
@@ -13767,7 +13869,7 @@ func (s CertificateStatus_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="CertificateStatus_EnumSlice"></a>
-## type [CertificateStatus\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L343>)
+## type [CertificateStatus\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L349>)
 
 
 
@@ -15020,7 +15122,7 @@ const (
 ```
 
 <a name="EncodingFormat_Enum.Describe"></a>
-### func \(EncodingFormat\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L645>)
+### func \(EncodingFormat\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L651>)
 
 ```go
 func (s EncodingFormat_Enum) Describe() map[EncodingFormat_Enum]*api.EnumMeta
@@ -15038,7 +15140,7 @@ func (EncodingFormat_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="EncodingFormat_Enum.DisplayName"></a>
-### func \(EncodingFormat\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L632>)
+### func \(EncodingFormat\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L638>)
 
 ```go
 func (s EncodingFormat_Enum) DisplayName() string
@@ -15047,7 +15149,7 @@ func (s EncodingFormat_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="EncodingFormat_Enum.DisplayNames"></a>
-### func \(EncodingFormat\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L615>)
+### func \(EncodingFormat\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L621>)
 
 ```go
 func (s EncodingFormat_Enum) DisplayNames() []string
@@ -15056,7 +15158,7 @@ func (s EncodingFormat_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="EncodingFormat_Enum.DisplayNamesMap"></a>
-### func \(EncodingFormat\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L554>)
+### func \(EncodingFormat\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L560>)
 
 ```go
 func (s EncodingFormat_Enum) DisplayNamesMap() map[int32]string
@@ -15083,7 +15185,7 @@ func (EncodingFormat_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use EncodingFormat\_Enum.Descriptor instead.
 
 <a name="EncodingFormat_Enum.Flags"></a>
-### func \(EncodingFormat\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L574>)
+### func \(EncodingFormat\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L580>)
 
 ```go
 func (s EncodingFormat_Enum) Flags() []EncodingFormat_Enum
@@ -15092,7 +15194,7 @@ func (s EncodingFormat_Enum) Flags() []EncodingFormat_Enum
 Flags returns list of Enum values
 
 <a name="EncodingFormat_Enum.FlagsInt"></a>
-### func \(EncodingFormat\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L579>)
+### func \(EncodingFormat\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L585>)
 
 ```go
 func (s EncodingFormat_Enum) FlagsInt() []int32
@@ -15101,7 +15203,7 @@ func (s EncodingFormat_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="EncodingFormat_Enum.GetDescription"></a>
-### func \(EncodingFormat\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L650>)
+### func \(EncodingFormat\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L656>)
 
 ```go
 func (s EncodingFormat_Enum) GetDescription() *api.EnumDescription
@@ -15110,7 +15212,7 @@ func (s EncodingFormat_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="EncodingFormat_Enum.Meta"></a>
-### func \(EncodingFormat\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L640>)
+### func \(EncodingFormat\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L646>)
 
 ```go
 func (s EncodingFormat_Enum) Meta() *api.EnumMeta
@@ -15119,7 +15221,7 @@ func (s EncodingFormat_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="EncodingFormat_Enum.NamesMap"></a>
-### func \(EncodingFormat\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L549>)
+### func \(EncodingFormat\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L555>)
 
 ```go
 func (s EncodingFormat_Enum) NamesMap() map[int32]string
@@ -15137,7 +15239,7 @@ func (x EncodingFormat_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="EncodingFormat_Enum.Parse"></a>
-### func \(EncodingFormat\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L655>)
+### func \(EncodingFormat\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L661>)
 
 ```go
 func (_ EncodingFormat_Enum) Parse(val any) EncodingFormat_Enum
@@ -15155,7 +15257,7 @@ func (x EncodingFormat_Enum) String() string
 
 
 <a name="EncodingFormat_Enum.SupportedNames"></a>
-### func \(EncodingFormat\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L559>)
+### func \(EncodingFormat\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L565>)
 
 ```go
 func (s EncodingFormat_Enum) SupportedNames() string
@@ -15173,7 +15275,7 @@ func (EncodingFormat_Enum) Type() protoreflect.EnumType
 
 
 <a name="EncodingFormat_Enum.UnmarshalJSON"></a>
-### func \(\*EncodingFormat\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L605>)
+### func \(\*EncodingFormat\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L611>)
 
 ```go
 func (s *EncodingFormat_Enum) UnmarshalJSON(b []byte) error
@@ -15182,7 +15284,7 @@ func (s *EncodingFormat_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="EncodingFormat_Enum.UnmarshalYAML"></a>
-### func \(\*EncodingFormat\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L584>)
+### func \(\*EncodingFormat\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L590>)
 
 ```go
 func (s *EncodingFormat_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -15191,7 +15293,7 @@ func (s *EncodingFormat_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="EncodingFormat_Enum.ValueNames"></a>
-### func \(EncodingFormat\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L564>)
+### func \(EncodingFormat\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L570>)
 
 ```go
 func (s EncodingFormat_Enum) ValueNames() []string
@@ -15200,7 +15302,7 @@ func (s EncodingFormat_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="EncodingFormat_Enum.ValueString"></a>
-### func \(EncodingFormat\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L569>)
+### func \(EncodingFormat\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L575>)
 
 ```go
 func (s EncodingFormat_Enum) ValueString() string
@@ -15209,7 +15311,7 @@ func (s EncodingFormat_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="EncodingFormat_Enum.ValuesMap"></a>
-### func \(EncodingFormat\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L544>)
+### func \(EncodingFormat\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L550>)
 
 ```go
 func (s EncodingFormat_Enum) ValuesMap() map[string]int32
@@ -15218,7 +15320,7 @@ func (s EncodingFormat_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="EncodingFormat_EnumSlice"></a>
-## type [EncodingFormat\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L539>)
+## type [EncodingFormat\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L545>)
 
 
 
@@ -15227,7 +15329,7 @@ type EncodingFormat_EnumSlice []EncodingFormat_Enum
 ```
 
 <a name="Event"></a>
-## type [Event](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L643-L666>)
+## type [Event](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L679-L702>)
 
 Event describes event
 
@@ -15258,7 +15360,7 @@ type Event struct {
 ```
 
 <a name="Event.Descriptor"></a>
-### func \(\*Event\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L694>)
+### func \(\*Event\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L730>)
 
 ```go
 func (*Event) Descriptor() ([]byte, []int)
@@ -15267,7 +15369,7 @@ func (*Event) Descriptor() ([]byte, []int)
 Deprecated: Use Event.ProtoReflect.Descriptor instead.
 
 <a name="Event.GetCreatedAt"></a>
-### func \(\*Event\) [GetCreatedAt](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L761>)
+### func \(\*Event\) [GetCreatedAt](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L797>)
 
 ```go
 func (x *Event) GetCreatedAt() string
@@ -15276,7 +15378,7 @@ func (x *Event) GetCreatedAt() string
 
 
 <a name="Event.GetDescription"></a>
-### func \(\*Event\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L726>)
+### func \(\*Event\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L762>)
 
 ```go
 func (x *Event) GetDescription() string
@@ -15285,7 +15387,7 @@ func (x *Event) GetDescription() string
 
 
 <a name="Event.GetEmail"></a>
-### func \(\*Event\) [GetEmail](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L740>)
+### func \(\*Event\) [GetEmail](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L776>)
 
 ```go
 func (x *Event) GetEmail() string
@@ -15294,7 +15396,7 @@ func (x *Event) GetEmail() string
 
 
 <a name="Event.GetID"></a>
-### func \(\*Event\) [GetID](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L698>)
+### func \(\*Event\) [GetID](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L734>)
 
 ```go
 func (x *Event) GetID() string
@@ -15303,7 +15405,7 @@ func (x *Event) GetID() string
 
 
 <a name="Event.GetMetadata"></a>
-### func \(\*Event\) [GetMetadata](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L754>)
+### func \(\*Event\) [GetMetadata](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L790>)
 
 ```go
 func (x *Event) GetMetadata() []*KVPair
@@ -15312,7 +15414,7 @@ func (x *Event) GetMetadata() []*KVPair
 
 
 <a name="Event.GetOrgID"></a>
-### func \(\*Event\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L705>)
+### func \(\*Event\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L741>)
 
 ```go
 func (x *Event) GetOrgID() string
@@ -15321,7 +15423,7 @@ func (x *Event) GetOrgID() string
 
 
 <a name="Event.GetProjectID"></a>
-### func \(\*Event\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L768>)
+### func \(\*Event\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L804>)
 
 ```go
 func (x *Event) GetProjectID() string
@@ -15330,7 +15432,7 @@ func (x *Event) GetProjectID() string
 
 
 <a name="Event.GetReferenceID"></a>
-### func \(\*Event\) [GetReferenceID](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L733>)
+### func \(\*Event\) [GetReferenceID](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L769>)
 
 ```go
 func (x *Event) GetReferenceID() string
@@ -15339,7 +15441,7 @@ func (x *Event) GetReferenceID() string
 
 
 <a name="Event.GetSource"></a>
-### func \(\*Event\) [GetSource](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L747>)
+### func \(\*Event\) [GetSource](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L783>)
 
 ```go
 func (x *Event) GetSource() string
@@ -15348,7 +15450,7 @@ func (x *Event) GetSource() string
 
 
 <a name="Event.GetTitle"></a>
-### func \(\*Event\) [GetTitle](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L719>)
+### func \(\*Event\) [GetTitle](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L755>)
 
 ```go
 func (x *Event) GetTitle() string
@@ -15357,7 +15459,7 @@ func (x *Event) GetTitle() string
 
 
 <a name="Event.GetType"></a>
-### func \(\*Event\) [GetType](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L712>)
+### func \(\*Event\) [GetType](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L748>)
 
 ```go
 func (x *Event) GetType() EventType_Enum
@@ -15375,7 +15477,7 @@ func (msg *Event) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="Event.ProtoMessage"></a>
-### func \(\*Event\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L679>)
+### func \(\*Event\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L715>)
 
 ```go
 func (*Event) ProtoMessage()
@@ -15384,7 +15486,7 @@ func (*Event) ProtoMessage()
 
 
 <a name="Event.ProtoReflect"></a>
-### func \(\*Event\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L681>)
+### func \(\*Event\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L717>)
 
 ```go
 func (x *Event) ProtoReflect() protoreflect.Message
@@ -15393,7 +15495,7 @@ func (x *Event) ProtoReflect() protoreflect.Message
 
 
 <a name="Event.Reset"></a>
-### func \(\*Event\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L668>)
+### func \(\*Event\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L704>)
 
 ```go
 func (x *Event) Reset()
@@ -15402,7 +15504,7 @@ func (x *Event) Reset()
 
 
 <a name="Event.String"></a>
-### func \(\*Event\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L675>)
+### func \(\*Event\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L711>)
 
 ```go
 func (x *Event) String() string
@@ -15420,7 +15522,7 @@ func (msg *Event) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="EventType"></a>
-## type [EventType](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L606-L610>)
+## type [EventType](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L642-L646>)
 
 
 
@@ -15431,7 +15533,7 @@ type EventType struct {
 ```
 
 <a name="EventType.Descriptor"></a>
-### func \(\*EventType\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L638>)
+### func \(\*EventType\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L674>)
 
 ```go
 func (*EventType) Descriptor() ([]byte, []int)
@@ -15449,7 +15551,7 @@ func (msg *EventType) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="EventType.ProtoMessage"></a>
-### func \(\*EventType\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L623>)
+### func \(\*EventType\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L659>)
 
 ```go
 func (*EventType) ProtoMessage()
@@ -15458,7 +15560,7 @@ func (*EventType) ProtoMessage()
 
 
 <a name="EventType.ProtoReflect"></a>
-### func \(\*EventType\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L625>)
+### func \(\*EventType\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L661>)
 
 ```go
 func (x *EventType) ProtoReflect() protoreflect.Message
@@ -15467,7 +15569,7 @@ func (x *EventType) ProtoReflect() protoreflect.Message
 
 
 <a name="EventType.Reset"></a>
-### func \(\*EventType\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L612>)
+### func \(\*EventType\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L648>)
 
 ```go
 func (x *EventType) Reset()
@@ -15476,7 +15578,7 @@ func (x *EventType) Reset()
 
 
 <a name="EventType.String"></a>
-### func \(\*EventType\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L619>)
+### func \(\*EventType\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L655>)
 
 ```go
 func (x *EventType) String() string
@@ -15544,11 +15646,35 @@ const (
     // ProjectMemberAccepted indicates that a project member accepted an
     // invitation
     EventType_ProjectMemberAccepted EventType_Enum = 16
-    EventType_UserLogin             EventType_Enum = 20
-    EventType_TokenRevoked          EventType_Enum = 21
-    EventType_APIKeyCreated         EventType_Enum = 31
-    EventType_APIKeyDeleted         EventType_Enum = 32
-    EventType_APIKeyLogin           EventType_Enum = 33
+    // UserSignup indicates that a user signed up on the platform
+    EventType_UserSignup EventType_Enum = 20
+    // UserSignedOut indicates that a user signed out of the platform and
+    // revoked the token
+    EventType_UserSignedOut EventType_Enum = 21
+    // UserSignedIn indicates that a user signed in to the platform, or
+    // selected an organization for the session
+    EventType_UserSignedIn EventType_Enum = 22
+    // UserDisabled indicates that a service admin disabled a user: the
+    // user can no longer sign in or call the API
+    EventType_UserDisabled EventType_Enum = 23
+    // UserEnabled indicates that a service admin enabled a disabled user
+    // again
+    EventType_UserEnabled EventType_Enum = 24
+    // TokenRevoked indicates that a token was revoked
+    EventType_TokenRevoked EventType_Enum = 25
+    // APIKeyCreated indicates that an API key was created
+    EventType_APIKeyCreated EventType_Enum = 31
+    // APIKeyDeleted indicates that an API key was deleted
+    EventType_APIKeyDeleted EventType_Enum = 32
+    // APIKeyLogin indicates that an API key was used to sign in to the
+    // platform
+    EventType_APIKeyLogin EventType_Enum = 33
+    // OrganizationDisabled indicates that a service admin disabled an
+    // organization with its projects and API keys
+    EventType_OrganizationDisabled EventType_Enum = 36
+    // OrganizationEnabled indicates that a service admin enabled a
+    // disabled organization with the projects and API keys it disabled
+    EventType_OrganizationEnabled EventType_Enum = 37
     // IssuerRegistered indicates that an issuer was registered or imported
     EventType_IssuerRegistered EventType_Enum = 100
     // IssuerActivated indicates that a Pending issuer was activated
@@ -15572,7 +15698,7 @@ const (
 ```
 
 <a name="EventType_Enum.Describe"></a>
-### func \(EventType\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L828>)
+### func \(EventType\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L834>)
 
 ```go
 func (s EventType_Enum) Describe() map[EventType_Enum]*api.EnumMeta
@@ -15581,7 +15707,7 @@ func (s EventType_Enum) Describe() map[EventType_Enum]*api.EnumMeta
 Describe returns Enum meta information for all values
 
 <a name="EventType_Enum.Descriptor"></a>
-### func \(EventType\_Enum\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L286>)
+### func \(EventType\_Enum\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L322>)
 
 ```go
 func (EventType_Enum) Descriptor() protoreflect.EnumDescriptor
@@ -15590,7 +15716,7 @@ func (EventType_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="EventType_Enum.DisplayName"></a>
-### func \(EventType\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L815>)
+### func \(EventType\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L821>)
 
 ```go
 func (s EventType_Enum) DisplayName() string
@@ -15599,7 +15725,7 @@ func (s EventType_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="EventType_Enum.DisplayNames"></a>
-### func \(EventType\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L798>)
+### func \(EventType\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L804>)
 
 ```go
 func (s EventType_Enum) DisplayNames() []string
@@ -15608,7 +15734,7 @@ func (s EventType_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="EventType_Enum.DisplayNamesMap"></a>
-### func \(EventType\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L737>)
+### func \(EventType\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L743>)
 
 ```go
 func (s EventType_Enum) DisplayNamesMap() map[int32]string
@@ -15617,7 +15743,7 @@ func (s EventType_Enum) DisplayNamesMap() map[int32]string
 DisplayNamesMap returns a map of enum display names
 
 <a name="EventType_Enum.Enum"></a>
-### func \(EventType\_Enum\) [Enum](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L276>)
+### func \(EventType\_Enum\) [Enum](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L312>)
 
 ```go
 func (x EventType_Enum) Enum() *EventType_Enum
@@ -15626,7 +15752,7 @@ func (x EventType_Enum) Enum() *EventType_Enum
 
 
 <a name="EventType_Enum.EnumDescriptor"></a>
-### func \(EventType\_Enum\) [EnumDescriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L299>)
+### func \(EventType\_Enum\) [EnumDescriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L335>)
 
 ```go
 func (EventType_Enum) EnumDescriptor() ([]byte, []int)
@@ -15635,7 +15761,7 @@ func (EventType_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use EventType\_Enum.Descriptor instead.
 
 <a name="EventType_Enum.Flags"></a>
-### func \(EventType\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L757>)
+### func \(EventType\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L763>)
 
 ```go
 func (s EventType_Enum) Flags() []EventType_Enum
@@ -15644,7 +15770,7 @@ func (s EventType_Enum) Flags() []EventType_Enum
 Flags returns list of Enum values
 
 <a name="EventType_Enum.FlagsInt"></a>
-### func \(EventType\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L762>)
+### func \(EventType\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L768>)
 
 ```go
 func (s EventType_Enum) FlagsInt() []int32
@@ -15653,7 +15779,7 @@ func (s EventType_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="EventType_Enum.GetDescription"></a>
-### func \(EventType\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L833>)
+### func \(EventType\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L839>)
 
 ```go
 func (s EventType_Enum) GetDescription() *api.EnumDescription
@@ -15662,7 +15788,7 @@ func (s EventType_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="EventType_Enum.Meta"></a>
-### func \(EventType\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L823>)
+### func \(EventType\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L829>)
 
 ```go
 func (s EventType_Enum) Meta() *api.EnumMeta
@@ -15671,7 +15797,7 @@ func (s EventType_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="EventType_Enum.NamesMap"></a>
-### func \(EventType\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L732>)
+### func \(EventType\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L738>)
 
 ```go
 func (s EventType_Enum) NamesMap() map[int32]string
@@ -15680,7 +15806,7 @@ func (s EventType_Enum) NamesMap() map[int32]string
 NamesMap returns map of enum names
 
 <a name="EventType_Enum.Number"></a>
-### func \(EventType\_Enum\) [Number](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L294>)
+### func \(EventType\_Enum\) [Number](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L330>)
 
 ```go
 func (x EventType_Enum) Number() protoreflect.EnumNumber
@@ -15689,7 +15815,7 @@ func (x EventType_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="EventType_Enum.Parse"></a>
-### func \(EventType\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L838>)
+### func \(EventType\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L844>)
 
 ```go
 func (_ EventType_Enum) Parse(val any) EventType_Enum
@@ -15698,7 +15824,7 @@ func (_ EventType_Enum) Parse(val any) EventType_Enum
 Parse returns Enum value parsed from val
 
 <a name="EventType_Enum.String"></a>
-### func \(EventType\_Enum\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L282>)
+### func \(EventType\_Enum\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L318>)
 
 ```go
 func (x EventType_Enum) String() string
@@ -15707,7 +15833,7 @@ func (x EventType_Enum) String() string
 
 
 <a name="EventType_Enum.SupportedNames"></a>
-### func \(EventType\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L742>)
+### func \(EventType\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L748>)
 
 ```go
 func (s EventType_Enum) SupportedNames() string
@@ -15716,7 +15842,7 @@ func (s EventType_Enum) SupportedNames() string
 SupportedNames returns string of supported Enum name concatenated by ","
 
 <a name="EventType_Enum.Type"></a>
-### func \(EventType\_Enum\) [Type](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L290>)
+### func \(EventType\_Enum\) [Type](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L326>)
 
 ```go
 func (EventType_Enum) Type() protoreflect.EnumType
@@ -15725,7 +15851,7 @@ func (EventType_Enum) Type() protoreflect.EnumType
 
 
 <a name="EventType_Enum.UnmarshalJSON"></a>
-### func \(\*EventType\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L788>)
+### func \(\*EventType\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L794>)
 
 ```go
 func (s *EventType_Enum) UnmarshalJSON(b []byte) error
@@ -15734,7 +15860,7 @@ func (s *EventType_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="EventType_Enum.UnmarshalYAML"></a>
-### func \(\*EventType\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L767>)
+### func \(\*EventType\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L773>)
 
 ```go
 func (s *EventType_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -15743,7 +15869,7 @@ func (s *EventType_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="EventType_Enum.ValueNames"></a>
-### func \(EventType\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L747>)
+### func \(EventType\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L753>)
 
 ```go
 func (s EventType_Enum) ValueNames() []string
@@ -15752,7 +15878,7 @@ func (s EventType_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="EventType_Enum.ValueString"></a>
-### func \(EventType\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L752>)
+### func \(EventType\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L758>)
 
 ```go
 func (s EventType_Enum) ValueString() string
@@ -15761,7 +15887,7 @@ func (s EventType_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="EventType_Enum.ValuesMap"></a>
-### func \(EventType\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L727>)
+### func \(EventType\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L733>)
 
 ```go
 func (s EventType_Enum) ValuesMap() map[string]int32
@@ -15770,7 +15896,7 @@ func (s EventType_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="EventType_EnumSlice"></a>
-## type [EventType\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L722>)
+## type [EventType\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L728>)
 
 
 
@@ -17045,7 +17171,7 @@ func IDPFromString(s string) IDP_Enum
 IDPFromString converts a string to an IDP\_Enum.
 
 <a name="IDP_Enum.Describe"></a>
-### func \(IDP\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1348>)
+### func \(IDP\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1438>)
 
 ```go
 func (s IDP_Enum) Describe() map[IDP_Enum]*api.EnumMeta
@@ -17063,7 +17189,7 @@ func (IDP_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="IDP_Enum.DisplayName"></a>
-### func \(IDP\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1335>)
+### func \(IDP\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1425>)
 
 ```go
 func (s IDP_Enum) DisplayName() string
@@ -17072,7 +17198,7 @@ func (s IDP_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="IDP_Enum.DisplayNames"></a>
-### func \(IDP\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1318>)
+### func \(IDP\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1408>)
 
 ```go
 func (s IDP_Enum) DisplayNames() []string
@@ -17081,7 +17207,7 @@ func (s IDP_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="IDP_Enum.DisplayNamesMap"></a>
-### func \(IDP\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1257>)
+### func \(IDP\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1347>)
 
 ```go
 func (s IDP_Enum) DisplayNamesMap() map[int32]string
@@ -17108,7 +17234,7 @@ func (IDP_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use IDP\_Enum.Descriptor instead.
 
 <a name="IDP_Enum.Flags"></a>
-### func \(IDP\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1277>)
+### func \(IDP\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1367>)
 
 ```go
 func (s IDP_Enum) Flags() []IDP_Enum
@@ -17117,7 +17243,7 @@ func (s IDP_Enum) Flags() []IDP_Enum
 Flags returns list of Enum values
 
 <a name="IDP_Enum.FlagsInt"></a>
-### func \(IDP\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1282>)
+### func \(IDP\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1372>)
 
 ```go
 func (s IDP_Enum) FlagsInt() []int32
@@ -17126,7 +17252,7 @@ func (s IDP_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="IDP_Enum.GetDescription"></a>
-### func \(IDP\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1353>)
+### func \(IDP\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1443>)
 
 ```go
 func (s IDP_Enum) GetDescription() *api.EnumDescription
@@ -17135,7 +17261,7 @@ func (s IDP_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="IDP_Enum.Meta"></a>
-### func \(IDP\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1343>)
+### func \(IDP\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1433>)
 
 ```go
 func (s IDP_Enum) Meta() *api.EnumMeta
@@ -17144,7 +17270,7 @@ func (s IDP_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="IDP_Enum.NamesMap"></a>
-### func \(IDP\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1252>)
+### func \(IDP\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1342>)
 
 ```go
 func (s IDP_Enum) NamesMap() map[int32]string
@@ -17162,7 +17288,7 @@ func (x IDP_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="IDP_Enum.Parse"></a>
-### func \(IDP\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1358>)
+### func \(IDP\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1448>)
 
 ```go
 func (_ IDP_Enum) Parse(val any) IDP_Enum
@@ -17180,7 +17306,7 @@ func (x IDP_Enum) String() string
 
 
 <a name="IDP_Enum.SupportedNames"></a>
-### func \(IDP\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1262>)
+### func \(IDP\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1352>)
 
 ```go
 func (s IDP_Enum) SupportedNames() string
@@ -17198,7 +17324,7 @@ func (IDP_Enum) Type() protoreflect.EnumType
 
 
 <a name="IDP_Enum.UnmarshalJSON"></a>
-### func \(\*IDP\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1308>)
+### func \(\*IDP\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1398>)
 
 ```go
 func (s *IDP_Enum) UnmarshalJSON(b []byte) error
@@ -17207,7 +17333,7 @@ func (s *IDP_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="IDP_Enum.UnmarshalYAML"></a>
-### func \(\*IDP\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1287>)
+### func \(\*IDP\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1377>)
 
 ```go
 func (s *IDP_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -17216,7 +17342,7 @@ func (s *IDP_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="IDP_Enum.ValueNames"></a>
-### func \(IDP\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1267>)
+### func \(IDP\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1357>)
 
 ```go
 func (s IDP_Enum) ValueNames() []string
@@ -17225,7 +17351,7 @@ func (s IDP_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="IDP_Enum.ValueString"></a>
-### func \(IDP\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1272>)
+### func \(IDP\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1362>)
 
 ```go
 func (s IDP_Enum) ValueString() string
@@ -17234,7 +17360,7 @@ func (s IDP_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="IDP_Enum.ValuesMap"></a>
-### func \(IDP\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1247>)
+### func \(IDP\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1337>)
 
 ```go
 func (s IDP_Enum) ValuesMap() map[string]int32
@@ -17243,7 +17369,7 @@ func (s IDP_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="IDP_EnumSlice"></a>
-## type [IDP\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1242>)
+## type [IDP\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1332>)
 
 
 
@@ -18589,7 +18715,7 @@ const (
 ```
 
 <a name="IssuerStatus_Enum.Describe"></a>
-### func \(IssuerStatus\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1555>)
+### func \(IssuerStatus\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1645>)
 
 ```go
 func (s IssuerStatus_Enum) Describe() map[IssuerStatus_Enum]*api.EnumMeta
@@ -18607,7 +18733,7 @@ func (IssuerStatus_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="IssuerStatus_Enum.DisplayName"></a>
-### func \(IssuerStatus\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1542>)
+### func \(IssuerStatus\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1632>)
 
 ```go
 func (s IssuerStatus_Enum) DisplayName() string
@@ -18616,7 +18742,7 @@ func (s IssuerStatus_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="IssuerStatus_Enum.DisplayNames"></a>
-### func \(IssuerStatus\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1525>)
+### func \(IssuerStatus\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1615>)
 
 ```go
 func (s IssuerStatus_Enum) DisplayNames() []string
@@ -18625,7 +18751,7 @@ func (s IssuerStatus_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="IssuerStatus_Enum.DisplayNamesMap"></a>
-### func \(IssuerStatus\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1464>)
+### func \(IssuerStatus\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1554>)
 
 ```go
 func (s IssuerStatus_Enum) DisplayNamesMap() map[int32]string
@@ -18652,7 +18778,7 @@ func (IssuerStatus_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use IssuerStatus\_Enum.Descriptor instead.
 
 <a name="IssuerStatus_Enum.Flags"></a>
-### func \(IssuerStatus\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1484>)
+### func \(IssuerStatus\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1574>)
 
 ```go
 func (s IssuerStatus_Enum) Flags() []IssuerStatus_Enum
@@ -18661,7 +18787,7 @@ func (s IssuerStatus_Enum) Flags() []IssuerStatus_Enum
 Flags returns list of Enum values
 
 <a name="IssuerStatus_Enum.FlagsInt"></a>
-### func \(IssuerStatus\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1489>)
+### func \(IssuerStatus\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1579>)
 
 ```go
 func (s IssuerStatus_Enum) FlagsInt() []int32
@@ -18670,7 +18796,7 @@ func (s IssuerStatus_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="IssuerStatus_Enum.GetDescription"></a>
-### func \(IssuerStatus\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1560>)
+### func \(IssuerStatus\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1650>)
 
 ```go
 func (s IssuerStatus_Enum) GetDescription() *api.EnumDescription
@@ -18679,7 +18805,7 @@ func (s IssuerStatus_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="IssuerStatus_Enum.Meta"></a>
-### func \(IssuerStatus\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1550>)
+### func \(IssuerStatus\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1640>)
 
 ```go
 func (s IssuerStatus_Enum) Meta() *api.EnumMeta
@@ -18688,7 +18814,7 @@ func (s IssuerStatus_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="IssuerStatus_Enum.NamesMap"></a>
-### func \(IssuerStatus\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1459>)
+### func \(IssuerStatus\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1549>)
 
 ```go
 func (s IssuerStatus_Enum) NamesMap() map[int32]string
@@ -18706,7 +18832,7 @@ func (x IssuerStatus_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="IssuerStatus_Enum.Parse"></a>
-### func \(IssuerStatus\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1565>)
+### func \(IssuerStatus\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1655>)
 
 ```go
 func (_ IssuerStatus_Enum) Parse(val any) IssuerStatus_Enum
@@ -18724,7 +18850,7 @@ func (x IssuerStatus_Enum) String() string
 
 
 <a name="IssuerStatus_Enum.SupportedNames"></a>
-### func \(IssuerStatus\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1469>)
+### func \(IssuerStatus\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1559>)
 
 ```go
 func (s IssuerStatus_Enum) SupportedNames() string
@@ -18742,7 +18868,7 @@ func (IssuerStatus_Enum) Type() protoreflect.EnumType
 
 
 <a name="IssuerStatus_Enum.UnmarshalJSON"></a>
-### func \(\*IssuerStatus\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1515>)
+### func \(\*IssuerStatus\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1605>)
 
 ```go
 func (s *IssuerStatus_Enum) UnmarshalJSON(b []byte) error
@@ -18751,7 +18877,7 @@ func (s *IssuerStatus_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="IssuerStatus_Enum.UnmarshalYAML"></a>
-### func \(\*IssuerStatus\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1494>)
+### func \(\*IssuerStatus\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1584>)
 
 ```go
 func (s *IssuerStatus_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -18760,7 +18886,7 @@ func (s *IssuerStatus_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="IssuerStatus_Enum.ValueNames"></a>
-### func \(IssuerStatus\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1474>)
+### func \(IssuerStatus\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1564>)
 
 ```go
 func (s IssuerStatus_Enum) ValueNames() []string
@@ -18769,7 +18895,7 @@ func (s IssuerStatus_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="IssuerStatus_Enum.ValueString"></a>
-### func \(IssuerStatus\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1479>)
+### func \(IssuerStatus\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1569>)
 
 ```go
 func (s IssuerStatus_Enum) ValueString() string
@@ -18778,7 +18904,7 @@ func (s IssuerStatus_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="IssuerStatus_Enum.ValuesMap"></a>
-### func \(IssuerStatus\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1454>)
+### func \(IssuerStatus\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1544>)
 
 ```go
 func (s IssuerStatus_Enum) ValuesMap() map[string]int32
@@ -18787,7 +18913,7 @@ func (s IssuerStatus_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="IssuerStatus_EnumSlice"></a>
-## type [IssuerStatus\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1449>)
+## type [IssuerStatus\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1539>)
 
 
 
@@ -18901,7 +19027,7 @@ func (msg *IssuersResponse) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ItemStatus"></a>
-## type [ItemStatus](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L534-L538>)
+## type [ItemStatus](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L570-L574>)
 
 
 
@@ -18912,7 +19038,7 @@ type ItemStatus struct {
 ```
 
 <a name="ItemStatus.Descriptor"></a>
-### func \(\*ItemStatus\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L566>)
+### func \(\*ItemStatus\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L602>)
 
 ```go
 func (*ItemStatus) Descriptor() ([]byte, []int)
@@ -18930,7 +19056,7 @@ func (msg *ItemStatus) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ItemStatus.ProtoMessage"></a>
-### func \(\*ItemStatus\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L551>)
+### func \(\*ItemStatus\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L587>)
 
 ```go
 func (*ItemStatus) ProtoMessage()
@@ -18939,7 +19065,7 @@ func (*ItemStatus) ProtoMessage()
 
 
 <a name="ItemStatus.ProtoReflect"></a>
-### func \(\*ItemStatus\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L553>)
+### func \(\*ItemStatus\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L589>)
 
 ```go
 func (x *ItemStatus) ProtoReflect() protoreflect.Message
@@ -18948,7 +19074,7 @@ func (x *ItemStatus) ProtoReflect() protoreflect.Message
 
 
 <a name="ItemStatus.Reset"></a>
-### func \(\*ItemStatus\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L540>)
+### func \(\*ItemStatus\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L576>)
 
 ```go
 func (x *ItemStatus) Reset()
@@ -18957,7 +19083,7 @@ func (x *ItemStatus) Reset()
 
 
 <a name="ItemStatus.String"></a>
-### func \(\*ItemStatus\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L547>)
+### func \(\*ItemStatus\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L583>)
 
 ```go
 func (x *ItemStatus) String() string
@@ -19000,7 +19126,7 @@ const (
 ```
 
 <a name="ItemStatus_Enum.Describe"></a>
-### func \(ItemStatus\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1766>)
+### func \(ItemStatus\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1856>)
 
 ```go
 func (s ItemStatus_Enum) Describe() map[ItemStatus_Enum]*api.EnumMeta
@@ -19018,7 +19144,7 @@ func (ItemStatus_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="ItemStatus_Enum.DisplayName"></a>
-### func \(ItemStatus\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1753>)
+### func \(ItemStatus\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1843>)
 
 ```go
 func (s ItemStatus_Enum) DisplayName() string
@@ -19027,7 +19153,7 @@ func (s ItemStatus_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="ItemStatus_Enum.DisplayNames"></a>
-### func \(ItemStatus\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1736>)
+### func \(ItemStatus\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1826>)
 
 ```go
 func (s ItemStatus_Enum) DisplayNames() []string
@@ -19036,7 +19162,7 @@ func (s ItemStatus_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="ItemStatus_Enum.DisplayNamesMap"></a>
-### func \(ItemStatus\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1675>)
+### func \(ItemStatus\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1765>)
 
 ```go
 func (s ItemStatus_Enum) DisplayNamesMap() map[int32]string
@@ -19063,7 +19189,7 @@ func (ItemStatus_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use ItemStatus\_Enum.Descriptor instead.
 
 <a name="ItemStatus_Enum.Flags"></a>
-### func \(ItemStatus\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1695>)
+### func \(ItemStatus\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1785>)
 
 ```go
 func (s ItemStatus_Enum) Flags() []ItemStatus_Enum
@@ -19072,7 +19198,7 @@ func (s ItemStatus_Enum) Flags() []ItemStatus_Enum
 Flags returns list of Enum values
 
 <a name="ItemStatus_Enum.FlagsInt"></a>
-### func \(ItemStatus\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1700>)
+### func \(ItemStatus\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1790>)
 
 ```go
 func (s ItemStatus_Enum) FlagsInt() []int32
@@ -19081,7 +19207,7 @@ func (s ItemStatus_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="ItemStatus_Enum.GetDescription"></a>
-### func \(ItemStatus\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1771>)
+### func \(ItemStatus\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1861>)
 
 ```go
 func (s ItemStatus_Enum) GetDescription() *api.EnumDescription
@@ -19090,7 +19216,7 @@ func (s ItemStatus_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="ItemStatus_Enum.Meta"></a>
-### func \(ItemStatus\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1761>)
+### func \(ItemStatus\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1851>)
 
 ```go
 func (s ItemStatus_Enum) Meta() *api.EnumMeta
@@ -19099,7 +19225,7 @@ func (s ItemStatus_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="ItemStatus_Enum.NamesMap"></a>
-### func \(ItemStatus\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1670>)
+### func \(ItemStatus\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1760>)
 
 ```go
 func (s ItemStatus_Enum) NamesMap() map[int32]string
@@ -19117,7 +19243,7 @@ func (x ItemStatus_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="ItemStatus_Enum.Parse"></a>
-### func \(ItemStatus\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1776>)
+### func \(ItemStatus\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1866>)
 
 ```go
 func (_ ItemStatus_Enum) Parse(val any) ItemStatus_Enum
@@ -19135,7 +19261,7 @@ func (x ItemStatus_Enum) String() string
 
 
 <a name="ItemStatus_Enum.SupportedNames"></a>
-### func \(ItemStatus\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1680>)
+### func \(ItemStatus\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1770>)
 
 ```go
 func (s ItemStatus_Enum) SupportedNames() string
@@ -19153,7 +19279,7 @@ func (ItemStatus_Enum) Type() protoreflect.EnumType
 
 
 <a name="ItemStatus_Enum.UnmarshalJSON"></a>
-### func \(\*ItemStatus\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1726>)
+### func \(\*ItemStatus\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1816>)
 
 ```go
 func (s *ItemStatus_Enum) UnmarshalJSON(b []byte) error
@@ -19162,7 +19288,7 @@ func (s *ItemStatus_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="ItemStatus_Enum.UnmarshalYAML"></a>
-### func \(\*ItemStatus\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1705>)
+### func \(\*ItemStatus\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1795>)
 
 ```go
 func (s *ItemStatus_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -19171,7 +19297,7 @@ func (s *ItemStatus_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="ItemStatus_Enum.ValueNames"></a>
-### func \(ItemStatus\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1685>)
+### func \(ItemStatus\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1775>)
 
 ```go
 func (s ItemStatus_Enum) ValueNames() []string
@@ -19180,7 +19306,7 @@ func (s ItemStatus_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="ItemStatus_Enum.ValueString"></a>
-### func \(ItemStatus\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1690>)
+### func \(ItemStatus\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1780>)
 
 ```go
 func (s ItemStatus_Enum) ValueString() string
@@ -19189,7 +19315,7 @@ func (s ItemStatus_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="ItemStatus_Enum.ValuesMap"></a>
-### func \(ItemStatus\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1665>)
+### func \(ItemStatus\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1755>)
 
 ```go
 func (s ItemStatus_Enum) ValuesMap() map[string]int32
@@ -19198,7 +19324,7 @@ func (s ItemStatus_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="ItemStatus_EnumSlice"></a>
-## type [ItemStatus\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1660>)
+## type [ItemStatus\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1750>)
 
 
 
@@ -19207,7 +19333,7 @@ type ItemStatus_EnumSlice []ItemStatus_Enum
 ```
 
 <a name="KVPair"></a>
-## type [KVPair](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L304-L312>)
+## type [KVPair](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L340-L348>)
 
 KVPair provides generic key\-value pair
 
@@ -19232,7 +19358,7 @@ func FlatMap(meta map[string]string) []*KVPair
 
 
 <a name="KVPair.Descriptor"></a>
-### func \(\*KVPair\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L340>)
+### func \(\*KVPair\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L376>)
 
 ```go
 func (*KVPair) Descriptor() ([]byte, []int)
@@ -19241,7 +19367,7 @@ func (*KVPair) Descriptor() ([]byte, []int)
 Deprecated: Use KVPair.ProtoReflect.Descriptor instead.
 
 <a name="KVPair.GetKey"></a>
-### func \(\*KVPair\) [GetKey](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L344>)
+### func \(\*KVPair\) [GetKey](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L380>)
 
 ```go
 func (x *KVPair) GetKey() string
@@ -19250,7 +19376,7 @@ func (x *KVPair) GetKey() string
 
 
 <a name="KVPair.GetValue"></a>
-### func \(\*KVPair\) [GetValue](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L351>)
+### func \(\*KVPair\) [GetValue](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L387>)
 
 ```go
 func (x *KVPair) GetValue() string
@@ -19268,7 +19394,7 @@ func (msg *KVPair) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="KVPair.ProtoMessage"></a>
-### func \(\*KVPair\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L325>)
+### func \(\*KVPair\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L361>)
 
 ```go
 func (*KVPair) ProtoMessage()
@@ -19277,7 +19403,7 @@ func (*KVPair) ProtoMessage()
 
 
 <a name="KVPair.ProtoReflect"></a>
-### func \(\*KVPair\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L327>)
+### func \(\*KVPair\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L363>)
 
 ```go
 func (x *KVPair) ProtoReflect() protoreflect.Message
@@ -19286,7 +19412,7 @@ func (x *KVPair) ProtoReflect() protoreflect.Message
 
 
 <a name="KVPair.Reset"></a>
-### func \(\*KVPair\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L314>)
+### func \(\*KVPair\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L350>)
 
 ```go
 func (x *KVPair) Reset()
@@ -19295,7 +19421,7 @@ func (x *KVPair) Reset()
 
 
 <a name="KVPair.String"></a>
-### func \(\*KVPair\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L321>)
+### func \(\*KVPair\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L357>)
 
 ```go
 func (x *KVPair) String() string
@@ -19313,7 +19439,7 @@ func (msg *KVPair) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="KVSet"></a>
-## type [KVSet](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L359-L367>)
+## type [KVSet](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L395-L403>)
 
 KVSet provides groupped values under a common key
 
@@ -19338,7 +19464,7 @@ func FlatKVSet(meta map[string][]string) []*KVSet
 
 
 <a name="KVSet.Descriptor"></a>
-### func \(\*KVSet\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L395>)
+### func \(\*KVSet\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L431>)
 
 ```go
 func (*KVSet) Descriptor() ([]byte, []int)
@@ -19347,7 +19473,7 @@ func (*KVSet) Descriptor() ([]byte, []int)
 Deprecated: Use KVSet.ProtoReflect.Descriptor instead.
 
 <a name="KVSet.GetKey"></a>
-### func \(\*KVSet\) [GetKey](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L399>)
+### func \(\*KVSet\) [GetKey](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L435>)
 
 ```go
 func (x *KVSet) GetKey() string
@@ -19356,7 +19482,7 @@ func (x *KVSet) GetKey() string
 
 
 <a name="KVSet.GetValues"></a>
-### func \(\*KVSet\) [GetValues](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L406>)
+### func \(\*KVSet\) [GetValues](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L442>)
 
 ```go
 func (x *KVSet) GetValues() []string
@@ -19374,7 +19500,7 @@ func (msg *KVSet) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="KVSet.ProtoMessage"></a>
-### func \(\*KVSet\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L380>)
+### func \(\*KVSet\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L416>)
 
 ```go
 func (*KVSet) ProtoMessage()
@@ -19383,7 +19509,7 @@ func (*KVSet) ProtoMessage()
 
 
 <a name="KVSet.ProtoReflect"></a>
-### func \(\*KVSet\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L382>)
+### func \(\*KVSet\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L418>)
 
 ```go
 func (x *KVSet) ProtoReflect() protoreflect.Message
@@ -19392,7 +19518,7 @@ func (x *KVSet) ProtoReflect() protoreflect.Message
 
 
 <a name="KVSet.Reset"></a>
-### func \(\*KVSet\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L369>)
+### func \(\*KVSet\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L405>)
 
 ```go
 func (x *KVSet) Reset()
@@ -19401,7 +19527,7 @@ func (x *KVSet) Reset()
 
 
 <a name="KVSet.String"></a>
-### func \(\*KVSet\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L376>)
+### func \(\*KVSet\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L412>)
 
 ```go
 func (x *KVSet) String() string
@@ -21183,7 +21309,7 @@ func UnmarshalRequest(w http.ResponseWriter, r *http.Request) (any, *MethodInfo,
 UnmarshalRequest unmarshals JSON body of HTTP request to protobuf request
 
 <a name="NextPage"></a>
-## type [NextPage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L414-L427>)
+## type [NextPage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L450-L463>)
 
 NextPage specifies pagination information, if there are more pages to fetch.
 
@@ -21204,7 +21330,7 @@ type NextPage struct {
 ```
 
 <a name="NextPage.Descriptor"></a>
-### func \(\*NextPage\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L455>)
+### func \(\*NextPage\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L491>)
 
 ```go
 func (*NextPage) Descriptor() ([]byte, []int)
@@ -21213,7 +21339,7 @@ func (*NextPage) Descriptor() ([]byte, []int)
 Deprecated: Use NextPage.ProtoReflect.Descriptor instead.
 
 <a name="NextPage.GetCursor"></a>
-### func \(\*NextPage\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L466>)
+### func \(\*NextPage\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L502>)
 
 ```go
 func (x *NextPage) GetCursor() string
@@ -21222,7 +21348,7 @@ func (x *NextPage) GetCursor() string
 
 
 <a name="NextPage.GetOffset"></a>
-### func \(\*NextPage\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L459>)
+### func \(\*NextPage\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L495>)
 
 ```go
 func (x *NextPage) GetOffset() uint32
@@ -21240,7 +21366,7 @@ func (msg *NextPage) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="NextPage.ProtoMessage"></a>
-### func \(\*NextPage\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L440>)
+### func \(\*NextPage\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L476>)
 
 ```go
 func (*NextPage) ProtoMessage()
@@ -21249,7 +21375,7 @@ func (*NextPage) ProtoMessage()
 
 
 <a name="NextPage.ProtoReflect"></a>
-### func \(\*NextPage\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L442>)
+### func \(\*NextPage\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L478>)
 
 ```go
 func (x *NextPage) ProtoReflect() protoreflect.Message
@@ -21258,7 +21384,7 @@ func (x *NextPage) ProtoReflect() protoreflect.Message
 
 
 <a name="NextPage.Reset"></a>
-### func \(\*NextPage\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L429>)
+### func \(\*NextPage\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L465>)
 
 ```go
 func (x *NextPage) Reset()
@@ -21267,7 +21393,7 @@ func (x *NextPage) Reset()
 
 
 <a name="NextPage.String"></a>
-### func \(\*NextPage\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L436>)
+### func \(\*NextPage\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L472>)
 
 ```go
 func (x *NextPage) String() string
@@ -22640,7 +22766,7 @@ const (
 ```
 
 <a name="ReasonCode_Enum.Describe"></a>
-### func \(ReasonCode\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1963>)
+### func \(ReasonCode\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2053>)
 
 ```go
 func (s ReasonCode_Enum) Describe() map[ReasonCode_Enum]*api.EnumMeta
@@ -22658,7 +22784,7 @@ func (ReasonCode_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="ReasonCode_Enum.DisplayName"></a>
-### func \(ReasonCode\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1950>)
+### func \(ReasonCode\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2040>)
 
 ```go
 func (s ReasonCode_Enum) DisplayName() string
@@ -22667,7 +22793,7 @@ func (s ReasonCode_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="ReasonCode_Enum.DisplayNames"></a>
-### func \(ReasonCode\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1933>)
+### func \(ReasonCode\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2023>)
 
 ```go
 func (s ReasonCode_Enum) DisplayNames() []string
@@ -22676,7 +22802,7 @@ func (s ReasonCode_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="ReasonCode_Enum.DisplayNamesMap"></a>
-### func \(ReasonCode\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1872>)
+### func \(ReasonCode\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1962>)
 
 ```go
 func (s ReasonCode_Enum) DisplayNamesMap() map[int32]string
@@ -22703,7 +22829,7 @@ func (ReasonCode_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use ReasonCode\_Enum.Descriptor instead.
 
 <a name="ReasonCode_Enum.Flags"></a>
-### func \(ReasonCode\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1892>)
+### func \(ReasonCode\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1982>)
 
 ```go
 func (s ReasonCode_Enum) Flags() []ReasonCode_Enum
@@ -22712,7 +22838,7 @@ func (s ReasonCode_Enum) Flags() []ReasonCode_Enum
 Flags returns list of Enum values
 
 <a name="ReasonCode_Enum.FlagsInt"></a>
-### func \(ReasonCode\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1897>)
+### func \(ReasonCode\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1987>)
 
 ```go
 func (s ReasonCode_Enum) FlagsInt() []int32
@@ -22721,7 +22847,7 @@ func (s ReasonCode_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="ReasonCode_Enum.GetDescription"></a>
-### func \(ReasonCode\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1968>)
+### func \(ReasonCode\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2058>)
 
 ```go
 func (s ReasonCode_Enum) GetDescription() *api.EnumDescription
@@ -22730,7 +22856,7 @@ func (s ReasonCode_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="ReasonCode_Enum.Meta"></a>
-### func \(ReasonCode\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1958>)
+### func \(ReasonCode\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2048>)
 
 ```go
 func (s ReasonCode_Enum) Meta() *api.EnumMeta
@@ -22739,7 +22865,7 @@ func (s ReasonCode_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="ReasonCode_Enum.NamesMap"></a>
-### func \(ReasonCode\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1867>)
+### func \(ReasonCode\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1957>)
 
 ```go
 func (s ReasonCode_Enum) NamesMap() map[int32]string
@@ -22757,7 +22883,7 @@ func (x ReasonCode_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="ReasonCode_Enum.Parse"></a>
-### func \(ReasonCode\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1973>)
+### func \(ReasonCode\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2063>)
 
 ```go
 func (_ ReasonCode_Enum) Parse(val any) ReasonCode_Enum
@@ -22775,7 +22901,7 @@ func (x ReasonCode_Enum) String() string
 
 
 <a name="ReasonCode_Enum.SupportedNames"></a>
-### func \(ReasonCode\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1877>)
+### func \(ReasonCode\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1967>)
 
 ```go
 func (s ReasonCode_Enum) SupportedNames() string
@@ -22793,7 +22919,7 @@ func (ReasonCode_Enum) Type() protoreflect.EnumType
 
 
 <a name="ReasonCode_Enum.UnmarshalJSON"></a>
-### func \(\*ReasonCode\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1923>)
+### func \(\*ReasonCode\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2013>)
 
 ```go
 func (s *ReasonCode_Enum) UnmarshalJSON(b []byte) error
@@ -22802,7 +22928,7 @@ func (s *ReasonCode_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="ReasonCode_Enum.UnmarshalYAML"></a>
-### func \(\*ReasonCode\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1902>)
+### func \(\*ReasonCode\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1992>)
 
 ```go
 func (s *ReasonCode_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -22811,7 +22937,7 @@ func (s *ReasonCode_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="ReasonCode_Enum.ValueNames"></a>
-### func \(ReasonCode\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1882>)
+### func \(ReasonCode\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1972>)
 
 ```go
 func (s ReasonCode_Enum) ValueNames() []string
@@ -22820,7 +22946,7 @@ func (s ReasonCode_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="ReasonCode_Enum.ValueString"></a>
-### func \(ReasonCode\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1887>)
+### func \(ReasonCode\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1977>)
 
 ```go
 func (s ReasonCode_Enum) ValueString() string
@@ -22829,7 +22955,7 @@ func (s ReasonCode_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="ReasonCode_Enum.ValuesMap"></a>
-### func \(ReasonCode\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1862>)
+### func \(ReasonCode\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1952>)
 
 ```go
 func (s ReasonCode_Enum) ValuesMap() map[string]int32
@@ -22838,7 +22964,7 @@ func (s ReasonCode_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="ReasonCode_EnumSlice"></a>
-## type [ReasonCode\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1857>)
+## type [ReasonCode\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L1947>)
 
 
 
@@ -22847,7 +22973,7 @@ type ReasonCode_EnumSlice []ReasonCode_Enum
 ```
 
 <a name="RecordsResult"></a>
-## type [RecordsResult](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L474-L481>)
+## type [RecordsResult](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L510-L517>)
 
 RecordsResult provides the number of created, updated and deleted records
 
@@ -22861,7 +22987,7 @@ type RecordsResult struct {
 ```
 
 <a name="RecordsResult.Descriptor"></a>
-### func \(\*RecordsResult\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L509>)
+### func \(\*RecordsResult\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L545>)
 
 ```go
 func (*RecordsResult) Descriptor() ([]byte, []int)
@@ -22870,7 +22996,7 @@ func (*RecordsResult) Descriptor() ([]byte, []int)
 Deprecated: Use RecordsResult.ProtoReflect.Descriptor instead.
 
 <a name="RecordsResult.GetCreated"></a>
-### func \(\*RecordsResult\) [GetCreated](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L513>)
+### func \(\*RecordsResult\) [GetCreated](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L549>)
 
 ```go
 func (x *RecordsResult) GetCreated() int64
@@ -22879,7 +23005,7 @@ func (x *RecordsResult) GetCreated() int64
 
 
 <a name="RecordsResult.GetDeleted"></a>
-### func \(\*RecordsResult\) [GetDeleted](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L527>)
+### func \(\*RecordsResult\) [GetDeleted](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L563>)
 
 ```go
 func (x *RecordsResult) GetDeleted() int64
@@ -22897,7 +23023,7 @@ func (m *RecordsResult) GetMessageDescription() *api.MessageDescription
 
 
 <a name="RecordsResult.GetUpdated"></a>
-### func \(\*RecordsResult\) [GetUpdated](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L520>)
+### func \(\*RecordsResult\) [GetUpdated](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L556>)
 
 ```go
 func (x *RecordsResult) GetUpdated() int64
@@ -22915,7 +23041,7 @@ func (msg *RecordsResult) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RecordsResult.ProtoMessage"></a>
-### func \(\*RecordsResult\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L494>)
+### func \(\*RecordsResult\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L530>)
 
 ```go
 func (*RecordsResult) ProtoMessage()
@@ -22924,7 +23050,7 @@ func (*RecordsResult) ProtoMessage()
 
 
 <a name="RecordsResult.ProtoReflect"></a>
-### func \(\*RecordsResult\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L496>)
+### func \(\*RecordsResult\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L532>)
 
 ```go
 func (x *RecordsResult) ProtoReflect() protoreflect.Message
@@ -22933,7 +23059,7 @@ func (x *RecordsResult) ProtoReflect() protoreflect.Message
 
 
 <a name="RecordsResult.Reset"></a>
-### func \(\*RecordsResult\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L483>)
+### func \(\*RecordsResult\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L519>)
 
 ```go
 func (x *RecordsResult) Reset()
@@ -22942,7 +23068,7 @@ func (x *RecordsResult) Reset()
 
 
 <a name="RecordsResult.String"></a>
-### func \(\*RecordsResult\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L490>)
+### func \(\*RecordsResult\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L526>)
 
 ```go
 func (x *RecordsResult) String() string
@@ -24279,7 +24405,7 @@ const (
 ```
 
 <a name="RoleSource_Enum.Describe"></a>
-### func \(RoleSource\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2488>)
+### func \(RoleSource\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2578>)
 
 ```go
 func (s RoleSource_Enum) Describe() map[RoleSource_Enum]*api.EnumMeta
@@ -24297,7 +24423,7 @@ func (RoleSource_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="RoleSource_Enum.DisplayName"></a>
-### func \(RoleSource\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2475>)
+### func \(RoleSource\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2565>)
 
 ```go
 func (s RoleSource_Enum) DisplayName() string
@@ -24306,7 +24432,7 @@ func (s RoleSource_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="RoleSource_Enum.DisplayNames"></a>
-### func \(RoleSource\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2458>)
+### func \(RoleSource\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2548>)
 
 ```go
 func (s RoleSource_Enum) DisplayNames() []string
@@ -24315,7 +24441,7 @@ func (s RoleSource_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="RoleSource_Enum.DisplayNamesMap"></a>
-### func \(RoleSource\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2397>)
+### func \(RoleSource\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2487>)
 
 ```go
 func (s RoleSource_Enum) DisplayNamesMap() map[int32]string
@@ -24342,7 +24468,7 @@ func (RoleSource_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use RoleSource\_Enum.Descriptor instead.
 
 <a name="RoleSource_Enum.Flags"></a>
-### func \(RoleSource\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2417>)
+### func \(RoleSource\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2507>)
 
 ```go
 func (s RoleSource_Enum) Flags() []RoleSource_Enum
@@ -24351,7 +24477,7 @@ func (s RoleSource_Enum) Flags() []RoleSource_Enum
 Flags returns list of Enum values
 
 <a name="RoleSource_Enum.FlagsInt"></a>
-### func \(RoleSource\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2422>)
+### func \(RoleSource\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2512>)
 
 ```go
 func (s RoleSource_Enum) FlagsInt() []int32
@@ -24360,7 +24486,7 @@ func (s RoleSource_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="RoleSource_Enum.GetDescription"></a>
-### func \(RoleSource\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2493>)
+### func \(RoleSource\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2583>)
 
 ```go
 func (s RoleSource_Enum) GetDescription() *api.EnumDescription
@@ -24369,7 +24495,7 @@ func (s RoleSource_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="RoleSource_Enum.Meta"></a>
-### func \(RoleSource\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2483>)
+### func \(RoleSource\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2573>)
 
 ```go
 func (s RoleSource_Enum) Meta() *api.EnumMeta
@@ -24378,7 +24504,7 @@ func (s RoleSource_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="RoleSource_Enum.NamesMap"></a>
-### func \(RoleSource\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2392>)
+### func \(RoleSource\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2482>)
 
 ```go
 func (s RoleSource_Enum) NamesMap() map[int32]string
@@ -24396,7 +24522,7 @@ func (x RoleSource_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="RoleSource_Enum.Parse"></a>
-### func \(RoleSource\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2498>)
+### func \(RoleSource\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2588>)
 
 ```go
 func (_ RoleSource_Enum) Parse(val any) RoleSource_Enum
@@ -24414,7 +24540,7 @@ func (x RoleSource_Enum) String() string
 
 
 <a name="RoleSource_Enum.SupportedNames"></a>
-### func \(RoleSource\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2402>)
+### func \(RoleSource\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2492>)
 
 ```go
 func (s RoleSource_Enum) SupportedNames() string
@@ -24432,7 +24558,7 @@ func (RoleSource_Enum) Type() protoreflect.EnumType
 
 
 <a name="RoleSource_Enum.UnmarshalJSON"></a>
-### func \(\*RoleSource\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2448>)
+### func \(\*RoleSource\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2538>)
 
 ```go
 func (s *RoleSource_Enum) UnmarshalJSON(b []byte) error
@@ -24441,7 +24567,7 @@ func (s *RoleSource_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="RoleSource_Enum.UnmarshalYAML"></a>
-### func \(\*RoleSource\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2427>)
+### func \(\*RoleSource\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2517>)
 
 ```go
 func (s *RoleSource_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -24450,7 +24576,7 @@ func (s *RoleSource_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="RoleSource_Enum.ValueNames"></a>
-### func \(RoleSource\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2407>)
+### func \(RoleSource\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2497>)
 
 ```go
 func (s RoleSource_Enum) ValueNames() []string
@@ -24459,7 +24585,7 @@ func (s RoleSource_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="RoleSource_Enum.ValueString"></a>
-### func \(RoleSource\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2412>)
+### func \(RoleSource\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2502>)
 
 ```go
 func (s RoleSource_Enum) ValueString() string
@@ -24468,7 +24594,7 @@ func (s RoleSource_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="RoleSource_Enum.ValuesMap"></a>
-### func \(RoleSource\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2387>)
+### func \(RoleSource\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2477>)
 
 ```go
 func (s RoleSource_Enum) ValuesMap() map[string]int32
@@ -24477,7 +24603,7 @@ func (s RoleSource_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="RoleSource_EnumSlice"></a>
-## type [RoleSource\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2382>)
+## type [RoleSource\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2472>)
 
 
 
@@ -24519,7 +24645,7 @@ const (
 ```
 
 <a name="Role_Enum.Describe"></a>
-### func \(Role\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2231>)
+### func \(Role\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2321>)
 
 ```go
 func (s Role_Enum) Describe() map[Role_Enum]*api.EnumMeta
@@ -24537,7 +24663,7 @@ func (Role_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="Role_Enum.DisplayName"></a>
-### func \(Role\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2218>)
+### func \(Role\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2308>)
 
 ```go
 func (s Role_Enum) DisplayName() string
@@ -24546,7 +24672,7 @@ func (s Role_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="Role_Enum.DisplayNames"></a>
-### func \(Role\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2201>)
+### func \(Role\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2291>)
 
 ```go
 func (s Role_Enum) DisplayNames() []string
@@ -24555,7 +24681,7 @@ func (s Role_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="Role_Enum.DisplayNamesMap"></a>
-### func \(Role\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2140>)
+### func \(Role\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2230>)
 
 ```go
 func (s Role_Enum) DisplayNamesMap() map[int32]string
@@ -24582,7 +24708,7 @@ func (Role_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use Role\_Enum.Descriptor instead.
 
 <a name="Role_Enum.Flags"></a>
-### func \(Role\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2160>)
+### func \(Role\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2250>)
 
 ```go
 func (s Role_Enum) Flags() []Role_Enum
@@ -24591,7 +24717,7 @@ func (s Role_Enum) Flags() []Role_Enum
 Flags returns list of Enum values
 
 <a name="Role_Enum.FlagsInt"></a>
-### func \(Role\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2165>)
+### func \(Role\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2255>)
 
 ```go
 func (s Role_Enum) FlagsInt() []int32
@@ -24600,7 +24726,7 @@ func (s Role_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="Role_Enum.GetDescription"></a>
-### func \(Role\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2236>)
+### func \(Role\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2326>)
 
 ```go
 func (s Role_Enum) GetDescription() *api.EnumDescription
@@ -24609,7 +24735,7 @@ func (s Role_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="Role_Enum.Meta"></a>
-### func \(Role\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2226>)
+### func \(Role\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2316>)
 
 ```go
 func (s Role_Enum) Meta() *api.EnumMeta
@@ -24618,7 +24744,7 @@ func (s Role_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="Role_Enum.NamesMap"></a>
-### func \(Role\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2135>)
+### func \(Role\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2225>)
 
 ```go
 func (s Role_Enum) NamesMap() map[int32]string
@@ -24636,7 +24762,7 @@ func (x Role_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="Role_Enum.Parse"></a>
-### func \(Role\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2241>)
+### func \(Role\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2331>)
 
 ```go
 func (_ Role_Enum) Parse(val any) Role_Enum
@@ -24654,7 +24780,7 @@ func (x Role_Enum) String() string
 
 
 <a name="Role_Enum.SupportedNames"></a>
-### func \(Role\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2145>)
+### func \(Role\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2235>)
 
 ```go
 func (s Role_Enum) SupportedNames() string
@@ -24672,7 +24798,7 @@ func (Role_Enum) Type() protoreflect.EnumType
 
 
 <a name="Role_Enum.UnmarshalJSON"></a>
-### func \(\*Role\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2191>)
+### func \(\*Role\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2281>)
 
 ```go
 func (s *Role_Enum) UnmarshalJSON(b []byte) error
@@ -24681,7 +24807,7 @@ func (s *Role_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="Role_Enum.UnmarshalYAML"></a>
-### func \(\*Role\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2170>)
+### func \(\*Role\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2260>)
 
 ```go
 func (s *Role_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -24690,7 +24816,7 @@ func (s *Role_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="Role_Enum.ValueNames"></a>
-### func \(Role\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2150>)
+### func \(Role\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2240>)
 
 ```go
 func (s Role_Enum) ValueNames() []string
@@ -24699,7 +24825,7 @@ func (s Role_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="Role_Enum.ValueString"></a>
-### func \(Role\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2155>)
+### func \(Role\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2245>)
 
 ```go
 func (s Role_Enum) ValueString() string
@@ -24708,7 +24834,7 @@ func (s Role_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="Role_Enum.ValuesMap"></a>
-### func \(Role\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2130>)
+### func \(Role\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2220>)
 
 ```go
 func (s Role_Enum) ValuesMap() map[string]int32
@@ -24717,7 +24843,7 @@ func (s Role_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="Role_EnumSlice"></a>
-## type [Role\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2125>)
+## type [Role\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2215>)
 
 
 
@@ -25025,7 +25151,7 @@ func (msg *RootsResponse) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="Scope"></a>
-## type [Scope](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L570-L574>)
+## type [Scope](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L606-L610>)
 
 
 
@@ -25036,7 +25162,7 @@ type Scope struct {
 ```
 
 <a name="Scope.Descriptor"></a>
-### func \(\*Scope\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L602>)
+### func \(\*Scope\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L638>)
 
 ```go
 func (*Scope) Descriptor() ([]byte, []int)
@@ -25054,7 +25180,7 @@ func (msg *Scope) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="Scope.ProtoMessage"></a>
-### func \(\*Scope\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L587>)
+### func \(\*Scope\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L623>)
 
 ```go
 func (*Scope) ProtoMessage()
@@ -25063,7 +25189,7 @@ func (*Scope) ProtoMessage()
 
 
 <a name="Scope.ProtoReflect"></a>
-### func \(\*Scope\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L589>)
+### func \(\*Scope\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L625>)
 
 ```go
 func (x *Scope) ProtoReflect() protoreflect.Message
@@ -25072,7 +25198,7 @@ func (x *Scope) ProtoReflect() protoreflect.Message
 
 
 <a name="Scope.Reset"></a>
-### func \(\*Scope\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L576>)
+### func \(\*Scope\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L612>)
 
 ```go
 func (x *Scope) Reset()
@@ -25081,7 +25207,7 @@ func (x *Scope) Reset()
 
 
 <a name="Scope.String"></a>
-### func \(\*Scope\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L583>)
+### func \(\*Scope\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/types.pb.go#L619>)
 
 ```go
 func (x *Scope) String() string
@@ -25121,7 +25247,7 @@ const (
 ```
 
 <a name="Scope_Enum.Describe"></a>
-### func \(Scope\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2682>)
+### func \(Scope\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2772>)
 
 ```go
 func (s Scope_Enum) Describe() map[Scope_Enum]*api.EnumMeta
@@ -25139,7 +25265,7 @@ func (Scope_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="Scope_Enum.DisplayName"></a>
-### func \(Scope\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2660>)
+### func \(Scope\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2750>)
 
 ```go
 func (s Scope_Enum) DisplayName() string
@@ -25148,7 +25274,7 @@ func (s Scope_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="Scope_Enum.DisplayNames"></a>
-### func \(Scope\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2643>)
+### func \(Scope\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2733>)
 
 ```go
 func (s Scope_Enum) DisplayNames() []string
@@ -25157,7 +25283,7 @@ func (s Scope_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="Scope_Enum.DisplayNamesMap"></a>
-### func \(Scope\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2582>)
+### func \(Scope\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2672>)
 
 ```go
 func (s Scope_Enum) DisplayNamesMap() map[int32]string
@@ -25184,7 +25310,7 @@ func (Scope_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use Scope\_Enum.Descriptor instead.
 
 <a name="Scope_Enum.Flags"></a>
-### func \(Scope\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2602>)
+### func \(Scope\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2692>)
 
 ```go
 func (s Scope_Enum) Flags() []Scope_Enum
@@ -25193,7 +25319,7 @@ func (s Scope_Enum) Flags() []Scope_Enum
 Flags returns list of Enum values
 
 <a name="Scope_Enum.FlagsInt"></a>
-### func \(Scope\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2607>)
+### func \(Scope\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2697>)
 
 ```go
 func (s Scope_Enum) FlagsInt() []int32
@@ -25202,7 +25328,7 @@ func (s Scope_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="Scope_Enum.GetDescription"></a>
-### func \(Scope\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2687>)
+### func \(Scope\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2777>)
 
 ```go
 func (s Scope_Enum) GetDescription() *api.EnumDescription
@@ -25211,7 +25337,7 @@ func (s Scope_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="Scope_Enum.Meta"></a>
-### func \(Scope\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2677>)
+### func \(Scope\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2767>)
 
 ```go
 func (s Scope_Enum) Meta() *api.EnumMeta
@@ -25220,7 +25346,7 @@ func (s Scope_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="Scope_Enum.NamesMap"></a>
-### func \(Scope\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2577>)
+### func \(Scope\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2667>)
 
 ```go
 func (s Scope_Enum) NamesMap() map[int32]string
@@ -25238,7 +25364,7 @@ func (x Scope_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="Scope_Enum.Parse"></a>
-### func \(Scope\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2692>)
+### func \(Scope\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2782>)
 
 ```go
 func (_ Scope_Enum) Parse(val any) Scope_Enum
@@ -25256,7 +25382,7 @@ func (x Scope_Enum) String() string
 
 
 <a name="Scope_Enum.SupportedNames"></a>
-### func \(Scope\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2587>)
+### func \(Scope\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2677>)
 
 ```go
 func (s Scope_Enum) SupportedNames() string
@@ -25274,7 +25400,7 @@ func (Scope_Enum) Type() protoreflect.EnumType
 
 
 <a name="Scope_Enum.UnmarshalJSON"></a>
-### func \(\*Scope\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2633>)
+### func \(\*Scope\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2723>)
 
 ```go
 func (s *Scope_Enum) UnmarshalJSON(b []byte) error
@@ -25283,7 +25409,7 @@ func (s *Scope_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="Scope_Enum.UnmarshalYAML"></a>
-### func \(\*Scope\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2612>)
+### func \(\*Scope\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2702>)
 
 ```go
 func (s *Scope_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -25292,7 +25418,7 @@ func (s *Scope_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="Scope_Enum.ValueNames"></a>
-### func \(Scope\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2592>)
+### func \(Scope\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2682>)
 
 ```go
 func (s Scope_Enum) ValueNames() []string
@@ -25301,7 +25427,7 @@ func (s Scope_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="Scope_Enum.ValueString"></a>
-### func \(Scope\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2597>)
+### func \(Scope\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2687>)
 
 ```go
 func (s Scope_Enum) ValueString() string
@@ -25310,7 +25436,7 @@ func (s Scope_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="Scope_Enum.ValuesMap"></a>
-### func \(Scope\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2572>)
+### func \(Scope\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2662>)
 
 ```go
 func (s Scope_Enum) ValuesMap() map[string]int32
@@ -25319,7 +25445,7 @@ func (s Scope_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="Scope_EnumSlice"></a>
-## type [Scope\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2567>)
+## type [Scope\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2657>)
 
 
 
@@ -26450,7 +26576,7 @@ const (
 ```
 
 <a name="Trust_Enum.Describe"></a>
-### func \(Trust\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2866>)
+### func \(Trust\_Enum\) [Describe](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2956>)
 
 ```go
 func (s Trust_Enum) Describe() map[Trust_Enum]*api.EnumMeta
@@ -26468,7 +26594,7 @@ func (Trust_Enum) Descriptor() protoreflect.EnumDescriptor
 
 
 <a name="Trust_Enum.DisplayName"></a>
-### func \(Trust\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2853>)
+### func \(Trust\_Enum\) [DisplayName](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2943>)
 
 ```go
 func (s Trust_Enum) DisplayName() string
@@ -26477,7 +26603,7 @@ func (s Trust_Enum) DisplayName() string
 DisplayName returns display name of Enum value
 
 <a name="Trust_Enum.DisplayNames"></a>
-### func \(Trust\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2836>)
+### func \(Trust\_Enum\) [DisplayNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2926>)
 
 ```go
 func (s Trust_Enum) DisplayNames() []string
@@ -26486,7 +26612,7 @@ func (s Trust_Enum) DisplayNames() []string
 DisplayNames returns display names of Enum bitflag value
 
 <a name="Trust_Enum.DisplayNamesMap"></a>
-### func \(Trust\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2775>)
+### func \(Trust\_Enum\) [DisplayNamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2865>)
 
 ```go
 func (s Trust_Enum) DisplayNamesMap() map[int32]string
@@ -26513,7 +26639,7 @@ func (Trust_Enum) EnumDescriptor() ([]byte, []int)
 Deprecated: Use Trust\_Enum.Descriptor instead.
 
 <a name="Trust_Enum.Flags"></a>
-### func \(Trust\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2795>)
+### func \(Trust\_Enum\) [Flags](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2885>)
 
 ```go
 func (s Trust_Enum) Flags() []Trust_Enum
@@ -26522,7 +26648,7 @@ func (s Trust_Enum) Flags() []Trust_Enum
 Flags returns list of Enum values
 
 <a name="Trust_Enum.FlagsInt"></a>
-### func \(Trust\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2800>)
+### func \(Trust\_Enum\) [FlagsInt](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2890>)
 
 ```go
 func (s Trust_Enum) FlagsInt() []int32
@@ -26531,7 +26657,7 @@ func (s Trust_Enum) FlagsInt() []int32
 FlagsInt returns list of Enum values as int32
 
 <a name="Trust_Enum.GetDescription"></a>
-### func \(Trust\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2871>)
+### func \(Trust\_Enum\) [GetDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2961>)
 
 ```go
 func (s Trust_Enum) GetDescription() *api.EnumDescription
@@ -26540,7 +26666,7 @@ func (s Trust_Enum) GetDescription() *api.EnumDescription
 GetDescription returns Enum description
 
 <a name="Trust_Enum.Meta"></a>
-### func \(Trust\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2861>)
+### func \(Trust\_Enum\) [Meta](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2951>)
 
 ```go
 func (s Trust_Enum) Meta() *api.EnumMeta
@@ -26549,7 +26675,7 @@ func (s Trust_Enum) Meta() *api.EnumMeta
 Meta returns Enum meta information
 
 <a name="Trust_Enum.NamesMap"></a>
-### func \(Trust\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2770>)
+### func \(Trust\_Enum\) [NamesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2860>)
 
 ```go
 func (s Trust_Enum) NamesMap() map[int32]string
@@ -26567,7 +26693,7 @@ func (x Trust_Enum) Number() protoreflect.EnumNumber
 
 
 <a name="Trust_Enum.Parse"></a>
-### func \(Trust\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2876>)
+### func \(Trust\_Enum\) [Parse](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2966>)
 
 ```go
 func (_ Trust_Enum) Parse(val any) Trust_Enum
@@ -26585,7 +26711,7 @@ func (x Trust_Enum) String() string
 
 
 <a name="Trust_Enum.SupportedNames"></a>
-### func \(Trust\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2780>)
+### func \(Trust\_Enum\) [SupportedNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2870>)
 
 ```go
 func (s Trust_Enum) SupportedNames() string
@@ -26603,7 +26729,7 @@ func (Trust_Enum) Type() protoreflect.EnumType
 
 
 <a name="Trust_Enum.UnmarshalJSON"></a>
-### func \(\*Trust\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2826>)
+### func \(\*Trust\_Enum\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2916>)
 
 ```go
 func (s *Trust_Enum) UnmarshalJSON(b []byte) error
@@ -26612,7 +26738,7 @@ func (s *Trust_Enum) UnmarshalJSON(b []byte) error
 UnmarshalJSON unmarshals Enum from JSON
 
 <a name="Trust_Enum.UnmarshalYAML"></a>
-### func \(\*Trust\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2805>)
+### func \(\*Trust\_Enum\) [UnmarshalYAML](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2895>)
 
 ```go
 func (s *Trust_Enum) UnmarshalYAML(unmarshal func(any) error) error
@@ -26621,7 +26747,7 @@ func (s *Trust_Enum) UnmarshalYAML(unmarshal func(any) error) error
 UnmarshalYAML unmarshals Enum from YAML
 
 <a name="Trust_Enum.ValueNames"></a>
-### func \(Trust\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2785>)
+### func \(Trust\_Enum\) [ValueNames](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2875>)
 
 ```go
 func (s Trust_Enum) ValueNames() []string
@@ -26630,7 +26756,7 @@ func (s Trust_Enum) ValueNames() []string
 ValueNames returns list of Enum value names
 
 <a name="Trust_Enum.ValueString"></a>
-### func \(Trust\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2790>)
+### func \(Trust\_Enum\) [ValueString](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2880>)
 
 ```go
 func (s Trust_Enum) ValueString() string
@@ -26639,7 +26765,7 @@ func (s Trust_Enum) ValueString() string
 ValueString returns string of Enum value names concatenated by ","
 
 <a name="Trust_Enum.ValuesMap"></a>
-### func \(Trust\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2765>)
+### func \(Trust\_Enum\) [ValuesMap](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2855>)
 
 ```go
 func (s Trust_Enum) ValuesMap() map[string]int32
@@ -26648,7 +26774,7 @@ func (s Trust_Enum) ValuesMap() map[string]int32
 ValuesMap returns a map of enum values
 
 <a name="Trust_EnumSlice"></a>
-## type [Trust\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2760>)
+## type [Trust\\\_EnumSlice](<https://github.com/effective-security/trustyca/blob/main/api/pb/enums.pb.go#L2850>)
 
 
 

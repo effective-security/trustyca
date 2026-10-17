@@ -134,7 +134,7 @@ type Service struct {
 ```
 
 <a name="Service.AuthDoneHandler"></a>
-### func \(\*Service\) [AuthDoneHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L104>)
+### func \(\*Service\) [AuthDoneHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L105>)
 
 ```go
 func (s *Service) AuthDoneHandler() restserver.Handle
@@ -170,7 +170,7 @@ func (s *Service) AuthProviderForEmail(ctx context.Context, email string) (cl *o
 AuthProviderForEmail checks if the email is allowed to login, and returns oauth2client.Client for the provider
 
 <a name="Service.AuthProvidersHandler"></a>
-### func \(\*Service\) [AuthProvidersHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L67>)
+### func \(\*Service\) [AuthProvidersHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L68>)
 
 ```go
 func (s *Service) AuthProvidersHandler() restserver.Handle
@@ -206,7 +206,7 @@ func (s *Service) AuthorizeHandler() restserver.Handle
 AuthorizeHandler handles pb.PathForAuthorize
 
 <a name="Service.CallbackHandler"></a>
-### func \(\*Service\) [CallbackHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L146>)
+### func \(\*Service\) [CallbackHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L147>)
 
 ```go
 func (s *Service) CallbackHandler() restserver.Handle
@@ -215,7 +215,7 @@ func (s *Service) CallbackHandler() restserver.Handle
 CallbackHandler handles pb.PathForAuthCallback
 
 <a name="Service.Caller"></a>
-### func \(\*Service\) [Caller](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L85>)
+### func \(\*Service\) [Caller](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L86>)
 
 ```go
 func (s *Service) Caller(ctx context.Context, _ *emptypb.Empty) (*pb.CallerStatusResponse, error)
@@ -242,7 +242,7 @@ func (s *Service) Db() db.OrgsDb
 Db returns OrgsDb for unit tests
 
 <a name="Service.ExchangeCode"></a>
-### func \(\*Service\) [ExchangeCode](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L698>)
+### func \(\*Service\) [ExchangeCode](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L723>)
 
 ```go
 func (s *Service) ExchangeCode(ctx context.Context, req *pb.ExchangeCodeRequest) (*pb.Token, error)
@@ -251,7 +251,7 @@ func (s *Service) ExchangeCode(ctx context.Context, req *pb.ExchangeCodeRequest)
 
 
 <a name="Service.GetAllowedMethods"></a>
-### func \(\*Service\) [GetAllowedMethods](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L196>)
+### func \(\*Service\) [GetAllowedMethods](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L200>)
 
 ```go
 func (s *Service) GetAllowedMethods(ctx context.Context, req *emptypb.Empty) (*pb.ServiceAccessInfo, error)
@@ -260,7 +260,7 @@ func (s *Service) GetAllowedMethods(ctx context.Context, req *emptypb.Empty) (*p
 GetAllowedMethods returns the allowed methods for the caller
 
 <a name="Service.GetCallerScope"></a>
-### func \(\*Service\) [GetCallerScope](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L201>)
+### func \(\*Service\) [GetCallerScope](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L205>)
 
 ```go
 func (s *Service) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.CallerScope, error)
@@ -269,7 +269,7 @@ func (s *Service) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.C
 GetCallerScope returns the caller's resolved scope and the method access rules
 
 <a name="Service.GetProviders"></a>
-### func \(\*Service\) [GetProviders](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L42>)
+### func \(\*Service\) [GetProviders](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L43>)
 
 ```go
 func (s *Service) GetProviders(ctx context.Context, req *pb.AuthProvidersRequest) (*pb.AuthProvidersResponse, error)
@@ -278,7 +278,7 @@ func (s *Service) GetProviders(ctx context.Context, req *pb.AuthProvidersRequest
 GetProviders returns the list of supported providers
 
 <a name="Service.GetUserInfo"></a>
-### func \(\*Service\) [GetUserInfo](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L602>)
+### func \(\*Service\) [GetUserInfo](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L627>)
 
 ```go
 func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oauth2client.ClientConfig, _ *oauth2.Config, token *oauth2.Token) (*pb.UserInfo, jwt.MapClaims, error)
@@ -287,7 +287,7 @@ func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oaut
 
 
 <a name="Service.GetUserToken"></a>
-### func \(\*Service\) [GetUserToken](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L34>)
+### func \(\*Service\) [GetUserToken](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L35>)
 
 ```go
 func (s *Service) GetUserToken(ctx context.Context, _ *emptypb.Empty) (*pb.UserTokenResponse, error)
@@ -368,7 +368,7 @@ func (s *Service) RemoveCookieHandler() restserver.Handle
 RemoveCookieHandler returns handler for removing the auth cookie
 
 <a name="Service.RevokeToken"></a>
-### func \(\*Service\) [RevokeToken](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L136>)
+### func \(\*Service\) [RevokeToken](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L137>)
 
 ```go
 func (s *Service) RevokeToken(ctx context.Context, _ *emptypb.Empty) (*emptypb.Empty, error)
@@ -377,7 +377,7 @@ func (s *Service) RevokeToken(ctx context.Context, _ *emptypb.Empty) (*emptypb.E
 RevokeToken revokes the user token
 
 <a name="Service.RevokeTokenHandler"></a>
-### func \(\*Service\) [RevokeTokenHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L179>)
+### func \(\*Service\) [RevokeTokenHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L183>)
 
 ```go
 func (s *Service) RevokeTokenHandler() restserver.Handle
@@ -386,7 +386,7 @@ func (s *Service) RevokeTokenHandler() restserver.Handle
 RevokeTokenHandler returns handler for revoking the user token
 
 <a name="Service.SelectOrg"></a>
-### func \(\*Service\) [SelectOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/tenant.go#L120>)
+### func \(\*Service\) [SelectOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/tenant.go#L135>)
 
 ```go
 func (s *Service) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.UserTokenResponse, error)
@@ -413,7 +413,7 @@ func (s *Service) Unprotect(ctx context.Context, protected string, v any) error
 Unprotect decrypts and unmarshals protected string to a struct
 
 <a name="Service.UserTokenHandler"></a>
-### func \(\*Service\) [UserTokenHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L73>)
+### func \(\*Service\) [UserTokenHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L74>)
 
 ```go
 func (s *Service) UserTokenHandler() restserver.Handle
@@ -422,7 +422,7 @@ func (s *Service) UserTokenHandler() restserver.Handle
 UserTokenHandler returns UserTokenResponse
 
 <a name="Service.UserinfoHandler"></a>
-### func \(\*Service\) [UserinfoHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L23>)
+### func \(\*Service\) [UserinfoHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L24>)
 
 ```go
 func (s *Service) UserinfoHandler() restserver.Handle

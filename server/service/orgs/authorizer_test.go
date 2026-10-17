@@ -100,12 +100,15 @@ func (f *fakeAuthorizer) InvalidateProject(_ context.Context, projectID string) 
 	f.invalidated = append(f.invalidated, "project:"+projectID)
 }
 
+// testCallerEmail is the email in the token of every testCtx caller
+const testCallerEmail = "caller@example.com"
+
 // testCtx returns a request context for the user with the org selected in
 // the token. An empty orgID means no org is selected.
 func testCtx(userID, orgID string) context.Context {
 	claims := map[string]any{
 		"sub":   userID,
-		"email": "caller@example.com",
+		"email": testCallerEmail,
 		"name":  "Caller",
 	}
 	if orgID != "" {

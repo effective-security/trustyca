@@ -2,7 +2,6 @@ package orgs
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/cockroachdb/errors"
@@ -11,6 +10,7 @@ import (
 	"github.com/effective-security/trustyca/internal/authctx"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
+	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"google.golang.org/grpc/codes"
@@ -92,8 +92,12 @@ func (s *Service) RegisterProject(ctx context.Context, req *pb.RegisterProjectRe
 		"org", orgID.UnderscoreString(),
 		"project", project.ID.UnderscoreString(),
 		"alias", project.Alias)
-	s.event(ctx, orgID, project.ID, project.ID, pb.EventType_ProjectCreated,
-		fmt.Sprintf("project %s created", project.Name))
+	events.New(ctx, ServiceName, pb.EventType_ProjectCreated, "Project created").
+		Org(orgID).
+		Project(project.ID).
+		Reference(project.ID).
+		Description("project %q created", project.Name).
+		Emit(s.db)
 
 	return project.Pb(), nil
 }
@@ -122,8 +126,12 @@ func (s *Service) UpdateProject(ctx context.Context, req *pb.UpdateProjectReques
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to update project")
 	}
 	s.authorizer.InvalidateProject(ctx, projectID.String())
-	s.event(ctx, orgID, project.ID, project.ID, pb.EventType_ProjectUpdated,
-		fmt.Sprintf("project %s updated", project.Name))
+	events.New(ctx, ServiceName, pb.EventType_ProjectUpdated, "Project updated").
+		Org(orgID).
+		Project(project.ID).
+		Reference(project.ID).
+		Description("project %q updated", project.Name).
+		Emit(s.db)
 	return project.Pb(), nil
 }
 
@@ -244,8 +252,12 @@ func (s *Service) DeleteProject(ctx context.Context, req *pb.DeleteProjectReques
 		"org", orgID.UnderscoreString(),
 		"project", projectID.UnderscoreString(),
 		"status", project.Status.String())
-	s.event(ctx, orgID, project.ID, project.ID, pb.EventType_ProjectDeleted,
-		fmt.Sprintf("project %s deleted", project.Name))
+	events.New(ctx, ServiceName, pb.EventType_ProjectDeleted, "Project deleted").
+		Org(orgID).
+		Project(project.ID).
+		Reference(project.ID).
+		Description("project %q deleted", project.Name).
+		Emit(s.db)
 
 	return project.Pb(), nil
 }

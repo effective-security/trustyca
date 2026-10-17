@@ -21,7 +21,7 @@ func TestService_Projects(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mocktrustycadb.NewMockOrgsDb(ctrl)
-	db.EXPECT().TryCreateEvent(gomock.Any()).AnyTimes()
+	events := recordEvents(db)
 	az := newFakeAuthorizer(orgGrant(42, pb.Role_Admin))
 	svc := Service{db: db, authorizer: az}
 
@@ -50,11 +50,20 @@ func TestService_Projects(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "201", project.ID)
 	assert.Equal(t, "1", project.OrgID)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_ProjectCreated,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 201,
+		Title:       "Project created",
+		Description: `project "Test" created`,
+	})
 
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
 	db.EXPECT().RegisterProject(gomock.Any(), gomock.Any()).Return(nil, errors.New("duplicate"))
 	_, err = svc.RegisterProject(ctx, &pb.RegisterProjectRequest{Name: "Test"})
 	assert.EqualError(t, err, "unexpected: failed to register project")
+	events.requireNone(t)
 
 	// update
 	_, err = svc.UpdateProject(ctx, &pb.UpdateProjectRequest{ProjectID: "bad"})
@@ -71,6 +80,14 @@ func TestService_Projects(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Renamed", project.Name)
 	assert.Contains(t, az.invalidated, "project:201")
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_ProjectUpdated,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 201,
+		Title:       "Project updated",
+		Description: `project "Renamed" updated`,
+	})
 
 	// get by ID and by alias
 	project, err = svc.GetProject(ctx, &pb.GetProjectRequest{ProjectID: "201"})
@@ -133,7 +150,16 @@ func TestService_Projects(t *testing.T) {
 	project, err = svc.DeleteProject(ctx, &pb.DeleteProjectRequest{ProjectID: "201"})
 	require.NoError(t, err)
 	assert.Equal(t, pb.ItemStatus_Inactive, project.Status)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_ProjectDeleted,
+		OrgID:       1,
+		ProjectID:   201,
+		ReferenceID: 201,
+		Title:       "Project deleted",
+		Description: `project "Test" deleted`,
+	})
 
 	_, err = svc.DeleteProject(ctx, &pb.DeleteProjectRequest{ProjectID: "301"})
 	assert.EqualError(t, err, "not_found: project not found")
+	events.requireNone(t)
 }

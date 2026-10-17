@@ -2,7 +2,6 @@ package orgs
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/effective-security/porto/xhttp/httperror"
@@ -10,6 +9,7 @@ import (
 	"github.com/effective-security/trustyca/internal/authctx"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
+	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"google.golang.org/grpc/codes"
@@ -201,8 +201,12 @@ func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.
 			"invitee", emailAddr,
 			"existing_user", user.ID.UInt64(),
 			"role", member.Role.String())
-		s.event(ctx, orgID, projectID, user.ID, memberEvent(projectID, pb.EventType_OrgMemberAdded, pb.EventType_ProjectMemberAdded),
-			fmt.Sprintf("%s was added as %s", user.Email, member.Role.String()))
+		events.New(ctx, ServiceName, memberEvent(projectID, pb.EventType_OrgMemberAdded, pb.EventType_ProjectMemberAdded), "Member added").
+			Org(orgID).
+			Project(projectID).
+			Reference(user.ID).
+			Description("%s added as %s", user.Email, member.Role.DisplayName()).
+			Emit(s.db)
 	} else {
 		if !xdb.IsNotFoundError(err) {
 			logger.ContextKV(ctx, xlog.WARNING,
@@ -227,8 +231,12 @@ func (s *Service) AddMember(ctx context.Context, req *pb.AddMemberRequest) (*pb.
 			"project", projectID.UnderscoreString(),
 			"invitee", emailAddr,
 			"role", invite.Role.DisplayName())
-		s.event(ctx, orgID, projectID, invite.ID, memberEvent(projectID, pb.EventType_OrgMemberInvited, pb.EventType_ProjectMemberInvited),
-			fmt.Sprintf("%s was invited as %s", emailAddr, invite.Role.String()))
+		events.New(ctx, ServiceName, memberEvent(projectID, pb.EventType_OrgMemberInvited, pb.EventType_ProjectMemberInvited), "Member invited").
+			Org(orgID).
+			Project(projectID).
+			Reference(invite.ID).
+			Description("%s invited as %s", emailAddr, invite.Role.DisplayName()).
+			Emit(s.db)
 		// TODO: emailer
 	}
 
@@ -352,8 +360,12 @@ func (s *Service) ChangeMemberRole(ctx context.Context, req *pb.ChangeMemberRole
 	}
 
 	s.authorizer.InvalidateUser(ctx, user.ID.String())
-	s.event(ctx, orgID, projectID, user.ID, memberEvent(projectID, pb.EventType_OrgMemberRoleChanged, pb.EventType_ProjectMemberRoleChanged),
-		fmt.Sprintf("%s role changed from %s to %s", user.Email, member.Role.String(), req.Role.String()))
+	events.New(ctx, ServiceName, memberEvent(projectID, pb.EventType_OrgMemberRoleChanged, pb.EventType_ProjectMemberRoleChanged), "Member role changed").
+		Org(orgID).
+		Project(projectID).
+		Reference(user.ID).
+		Description("role of %s changed from %s to %s", user.Email, member.Role.DisplayName(), m.Role.DisplayName()).
+		Emit(s.db)
 
 	return m.Pb(org, project, user), nil
 }
@@ -398,8 +410,12 @@ func (s *Service) DeleteMember(ctx context.Context, req *pb.DeleteMemberRequest)
 	}
 
 	s.authorizer.InvalidateUser(ctx, member.UserID.String())
-	s.event(ctx, orgID, projectID, member.UserID, memberEvent(projectID, pb.EventType_OrgMemberRemoved, pb.EventType_ProjectMemberRemoved),
-		fmt.Sprintf("%s (%s) was removed", member.Email, member.Role.String()))
+	events.New(ctx, ServiceName, memberEvent(projectID, pb.EventType_OrgMemberRemoved, pb.EventType_ProjectMemberRemoved), "Member removed").
+		Org(orgID).
+		Project(projectID).
+		Reference(member.UserID).
+		Description("%s removed as %s", member.Email, member.Role.DisplayName()).
+		Emit(s.db)
 
 	return &emptypb.Empty{}, nil
 }

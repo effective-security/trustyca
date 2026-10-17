@@ -270,8 +270,9 @@ status, expires_at, used_at, used_count)`, composite FK
   (`authctx.IsKnownScope`), project and expiry (90 days by default), stores the
   secret protected with the server's data protection key and returns the clear
   secret once. The public key is `sk_<OrgID>_<protectedKeyID>`.
-  `ListAPIKeys` never returns secrets; `DeleteAPIKey` removes the key. All
-  three record `APIKeyCreated`/`APIKeyDeleted` events.
+  `ListAPIKeys` never returns secrets; `DeleteAPIKey` removes the key.
+  `CreateAPIKey` and `DeleteAPIKey` record `APIKeyCreated` and
+  `APIKeyDeleted` events.
 - `Auth.AuthenticateAPIKey` accepts the key and an HMAC-SHA256 signature of
   the method and timestamp under the secret, checks expiry and status, bumps
   usage and issues a one hour token with `org`, `org_role = APIKey`, `scope`
@@ -547,8 +548,22 @@ Backend listener: `trustyca-ra` and `trustyca-cis` TLS roles,
 ## 11. Audit and observability
 
 Every mutating RPC writes an `event` row with `org_id`, `project_id`, `type`,
-`ref_id` pointing at the org, project, user, invite, issuer, profile,
-certificate or CRL, `email` of the actor and `source` = the request target.
+`ref_id` pointing at the org, project, user, invite, API key, issuer,
+profile, certificate or CRL, `email` of the actor and `source` = the emitting
+service (`auth`, `orgs`). Services build events with `internal/events` and
+emit them after the action succeeds; the row is written in the background
+and a failed write is logged, not returned to the caller. `DeleteInvite` has
+no event type and records nothing.
+
+The auth service records the user lifecycle: `UserSignup` on a new user's
+first login, `OrgMemberAccepted`/`ProjectMemberAccepted` for the invites it
+accepts, `OrgCreated`/`ProjectCreated` for the default org and project,
+`UserSignedIn` when a login issues a token or `SelectOrg` switches the org,
+`UserSignedOut` when a user revokes the token (`TokenRevoked` for an API key
+token) and `APIKeyLogin` when an API key gets a token. `UserDisabled`,
+`UserEnabled`, `OrganizationDisabled` and `OrganizationEnabled` wait for the
+admin APIs that disable users and orgs; the CA event types wait for the CA
+service (PLAN.md phases 2-4).
 Metrics follow `internal/metricskey`: `ca_sign_total{profile,org}`,
 `ca_sign_latency`, `ca_revoke_total`, `crl_publish_total`,
 `ocsp_sign_total{status}`, `cis_cache_hit_total`.

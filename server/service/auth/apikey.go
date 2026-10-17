@@ -17,7 +17,7 @@ import (
 	"github.com/effective-security/porto/xhttp/marshal"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/authctx"
-	"github.com/effective-security/trustyca/internal/db/model"
+	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/certutil"
@@ -135,6 +135,15 @@ func (s *Service) authenticateAPIKey(ctx context.Context, authHeader, timestamp 
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to sign JWT")
 	}
 
+	// the IDs come from the key row, so they parse; an empty project is zero
+	events.New(ctx, ServiceName, pb.EventType_APIKeyLogin, "API key signed in").
+		Org(xdb.TryParseID(key.OrgID)).
+		Project(xdb.TryParseID(key.ProjectID)).
+		Reference(xdb.TryParseID(key.ID)).
+		Email(email).
+		Description("API key %q signed in", key.Label).
+		Emit(s.db)
+
 	res := &pb.UserTokenResponse{
 		Token: &pb.Token{
 			TokenType:   "Bearer",
@@ -195,16 +204,6 @@ func (s *Service) validateHMAC(ctx context.Context, method, authHeader, timestam
 	if !hmac.Equal([]byte(receivedSignature), []byte(expectedSignature)) {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "invalid HMAC signature")
 	}
-
-	ev := &model.Event{
-		Type:   pb.EventType_APIKeyLogin,
-		Title:  fmt.Sprintf("API key %s authenticated", key.Label),
-		Source: xdb.NULLString("APIKey"),
-	}
-	_ = ev.ReferenceID.Set(key.ID)
-	_ = ev.OrgID.Set(key.OrgID)
-	_ = ev.ProjectID.Set(key.ProjectID)
-	s.db.TryCreateEvent(ev)
 
 	return key, nil
 }

@@ -196,7 +196,7 @@ type ProjectCmd struct {
 ```
 
 <a name="ProjectListCmd"></a>
-## type [ProjectListCmd](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/project.go#L15-L18>)
+## type [ProjectListCmd](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/project.go#L15-L20>)
 
 
 
@@ -204,11 +204,13 @@ type ProjectCmd struct {
 type ProjectListCmd struct {
     Status string `help:"the status to filter by"`
     Org    string `help:"the org ID to filter by"`
+    Limit  uint32 `help:"the maximum number of records to return"`
+    Offset uint32 `help:"the offset for the offset-based pagination"`
 }
 ```
 
 <a name="ProjectListCmd.Run"></a>
-### func \(\*ProjectListCmd\) [Run](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/project.go#L21>)
+### func \(\*ProjectListCmd\) [Run](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/admin/project.go#L23>)
 
 ```go
 func (a *ProjectListCmd) Run(app App) error

@@ -13,7 +13,7 @@ service Admin {
     // ListOrgs lists orgs
     rpc ListOrgs(ListOrgsRequest) returns (pb.OrgsResponse) {
         option (google.api.http) = {
-            post: "/privpb.Admin/ListOrganizations",
+            post: "/privpb.Admin/ListOrgs",
             body: "*"
         };
         option (es.api.cli_cmd) = "org list";

@@ -15,6 +15,8 @@ type ProjectCmd struct {
 type ProjectListCmd struct {
 	Status string `help:"the status to filter by"`
 	Org    string `help:"the org ID to filter by"`
+	Limit  uint32 `help:"the maximum number of records to return"`
+	Offset uint32 `help:"the offset for the offset-based pagination"`
 }
 
 // Run the command
@@ -25,7 +27,9 @@ func (a *ProjectListCmd) Run(app App) error {
 	}
 
 	req := &privpb.ListProjectsRequest{
-		OrgID: a.Org,
+		OrgID:  a.Org,
+		Limit:  a.Limit,
+		Offset: a.Offset,
 	}
 	if a.Status != "" {
 		req.Status = pb.ItemStatus_Unknown.Parse(a.Status)

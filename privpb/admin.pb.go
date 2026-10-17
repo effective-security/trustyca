@@ -209,9 +209,9 @@ const file_admin_proto_rawDesc = "" +
 	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12+\n" +
 	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\x12\x14\n" +
-	"\x05OrgID\x18\x05 \x01(\tR\x05OrgID2\xee\x01\n" +
-	"\x05Admin\x12l\n" +
-	"\bListOrgs\x12\x17.privpb.ListOrgsRequest\x1a\x10.pb.OrgsResponse\"5\x82C\borg list\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/privpb.Admin/ListOrganizations\x12w\n" +
+	"\x05OrgID\x18\x05 \x01(\tR\x05OrgID2\xe5\x01\n" +
+	"\x05Admin\x12c\n" +
+	"\bListOrgs\x12\x17.privpb.ListOrgsRequest\x1a\x10.pb.OrgsResponse\",\x82C\borg list\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/privpb.Admin/ListOrgs\x12w\n" +
 	"\fListProjects\x12\x1b.privpb.ListProjectsRequest\x1a\x14.pb.ProjectsResponse\"4\x82C\fproject list\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/privpb.Admin/ListProjectsB/Z-github.com/effective-security/trustyca/privpbb\x06proto3"
 
 var (

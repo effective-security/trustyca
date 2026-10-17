@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/effective-security/porto/xhttp/httperror"
@@ -10,6 +9,7 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/authctx"
 	"github.com/effective-security/trustyca/internal/db/model"
+	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/x/values"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
@@ -92,14 +92,29 @@ func (s *Service) initialOrg(ctx context.Context, user *model.User) *orgSelectio
 			"alias", org.Alias,
 			"owner_id", user.ID.UInt64(),
 		)
+		events.New(ctx, ServiceName, pb.EventType_OrgCreated, "Org created").
+			Org(org.ID).
+			Reference(org.ID).
+			Email(user.Email).
+			Description("default org %q created for %s", org.Name, user.Email).
+			Emit(s.db)
+
 		if s.cfg.Orgs.DefaultProjectName != "" {
-			_, err = s.db.RegisterProject(ctx, &model.Project{
+			project, err := s.db.RegisterProject(ctx, &model.Project{
 				OrgID:  org.ID,
 				Name:   s.cfg.Orgs.DefaultProjectName,
 				Status: pb.ItemStatus_Active,
 			})
 			if err != nil {
 				logger.ContextKV(ctx, xlog.ERROR, "reason", "CreateDefaultProject", "err", err.Error())
+			} else {
+				events.New(ctx, ServiceName, pb.EventType_ProjectCreated, "Project created").
+					Org(org.ID).
+					Project(project.ID).
+					Reference(project.ID).
+					Email(user.Email).
+					Description("default project %q created", project.Name).
+					Emit(s.db)
 			}
 		}
 		memberships, err = s.db.GetUserMemberships(ctx, user.ID.UInt64())
@@ -193,15 +208,12 @@ func (s *Service) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.
 		res.Token.Jkt = cnf.Jkt
 	}
 
-	name := values.StringsCoalesce(ui.Name, ui.Email)
-	s.db.TryCreateEvent(&model.Event{
-		OrgID:       orgID,
-		Type:        pb.EventType_UserLogin,
-		Email:       xdb.NULLString(ui.Email),
-		Source:      xdb.NULLString(trustyCtx.Target()),
-		Title:       fmt.Sprintf("%s selected the org as %s", name, sel.Role.String()),
-		ReferenceID: userID,
-	})
+	events.New(ctx, ServiceName, pb.EventType_UserSignedIn, "User signed in").
+		Org(orgID).
+		Reference(userID).
+		Email(user.Email).
+		Description("%s signed in as %s", user.Email, sel.Role.DisplayName()).
+		Emit(s.db)
 
 	return res, nil
 }

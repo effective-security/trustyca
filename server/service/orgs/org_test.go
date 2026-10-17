@@ -22,7 +22,7 @@ func TestService_Org(t *testing.T) {
 	defer ctrl.Finish()
 
 	db := mocktrustycadb.NewMockOrgsDb(ctrl)
-	db.EXPECT().TryCreateEvent(gomock.Any()).AnyTimes()
+	events := recordEvents(db)
 	az := newFakeAuthorizer(orgGrant(42, pb.Role_Owner))
 	svc := Service{db: db, authorizer: az}
 
@@ -44,10 +44,18 @@ func TestService_Org(t *testing.T) {
 	assert.Equal(t, "Test Org", org.Name)
 	assert.Equal(t, pb.ItemStatus_Active, org.Status)
 	assert.Contains(t, az.invalidated, "user:42")
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_OrgCreated,
+		OrgID:       1,
+		ReferenceID: 1,
+		Title:       "Org created",
+		Description: `org "Test Org" created`,
+	})
 
 	db.EXPECT().RegisterOrg(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("name is required"))
 	_, err = svc.RegisterOrg(ctx, &pb.RegisterOrgRequest{Name: "Test Org"})
 	assert.EqualError(t, err, "unexpected: failed to register org")
+	events.requireNone(t)
 
 	// get: org from the token
 	db.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(morg, nil)
@@ -72,6 +80,13 @@ func TestService_Org(t *testing.T) {
 	org, err = svc.UpdateOrg(ctx, &pb.UpdateOrgRequest{Name: "Updated Org", Description: "Updated Description"})
 	require.NoError(t, err)
 	assert.Equal(t, "Updated Org", org.Name)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_OrgUpdated,
+		OrgID:       1,
+		ReferenceID: 1,
+		Title:       "Org updated",
+		Description: `org "Updated Org" updated`,
+	})
 
 	_, err = svc.UpdateOrg(noOrg, &pb.UpdateOrgRequest{Name: "x"})
 	assert.EqualError(t, err, "forbidden: org not selected")
@@ -79,12 +94,20 @@ func TestService_Org(t *testing.T) {
 	db.EXPECT().UpdateOrg(gomock.Any(), gomock.Any()).Return(nil, errors.New("not found"))
 	_, err = svc.UpdateOrg(ctx, &pb.UpdateOrgRequest{Name: "x"})
 	assert.EqualError(t, err, "not_found: failed to update org")
+	events.requireNone(t)
 
 	// delete deactivates the org from the token
 	db.EXPECT().UpdateOrg(gomock.Any(), &query.UpdateOrgRequest{ID: 1, Status: pb.ItemStatus_Inactive}).Return(morg, nil)
 	org, err = svc.DeleteOrg(ctx, &emptypb.Empty{})
 	require.NoError(t, err)
 	assert.Equal(t, "1", org.ID)
+	events.requireEvent(t, wantEvent{
+		Type:        pb.EventType_OrgDeleted,
+		OrgID:       1,
+		ReferenceID: 1,
+		Title:       "Org deleted",
+		Description: `org "Test Org" deleted`,
+	})
 
 	_, err = svc.DeleteOrg(noOrg, &emptypb.Empty{})
 	assert.EqualError(t, err, "forbidden: org not selected")
@@ -92,4 +115,5 @@ func TestService_Org(t *testing.T) {
 	db.EXPECT().UpdateOrg(gomock.Any(), gomock.Any()).Return(nil, errors.New("not found"))
 	_, err = svc.DeleteOrg(ctx, &emptypb.Empty{})
 	assert.EqualError(t, err, "not_found: failed to update org status")
+	events.requireNone(t)
 }

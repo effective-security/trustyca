@@ -26,7 +26,8 @@ Commands:
   caller           print caller info
   dpop-key gen     generate new key
   dpop-key list    list keys
-  project list     list orgs
+  org list         list orgs
+  project list     list projects
 
 Run "trustycactl <command> --help" for more information on a command.
 ```
