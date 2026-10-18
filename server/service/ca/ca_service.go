@@ -7,6 +7,7 @@ import (
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/xlog"
+	"github.com/effective-security/xpki/authority"
 	"github.com/effective-security/xpki/dataprotection"
 	"google.golang.org/grpc"
 )
@@ -16,13 +17,17 @@ const ServiceName = "ca"
 
 var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca/server/service", ServiceName)
 
-// Service defines the CA service
+// Service defines the CA service.
+// The issuers and profiles come from the bootstrap authority until
+// internal/ca resolves them from the DB (PLAN.md phase 2, items 3 to 5).
 type Service struct {
 	server         gserver.GServer
 	authorizer     authctx.Authorizer
 	cfg            *config.Configuration
-	db             db.OrgsDb // TODO: use db.CaDb
+	db             db.CaDb
+	orgs           db.OrgsReadonlyDb
 	dataprotection dataprotection.Provider
+	ca             *authority.Authority
 }
 
 // Factory returns a factory of the service
@@ -32,15 +37,19 @@ func Factory(server gserver.GServer) any {
 	}
 
 	return func(cfg *config.Configuration,
-		trustycaDb db.OrgsDb,
+		caDb db.CaDb,
+		orgsDb db.OrgsReadonlyDb,
 		dataprotection dataprotection.Provider,
-		authorizer authctx.Authorizer) {
+		authorizer authctx.Authorizer,
+		ca *authority.Authority) {
 		svc := &Service{
 			server:         server,
 			authorizer:     authorizer,
 			cfg:            cfg,
-			db:             trustycaDb,
+			db:             caDb,
+			orgs:           orgsDb,
 			dataprotection: dataprotection,
+			ca:             ca,
 		}
 
 		server.AddService(svc)

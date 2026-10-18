@@ -68,7 +68,7 @@ func TestParse(t *testing.T) {
 			"--cfg", homeDir + "/.trustyca/cli/config.yaml",
 			"--storage", "/tmp/trustyca/cli",
 			"--cert-key", homeDir + "/.trustyca/certs/trustyca_client.key",
-			"--trusted-ca", homeDir + "/.trustyca/certs/trusty_root_ca.pem",
+			"--trusted-ca", homeDir + "/.trustyca/certs/trustyca_root.pem",
 		})
 		assert.EqualError(t, err, "--cert-key option specified without --cert")
 	})
@@ -87,7 +87,7 @@ func TestParse(t *testing.T) {
 			"--storage", "/tmp/trustyca/cli",
 			"--cert", homeDir + "/.trustyca/certs/trustyca_client.pem",
 			"--cert-key", homeDir + "/.trustyca/certs/trustyca_client.key",
-			"--trusted-ca", homeDir + "/.trustyca/certs/trusty_root_ca.pem",
+			"--trusted-ca", homeDir + "/.trustyca/certs/trustyca_root.pem",
 		})
 		assert.NoError(t, err)
 		require.Equal(t, "cmd", ctx.Command())
@@ -113,7 +113,7 @@ func TestParse(t *testing.T) {
 			"--storage", "/tmp/trustyca/cli",
 			"--cert", "~/.trustyca/certs/trustyca_client.pem",
 			"--cert-key", "~/.trustyca/certs/trustyca_client.key",
-			"--trusted-ca", "~/.trustyca/certs/trusty_root_ca.pem",
+			"--trusted-ca", "~/.trustyca/certs/trustyca_root.pem",
 		})
 		require.NoError(t, err)
 		require.Equal(t, "cmd", ctx.Command())
@@ -162,7 +162,7 @@ func TestClients(t *testing.T) {
 		"--storage", "/tmp/trustyca/cli",
 		"--cert", "~/.trustyca/certs/trustyca_client.pem",
 		"--cert-key", "~/.trustyca/certs/trustyca_client.key",
-		"--trusted-ca", "~/.trustyca/certs/trusty_root_ca.pem",
+		"--trusted-ca", "~/.trustyca/certs/trustyca_root.pem",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "cmd", ctx.Command())

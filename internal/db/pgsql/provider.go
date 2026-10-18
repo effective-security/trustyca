@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/metricskey"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xdb/pkg/flake"
@@ -175,16 +176,19 @@ func (p *Provider) NewNotificationsListener() notifier.Listener {
 	return notifier.NewListener(p, 10*time.Millisecond, time.Minute)
 }
 
-// emptyMetadata is the value of a NOT NULL jsonb metadata column without
-// entries
-const emptyMetadata = "{}"
+// pagedResult is the result of a list query that supports both offset and
+// cursor pagination, as the generated model results do
+type pagedResult[T any, TPointer xdb.RowPointer[T]] interface {
+	xdb.Result[T, TPointer]
+	xdb.ResultWithCursor[T, TPointer]
+}
 
-// metadataArg returns the value of a NOT NULL jsonb metadata column:
-// xdb.Metadata.Value() returns NULL for an empty map, so an explicit empty
-// object is written instead
-func metadataArg(m xdb.Metadata) any {
-	if len(m) == 0 {
-		return emptyMetadata
+// listRows runs a paginated list query. With cursor pagination the result
+// carries the cursor of the next page, encoded from its last row; otherwise
+// the next offset.
+func listRows[T any, TPointer xdb.RowPointer[T]](ctx context.Context, p xdb.DB, cursor query.Cursor, encode xdb.SetCursor[T, TPointer], rs pagedResult[T, TPointer], q string, qp xdb.QueryParams) error {
+	if cursor.IsSet() {
+		return xdb.ExecuteQueryWithCursor[T, TPointer](ctx, p, encode, rs, q, qp)
 	}
-	return m
+	return xdb.ExecuteQueryWithPagination[T, TPointer](ctx, p, rs, q, qp)
 }

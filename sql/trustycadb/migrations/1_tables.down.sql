@@ -1,6 +1,8 @@
 BEGIN;
 
 -- CA data plane
+DROP VIEW IF EXISTS trustyca.vw_revoked_certificate;
+
 DROP TABLE IF EXISTS trustyca.crl;
 DROP TABLE IF EXISTS trustyca.revoked;
 DROP TABLE IF EXISTS trustyca.certificate;

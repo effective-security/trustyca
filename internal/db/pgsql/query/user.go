@@ -31,7 +31,7 @@ func RegisterLogin(args ...any) (string, string) {
 			Set(schema.Login.RefreshToken.Name, nil).
 			Set(schema.Login.TokenExpiresAt.Name, nil).
 			SetExpr(schema.Login.Count.Name, "1").
-			SetExpr(schema.Login.LastAt.Name, "Now()")
+			SetExpr(schema.Login.LastAt.Name, exprNow)
 		return q
 	})
 }

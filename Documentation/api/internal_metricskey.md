@@ -85,16 +85,180 @@ var (
 )
 ```
 
+<a name="CACertIssued"></a>CA
+
+```go
+var (
+    // CACertIssued is counter metric for issued certs
+    CACertIssued = metrics.Describe{
+        Type:         metrics.TypeCounter,
+        Name:         "ca_cert_issued",
+        Help:         "provides the counter of issued certs",
+        RequiredTags: []string{"ca", "profile"},
+    }
+
+    // CACertRevoked is counter metric for revoked certs
+    CACertRevoked = metrics.Describe{
+        Type:         metrics.TypeCounter,
+        Name:         "ca_cert_revoked",
+        Help:         "provides the counter of revoked certs",
+        RequiredTags: []string{"ikid"},
+    }
+
+    // CACrlPublished is counter metric for published CRL
+    CACrlPublished = metrics.Describe{
+        Type: metrics.TypeCounter,
+        Name: "ca_crl_published",
+        Help: "provides the counter of published CRLs",
+    }
+
+    // CAOcspSigned is counter metric for signed ocsp
+    CAOcspSigned = metrics.Describe{
+        Type:         metrics.TypeCounter,
+        Name:         "ca_ocsp_signed",
+        Help:         "provides the counter of signed OCSP",
+        RequiredTags: []string{"ikid", "status"},
+    }
+
+    // CAFailSignCert is counter metric
+    CAFailSignCert = metrics.Describe{
+        Type:         metrics.TypeCounter,
+        Name:         "ca_fail_sign_cert",
+        Help:         "provides the counter of failures to sign cert",
+        RequiredTags: []string{"ca", "profile"},
+    }
+
+    // CAFailPublishCert is counter metric
+    CAFailPublishCert = metrics.Describe{
+        Type:         metrics.TypeCounter,
+        Name:         "ca_fail_publish_cert",
+        Help:         "provides the counter of failures to publish cert",
+        RequiredTags: []string{"ca"},
+    }
+
+    // CAFailPublishCrl is counter metric
+    CAFailPublishCrl = metrics.Describe{
+        Type:         metrics.TypeCounter,
+        Name:         "ca_fail_publish_crl",
+        Help:         "provides the counter of failures to publish CRL",
+        RequiredTags: []string{"ca"},
+    }
+
+    // CAExpiryCertDays is gauge metric
+    CAExpiryCertDays = metrics.Describe{
+        Type:         metrics.TypeGauge,
+        Name:         "ca_expiry_cert_days",
+        Help:         "provides number of days til CA cert expiry",
+        RequiredTags: []string{"type", "cn", "sn", "iki", "ski"},
+    }
+
+    // CAExpiryCrlDays is gauge metric
+    CAExpiryCrlDays = metrics.Describe{
+        Type:         metrics.TypeGauge,
+        Name:         "ca_expiry_crl_days",
+        Help:         "provides number of days til CRL expiry",
+        RequiredTags: []string{"cn", "sn", "iki"},
+    }
+)
+```
+
+<a name="CertExpiryDays"></a>Certs
+
+```go
+var (
+    // CertExpiryDays is gauge metric
+    CertExpiryDays = metrics.Describe{
+        Type:         metrics.TypeGauge,
+        Name:         "cert_expiry_days",
+        Help:         "provides number of days til cert expiry",
+        RequiredTags: []string{"type", "cn", "sn", "iki", "ski"},
+    }
+
+    // CertExpiryHours is gauge metric
+    CertExpiryHours = metrics.Describe{
+        Type:         metrics.TypeGauge,
+        Name:         "cert_expiry_hours",
+        Help:         "provides number of hours til cert expiry",
+        RequiredTags: []string{"type", "cn", "sn", "iki", "ski"},
+    }
+)
+```
+
+<a name="AIADownloadSuccessCert"></a>AIA
+
+```go
+var (
+    // AIADownloadSuccessCert is counter metric
+    AIADownloadSuccessCert = metrics.Describe{
+        Type: metrics.TypeCounter,
+        Name: "aia_download_success_cert",
+        Help: "provides the counter of downloaded certs",
+    }
+
+    // AIADownloadSuccessCrl is counter metric
+    AIADownloadSuccessCrl = metrics.Describe{
+        Type: metrics.TypeCounter,
+        Name: "aia_download_success_crl",
+        Help: "provides the counter of downloaded CRLs",
+    }
+
+    // AIADownloadSuccessOCSP is counter metric
+    AIADownloadSuccessOCSP = metrics.Describe{
+        Type: metrics.TypeCounter,
+        Name: "aia_download_success_ocsp",
+        Help: "provides the counter of downloaded OCSP",
+    }
+
+    // AIADownloadFailCert is counter metric
+    AIADownloadFailCert = metrics.Describe{
+        Type: metrics.TypeCounter,
+        Name: "aia_download_fail_cert",
+        Help: "provides the counter of failed cert downloads",
+    }
+
+    // AIADownloadFailCrl is counter metric
+    AIADownloadFailCrl = metrics.Describe{
+        Type: metrics.TypeCounter,
+        Name: "aia_download_fail_crl",
+        Help: "provides the counter of failed CRL downloads",
+    }
+
+    // AIADownloadFailOCSP is counter metric
+    AIADownloadFailOCSP = metrics.Describe{
+        Type: metrics.TypeCounter,
+        Name: "aia_download_fail_ocsp",
+        Help: "provides the counter of failed OCSP downloads",
+    }
+)
+```
+
 <a name="Metrics"></a>Metrics provides the list of emitted metrics by this repo
 
 ```go
 var Metrics = []*metrics.Describe{
+    &AIADownloadFailCert,
+    &AIADownloadFailCrl,
+    &AIADownloadFailOCSP,
+    &AIADownloadSuccessCert,
+    &AIADownloadSuccessCrl,
+    &AIADownloadSuccessOCSP,
+    &CACertIssued,
+    &CACertRevoked,
+    &CACrlPublished,
+    &CAExpiryCertDays,
+    &CAExpiryCrlDays,
+    &CAFailPublishCert,
+    &CAFailPublishCrl,
+    &CAFailSignCert,
+    &CAOcspSigned,
+    &CertExpiryDays,
+    &CertExpiryHours,
+    &LoginCount,
     &PerfDbOperation,
     &PerfMethodRun,
     &PerfTaskRun,
-    &StatsDbTableRowsTotal,
     &StatsDbQueryCount,
-    &LoginCount,
+    &StatsDbTableRowsTotal,
     &SupportLoginCount,
 }
 ```

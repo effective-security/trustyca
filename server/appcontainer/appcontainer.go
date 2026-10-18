@@ -1,23 +1,32 @@
 package appcontainer
 
 import (
+	"context"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/pkg/cache"
 	"github.com/effective-security/porto/pkg/discovery"
 	"github.com/effective-security/porto/pkg/tasks"
 	"github.com/effective-security/trustyca/api/client"
+	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/authctx"
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/internal/db"
+	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/xdb/pkg/flake"
 	"github.com/effective-security/xlog"
+	"github.com/effective-security/xpki/authority"
+	"github.com/effective-security/xpki/certutil"
+	"github.com/effective-security/xpki/crypto11"
+	"github.com/effective-security/xpki/cryptoprov"
 	"github.com/effective-security/xpki/dataprotection"
 	"github.com/effective-security/xpki/jwt"
 	"github.com/effective-security/xpki/jwt/accesstoken"
 	"github.com/effective-security/xpki/jwt/oauth2client"
+	"github.com/stretchr/testify/assert/yaml"
 	"go.uber.org/dig"
 
 	// register providers
@@ -43,7 +52,7 @@ type ProvideSchedulerFn func() (tasks.Scheduler, error)
 type ProvideJwtFn func(cfg *config.Configuration, dp dataprotection.Provider) (jwt.Parser, jwt.Signer, error)
 
 // ProvideDbFn defines DB provider
-type ProvideDbFn func(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, error)
+type ProvideDbFn func(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, db.CaDb, db.CaReadonlyDb, error)
 
 // ProvideClientFactoryFn defines client.Facroty provider
 type ProvideClientFactoryFn func(cfg *config.Configuration) (client.Factory, error)
@@ -56,6 +65,12 @@ type ProvideAuthorizerFn func(trustycaDb db.OrgsDb) authctx.Authorizer
 
 // ProvideOAuth2ClientsFn defines OAuth2 clients provider
 type ProvideOAuth2ClientsFn func(cfg *config.Configuration) (*oauth2client.Provider, error)
+
+// ProvideCryptoFn defines Crypto provider
+type ProvideCryptoFn func(cfg *config.Configuration) (*cryptoprov.Crypto, error)
+
+// ProvideAuthorityFn defines Crypto provider
+type ProvideAuthorityFn func(cfg *config.Configuration, crypto *cryptoprov.Crypto, db db.CaDb) (*authority.Authority, error)
 
 // CloseRegistrator provides interface to release resources on close
 type CloseRegistrator interface {
@@ -74,9 +89,12 @@ type ContainerFactory struct {
 	clientFactoryProvider ProvideClientFactoryFn
 	dpProvider            ProvideDataprotectionFn
 	oauthProviderProvider ProvideOAuth2ClientsFn
+	cryptoProvider        ProvideCryptoFn
+	authorityProvider     ProvideAuthorityFn
+	cacheProvider         ProvideCacheFn
+	authorizerProvider    ProvideAuthorizerFn
+
 	// awsSessionProvider    ProvideAwsFactoryFn
-	cacheProvider      ProvideCacheFn
-	authorizerProvider ProvideAuthorizerFn
 }
 
 // NewContainerFactory returns an instance of ContainerFactory
@@ -100,12 +118,26 @@ func NewContainerFactory(closer CloseRegistrator) *ContainerFactory {
 		WithDataprotectionProvider(provideDp).
 		WithCacheProvider(provideCache).
 		WithAuthorizerProvider(provideAuthorizer).
-		WithOAuth2ClientsProvider(provideOAuth2Clients)
+		WithOAuth2ClientsProvider(provideOAuth2Clients).
+		WithCryptoProvider(provideCrypto).
+		WithAuthorityProvider(provideAuthority)
 }
 
 // WithConfigurationProvider allows to specify configuration
 func (f *ContainerFactory) WithConfigurationProvider(p ProvideConfigurationFn) *ContainerFactory {
 	f.configProvider = p
+	return f
+}
+
+// WithCryptoProvider allows to specify custom Crypto loader
+func (f *ContainerFactory) WithCryptoProvider(p ProvideCryptoFn) *ContainerFactory {
+	f.cryptoProvider = p
+	return f
+}
+
+// WithAuthorityProvider allows to specify custom Authority
+func (f *ContainerFactory) WithAuthorityProvider(p ProvideAuthorityFn) *ContainerFactory {
+	f.authorityProvider = p
 	return f
 }
 
@@ -184,6 +216,8 @@ func (f *ContainerFactory) CreateContainerWithDependencies() (*dig.Container, er
 		f.cacheProvider,
 		f.authorizerProvider,
 		f.oauthProviderProvider,
+		f.cryptoProvider,
+		f.authorityProvider,
 	}
 
 	for idx, c := range constructors {
@@ -215,7 +249,7 @@ func provideJwt(cfg *config.Configuration, dp dataprotection.Provider) (jwt.Pars
 	return at, at, nil
 }
 
-func provideDb(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, error) {
+func provideDb(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, db.CaDb, db.CaReadonlyDb, error) {
 	d, err := db.New(
 		cfg.SQL.DataSource,
 		cfg.SQL.MigrationsDir,
@@ -223,9 +257,9 @@ func provideDb(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadon
 		cfg.SQL.MigrateVersion,
 		flake.DefaultIDGenerator)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
-	return d, d, d, nil
+	return d, d, d, d, d, nil
 }
 
 func provideClientFactory(cfg *config.Configuration) (client.Factory, error) {
@@ -287,4 +321,146 @@ func provideCache(cfg *config.Configuration, closer CloseRegistrator) (p cache.P
 		closer.OnClose(p)
 	}
 	return
+}
+
+func provideCrypto(cfg *config.Configuration) (*cryptoprov.Crypto, error) {
+	logger.KV(xlog.TRACE,
+		"default", cfg.CryptoProv.Default,
+		"providers", cfg.CryptoProv.Providers)
+
+	for _, m := range cfg.CryptoProv.PKCS11Manufacturers {
+		_ = cryptoprov.Register(m, crypto11.LoadProvider)
+	}
+
+	if strings.Contains(cfg.CryptoProv.Default, "aws-dev-kms") && os.Getenv("AWS_ACCESS_KEY_ID") == "" {
+		os.Setenv("AWS_ACCESS_KEY_ID", "notusedbyemulator")
+		os.Setenv("AWS_SECRET_ACCESS_KEY", "notusedbyemulator")
+		os.Setenv("AWS_DEFAULT_REGION", "us-west-2")
+	}
+
+	crypto, err := cryptoprov.Load(cfg.CryptoProv.Default, cfg.CryptoProv.Providers)
+	if err != nil {
+		//logger.KV(xlog.ERROR, "default", cfg.CryptoProv.Default, "providers", cfg.CryptoProv.Providers, "err", err)
+		return nil, err
+	}
+	return crypto, nil
+}
+
+func provideAuthority(cfg *config.Configuration, crypto *cryptoprov.Crypto, db db.CaDb) (*authority.Authority, error) {
+	caCfg, err := authority.LoadConfig(cfg.Authority)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to authority load config")
+	}
+	ca, err := authority.NewAuthority(caCfg, crypto)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to create authority")
+	}
+
+	ctx := context.Background()
+	lreq := &query.ListIssuersRequest{
+		AllOrgs: true,
+		Status:  pb.IssuerStatus_Active,
+		Limit:   100,
+	}
+	for {
+		list, err := db.ListIssuers(ctx, lreq)
+		if err != nil {
+			return nil, errors.WithMessagef(err, "failed to list issuers")
+		}
+
+		for _, l := range list.Rows {
+			logger.KV(xlog.TRACE, "issuer", l.Label)
+
+			var cfg = new(authority.IssuerConfig)
+			err := yaml.Unmarshal([]byte(l.Config), cfg)
+			if err != nil {
+				// TODO: error on the entire service or just a log and continue?
+				logger.KV(xlog.ERROR,
+					"issuer", l.Label,
+					"org_id", l.OrgID.UInt64(),
+					"reason", "unable to decode configuration",
+					"err", err.Error())
+				continue
+			}
+
+			if cfg.Profiles == nil {
+				cfg.Profiles = make(map[string]*authority.CertProfile)
+			}
+
+			signer, err := crypto.NewSignerFromPEM([]byte(cfg.KeyFile))
+			if err != nil {
+				logger.KV(xlog.ERROR,
+					"issuer", l.Label,
+					"org_id", l.OrgID.UInt64(),
+					"reason", "unable to create signer from private key",
+					"err", err.Error())
+				continue
+			}
+
+			profiles, err := db.ListProfiles(ctx, &query.ListProfilesRequest{
+				OrgID:       l.OrgID.UInt64(),
+				IssuerLabel: cfg.Label,
+				Status:      pb.ItemStatus_Active,
+				Limit:       100,
+			})
+			if err != nil {
+				logger.KV(xlog.ERROR,
+					"issuer", l.Label,
+					"org_id", l.OrgID.UInt64(),
+					"reason", "unable to load profiles",
+					"err", err.Error())
+				continue
+			}
+
+			for _, p := range profiles.Rows {
+				var profile = new(authority.CertProfile)
+				err := yaml.Unmarshal([]byte(p.Config), profile)
+				if err != nil {
+					logger.KV(xlog.ERROR,
+						"issuer", l.Label,
+						"org_id", l.OrgID.UInt64(),
+						"profile", p.Label,
+						"reason", "unable to decode profile",
+						"err", err.Error())
+					continue
+				}
+
+				cfg.Profiles[p.Label] = profile
+				if profile.IssuerLabel == "*" {
+					ca.AddProfile(p.Label, profile)
+				}
+			}
+
+			issuer, err := authority.CreateIssuer(cfg,
+				[]byte(cfg.CertFile),
+				certutil.JoinPEM([]byte(cfg.CABundleFile), ca.CaBundle),
+				certutil.JoinPEM([]byte(cfg.RootBundleFile), ca.RootBundle),
+				signer,
+			)
+			if err != nil {
+				logger.KV(xlog.ERROR,
+					"issuer", l.Label,
+					"org_id", l.OrgID.UInt64(),
+					"reason", "unable to create issuer",
+					"err", err.Error())
+				continue
+			}
+
+			err = ca.AddIssuer(issuer)
+			if err != nil {
+				logger.KV(xlog.ERROR,
+					"issuer", l.Label,
+					"org_id", l.OrgID.UInt64(),
+					"reason", "unable to add issuer",
+					"err", err.Error())
+				continue
+			}
+		}
+		if !list.HasNextPage {
+			break
+		}
+		lreq.Offset = list.NextOffset
+	}
+
+	return ca, nil
 }

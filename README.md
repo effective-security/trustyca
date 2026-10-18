@@ -116,7 +116,7 @@ clients:
   local_wfe:
     host: https://localhost:8880
     tls:
-      trusted_ca: ~/.trustyca/certs/trusty_root_ca.pem
+      trusted_ca: ~/.trustyca/certs/trustyca_root.pem
     request:
       retry_limit: 3
       timeout: 6s

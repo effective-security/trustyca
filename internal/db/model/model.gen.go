@@ -230,7 +230,7 @@ type CertificateProfile struct {
 	// Status represents 'status' column of 'integer'
 	Status pb.ItemStatus_Enum `db:"status,int4" json:",omitempty"`
 	// Config represents 'config' column of 'jsonb'
-	Config xdb.NULLString `db:"config,jsonb" json:",omitempty"`
+	Config JSON `db:"config,jsonb" json:",omitempty"`
 	// CreatedAt represents 'created_at' column of 'timestamp with time zone'
 	CreatedAt xdb.Time `db:"created_at,timestamptz" json:",omitempty"`
 	// UpdatedAt represents 'updated_at' column of 'timestamp with time zone'
@@ -574,7 +574,7 @@ type Issuer struct {
 	// KeyProtected represents 'key_protected' column of 'text'
 	KeyProtected xdb.NULLString `db:"key_protected,text,null" json:",omitempty"`
 	// Config represents 'config' column of 'jsonb'
-	Config xdb.NULLString `db:"config,jsonb" json:",omitempty"`
+	Config JSON `db:"config,jsonb" json:",omitempty"`
 	// CrlNumber represents 'crl_number' column of 'bigint'
 	CrlNumber int64 `db:"crl_number,int8" json:",omitempty"`
 	// CreatedAt represents 'created_at' column of 'timestamp with time zone'
@@ -928,8 +928,9 @@ func (p *ProjectResult) GetTableInfo() *xdbschema.TableInfo {
 // Primary key: id
 // Indexes:
 //
-//	idx_revoked_ikid_notafter: [not_after,ikid]
-//	idx_revoked_org_project_id_desc: [project_id,id,org_id]
+//	idx_revoked_ikid_notafter: [ikid,not_after]
+//	idx_revoked_ikid_serial: UNIQUE [ikid,serial_number]
+//	idx_revoked_org_project_id_desc: [id,org_id,project_id]
 //	revoked_pkey: PRIMARY UNIQUE [id]
 //	unique_revoked_certificate: UNIQUE [certificate_id]
 type Revoked struct {
@@ -944,7 +945,7 @@ type Revoked struct {
 	// Ikid represents 'ikid' column of 'character varying'
 	Ikid string `db:"ikid,varchar,max:64,index" json:",omitempty"`
 	// SerialNumber represents 'serial_number' column of 'character varying'
-	SerialNumber string `db:"serial_number,varchar,max:64" json:",omitempty"`
+	SerialNumber string `db:"serial_number,varchar,max:64,index" json:",omitempty"`
 	// NotAfter represents 'not_after' column of 'timestamp with time zone'
 	NotAfter xdb.Time `db:"not_after,timestamptz,index" json:",omitempty"`
 	// RevokedAt represents 'revoked_at' column of 'timestamp with time zone'
@@ -1263,4 +1264,113 @@ func (p *MembershipInfoResult) SetResultWithCursor(rows []*MembershipInfo, hasNe
 
 func (p *MembershipInfoResult) GetTableInfo() *xdbschema.TableInfo {
 	return &schema.MembershipInfoTableInfo
+}
+
+// RevokedCertificate represents one row from table 'trustyca.vw_revoked_certificate'.
+type RevokedCertificate struct {
+	// ID represents 'id' column of 'bigint'
+	ID xdb.ID `db:"id,int8,null" json:",omitempty"`
+	// OrgID represents 'org_id' column of 'bigint'
+	OrgID xdb.ID `db:"org_id,int8,null" json:",omitempty"`
+	// ProjectID represents 'project_id' column of 'bigint'
+	ProjectID xdb.ID `db:"project_id,int8,null" json:",omitempty"`
+	// CertificateID represents 'certificate_id' column of 'bigint'
+	CertificateID xdb.ID `db:"certificate_id,int8,null" json:",omitempty"`
+	// Skid represents 'skid' column of 'character varying'
+	Skid string `db:"skid,varchar,max:64,null" json:",omitempty"`
+	// Ikid represents 'ikid' column of 'character varying'
+	Ikid string `db:"ikid,varchar,max:64,null" json:",omitempty"`
+	// SerialNumber represents 'serial_number' column of 'character varying'
+	SerialNumber string `db:"serial_number,varchar,max:64,null" json:",omitempty"`
+	// NotBefore represents 'not_before' column of 'timestamp with time zone'
+	NotBefore xdb.Time `db:"not_before,timestamptz,null" json:",omitempty"`
+	// NotAfter represents 'not_after' column of 'timestamp with time zone'
+	NotAfter xdb.Time `db:"not_after,timestamptz,null" json:",omitempty"`
+	// Subject represents 'subject' column of 'character varying'
+	Subject string `db:"subject,varchar,max:260,null" json:",omitempty"`
+	// Issuer represents 'issuer' column of 'character varying'
+	Issuer string `db:"issuer,varchar,max:260,null" json:",omitempty"`
+	// Sha256 represents 'sha256' column of 'character varying'
+	Sha256 string `db:"sha256,varchar,max:64,null" json:",omitempty"`
+	// Profile represents 'profile' column of 'character varying'
+	Profile string `db:"profile,varchar,max:64,null" json:",omitempty"`
+	// Label represents 'label' column of 'character varying'
+	Label string `db:"label,varchar,max:260,null" json:",omitempty"`
+	// Locations represents 'locations' column of 'ARRAY'
+	Locations pq.StringArray `db:"locations,_varchar,null" json:",omitempty"`
+	// Metadata represents 'metadata' column of 'jsonb'
+	Metadata xdb.Metadata `db:"metadata,jsonb,null" json:",omitempty"`
+	// Pem represents 'pem' column of 'text'
+	Pem string `db:"pem,text,null" json:",omitempty"`
+	// IssuersPem represents 'issuers_pem' column of 'text'
+	IssuersPem string `db:"issuers_pem,text,null" json:",omitempty"`
+	// Status represents 'status' column of 'integer'
+	Status pb.CertificateStatus_Enum `db:"status,int4,null" json:",omitempty"`
+	// CreatedAt represents 'created_at' column of 'timestamp with time zone'
+	CreatedAt xdb.Time `db:"created_at,timestamptz,null" json:",omitempty"`
+	// RevokedAt represents 'revoked_at' column of 'timestamp with time zone'
+	RevokedAt xdb.Time `db:"revoked_at,timestamptz,null" json:",omitempty"`
+	// Reason represents 'reason' column of 'integer'
+	Reason pb.ReasonCode_Enum `db:"reason,int4,null" json:",omitempty"`
+	// ReasonText represents 'reason_text' column of 'character varying'
+	ReasonText string `db:"reason_text,varchar,max:260,null" json:",omitempty"`
+}
+
+// ScanRow scans one row for vw_revoked_certificate.
+func (m *RevokedCertificate) ScanRow(rows xdb.Row) error {
+	err := rows.Scan(
+		&m.ID,
+		&m.OrgID,
+		&m.ProjectID,
+		&m.CertificateID,
+		&m.Skid,
+		&m.Ikid,
+		&m.SerialNumber,
+		&m.NotBefore,
+		&m.NotAfter,
+		&m.Subject,
+		&m.Issuer,
+		&m.Sha256,
+		&m.Profile,
+		&m.Label,
+		&m.Locations,
+		&m.Metadata,
+		&m.Pem,
+		&m.IssuersPem,
+		&m.Status,
+		&m.CreatedAt,
+		&m.RevokedAt,
+		&m.Reason,
+		&m.ReasonText,
+	)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+type RevokedCertificateSlice []*RevokedCertificate
+type RevokedCertificateResult struct {
+	Rows        RevokedCertificateSlice
+	NextOffset  uint32
+	HasNextPage bool
+	Cursor      string
+}
+
+func (p *RevokedCertificateResult) SetResult(rows []*RevokedCertificate, hasNextPage bool, nextOffset uint32) {
+	p.Rows = rows
+	p.NextOffset = nextOffset
+	p.HasNextPage = hasNextPage
+}
+
+func (p *RevokedCertificateResult) SetResultWithCursor(rows []*RevokedCertificate, hasNextPage bool, cursor func(lastRow *RevokedCertificate) string) {
+	p.Rows = rows
+	p.HasNextPage = hasNextPage
+	if hasNextPage && len(rows) > 0 {
+		p.Cursor = cursor(rows[len(rows)-1])
+	}
+}
+
+func (p *RevokedCertificateResult) GetTableInfo() *xdbschema.TableInfo {
+	return &schema.RevokedCertificateTableInfo
 }

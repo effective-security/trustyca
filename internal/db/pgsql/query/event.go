@@ -27,7 +27,7 @@ func CreateEvent(args ...any) (string, string) {
 			Set(schema.Event.ReferenceID.Name, nil).
 			Set(schema.Event.Email.Name, nil).
 			Set(schema.Event.Source.Name, nil).
-			SetExpr(schema.Event.CreatedAt.Name, "Now()")
+			SetExpr(schema.Event.CreatedAt.Name, exprNow)
 		return q
 	})
 }

@@ -47,7 +47,7 @@ func (p *Provider) CreateEvent(ctx context.Context, m *model.Event) (*model.Even
 		m.Type,
 		slices.StringUpto(m.Title, 254),
 		m.Description,
-		metadataArg(m.Metadata),
+		query.MetadataArg(m.Metadata),
 		m.ReferenceID.UInt64(),
 		m.Email,
 		m.Source,

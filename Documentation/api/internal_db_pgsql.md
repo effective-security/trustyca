@@ -6,6 +6,18 @@
 import "github.com/effective-security/trustyca/internal/db/pgsql"
 ```
 
+Package pgsql implements the database interfaces of internal/db on PostgreSQL.
+
+Provider wraps an xdb.Provider; every method builds its SQL through the query package, measures the query and maps a missing row to xdb.ErrorNotFound. A method that writes more than one row \(AcceptInvite, RegisterCertificate with an event, RevokeCertificate, PublishCrl\) opens a transaction with BeginTx and runs every statement on the provider it returns:
+
+```
+tx, err := p.BeginTx(ctx, nil)
+defer tx.Close() // rolls back unless committed
+txProvider := tx.(*Provider)
+```
+
+Lists page by offset or by a keyset cursor on id \(listRows\). The tests need the configured local PostgreSQL database.
+
 ## Index
 
 - [Constants](<#constants>)
@@ -16,6 +28,7 @@ import "github.com/effective-security/trustyca/internal/db/pgsql"
   - [func New\(p xdb.Provider\) \(\*Provider, error\)](<#New>)
   - [func \(p \*Provider\) AcceptInvite\(ctx context.Context, inviteID, userID uint64\) \(\*model.Membership, error\)](<#Provider.AcceptInvite>)
   - [func \(p \*Provider\) AcceptInvites\(ctx context.Context, user \*model.User\) \(model.MembershipSlice, error\)](<#Provider.AcceptInvites>)
+  - [func \(p \*Provider\) ActivateIssuer\(ctx context.Context, m \*model.Issuer\) \(\*model.Issuer, error\)](<#Provider.ActivateIssuer>)
   - [func \(p \*Provider\) AddMember\(ctx context.Context, member \*model.Membership\) \(\*model.Membership, error\)](<#Provider.AddMember>)
   - [func \(p \*Provider\) BeginTx\(ctx context.Context, opts \*sql.TxOptions\) \(xdb.Provider, error\)](<#Provider.BeginTx>)
   - [func \(p \*Provider\) Builder\(\) xsql.SQLDialect](<#Provider.Builder>)
@@ -27,25 +40,41 @@ import "github.com/effective-security/trustyca/internal/db/pgsql"
   - [func \(p \*Provider\) CreateInvite\(ctx context.Context, invite \*model.Invite\) \(\*model.Invite, error\)](<#Provider.CreateInvite>)
   - [func \(p \*Provider\) DB\(\) xdb.DB](<#Provider.DB>)
   - [func \(p \*Provider\) DeleteAPIKey\(ctx context.Context, orgID, id uint64\) \(int64, error\)](<#Provider.DeleteAPIKey>)
+  - [func \(p \*Provider\) DeleteCertificate\(ctx context.Context, orgID, id uint64\) \(int64, error\)](<#Provider.DeleteCertificate>)
+  - [func \(p \*Provider\) DeleteCrl\(ctx context.Context, orgID uint64, ikid string\) \(int64, error\)](<#Provider.DeleteCrl>)
   - [func \(p \*Provider\) DeleteInvite\(ctx context.Context, r \*query.DeleteInviteRequest\) \(int64, error\)](<#Provider.DeleteInvite>)
   - [func \(p \*Provider\) DeleteInviteByID\(ctx context.Context, id uint64\) \(int64, error\)](<#Provider.DeleteInviteByID>)
+  - [func \(p \*Provider\) DeleteIssuer\(ctx context.Context, orgID, id uint64\) \(int64, error\)](<#Provider.DeleteIssuer>)
   - [func \(p \*Provider\) DeleteLogin\(ctx context.Context, id uint64\) \(int64, error\)](<#Provider.DeleteLogin>)
   - [func \(p \*Provider\) DeleteMember\(ctx context.Context, r \*query.DeleteMemberRequest\) \(int64, error\)](<#Provider.DeleteMember>)
   - [func \(p \*Provider\) DeleteOrg\(ctx context.Context, id uint64\) \(map\[string\]int64, error\)](<#Provider.DeleteOrg>)
+  - [func \(p \*Provider\) DeleteProfile\(ctx context.Context, orgID, id uint64\) \(int64, error\)](<#Provider.DeleteProfile>)
+  - [func \(p \*Provider\) DeleteRoot\(ctx context.Context, orgID, id uint64\) \(int64, error\)](<#Provider.DeleteRoot>)
   - [func \(p \*Provider\) DeleteUser\(ctx context.Context, id uint64\) \(map\[string\]int64, error\)](<#Provider.DeleteUser>)
   - [func \(p \*Provider\) DeleteUserByEmail\(ctx context.Context, email string\) \(map\[string\]int64, error\)](<#Provider.DeleteUserByEmail>)
   - [func \(p \*Provider\) ExecContext\(ctx context.Context, query string, args ...any\) \(sql.Result, error\)](<#Provider.ExecContext>)
+  - [func \(p \*Provider\) FindIssuer\(ctx context.Context, orgID, projectID uint64, label string\) \(\*model.Issuer, error\)](<#Provider.FindIssuer>)
   - [func \(p \*Provider\) FindOrg\(ctx context.Context, alias string\) \(\*model.Org, error\)](<#Provider.FindOrg>)
+  - [func \(p \*Provider\) FindProfile\(ctx context.Context, orgID, projectID uint64, label string\) \(\*model.CertificateProfile, error\)](<#Provider.FindProfile>)
   - [func \(p \*Provider\) FindProject\(ctx context.Context, orgID uint64, alias string\) \(\*model.Project, error\)](<#Provider.FindProject>)
   - [func \(p \*Provider\) GetAPIKey\(ctx context.Context, orgID, id uint64\) \(\*model.APIKey, error\)](<#Provider.GetAPIKey>)
+  - [func \(p \*Provider\) GetCertificate\(ctx context.Context, id uint64\) \(\*model.Certificate, error\)](<#Provider.GetCertificate>)
+  - [func \(p \*Provider\) GetCertificateByIssuerSerial\(ctx context.Context, ikid, serial string\) \(\*model.Certificate, error\)](<#Provider.GetCertificateByIssuerSerial>)
+  - [func \(p \*Provider\) GetCertificateBySha256\(ctx context.Context, sha256 string\) \(\*model.Certificate, error\)](<#Provider.GetCertificateBySha256>)
+  - [func \(p \*Provider\) GetCrl\(ctx context.Context, ikid string\) \(\*model.Crl, error\)](<#Provider.GetCrl>)
   - [func \(p \*Provider\) GetEvent\(ctx context.Context, id uint64\) \(\*model.Event, error\)](<#Provider.GetEvent>)
   - [func \(p \*Provider\) GetInvite\(ctx context.Context, id uint64\) \(\*model.Invite, error\)](<#Provider.GetInvite>)
   - [func \(p \*Provider\) GetInviteByOrgAndEmail\(ctx context.Context, orgID, projectID uint64, email string\) \(\*model.Invite, error\)](<#Provider.GetInviteByOrgAndEmail>)
+  - [func \(p \*Provider\) GetIssuer\(ctx context.Context, id uint64\) \(\*model.Issuer, error\)](<#Provider.GetIssuer>)
+  - [func \(p \*Provider\) GetIssuerBySKID\(ctx context.Context, skid string\) \(\*model.Issuer, error\)](<#Provider.GetIssuerBySKID>)
   - [func \(p \*Provider\) GetLogin\(ctx context.Context, id uint64\) \(\*model.Login, error\)](<#Provider.GetLogin>)
   - [func \(p \*Provider\) GetLoginsByEmail\(ctx context.Context, email string\) \(model.LoginSlice, error\)](<#Provider.GetLoginsByEmail>)
   - [func \(p \*Provider\) GetOrg\(ctx context.Context, id uint64\) \(\*model.Org, error\)](<#Provider.GetOrg>)
   - [func \(p \*Provider\) GetOrgInvites\(ctx context.Context, orgID uint64\) \(model.InviteSlice, error\)](<#Provider.GetOrgInvites>)
+  - [func \(p \*Provider\) GetProfile\(ctx context.Context, id uint64\) \(\*model.CertificateProfile, error\)](<#Provider.GetProfile>)
   - [func \(p \*Provider\) GetProject\(ctx context.Context, id uint64\) \(\*model.Project, error\)](<#Provider.GetProject>)
+  - [func \(p \*Provider\) GetRevoked\(ctx context.Context, req \*query.GetRevokedRequest\) \(\*model.Revoked, error\)](<#Provider.GetRevoked>)
+  - [func \(p \*Provider\) GetRoot\(ctx context.Context, id uint64\) \(\*model.RootCertificate, error\)](<#Provider.GetRoot>)
   - [func \(p \*Provider\) GetUser\(ctx context.Context, id uint64\) \(\*model.User, error\)](<#Provider.GetUser>)
   - [func \(p \*Provider\) GetUserByEmail\(ctx context.Context, email string\) \(\*model.User, error\)](<#Provider.GetUserByEmail>)
   - [func \(p \*Provider\) GetUserInvites\(ctx context.Context, email string\) \(model.InviteSlice, error\)](<#Provider.GetUserInvites>)
@@ -53,23 +82,38 @@ import "github.com/effective-security/trustyca/internal/db/pgsql"
   - [func \(p \*Provider\) GetUserOrgs\(ctx context.Context, userID uint64\) \(model.OrgSlice, error\)](<#Provider.GetUserOrgs>)
   - [func \(p \*Provider\) IDTime\(id uint64\) time.Time](<#Provider.IDTime>)
   - [func \(p \*Provider\) ListAPIKeys\(ctx context.Context, r \*query.ListAPIKeysRequest\) \(\*model.APIKeyResult, error\)](<#Provider.ListAPIKeys>)
+  - [func \(p \*Provider\) ListCertificates\(ctx context.Context, req \*query.ListCertificatesRequest\) \(\*model.CertificateResult, error\)](<#Provider.ListCertificates>)
+  - [func \(p \*Provider\) ListCrls\(ctx context.Context, req \*query.ListCrlsRequest\) \(\*model.CrlResult, error\)](<#Provider.ListCrls>)
   - [func \(p \*Provider\) ListEvents\(ctx context.Context, r \*query.ListEventsRequest\) \(\*model.EventResult, error\)](<#Provider.ListEvents>)
+  - [func \(p \*Provider\) ListIssuers\(ctx context.Context, req \*query.ListIssuersRequest\) \(\*model.IssuerResult, error\)](<#Provider.ListIssuers>)
   - [func \(p \*Provider\) ListLogins\(ctx context.Context, limit, offset uint32\) \(model.LoginSlice, uint32, error\)](<#Provider.ListLogins>)
   - [func \(p \*Provider\) ListMemberships\(ctx context.Context, req \*query.ListMembershipsRequest\) \(model.MembershipInfoSlice, error\)](<#Provider.ListMemberships>)
   - [func \(p \*Provider\) ListOrgs\(ctx context.Context, req \*query.ListOrgsRequest\) \(\*model.OrgResult, error\)](<#Provider.ListOrgs>)
+  - [func \(p \*Provider\) ListProfiles\(ctx context.Context, req \*query.ListProfilesRequest\) \(\*model.CertificateProfileResult, error\)](<#Provider.ListProfiles>)
   - [func \(p \*Provider\) ListProjects\(ctx context.Context, req \*query.ListProjectsRequest\) \(\*model.ProjectResult, error\)](<#Provider.ListProjects>)
+  - [func \(p \*Provider\) ListRevoked\(ctx context.Context, req \*query.ListRevokedRequest\) \(\*model.RevokedResult, error\)](<#Provider.ListRevoked>)
+  - [func \(p \*Provider\) ListRevokedCertificates\(ctx context.Context, req \*query.ListRevokedCertificatesRequest\) \(\*model.RevokedCertificateResult, error\)](<#Provider.ListRevokedCertificates>)
+  - [func \(p \*Provider\) ListRoots\(ctx context.Context, req \*query.ListRootsRequest\) \(\*model.RootCertificateResult, error\)](<#Provider.ListRoots>)
   - [func \(p \*Provider\) LoginUser\(ctx context.Context, m \*model.Login\) \(\*model.Login, \*model.User, error\)](<#Provider.LoginUser>)
   - [func \(p \*Provider\) Name\(\) string](<#Provider.Name>)
   - [func \(p \*Provider\) NewNotificationsListener\(\) notifier.Listener](<#Provider.NewNotificationsListener>)
   - [func \(p \*Provider\) NextID\(\) xdb.ID](<#Provider.NextID>)
+  - [func \(p \*Provider\) PublishCrl\(ctx context.Context, m \*model.Crl\) \(\*model.Crl, error\)](<#Provider.PublishCrl>)
   - [func \(p \*Provider\) QueryContext\(ctx context.Context, query string, args ...any\) \(\*sql.Rows, error\)](<#Provider.QueryContext>)
   - [func \(p \*Provider\) QueryRowContext\(ctx context.Context, query string, args ...any\) \*sql.Row](<#Provider.QueryRowContext>)
   - [func \(p \*Provider\) RegisterAPIKey\(ctx context.Context, m \*model.APIKey\) \(\*model.APIKey, error\)](<#Provider.RegisterAPIKey>)
+  - [func \(p \*Provider\) RegisterCertificate\(ctx context.Context, m \*model.Certificate, evt \*model.Event\) \(\*model.Certificate, error\)](<#Provider.RegisterCertificate>)
+  - [func \(p \*Provider\) RegisterIssuer\(ctx context.Context, m \*model.Issuer\) \(\*model.Issuer, error\)](<#Provider.RegisterIssuer>)
   - [func \(p \*Provider\) RegisterOrg\(ctx context.Context, m \*model.Org, ownerID uint64\) \(\*model.Org, error\)](<#Provider.RegisterOrg>)
+  - [func \(p \*Provider\) RegisterProfile\(ctx context.Context, m \*model.CertificateProfile\) \(\*model.CertificateProfile, error\)](<#Provider.RegisterProfile>)
   - [func \(p \*Provider\) RegisterProject\(ctx context.Context, m \*model.Project\) \(\*model.Project, error\)](<#Provider.RegisterProject>)
+  - [func \(p \*Provider\) RegisterRoot\(ctx context.Context, m \*model.RootCertificate\) \(\*model.RootCertificate, error\)](<#Provider.RegisterRoot>)
+  - [func \(p \*Provider\) RevokeCertificate\(ctx context.Context, req \*query.RevokeCertificateRequest\) \(\*model.RevokedCertificate, error\)](<#Provider.RevokeCertificate>)
   - [func \(p \*Provider\) Rollback\(\) error](<#Provider.Rollback>)
   - [func \(p \*Provider\) TryCreateEvent\(evt \*model.Event\)](<#Provider.TryCreateEvent>)
   - [func \(p \*Provider\) Tx\(\) xdb.Tx](<#Provider.Tx>)
+  - [func \(p \*Provider\) UpdateCertificate\(ctx context.Context, req \*query.UpdateCertificateRequest\) \(\*model.Certificate, error\)](<#Provider.UpdateCertificate>)
+  - [func \(p \*Provider\) UpdateIssuer\(ctx context.Context, req \*query.UpdateIssuerRequest\) \(\*model.Issuer, error\)](<#Provider.UpdateIssuer>)
   - [func \(p \*Provider\) UpdateMemberRole\(ctx context.Context, req \*query.UpdateMemberRoleRequest\) \(\*model.Membership, error\)](<#Provider.UpdateMemberRole>)
   - [func \(p \*Provider\) UpdateOrg\(ctx context.Context, req \*query.UpdateOrgRequest\) \(\*model.Org, error\)](<#Provider.UpdateOrg>)
   - [func \(p \*Provider\) UpdateProject\(ctx context.Context, req \*query.UpdateProjectRequest\) \(\*model.Project, error\)](<#Provider.UpdateProject>)
@@ -93,8 +137,26 @@ const DefaultInviteExpiry = 14 * 24 * time.Hour
 var DbSlowMethodMilliseconds = 500
 ```
 
+<a name="ErrAlreadyRevoked"></a>ErrAlreadyRevoked is returned by RevokeCertificate for a certificate whose status is Revoked
+
+```go
+var ErrAlreadyRevoked = errors.New("certificate is already revoked")
+```
+
+<a name="ErrRootConflict"></a>ErrRootConflict is returned by RegisterRoot when the certificate is registered in another scope: the thumbprint is unique across the table
+
+```go
+var ErrRootConflict = errors.New("root certificate is registered in another scope")
+```
+
+<a name="ErrStaleCrlNumber"></a>ErrStaleCrlNumber is returned by PublishCrl when the CRL number is not greater than the issuer's current one: another publisher won, and the caller signs a new CRL with the next number
+
+```go
+var ErrStaleCrlNumber = errors.New("crl number is not greater than the issuer's crl number")
+```
+
 <a name="DbMeasureQuerySince"></a>
-## func [DbMeasureQuerySince](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L140>)
+## func [DbMeasureQuerySince](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L141>)
 
 ```go
 func DbMeasureQuerySince(query string, start time.Time)
@@ -103,7 +165,7 @@ func DbMeasureQuerySince(query string, start time.Time)
 DbMeasureQuerySince emit DB operation perf, and logs a Warning for slow operations
 
 <a name="DbMeasureSince"></a>
-## func [DbMeasureSince](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L134>)
+## func [DbMeasureSince](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L135>)
 
 ```go
 func DbMeasureSince(start time.Time)
@@ -112,7 +174,7 @@ func DbMeasureSince(start time.Time)
 DbMeasureSince emit DB operation perf, and logs a Warning for slow operations
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L23-L27>)
+## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L24-L28>)
 
 Provider represents SQL client instance
 
@@ -123,7 +185,7 @@ type Provider struct {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L30>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L31>)
 
 ```go
 func New(p xdb.Provider) (*Provider, error)
@@ -149,6 +211,15 @@ func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.M
 
 AcceptInvites moves the pending invites for a user's email to grants at the invites' scopes, and returns the grants it created. An invite whose grant fails is logged and skipped; a grant whose invite is not deleted is still returned.
 
+<a name="Provider.ActivateIssuer"></a>
+### func \(\*Provider\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L98>)
+
+```go
+func (p *Provider) ActivateIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
+```
+
+ActivateIssuer sets the certificate columns of a Pending issuer from the model, clears its CSR and makes it Active. The issuer is reported as not found when it does not exist, is not Pending or is not of the model's org.
+
 <a name="Provider.AddMember"></a>
 ### func \(\*Provider\) [AddMember](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/member.go#L18>)
 
@@ -159,7 +230,7 @@ func (p *Provider) AddMember(ctx context.Context, member *model.Membership) (*mo
 AddMember grants a role org\-wide \(empty ProjectID\) or in a project. An existing grant at the same scope gets the new role.
 
 <a name="Provider.BeginTx"></a>
-### func \(\*Provider\) [BeginTx](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L63>)
+### func \(\*Provider\) [BeginTx](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L64>)
 
 ```go
 func (p *Provider) BeginTx(ctx context.Context, opts *sql.TxOptions) (xdb.Provider, error)
@@ -172,7 +243,7 @@ The provided context is used until the transaction is committed or rolled back. 
 The provided TxOptions is optional and may be nil if defaults should be used. If a non\-default isolation level is used that the driver doesn't support, an error will be returned.
 
 <a name="Provider.Builder"></a>
-### func \(\*Provider\) [Builder](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L41>)
+### func \(\*Provider\) [Builder](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L42>)
 
 ```go
 func (p *Provider) Builder() xsql.SQLDialect
@@ -181,7 +252,7 @@ func (p *Provider) Builder() xsql.SQLDialect
 Builder returns SQL dialect
 
 <a name="Provider.CheckErrIDConflict"></a>
-### func \(\*Provider\) [CheckErrIDConflict](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L155>)
+### func \(\*Provider\) [CheckErrIDConflict](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L156>)
 
 ```go
 func (p *Provider) CheckErrIDConflict(ctx context.Context, err error, id uint64)
@@ -190,7 +261,7 @@ func (p *Provider) CheckErrIDConflict(ctx context.Context, err error, id uint64)
 CheckErrIDConflict prints decomposed ID if error is ID conflict
 
 <a name="Provider.Close"></a>
-### func \(\*Provider\) [Close](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L73>)
+### func \(\*Provider\) [Close](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L74>)
 
 ```go
 func (p *Provider) Close() (err error)
@@ -199,7 +270,7 @@ func (p *Provider) Close() (err error)
 Close connection and release resources
 
 <a name="Provider.Commit"></a>
-### func \(\*Provider\) [Commit](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L122>)
+### func \(\*Provider\) [Commit](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L123>)
 
 ```go
 func (p *Provider) Commit() error
@@ -208,7 +279,7 @@ func (p *Provider) Commit() error
 
 
 <a name="Provider.ConnectionString"></a>
-### func \(\*Provider\) [ConnectionString](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L45>)
+### func \(\*Provider\) [ConnectionString](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L46>)
 
 ```go
 func (p *Provider) ConnectionString() string
@@ -235,7 +306,7 @@ func (p *Provider) CreateInvite(ctx context.Context, invite *model.Invite) (*mod
 CreateInvite creates or updates an invite for a user to join an org \(empty ProjectID\) or a project
 
 <a name="Provider.DB"></a>
-### func \(\*Provider\) [DB](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L81>)
+### func \(\*Provider\) [DB](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L82>)
 
 ```go
 func (p *Provider) DB() xdb.DB
@@ -251,6 +322,24 @@ func (p *Provider) DeleteAPIKey(ctx context.Context, orgID, id uint64) (int64, e
 ```
 
 DeleteAPIKey deletes an API key of the org and returns the number of deleted rows
+
+<a name="Provider.DeleteCertificate"></a>
+### func \(\*Provider\) [DeleteCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L232>)
+
+```go
+func (p *Provider) DeleteCertificate(ctx context.Context, orgID, id uint64) (int64, error)
+```
+
+DeleteCertificate deletes a certificate of the exact org scope \(a zero orgID is the platform\) and its revocation, and returns the number of deleted certificates. Certificates are audit records: the retention task and operators delete them, the tenant lifecycle does not.
+
+<a name="Provider.DeleteCrl"></a>
+### func \(\*Provider\) [DeleteCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L158>)
+
+```go
+func (p *Provider) DeleteCrl(ctx context.Context, orgID uint64, ikid string) (int64, error)
+```
+
+DeleteCrl deletes the current CRL of the issuer with the key identifier in the exact org scope \(a zero orgID is the platform\) and returns the number of deleted rows
 
 <a name="Provider.DeleteInvite"></a>
 ### func \(\*Provider\) [DeleteInvite](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/invite.go#L131>)
@@ -269,6 +358,15 @@ func (p *Provider) DeleteInviteByID(ctx context.Context, id uint64) (int64, erro
 ```
 
 DeleteInviteByID deletes an invite by ID
+
+<a name="Provider.DeleteIssuer"></a>
+### func \(\*Provider\) [DeleteIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L209>)
+
+```go
+func (p *Provider) DeleteIssuer(ctx context.Context, orgID, id uint64) (int64, error)
+```
+
+DeleteIssuer deletes an issuer of the exact org scope \(a zero orgID is the platform\) and its current CRL, and returns the number of deleted issuers. The certificates it issued are kept: the lifecycle of an issuer ends with the Destroyed status, deletion is for operators.
 
 <a name="Provider.DeleteLogin"></a>
 ### func \(\*Provider\) [DeleteLogin](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L139>)
@@ -297,6 +395,24 @@ func (p *Provider) DeleteOrg(ctx context.Context, id uint64) (map[string]int64, 
 
 DeleteOrg deletes an org and all its members
 
+<a name="Provider.DeleteProfile"></a>
+### func \(\*Provider\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/profile.go#L110>)
+
+```go
+func (p *Provider) DeleteProfile(ctx context.Context, orgID, id uint64) (int64, error)
+```
+
+DeleteProfile deletes a certificate profile of the exact org scope \(a zero orgID is the platform\) and returns the number of deleted rows
+
+<a name="Provider.DeleteRoot"></a>
+### func \(\*Provider\) [DeleteRoot](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/root.go#L96>)
+
+```go
+func (p *Provider) DeleteRoot(ctx context.Context, orgID, id uint64) (int64, error)
+```
+
+DeleteRoot deletes a trust anchor of the exact org scope \(a zero orgID is the platform\) and returns the number of deleted rows
+
 <a name="Provider.DeleteUser"></a>
 ### func \(\*Provider\) [DeleteUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L102>)
 
@@ -316,13 +432,22 @@ func (p *Provider) DeleteUserByEmail(ctx context.Context, email string) (map[str
 DeleteUserByEmail deletes user and logins
 
 <a name="Provider.ExecContext"></a>
-### func \(\*Provider\) [ExecContext](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L118>)
+### func \(\*Provider\) [ExecContext](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L119>)
 
 ```go
 func (p *Provider) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 ```
 
 ExecContext executes a query without returning any rows. The args are for any placeholder parameters in the query.
+
+<a name="Provider.FindIssuer"></a>
+### func \(\*Provider\) [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L152>)
+
+```go
+func (p *Provider) FindIssuer(ctx context.Context, orgID, projectID uint64, label string) (*model.Issuer, error)
+```
+
+FindIssuer returns the issuer of the exact scope and label: a zero orgID is the platform scope and a zero projectID the org scope. The resolution of a label through the scopes is the caller's.
 
 <a name="Provider.FindOrg"></a>
 ### func \(\*Provider\) [FindOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L124>)
@@ -332,6 +457,15 @@ func (p *Provider) FindOrg(ctx context.Context, alias string) (*model.Org, error
 ```
 
 FindOrg returns Org by alias
+
+<a name="Provider.FindProfile"></a>
+### func \(\*Provider\) [FindProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/profile.go#L67>)
+
+```go
+func (p *Provider) FindProfile(ctx context.Context, orgID, projectID uint64, label string) (*model.CertificateProfile, error)
+```
+
+FindProfile returns the profile of the exact scope and label: a zero orgID is the platform scope and a zero projectID the org scope. The resolution of a label through the scopes is the caller's.
 
 <a name="Provider.FindProject"></a>
 ### func \(\*Provider\) [FindProject](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/project.go#L82>)
@@ -350,6 +484,42 @@ func (p *Provider) GetAPIKey(ctx context.Context, orgID, id uint64) (*model.APIK
 ```
 
 GetAPIKey returns an API key of the org by ID
+
+<a name="Provider.GetCertificate"></a>
+### func \(\*Provider\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L167>)
+
+```go
+func (p *Provider) GetCertificate(ctx context.Context, id uint64) (*model.Certificate, error)
+```
+
+GetCertificate returns a certificate by ID
+
+<a name="Provider.GetCertificateByIssuerSerial"></a>
+### func \(\*Provider\) [GetCertificateByIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L193>)
+
+```go
+func (p *Provider) GetCertificateByIssuerSerial(ctx context.Context, ikid, serial string) (*model.Certificate, error)
+```
+
+GetCertificateByIssuerSerial returns a certificate by the key identifier of its issuer and its serial number
+
+<a name="Provider.GetCertificateBySha256"></a>
+### func \(\*Provider\) [GetCertificateBySha256](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L180>)
+
+```go
+func (p *Provider) GetCertificateBySha256(ctx context.Context, sha256 string) (*model.Certificate, error)
+```
+
+GetCertificateBySha256 returns a certificate by its hex encoded SHA\-256 thumbprint
+
+<a name="Provider.GetCrl"></a>
+### func \(\*Provider\) [GetCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L120>)
+
+```go
+func (p *Provider) GetCrl(ctx context.Context, ikid string) (*model.Crl, error)
+```
+
+GetCrl returns the current CRL of the issuer with the key identifier
 
 <a name="Provider.GetEvent"></a>
 ### func \(\*Provider\) [GetEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L78>)
@@ -377,6 +547,24 @@ func (p *Provider) GetInviteByOrgAndEmail(ctx context.Context, orgID, projectID 
 ```
 
 GetInviteByOrgAndEmail returns an invite by org, scope and email. projectID 0 returns the Org scope invite.
+
+<a name="Provider.GetIssuer"></a>
+### func \(\*Provider\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L138>)
+
+```go
+func (p *Provider) GetIssuer(ctx context.Context, id uint64) (*model.Issuer, error)
+```
+
+GetIssuer returns an issuer by ID
+
+<a name="Provider.GetIssuerBySKID"></a>
+### func \(\*Provider\) [GetIssuerBySKID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L171>)
+
+```go
+func (p *Provider) GetIssuerBySKID(ctx context.Context, skid string) (*model.Issuer, error)
+```
+
+GetIssuerBySKID returns the issuer by its Subject Key Identifier, which is the IKID of the certificates and CRLs it issued
 
 <a name="Provider.GetLogin"></a>
 ### func \(\*Provider\) [GetLogin](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L127>)
@@ -414,6 +602,15 @@ func (p *Provider) GetOrgInvites(ctx context.Context, orgID uint64) (model.Invit
 
 GetOrgInvites returns invites of all scopes for an org
 
+<a name="Provider.GetProfile"></a>
+### func \(\*Provider\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/profile.go#L53>)
+
+```go
+func (p *Provider) GetProfile(ctx context.Context, id uint64) (*model.CertificateProfile, error)
+```
+
+GetProfile returns a certificate profile by ID
+
 <a name="Provider.GetProject"></a>
 ### func \(\*Provider\) [GetProject](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/project.go#L70>)
 
@@ -422,6 +619,24 @@ func (p *Provider) GetProject(ctx context.Context, id uint64) (*model.Project, e
 ```
 
 GetProject returns Project by ID
+
+<a name="Provider.GetRevoked"></a>
+### func \(\*Provider\) [GetRevoked](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/revoked.go#L123>)
+
+```go
+func (p *Provider) GetRevoked(ctx context.Context, req *query.GetRevokedRequest) (*model.Revoked, error)
+```
+
+GetRevoked returns the revocation of a certificate by its ID, or by the key identifier of its issuer and its serial number
+
+<a name="Provider.GetRoot"></a>
+### func \(\*Provider\) [GetRoot](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/root.go#L59>)
+
+```go
+func (p *Provider) GetRoot(ctx context.Context, id uint64) (*model.RootCertificate, error)
+```
+
+GetRoot returns a trust anchor by ID
 
 <a name="Provider.GetUser"></a>
 ### func \(\*Provider\) [GetUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L151>)
@@ -469,7 +684,7 @@ func (p *Provider) GetUserOrgs(ctx context.Context, userID uint64) (model.OrgSli
 GetUserOrgs gets the orgs for a user
 
 <a name="Provider.IDTime"></a>
-### func \(\*Provider\) [IDTime](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L96>)
+### func \(\*Provider\) [IDTime](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L97>)
 
 ```go
 func (p *Provider) IDTime(id uint64) time.Time
@@ -486,6 +701,24 @@ func (p *Provider) ListAPIKeys(ctx context.Context, r *query.ListAPIKeysRequest)
 
 ListAPIKeys lists API keys of an org
 
+<a name="Provider.ListCertificates"></a>
+### func \(\*Provider\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L206>)
+
+```go
+func (p *Provider) ListCertificates(ctx context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error)
+```
+
+ListCertificates lists certificates, newest first; the request names its org scope
+
+<a name="Provider.ListCrls"></a>
+### func \(\*Provider\) [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L133>)
+
+```go
+func (p *Provider) ListCrls(ctx context.Context, req *query.ListCrlsRequest) (*model.CrlResult, error)
+```
+
+ListCrls lists the current CRLs, newest first; the request names its org scope
+
 <a name="Provider.ListEvents"></a>
 ### func \(\*Provider\) [ListEvents](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L64>)
 
@@ -494,6 +727,15 @@ func (p *Provider) ListEvents(ctx context.Context, r *query.ListEventsRequest) (
 ```
 
 ListEvents returns events
+
+<a name="Provider.ListIssuers"></a>
+### func \(\*Provider\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L183>)
+
+```go
+func (p *Provider) ListIssuers(ctx context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error)
+```
+
+ListIssuers lists issuers, newest first; the request names its org scope
 
 <a name="Provider.ListLogins"></a>
 ### func \(\*Provider\) [ListLogins](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L192>)
@@ -522,6 +764,15 @@ func (p *Provider) ListOrgs(ctx context.Context, req *query.ListOrgsRequest) (*m
 
 ListOrgs lists orgs
 
+<a name="Provider.ListProfiles"></a>
+### func \(\*Provider\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/profile.go#L86>)
+
+```go
+func (p *Provider) ListProfiles(ctx context.Context, req *query.ListProfilesRequest) (*model.CertificateProfileResult, error)
+```
+
+ListProfiles lists certificate profiles, newest first; the request names its org scope
+
 <a name="Provider.ListProjects"></a>
 ### func \(\*Provider\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/project.go#L94>)
 
@@ -530,6 +781,33 @@ func (p *Provider) ListProjects(ctx context.Context, req *query.ListProjectsRequ
 ```
 
 ListProjects lists projects of an org
+
+<a name="Provider.ListRevoked"></a>
+### func \(\*Provider\) [ListRevoked](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/revoked.go#L146>)
+
+```go
+func (p *Provider) ListRevoked(ctx context.Context, req *query.ListRevokedRequest) (*model.RevokedResult, error)
+```
+
+ListRevoked lists revocations, newest first; the request names its org scope. A CRL is built from the revocations of an issuer that are still valid.
+
+<a name="Provider.ListRevokedCertificates"></a>
+### func \(\*Provider\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/revoked.go#L170>)
+
+```go
+func (p *Provider) ListRevokedCertificates(ctx context.Context, req *query.ListRevokedCertificatesRequest) (*model.RevokedCertificateResult, error)
+```
+
+ListRevokedCertificates lists revoked certificates with their certificate columns, newest revocation first; the request names its org scope
+
+<a name="Provider.ListRoots"></a>
+### func \(\*Provider\) [ListRoots](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/root.go#L72>)
+
+```go
+func (p *Provider) ListRoots(ctx context.Context, req *query.ListRootsRequest) (*model.RootCertificateResult, error)
+```
+
+ListRoots lists trust anchors, newest first; the request names its org scope
 
 <a name="Provider.LoginUser"></a>
 ### func \(\*Provider\) [LoginUser](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/user.go#L22>)
@@ -541,7 +819,7 @@ func (p *Provider) LoginUser(ctx context.Context, m *model.Login) (*model.Login,
 LoginUser registers the login and its user and returns both. A new login and a new user are inserted under one new ID; on a conflict each row keeps its ID, so only the first login of a new user returns both with the same ID.
 
 <a name="Provider.Name"></a>
-### func \(\*Provider\) [Name](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L49>)
+### func \(\*Provider\) [Name](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L50>)
 
 ```go
 func (p *Provider) Name() string
@@ -550,7 +828,7 @@ func (p *Provider) Name() string
 
 
 <a name="Provider.NewNotificationsListener"></a>
-### func \(\*Provider\) [NewNotificationsListener](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L174>)
+### func \(\*Provider\) [NewNotificationsListener](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L175>)
 
 ```go
 func (p *Provider) NewNotificationsListener() notifier.Listener
@@ -559,7 +837,7 @@ func (p *Provider) NewNotificationsListener() notifier.Listener
 
 
 <a name="Provider.NextID"></a>
-### func \(\*Provider\) [NextID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L91>)
+### func \(\*Provider\) [NextID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L92>)
 
 ```go
 func (p *Provider) NextID() xdb.ID
@@ -567,8 +845,17 @@ func (p *Provider) NextID() xdb.ID
 
 NextID returns unique ID
 
+<a name="Provider.PublishCrl"></a>
+### func \(\*Provider\) [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L26>)
+
+```go
+func (p *Provider) PublishCrl(ctx context.Context, m *model.Crl) (*model.Crl, error)
+```
+
+PublishCrl stores the current CRL of an issuer and records its number on the issuer in one transaction. The CRL's IKID must be the issuer's SKID and the number greater than the issuer's current CRL number, so the number of an IKID only grows: otherwise nothing is stored and ErrStaleCrlNumber is returned. The tenancy and issuer name of the CRL are copied from the issuer row.
+
 <a name="Provider.QueryContext"></a>
-### func \(\*Provider\) [QueryContext](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L102>)
+### func \(\*Provider\) [QueryContext](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L103>)
 
 ```go
 func (p *Provider) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
@@ -577,7 +864,7 @@ func (p *Provider) QueryContext(ctx context.Context, query string, args ...any) 
 QueryContext executes a query that returns rows, typically a SELECT. The args are for any placeholder parameters in the query.
 
 <a name="Provider.QueryRowContext"></a>
-### func \(\*Provider\) [QueryRowContext](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L112>)
+### func \(\*Provider\) [QueryRowContext](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L113>)
 
 ```go
 func (p *Provider) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
@@ -594,6 +881,24 @@ func (p *Provider) RegisterAPIKey(ctx context.Context, m *model.APIKey) (*model.
 
 RegisterAPIKey inserts a new API key; the key and the protected secret are prepared by the caller
 
+<a name="Provider.RegisterCertificate"></a>
+### func \(\*Provider\) [RegisterCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L22>)
+
+```go
+func (p *Provider) RegisterCertificate(ctx context.Context, m *model.Certificate, evt *model.Event) (*model.Certificate, error)
+```
+
+RegisterCertificate inserts the issuance record of a certificate; the status defaults to Active. The thumbprint and the issuer and serial number pair are unique. With an event, the insert and the event are one transaction, and the event references the certificate when it has no reference of its own.
+
+<a name="Provider.RegisterIssuer"></a>
+### func \(\*Provider\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L19>)
+
+```go
+func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
+```
+
+RegisterIssuer inserts an issuer. A Pending issuer carries its CSR, any other status its certificate; the label is unique in its scope and the SKID across the table.
+
 <a name="Provider.RegisterOrg"></a>
 ### func \(\*Provider\) [RegisterOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L19>)
 
@@ -602,6 +907,15 @@ func (p *Provider) RegisterOrg(ctx context.Context, m *model.Org, ownerID uint64
 ```
 
 RegisterOrg registers a new org
+
+<a name="Provider.RegisterProfile"></a>
+### func \(\*Provider\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/profile.go#L19>)
+
+```go
+func (p *Provider) RegisterProfile(ctx context.Context, m *model.CertificateProfile) (*model.CertificateProfile, error)
+```
+
+RegisterProfile creates a certificate profile, or replaces the issuer label, status and config of the profile with the same label in the same scope; the row ID and creation time of a replaced profile are kept
 
 <a name="Provider.RegisterProject"></a>
 ### func \(\*Provider\) [RegisterProject](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/project.go#L17>)
@@ -612,8 +926,26 @@ func (p *Provider) RegisterProject(ctx context.Context, m *model.Project) (*mode
 
 RegisterProject creates a project in an org
 
+<a name="Provider.RegisterRoot"></a>
+### func \(\*Provider\) [RegisterRoot](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/root.go#L21>)
+
+```go
+func (p *Provider) RegisterRoot(ctx context.Context, m *model.RootCertificate) (*model.RootCertificate, error)
+```
+
+RegisterRoot registers a trust anchor. Registering the same certificate again in the same scope updates its trust and returns the existing row; the same certificate in another scope fails with ErrRootConflict.
+
+<a name="Provider.RevokeCertificate"></a>
+### func \(\*Provider\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/revoked.go#L25>)
+
+```go
+func (p *Provider) RevokeCertificate(ctx context.Context, req *query.RevokeCertificateRequest) (*model.RevokedCertificate, error)
+```
+
+RevokeCertificate records the revocation of a certificate of the exact org scope and sets its status to Revoked in one transaction. The revocation copies the issuer, serial number, expiry and tenancy of the certificate row.
+
 <a name="Provider.Rollback"></a>
-### func \(\*Provider\) [Rollback](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L126>)
+### func \(\*Provider\) [Rollback](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L127>)
 
 ```go
 func (p *Provider) Rollback() error
@@ -631,13 +963,31 @@ func (p *Provider) TryCreateEvent(evt *model.Event)
 TryCreateEvent creates the event on its own goroutine with a background context, so the caller's cancellation does not drop it, and logs a failure instead of returning it
 
 <a name="Provider.Tx"></a>
-### func \(\*Provider\) [Tx](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L86>)
+### func \(\*Provider\) [Tx](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L87>)
 
 ```go
 func (p *Provider) Tx() xdb.Tx
 ```
 
 Tx returns underlying DB transaction
+
+<a name="Provider.UpdateCertificate"></a>
+### func \(\*Provider\) [UpdateCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L113>)
+
+```go
+func (p *Provider) UpdateCertificate(ctx context.Context, req *query.UpdateCertificateRequest) (*model.Certificate, error)
+```
+
+UpdateCertificate replaces the label, the client metadata or the published locations of a certificate of the exact org scope
+
+<a name="Provider.UpdateIssuer"></a>
+### func \(\*Provider\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L69>)
+
+```go
+func (p *Provider) UpdateIssuer(ctx context.Context, req *query.UpdateIssuerRequest) (*model.Issuer, error)
+```
+
+UpdateIssuer changes the lifecycle status or the runtime settings of an issuer of the exact org scope; the Destroyed status also clears the protected key material. The config must be a pb.IssuerConfig document.
 
 <a name="Provider.UpdateMemberRole"></a>
 ### func \(\*Provider\) [UpdateMemberRole](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/member.go#L46>)

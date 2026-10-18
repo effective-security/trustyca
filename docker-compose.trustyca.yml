@@ -72,7 +72,7 @@ services:
         "--tls-port 6379",
         "--tls-cert-file /trustyca/trustyca_peer.pem",
         "--tls-key-file /trustyca/trustyca_peer.key",
-        "--tls-ca-cert-file /trustyca/trusty_root_ca.pem",
+        "--tls-ca-cert-file /trustyca/trustyca_root.pem",
         "--tls-auth-clients no",
         "--requirepass redis",
       ]

@@ -6,13 +6,173 @@
 import "github.com/effective-security/trustyca/internal/db"
 ```
 
+Package db defines the database interfaces of the service and constructs the PostgreSQL provider that implements them.
+
+OrgsReadonlyDb and OrgsDb own the access layer \(users, logins, orgs, projects, memberships, invites, API keys, events\); CaReadonlyDb and CaDb own the CA data plane \(issuers, trust anchors, profiles, certificates, revocations, CRLs\). Provider implements all of them:
+
+```
+p, err := db.New(cfg.SQL.DataSource, cfg.SQL.MigrationsDir, 0, 0, flake.DefaultIDGenerator)
+if err != nil {
+	return err
+}
+defer p.Close()
+issuer, err := p.FindIssuer(ctx, orgID, projectID, "L2_CA")
+```
+
+New runs the SQL migrations of the migrations directory. The DB layer is plain CRUD: it never imports the authorization code, and the caller verifies that a row returned by ID belongs to the caller's org and project. The sentinel errors of the CA mutations \(ErrAlreadyRevoked, ErrStaleCrlNumber, ErrRootConflict, ErrOrgScopeRequired\) are compared with errors.Is.
+
 ## Index
 
+- [Variables](<#variables>)
+- [type CaDb](<#CaDb>)
+- [type CaReadonlyDb](<#CaReadonlyDb>)
 - [type OrgsDb](<#OrgsDb>)
 - [type OrgsReadonlyDb](<#OrgsReadonlyDb>)
 - [type Provider](<#Provider>)
   - [func New\(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator\) \(Provider, error\)](<#New>)
 
+
+## Variables
+
+<a name="ErrAlreadyRevoked"></a>Errors of the CA mutations that the caller resolves from the current state
+
+```go
+var (
+    // ErrAlreadyRevoked is returned by RevokeCertificate for a certificate
+    // whose status is Revoked
+    ErrAlreadyRevoked = pgsql.ErrAlreadyRevoked
+    // ErrStaleCrlNumber is returned by PublishCrl when the CRL number is not
+    // greater than the issuer's current one
+    ErrStaleCrlNumber = pgsql.ErrStaleCrlNumber
+    // ErrRootConflict is returned by RegisterRoot when the certificate is
+    // registered in another scope
+    ErrRootConflict = pgsql.ErrRootConflict
+    // ErrOrgScopeRequired is returned by a List of CA rows whose request
+    // names neither an org, nor the platform, nor every org
+    ErrOrgScopeRequired = query.ErrOrgScopeRequired
+)
+```
+
+<a name="CaDb"></a>
+## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L208-L259>)
+
+CaDb defines an interface for CRUD operations on the CA tables. Every mutation of an existing row names the exact org scope of the row \(a zero orgID is the platform\), so a row of another org is not found or not deleted. State changes that must agree are one transaction: a certificate and its issue event, a revocation and the certificate status, a CRL and the issuer's CRL number.
+
+```go
+type CaDb interface {
+    CaReadonlyDb
+
+    // RegisterIssuer inserts an issuer: a Pending one with its CSR, any
+    // other status with its certificate
+    RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
+    // UpdateIssuer changes the lifecycle status or the runtime settings of
+    // an issuer; Destroyed also clears the protected key material
+    UpdateIssuer(ctx context.Context, req *query.UpdateIssuerRequest) (*model.Issuer, error)
+    // ActivateIssuer sets the certificate of a Pending issuer of the model's
+    // org, clears its CSR and makes it Active; an issuer that is not
+    // Pending is not found
+    ActivateIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
+    // DeleteIssuer deletes an issuer and its current CRL; the certificates
+    // it issued are kept
+    DeleteIssuer(ctx context.Context, orgID, id uint64) (int64, error)
+
+    // RegisterRoot registers a trust anchor; the same certificate in the
+    // same scope updates its trust, in another scope fails with
+    // ErrRootConflict
+    RegisterRoot(ctx context.Context, m *model.RootCertificate) (*model.RootCertificate, error)
+    // DeleteRoot deletes a trust anchor
+    DeleteRoot(ctx context.Context, orgID, id uint64) (int64, error)
+
+    // RegisterProfile creates a certificate profile, or replaces the
+    // profile with the same label in the same scope
+    RegisterProfile(ctx context.Context, m *model.CertificateProfile) (*model.CertificateProfile, error)
+    // DeleteProfile deletes a certificate profile
+    DeleteProfile(ctx context.Context, orgID, id uint64) (int64, error)
+
+    // RegisterCertificate inserts the issuance record of a certificate and,
+    // when an event is given, records it in the same transaction with the
+    // certificate as its reference
+    RegisterCertificate(ctx context.Context, m *model.Certificate, evt *model.Event) (*model.Certificate, error)
+    // UpdateCertificate replaces the label, the client metadata or the
+    // published locations of a certificate
+    UpdateCertificate(ctx context.Context, req *query.UpdateCertificateRequest) (*model.Certificate, error)
+    // RevokeCertificate records the revocation and sets the certificate
+    // status to Revoked in one transaction; a revoked certificate fails
+    // with ErrAlreadyRevoked
+    RevokeCertificate(ctx context.Context, req *query.RevokeCertificateRequest) (*model.RevokedCertificate, error)
+    // DeleteCertificate deletes a certificate and its revocation
+    DeleteCertificate(ctx context.Context, orgID, id uint64) (int64, error)
+
+    // PublishCrl stores the current CRL of an issuer and records its number
+    // on the issuer in one transaction; the CRL's IKID must be the issuer's
+    // SKID, and a number that is not greater than the issuer's fails with
+    // ErrStaleCrlNumber. The tenancy and issuer name come from the issuer.
+    PublishCrl(ctx context.Context, m *model.Crl) (*model.Crl, error)
+    // DeleteCrl deletes the current CRL of the issuer with the key identifier
+    DeleteCrl(ctx context.Context, orgID uint64, ikid string) (int64, error)
+}
+```
+
+<a name="CaReadonlyDb"></a>
+## type [CaReadonlyDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L148-L200>)
+
+CaReadonlyDb defines an interface for Read operations on the CA tables: issuers, trust anchors, profiles, certificates, revocations and CRLs. Rows with a zero OrgID are the platform's \(org\_id IS NULL\). A Get by ID returns the row of any scope and the caller verifies its org and project; a List names its org scope \(OrgID, Platform or AllOrgs\) or fails with ErrOrgScopeRequired.
+
+```go
+type CaReadonlyDb interface {
+    xdb.IDGenerator
+
+    // GetIssuer returns an issuer by ID
+    GetIssuer(ctx context.Context, id uint64) (*model.Issuer, error)
+    // FindIssuer returns the issuer of the exact scope and label: a zero
+    // orgID is the platform scope and a zero projectID the org scope
+    FindIssuer(ctx context.Context, orgID, projectID uint64, label string) (*model.Issuer, error)
+    // GetIssuerBySKID returns the issuer by its Subject Key Identifier, which
+    // is the IKID of the certificates and CRLs it issued
+    GetIssuerBySKID(ctx context.Context, skid string) (*model.Issuer, error)
+    // ListIssuers lists issuers, newest first
+    ListIssuers(ctx context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error)
+
+    // GetRoot returns a trust anchor by ID
+    GetRoot(ctx context.Context, id uint64) (*model.RootCertificate, error)
+    // ListRoots lists trust anchors, newest first
+    ListRoots(ctx context.Context, req *query.ListRootsRequest) (*model.RootCertificateResult, error)
+
+    // GetProfile returns a certificate profile by ID
+    GetProfile(ctx context.Context, id uint64) (*model.CertificateProfile, error)
+    // FindProfile returns the profile of the exact scope and label: a zero
+    // orgID is the platform scope and a zero projectID the org scope
+    FindProfile(ctx context.Context, orgID, projectID uint64, label string) (*model.CertificateProfile, error)
+    // ListProfiles lists certificate profiles, newest first
+    ListProfiles(ctx context.Context, req *query.ListProfilesRequest) (*model.CertificateProfileResult, error)
+
+    // GetCertificate returns a certificate by ID
+    GetCertificate(ctx context.Context, id uint64) (*model.Certificate, error)
+    // GetCertificateBySha256 returns a certificate by its hex encoded
+    // SHA-256 thumbprint
+    GetCertificateBySha256(ctx context.Context, sha256 string) (*model.Certificate, error)
+    // GetCertificateByIssuerSerial returns a certificate by the key
+    // identifier of its issuer and its serial number
+    GetCertificateByIssuerSerial(ctx context.Context, ikid, serial string) (*model.Certificate, error)
+    // ListCertificates lists certificates, newest first
+    ListCertificates(ctx context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error)
+
+    // GetRevoked returns the revocation of a certificate by its ID, or by the
+    // key identifier of its issuer and its serial number
+    GetRevoked(ctx context.Context, req *query.GetRevokedRequest) (*model.Revoked, error)
+    // ListRevoked lists revocations, newest first; a CRL is built from the
+    // revocations of an issuer that are still valid
+    ListRevoked(ctx context.Context, req *query.ListRevokedRequest) (*model.RevokedResult, error)
+    // ListRevokedCertificates lists revoked certificates with their
+    // certificate columns, newest revocation first
+    ListRevokedCertificates(ctx context.Context, req *query.ListRevokedCertificatesRequest) (*model.RevokedCertificateResult, error)
+
+    // GetCrl returns the current CRL of the issuer with the key identifier
+    GetCrl(ctx context.Context, ikid string) (*model.Crl, error)
+    // ListCrls lists the current CRLs, newest first
+    ListCrls(ctx context.Context, req *query.ListCrlsRequest) (*model.CrlResult, error)
+}
+```
 
 <a name="OrgsDb"></a>
 ## type [OrgsDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L78-L140>)
@@ -146,7 +306,7 @@ type OrgsReadonlyDb interface {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L143-L147>)
+## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L278-L283>)
 
 Provider provides complete DB access
 
@@ -155,11 +315,12 @@ type Provider interface {
     xdb.Provider
 
     OrgsDb
+    CaDb
 }
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L150>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L286>)
 
 ```go
 func New(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator) (Provider, error)

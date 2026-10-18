@@ -9,6 +9,7 @@ import (
 	"github.com/effective-security/trustyca/server/service/admin"
 	"github.com/effective-security/trustyca/server/service/auth"
 	"github.com/effective-security/trustyca/server/service/ca"
+	"github.com/effective-security/trustyca/server/service/cis"
 	"github.com/effective-security/trustyca/server/service/orgs"
 	"github.com/effective-security/trustyca/server/service/status"
 	"github.com/effective-security/trustyca/server/service/ui"
@@ -19,6 +20,7 @@ var Factories = map[string]gserver.ServiceFactory{
 	admin.ServiceName:  admin.Factory,
 	auth.ServiceName:   auth.Factory,
 	ca.ServiceName:     ca.Factory,
+	cis.ServiceName:    cis.Factory,
 	orgs.ServiceName:   orgs.Factory,
 	status.ServiceName: status.Factory,
 	ui.ServiceName:     ui.Factory,
