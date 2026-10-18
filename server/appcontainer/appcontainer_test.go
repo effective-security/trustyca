@@ -10,6 +10,7 @@ import (
 	"github.com/effective-security/porto/pkg/tasks"
 	"github.com/effective-security/trustyca/api/client"
 	"github.com/effective-security/trustyca/internal/authctx"
+	"github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/x/guid"
@@ -92,8 +93,11 @@ func TestAppContainer(t *testing.T) {
 		_ client.Factory,
 		_ authctx.Authorizer,
 		_ *oauth2client.Provider,
+		registry *ca.Registry,
 	) {
+		// the platform issuers of ca.bootstrap_config are mirrored into
+		// the DB when the registry is provided
+		require.NotNil(t, registry)
 	})
 	require.NoError(t, err)
-
 }

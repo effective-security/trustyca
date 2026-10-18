@@ -113,6 +113,15 @@ func Test_Issuer(t *testing.T) {
 	require.Len(t, list.Rows, 1)
 	assert.Equal(t, prjIssuer.ID.UInt64(), list.Rows[0].ID.UInt64())
 
+	// the org-wide rows and the rows of the caller's projects
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), ProjectIDs: []uint64{project.ID.UInt64()}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, list.Rows, 3)
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), ProjectIDs: []uint64{project.ID.UInt64() + 1}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, list.Rows, 1)
+	assert.Equal(t, orgIssuer.ID.UInt64(), list.Rows[0].ID.UInt64(), "no grant in the project: the org-wide rows only")
+
 	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), ParentID: orgIssuer.ID.UInt64(), Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 1)

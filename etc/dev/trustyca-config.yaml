@@ -89,7 +89,15 @@ orgs:
   default_org_name: Default
   default_project_name: Default
 
-authority: ${TRUSTYCA_CONFIG_DIR}/ca-config.local.yaml
+# configuration for the Certification Authority
+ca:
+  # the authority configuration of the platform issuers and profiles,
+  # mirrored into platform rows at startup
+  bootstrap_config: ${TRUSTYCA_CONFIG_DIR}/ca-config.local.yaml
+  # the staleness bound of the issuers and profiles cached in memory
+  issuer_cache_ttl: 5m
+  # the number of issuers kept in memory
+  issuer_cache_size: 1000
 
 # configuration for crypto providers
 crypto_provider:

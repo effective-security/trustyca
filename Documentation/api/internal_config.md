@@ -13,14 +13,15 @@ import "github.com/effective-security/trustyca/internal/config"
 - [func LoadForHostName\(configFile, hostnameOverride string, config any\) error](<#LoadForHostName>)
 - [func LoadWithOverride\(configFile, configOverride string, config any, sc configloader.SecretProvider\) error](<#LoadWithOverride>)
 - [type Auth](<#Auth>)
+- [type CA](<#CA>)
 - [type Cache](<#Cache>)
 - [type Configuration](<#Configuration>)
   - [func Load\(configFile string\) \(\*Configuration, error\)](<#Load>)
+- [type CryptoProv](<#CryptoProv>)
 - [type Orgs](<#Orgs>)
 - [type SQL](<#SQL>)
 - [type Service](<#Service>)
 - [type Task](<#Task>)
-- [type Trusty](<#Trusty>)
 
 
 ## Constants
@@ -73,7 +74,7 @@ func LoadWithOverride(configFile, configOverride string, config any, sc configlo
 LoadWithOverride will load the configuration from the named config and optional override file
 
 <a name="Auth"></a>
-## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L73-L93>)
+## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L78-L98>)
 
 Auth specifies the authentication configuration
 
@@ -101,8 +102,31 @@ type Auth struct {
 }
 ```
 
+<a name="CA"></a>
+## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L148-L162>)
+
+CA specifies the Certification Authority configuration
+
+```go
+type CA struct {
+    // BootstrapConfig specifies the authority configuration file with the
+    // platform issuers and profiles. They are mirrored into the platform
+    // rows (org_id IS NULL) at startup; empty disables the bootstrap.
+    BootstrapConfig string `json:"bootstrap_config" yaml:"bootstrap_config"`
+
+    // IssuerCacheTTL bounds the staleness of the issuers and profiles the CA
+    // keeps in memory: a change made by another instance is visible after
+    // the TTL. The default is 5 minutes.
+    IssuerCacheTTL time.Duration `json:"issuer_cache_ttl" yaml:"issuer_cache_ttl"`
+
+    // IssuerCacheSize is the number of issuers kept in memory; the least
+    // recently used issuer is evicted first. The default is 1000.
+    IssuerCacheSize int `json:"issuer_cache_size" yaml:"issuer_cache_size"`
+}
+```
+
 <a name="Cache"></a>
-## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L96-L106>)
+## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L101-L111>)
 
 Cache specifies configuration of the cache.
 
@@ -121,7 +145,7 @@ type Cache struct {
 ```
 
 <a name="Configuration"></a>
-## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L19-L55>)
+## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L21-L60>)
 
 Configuration contains the user configurable data for the service
 
@@ -154,11 +178,14 @@ type Configuration struct {
     // Tasks specifies array of tasks
     Tasks []Task `json:"tasks" yaml:"tasks"`
 
-    // Trusty specifies the Trusty configuration
-    Trusty Trusty `json:"trusty" yaml:"trusty"`
-
     // Orgs specifies the Orgs configuration
     Orgs Orgs `json:"orgs" yaml:"orgs"`
+
+    // CryptoProv specifies the configuration for crypto providers
+    CryptoProv CryptoProv `json:"crypto_provider" yaml:"crypto_provider"`
+
+    // CA specifies the Certification Authority configuration
+    CA  CA  `json:"ca" yaml:"ca"`
 }
 ```
 
@@ -171,8 +198,26 @@ func Load(configFile string) (*Configuration, error)
 
 Load will load the configuration from the named config file, apply any overrides, and resolve relative directory locations.
 
+<a name="CryptoProv"></a>
+## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L136-L145>)
+
+CryptoProv specifies the configuration for crypto providers
+
+```go
+type CryptoProv struct {
+    // Default specifies the location of the configuration file for default provider
+    Default string `json:"default,omitempty" yaml:"default,omitempty"`
+
+    // Providers specifies the list of locations of the configuration files
+    Providers []string `json:"providers,omitempty" yaml:"providers,omitempty"`
+
+    // PKCS11Manufacturers specifies the list of supported manufactures of PKCS11 tokens
+    PKCS11Manufacturers []string `json:"pkcs11_manufacturers,omitempty" yaml:"pkcs11_manufacturers,omitempty"`
+}
+```
+
 <a name="Orgs"></a>
-## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L125-L132>)
+## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L126-L133>)
 
 Orgs specifies the Orgs configuration
 
@@ -213,7 +258,7 @@ type SQL struct {
 ```
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L58-L70>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L63-L75>)
 
 Service specifies the basic service info
 
@@ -234,7 +279,7 @@ type Service struct {
 ```
 
 <a name="Task"></a>
-## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L109-L118>)
+## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L114-L123>)
 
 Task specifies configuration of a single task.
 
@@ -248,16 +293,6 @@ type Task struct {
 
     // Args specifies parameters for the task.
     Args []string `json:"args" yaml:"args"`
-}
-```
-
-<a name="Trusty"></a>
-## type [Trusty](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L121-L122>)
-
-Trusty specifies the Trusty configuration
-
-```go
-type Trusty struct {
 }
 ```
 

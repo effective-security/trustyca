@@ -52,6 +52,26 @@ LIMIT $4
 OFFSET $5`,
 		},
 		{
+			// the org-wide rows and the rows of the caller's projects
+			query.ListProfiles, []any{&query.ListProfilesRequest{OrgID: 1, ProjectIDs: []uint64{2, 3}, IssuerLabel: "L2_CA", Limit: 10}},
+			`SELECT ` + schema.CertificateProfileTableInfo.AllColumns() + ` 
+FROM trustyca.certificate_profile 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) AND issuer_label = $3 
+ORDER BY id DESC 
+LIMIT $4 
+OFFSET $5`,
+		},
+		{
+			// an exact project scope takes precedence over the visible projects
+			query.ListProfiles, []any{&query.ListProfilesRequest{OrgID: 1, Scope: pb.Scope_Org, ProjectIDs: []uint64{2}, Limit: 10}},
+			`SELECT ` + schema.CertificateProfileTableInfo.AllColumns() + ` 
+FROM trustyca.certificate_profile 
+WHERE org_id = $1 AND project_id IS NULL 
+ORDER BY id DESC 
+LIMIT $2 
+OFFSET $3`,
+		},
+		{
 			query.ListProfiles, []any{&query.ListProfilesRequest{OrgID: 1, ProjectID: 2, Limit: 10, Cursor: cursor}},
 			`SELECT ` + schema.CertificateProfileTableInfo.AllColumns() + ` 
 FROM trustyca.certificate_profile 

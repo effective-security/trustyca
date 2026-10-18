@@ -28,7 +28,7 @@ func Test_CertificateProfile(t *testing.T) {
 		},
 		AllowedExtensions: []string{"2.5.29.17"},
 		Policies: []*pb.CertificatePolicy{{
-			ID: "2.16.840.1.114569.1.1.3",
+			ID: "2.16.840.1.114569.1.1.3", // ATIS STIR/SHAKEN Certificate Policy (CP) Version 1.3
 			Qualifiers: []*pb.CertificatePolicyQualifier{{
 				Type:  "id-qt-cps",
 				Value: "https://example.com/cps",
@@ -71,8 +71,21 @@ func Test_CertificateProfile(t *testing.T) {
 	assert.Equal(t, "https://example.com/cps", p.Policies[0].Qualifiers[0].Value)
 	assert.Equal(t, "ignored", def.ID, "the definition is not modified")
 
+	// the definition carries no identity, for the rows a cache shares
+	d, err := m.Definition()
+	require.NoError(t, err)
+	assert.Empty(t, d.ID)
+	assert.Empty(t, d.OrgID)
+	assert.Empty(t, d.ProjectID)
+	assert.Equal(t, "peer", d.Label)
+	assert.Equal(t, "L2_CA", d.IssuerLabel)
+	assert.Equal(t, pb.ItemStatus_Active, d.Status)
+	assert.Equal(t, def.Expiry, d.Expiry)
+
 	m.Config = model.JSON(`{`)
 	_, err = m.Pb()
+	assert.ErrorContains(t, err, "invalid config of profile 3")
+	_, err = m.Definition()
 	assert.ErrorContains(t, err, "invalid config of profile 3")
 	assert.EqualError(t, m.SetConfig(nil), "invalid profile: required")
 

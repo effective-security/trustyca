@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/effective-security/porto/gserver"
 	appinit "github.com/effective-security/porto/pkg/appinit/config"
 	"github.com/effective-security/porto/pkg/cache"
@@ -47,17 +49,14 @@ type Configuration struct {
 	// Tasks specifies array of tasks
 	Tasks []Task `json:"tasks" yaml:"tasks"`
 
-	// Trusty specifies the Trusty configuration
-	Trusty Trusty `json:"trusty" yaml:"trusty"`
-
 	// Orgs specifies the Orgs configuration
 	Orgs Orgs `json:"orgs" yaml:"orgs"`
 
 	// CryptoProv specifies the configuration for crypto providers
 	CryptoProv CryptoProv `json:"crypto_provider" yaml:"crypto_provider"`
 
-	// Authority specifies configuration file for CA
-	Authority string `json:"authority" yaml:"authority"`
+	// CA specifies the Certification Authority configuration
+	CA CA `json:"ca" yaml:"ca"`
 }
 
 // Service specifies the basic service info
@@ -123,10 +122,6 @@ type Task struct {
 	Args []string `json:"args" yaml:"args"`
 }
 
-// Trusty specifies the Trusty configuration
-type Trusty struct {
-}
-
 // Orgs specifies the Orgs configuration
 type Orgs struct {
 	// DefaultOrgName specifies the default org name to be created for new users.
@@ -147,4 +142,21 @@ type CryptoProv struct {
 
 	// PKCS11Manufacturers specifies the list of supported manufactures of PKCS11 tokens
 	PKCS11Manufacturers []string `json:"pkcs11_manufacturers,omitempty" yaml:"pkcs11_manufacturers,omitempty"`
+}
+
+// CA specifies the Certification Authority configuration
+type CA struct {
+	// BootstrapConfig specifies the authority configuration file with the
+	// platform issuers and profiles. They are mirrored into the platform
+	// rows (org_id IS NULL) at startup; empty disables the bootstrap.
+	BootstrapConfig string `json:"bootstrap_config" yaml:"bootstrap_config"`
+
+	// IssuerCacheTTL bounds the staleness of the issuers and profiles the CA
+	// keeps in memory: a change made by another instance is visible after
+	// the TTL. The default is 5 minutes.
+	IssuerCacheTTL time.Duration `json:"issuer_cache_ttl" yaml:"issuer_cache_ttl"`
+
+	// IssuerCacheSize is the number of issuers kept in memory; the least
+	// recently used issuer is evicted first. The default is 1000.
+	IssuerCacheSize int `json:"issuer_cache_size" yaml:"issuer_cache_size"`
 }

@@ -10,6 +10,10 @@ import (
 	"github.com/lib/pq"
 )
 
+// visibleProjectsFlag marks a list limited to the org-wide rows and the rows
+// of the projects of setVisibleProjects
+const visibleProjectsFlag int32 = 1
+
 // Tenancy columns shared by the membership, invite and CA tables
 const (
 	orgIDColumn     = "org_id"
@@ -93,14 +97,37 @@ func setProjectScope(b *xdb.QueryParamsBuilder, pos uint32, projectID uint64, sc
 	}
 }
 
-// whereProjectScope adds the project scope predicate recorded by setProjectScope
+// setVisibleProjects records a list limited to the org-wide rows and the
+// rows of the projects, for a caller with grants in some projects only:
+// project_id IS NULL OR project_id = ANY(?). A nil list records nothing, and
+// an exact project scope already set by setProjectScope takes precedence.
+func setVisibleProjects(b *xdb.QueryParamsBuilder, pos uint32, projectIDs []uint64) {
+	if projectIDs == nil || b.IsSet(pos) || isNullColumn(b, projectIDColumn) {
+		return
+	}
+	ids := make([]int64, len(projectIDs))
+	for i, id := range projectIDs {
+		ids[i] = int64(id)
+	}
+	b.Set(pos, pq.Array(ids))
+	b.SetFlags(visibleProjectsFlag)
+}
+
+// whereProjectScope adds the project scope predicate recorded by
+// setProjectScope or setVisibleProjects
 func whereProjectScope(q xsql.Builder, p xdb.QueryParams, pos uint32) {
-	if isNullColumn(p, projectIDColumn) {
+	switch {
+	case isNullColumn(p, projectIDColumn):
 		q.Where(projectIDColumn + " IS NULL")
-	} else if _, ok := p.GetEnum(pos); ok {
-		q.Where(projectIDColumn + " IS NOT NULL")
-	} else if p.IsSet(pos) {
-		q.Where(projectIDColumn+" = ?", nil)
+	case !p.IsSet(pos):
+	case slices.Contains(p.GetFlags(), visibleProjectsFlag):
+		q.Where("("+projectIDColumn+" IS NULL OR "+projectIDColumn+" = ANY(?))", nil)
+	default:
+		if _, ok := p.GetEnum(pos); ok {
+			q.Where(projectIDColumn + " IS NOT NULL")
+		} else {
+			q.Where(projectIDColumn+" = ?", nil)
+		}
 	}
 }
 

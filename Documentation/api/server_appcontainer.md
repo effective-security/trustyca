@@ -17,9 +17,11 @@ import "github.com/effective-security/trustyca/server/appcontainer"
   - [func NewContainerFactory\(closer CloseRegistrator\) \*ContainerFactory](<#NewContainerFactory>)
   - [func \(f \*ContainerFactory\) CreateContainerWithDependencies\(\) \(\*dig.Container, error\)](<#ContainerFactory.CreateContainerWithDependencies>)
   - [func \(f \*ContainerFactory\) WithAuthorizerProvider\(p ProvideAuthorizerFn\) \*ContainerFactory](<#ContainerFactory.WithAuthorizerProvider>)
+  - [func \(f \*ContainerFactory\) WithCAProvider\(p ProvideCAFn\) \*ContainerFactory](<#ContainerFactory.WithCAProvider>)
   - [func \(f \*ContainerFactory\) WithCacheProvider\(p ProvideCacheFn\) \*ContainerFactory](<#ContainerFactory.WithCacheProvider>)
   - [func \(f \*ContainerFactory\) WithClientFactoryProvider\(p ProvideClientFactoryFn\) \*ContainerFactory](<#ContainerFactory.WithClientFactoryProvider>)
   - [func \(f \*ContainerFactory\) WithConfigurationProvider\(p ProvideConfigurationFn\) \*ContainerFactory](<#ContainerFactory.WithConfigurationProvider>)
+  - [func \(f \*ContainerFactory\) WithCryptoProvider\(p ProvideCryptoFn\) \*ContainerFactory](<#ContainerFactory.WithCryptoProvider>)
   - [func \(f \*ContainerFactory\) WithDataprotectionProvider\(p ProvideDataprotectionFn\) \*ContainerFactory](<#ContainerFactory.WithDataprotectionProvider>)
   - [func \(f \*ContainerFactory\) WithDbProvider\(p ProvideDbFn\) \*ContainerFactory](<#ContainerFactory.WithDbProvider>)
   - [func \(f \*ContainerFactory\) WithDiscoveryProvider\(p ProvideDiscoveryFn\) \*ContainerFactory](<#ContainerFactory.WithDiscoveryProvider>)
@@ -28,9 +30,11 @@ import "github.com/effective-security/trustyca/server/appcontainer"
   - [func \(f \*ContainerFactory\) WithSchedulerProvider\(p ProvideSchedulerFn\) \*ContainerFactory](<#ContainerFactory.WithSchedulerProvider>)
 - [type ContainerFactoryFn](<#ContainerFactoryFn>)
 - [type ProvideAuthorizerFn](<#ProvideAuthorizerFn>)
+- [type ProvideCAFn](<#ProvideCAFn>)
 - [type ProvideCacheFn](<#ProvideCacheFn>)
 - [type ProvideClientFactoryFn](<#ProvideClientFactoryFn>)
 - [type ProvideConfigurationFn](<#ProvideConfigurationFn>)
+- [type ProvideCryptoFn](<#ProvideCryptoFn>)
 - [type ProvideDataprotectionFn](<#ProvideDataprotectionFn>)
 - [type ProvideDbFn](<#ProvideDbFn>)
 - [type ProvideDiscoveryFn](<#ProvideDiscoveryFn>)
@@ -40,7 +44,7 @@ import "github.com/effective-security/trustyca/server/appcontainer"
 
 
 <a name="CloseRegistrator"></a>
-## type [CloseRegistrator](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L61-L63>)
+## type [CloseRegistrator](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L73-L75>)
 
 CloseRegistrator provides interface to release resources on close
 
@@ -89,7 +93,7 @@ func (a *Closer) OnClose(closer io.Closer)
 OnClose adds a closer to be called when application exists
 
 <a name="ContainerFactory"></a>
-## type [ContainerFactory](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L66-L80>)
+## type [ContainerFactory](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L78-L95>)
 
 ContainerFactory is default implementation
 
@@ -100,7 +104,7 @@ type ContainerFactory struct {
 ```
 
 <a name="NewContainerFactory"></a>
-### func [NewContainerFactory](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L83>)
+### func [NewContainerFactory](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L98>)
 
 ```go
 func NewContainerFactory(closer CloseRegistrator) *ContainerFactory
@@ -109,7 +113,7 @@ func NewContainerFactory(closer CloseRegistrator) *ContainerFactory
 NewContainerFactory returns an instance of ContainerFactory
 
 <a name="ContainerFactory.CreateContainerWithDependencies"></a>
-### func \(\*ContainerFactory\) [CreateContainerWithDependencies](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L170>)
+### func \(\*ContainerFactory\) [CreateContainerWithDependencies](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L200>)
 
 ```go
 func (f *ContainerFactory) CreateContainerWithDependencies() (*dig.Container, error)
@@ -118,7 +122,7 @@ func (f *ContainerFactory) CreateContainerWithDependencies() (*dig.Container, er
 CreateContainerWithDependencies returns an instance of Container
 
 <a name="ContainerFactory.WithAuthorizerProvider"></a>
-### func \(\*ContainerFactory\) [WithAuthorizerProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L155>)
+### func \(\*ContainerFactory\) [WithAuthorizerProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L185>)
 
 ```go
 func (f *ContainerFactory) WithAuthorizerProvider(p ProvideAuthorizerFn) *ContainerFactory
@@ -126,8 +130,17 @@ func (f *ContainerFactory) WithAuthorizerProvider(p ProvideAuthorizerFn) *Contai
 
 WithAuthorizerProvider allows to specify custom RoleChecker provider
 
+<a name="ContainerFactory.WithCAProvider"></a>
+### func \(\*ContainerFactory\) [WithCAProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L137>)
+
+```go
+func (f *ContainerFactory) WithCAProvider(p ProvideCAFn) *ContainerFactory
+```
+
+WithCAProvider allows to specify a custom provider of the CA issuer registry
+
 <a name="ContainerFactory.WithCacheProvider"></a>
-### func \(\*ContainerFactory\) [WithCacheProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L113>)
+### func \(\*ContainerFactory\) [WithCacheProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L143>)
 
 ```go
 func (f *ContainerFactory) WithCacheProvider(p ProvideCacheFn) *ContainerFactory
@@ -136,7 +149,7 @@ func (f *ContainerFactory) WithCacheProvider(p ProvideCacheFn) *ContainerFactory
 WithCacheProvider allows to specify Cache provider
 
 <a name="ContainerFactory.WithClientFactoryProvider"></a>
-### func \(\*ContainerFactory\) [WithClientFactoryProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L131>)
+### func \(\*ContainerFactory\) [WithClientFactoryProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L161>)
 
 ```go
 func (f *ContainerFactory) WithClientFactoryProvider(p ProvideClientFactoryFn) *ContainerFactory
@@ -145,7 +158,7 @@ func (f *ContainerFactory) WithClientFactoryProvider(p ProvideClientFactoryFn) *
 WithClientFactoryProvider allows to specify custom client.Factory provider
 
 <a name="ContainerFactory.WithConfigurationProvider"></a>
-### func \(\*ContainerFactory\) [WithConfigurationProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L107>)
+### func \(\*ContainerFactory\) [WithConfigurationProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L124>)
 
 ```go
 func (f *ContainerFactory) WithConfigurationProvider(p ProvideConfigurationFn) *ContainerFactory
@@ -153,8 +166,17 @@ func (f *ContainerFactory) WithConfigurationProvider(p ProvideConfigurationFn) *
 
 WithConfigurationProvider allows to specify configuration
 
+<a name="ContainerFactory.WithCryptoProvider"></a>
+### func \(\*ContainerFactory\) [WithCryptoProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L130>)
+
+```go
+func (f *ContainerFactory) WithCryptoProvider(p ProvideCryptoFn) *ContainerFactory
+```
+
+WithCryptoProvider allows to specify custom Crypto loader
+
 <a name="ContainerFactory.WithDataprotectionProvider"></a>
-### func \(\*ContainerFactory\) [WithDataprotectionProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L125>)
+### func \(\*ContainerFactory\) [WithDataprotectionProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L155>)
 
 ```go
 func (f *ContainerFactory) WithDataprotectionProvider(p ProvideDataprotectionFn) *ContainerFactory
@@ -163,7 +185,7 @@ func (f *ContainerFactory) WithDataprotectionProvider(p ProvideDataprotectionFn)
 WithDataprotectionProvider allows to specify Data protection provider
 
 <a name="ContainerFactory.WithDbProvider"></a>
-### func \(\*ContainerFactory\) [WithDbProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L143>)
+### func \(\*ContainerFactory\) [WithDbProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L173>)
 
 ```go
 func (f *ContainerFactory) WithDbProvider(p ProvideDbFn) *ContainerFactory
@@ -172,7 +194,7 @@ func (f *ContainerFactory) WithDbProvider(p ProvideDbFn) *ContainerFactory
 WithDbProvider allows to specify custom DB provider
 
 <a name="ContainerFactory.WithDiscoveryProvider"></a>
-### func \(\*ContainerFactory\) [WithDiscoveryProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L119>)
+### func \(\*ContainerFactory\) [WithDiscoveryProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L149>)
 
 ```go
 func (f *ContainerFactory) WithDiscoveryProvider(p ProvideDiscoveryFn) *ContainerFactory
@@ -181,7 +203,7 @@ func (f *ContainerFactory) WithDiscoveryProvider(p ProvideDiscoveryFn) *Containe
 WithDiscoveryProvider allows to specify Discovery
 
 <a name="ContainerFactory.WithJwtProvider"></a>
-### func \(\*ContainerFactory\) [WithJwtProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L137>)
+### func \(\*ContainerFactory\) [WithJwtProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L167>)
 
 ```go
 func (f *ContainerFactory) WithJwtProvider(p ProvideJwtFn) *ContainerFactory
@@ -190,7 +212,7 @@ func (f *ContainerFactory) WithJwtProvider(p ProvideJwtFn) *ContainerFactory
 WithJwtProvider allows to specify custom JWT provider
 
 <a name="ContainerFactory.WithOAuth2ClientsProvider"></a>
-### func \(\*ContainerFactory\) [WithOAuth2ClientsProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L161>)
+### func \(\*ContainerFactory\) [WithOAuth2ClientsProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L191>)
 
 ```go
 func (f *ContainerFactory) WithOAuth2ClientsProvider(p ProvideOAuth2ClientsFn) *ContainerFactory
@@ -199,7 +221,7 @@ func (f *ContainerFactory) WithOAuth2ClientsProvider(p ProvideOAuth2ClientsFn) *
 WithOAuth2ClientsProvider allows to specify custom OAuth2 clients provider
 
 <a name="ContainerFactory.WithSchedulerProvider"></a>
-### func \(\*ContainerFactory\) [WithSchedulerProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L149>)
+### func \(\*ContainerFactory\) [WithSchedulerProvider](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L179>)
 
 ```go
 func (f *ContainerFactory) WithSchedulerProvider(p ProvideSchedulerFn) *ContainerFactory
@@ -208,7 +230,7 @@ func (f *ContainerFactory) WithSchedulerProvider(p ProvideSchedulerFn) *Containe
 WithSchedulerProvider allows to specify custom Scheduler
 
 <a name="ContainerFactoryFn"></a>
-## type [ContainerFactoryFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L31>)
+## type [ContainerFactoryFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L37>)
 
 ContainerFactoryFn defines an app container factory interface
 
@@ -217,7 +239,7 @@ type ContainerFactoryFn func() (*dig.Container, error)
 ```
 
 <a name="ProvideAuthorizerFn"></a>
-## type [ProvideAuthorizerFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L55>)
+## type [ProvideAuthorizerFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L61>)
 
 ProvideAuthorizerFn defines role checker provider
 
@@ -225,8 +247,17 @@ ProvideAuthorizerFn defines role checker provider
 type ProvideAuthorizerFn func(trustycaDb db.OrgsDb) authctx.Authorizer
 ```
 
+<a name="ProvideCAFn"></a>
+## type [ProvideCAFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L70>)
+
+ProvideCAFn defines the provider of the CA issuer registry
+
+```go
+type ProvideCAFn func(cfg *config.Configuration, crypto *cryptoprov.Crypto, dp dataprotection.Provider, caDb db.CaDb) (*ca.Registry, error)
+```
+
 <a name="ProvideCacheFn"></a>
-## type [ProvideCacheFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L167>)
+## type [ProvideCacheFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L197>)
 
 ProvideCacheFn defines Cache provider
 
@@ -235,7 +266,7 @@ type ProvideCacheFn func(cfg *config.Configuration, closer CloseRegistrator) (ca
 ```
 
 <a name="ProvideClientFactoryFn"></a>
-## type [ProvideClientFactoryFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L49>)
+## type [ProvideClientFactoryFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L55>)
 
 ProvideClientFactoryFn defines client.Facroty provider
 
@@ -244,7 +275,7 @@ type ProvideClientFactoryFn func(cfg *config.Configuration) (client.Factory, err
 ```
 
 <a name="ProvideConfigurationFn"></a>
-## type [ProvideConfigurationFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L34>)
+## type [ProvideConfigurationFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L40>)
 
 ProvideConfigurationFn defines Configuration provider
 
@@ -252,8 +283,17 @@ ProvideConfigurationFn defines Configuration provider
 type ProvideConfigurationFn func() (*config.Configuration, error)
 ```
 
+<a name="ProvideCryptoFn"></a>
+## type [ProvideCryptoFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L67>)
+
+ProvideCryptoFn defines Crypto provider
+
+```go
+type ProvideCryptoFn func(cfg *config.Configuration) (*cryptoprov.Crypto, error)
+```
+
 <a name="ProvideDataprotectionFn"></a>
-## type [ProvideDataprotectionFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L52>)
+## type [ProvideDataprotectionFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L58>)
 
 ProvideDataprotectionFn defines data protection provider
 
@@ -262,7 +302,7 @@ type ProvideDataprotectionFn func() (dataprotection.Provider, error)
 ```
 
 <a name="ProvideDbFn"></a>
-## type [ProvideDbFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L46>)
+## type [ProvideDbFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L52>)
 
 ProvideDbFn defines DB provider
 
@@ -271,7 +311,7 @@ type ProvideDbFn func(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.Org
 ```
 
 <a name="ProvideDiscoveryFn"></a>
-## type [ProvideDiscoveryFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L37>)
+## type [ProvideDiscoveryFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L43>)
 
 ProvideDiscoveryFn defines Discovery provider
 
@@ -280,7 +320,7 @@ type ProvideDiscoveryFn func() (discovery.Discovery, error)
 ```
 
 <a name="ProvideJwtFn"></a>
-## type [ProvideJwtFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L43>)
+## type [ProvideJwtFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L49>)
 
 ProvideJwtFn defines JWT provider
 
@@ -289,7 +329,7 @@ type ProvideJwtFn func(cfg *config.Configuration, dp dataprotection.Provider) (j
 ```
 
 <a name="ProvideOAuth2ClientsFn"></a>
-## type [ProvideOAuth2ClientsFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L58>)
+## type [ProvideOAuth2ClientsFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L64>)
 
 ProvideOAuth2ClientsFn defines OAuth2 clients provider
 
@@ -298,7 +338,7 @@ type ProvideOAuth2ClientsFn func(cfg *config.Configuration) (*oauth2client.Provi
 ```
 
 <a name="ProvideSchedulerFn"></a>
-## type [ProvideSchedulerFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L40>)
+## type [ProvideSchedulerFn](<https://github.com/effective-security/trustyca/blob/main/server/appcontainer/appcontainer.go#L46>)
 
 ProvideSchedulerFn defines Scheduler provider
 

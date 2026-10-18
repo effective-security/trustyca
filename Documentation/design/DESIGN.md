@@ -367,46 +367,107 @@ records where the CRL was uploaded when external publishing is enabled.
 
 ### 5.1 Two sources of issuers
 
-1. **Bootstrap (platform) issuers** come from `etc/dev/ca-config.bootstrap.yaml`
-   style files loaded with `authority.LoadConfig`. They are the service's own
-   Root, L1 and L2 CAs and are created offline with `hsm-tool`. On startup they
-   are mirrored into `issuer` rows with `org_id IS NULL` so that CIS can serve
-   their CRLs and chains through the same tables. Their profiles are loaded as
-   `certificate_profile` rows with `org_id IS NULL`.
+1. **Bootstrap (platform) issuers** come from `etc/dev/ca-config.local.yaml`
+   style files (`ca.bootstrap_config`) loaded with `authority.LoadConfig`.
+   They are the service's own Root, L1 and L2 CAs and are created offline
+   with `hsm-tool`. On startup `internal/ca.Bootstrap` mirrors them into
+   `issuer` rows with `org_id IS NULL`, so that platform issuers sign tenant
+   CA certificates and CIS serves their chains and CRLs through the same
+   tables; the root bundle becomes `root_certificate` rows and the profiles
+   `certificate_profile` rows with `org_id IS NULL`. The key file of an
+   issuer is either a key URI, stored as the key reference, or key material,
+   stored wrapped (section 5.3); both are checked against the certificate.
+   The bootstrap is idempotent: a registered issuer with the same key only
+   has its runtime settings refreshed, and a certificate for a new key is an
+   error until the old issuer is archived under another label (section 5.4).
+   A `disabled` issuer is archived, so that it stops signing on every
+   instance, and becomes Active again when the configuration enables it; a
+   destroyed one is an error. The anchor of a root issuer is registered
+   again on every start, since it is a separate row. After the rows, every
+   enabled issuer is loaded with its key and delegated OCSP profile, and
+   one that does not load fails the start rather than the first request.
+   The URL templates of file issuers use `:ISSUER_ID`, because the config
+   loader expands `${...}` as environment variables.
 2. **Tenant issuers** are created through `pb.CA` and live only in the DB.
 
-The CA keeps an in-memory `authority.Authority` per issuer, built lazily from
-the DB row and the crypto provider, and invalidated on `UpdateIssuer` or when
-the row's `updated_at` changes.
+The CA does not keep one `authority.Authority`: that registry is keyed by
+label, and the labels of different orgs, and of different projects of one
+org, collide. The issuer registry of `internal/ca` resolves the issuer and
+the profile of every request in the scope of the request (section 6) and
+keeps the built `authority.Issuer` per issuer row ID, which is unique across
+orgs, in a cache bounded by size and by `ca.issuer_cache_ttl`; the
+resolutions of a scope and label are cached under the requested scope. A
+mutation made through the service invalidates its entries at once; one made
+by another instance is visible after the TTL. Profiles are registered on the
+issuer under a versioned name (the profile row ID and its `updated_at`), so
+one issuer serves the profiles of several scopes with equal labels, and a
+replaced profile is picked up without rebuilding the issuer.
+
+#### Decision: an issuer registry, not an authority per org
+
+The single `authority.Authority` of the stand-alone CA was kept as long as
+the service had no tenants. Two multi-tenant shapes were weighed:
+
+| Option                                                                                     | Pros                                                       | Cons                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A: one `Authority`, issuers registered as `{org}_{label}`, every issuer loaded at startup | lookups are a map read; issuers are warm                    | startup loads and holds every tenant key; one typo in the prefix crosses a tenant boundary; no project scope; a broken tenant issuer fails the start          |
+| B: an `Authority` per org, created on demand and kept in an LRU                            | explicit boundaries; only the orgs in use are in memory     | still keyed by label, so project-scoped issuers and profiles of one org collide; cannot apply project shadowing; cold orgs pay a full load                    |
+
+The registry is option B at the granularity the data model has: the cache
+key is the issuer row, the resolution follows the `(org, project, label)`
+scopes of the DB, and the `authority.Issuer` is the signing object only.
+The measurements of PLAN.md (phase 2a) show the warm resolution costs
+about 0.3 µs against a software ECDSA P-256 signature of about 190 µs, and a
+cold issuer costs the DB lookups plus about 0.2 ms of construction once per
+TTL.
 
 ### 5.2 Creating a tenant issuer
 
 | Shape                | Request                                                             | Result                                                                                                                                                                                            |
 | -------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Self-signed root     | `Type = Root`, no `ParentID`, `Profile` = a CA profile with `is_ca` | `Active`, root inserted in `root_certificate`                                                                                                                                                     |
-| Signed inside the CA | `ParentID` set                                                      | parent must be in the same org, or a platform issuer whose `config.allowed_profiles` contains `Profile`. This is how SHAKEN delegated CAs are issued per org from the platform `DELEGATED_L1_CA`. |
-| Externally signed    | no `ParentID`, `Type != Root`                                       | key generated, `Pending` with `Csr`; `ActivateIssuer` uploads the certificate and chain                                                                                                           |
+| Signed inside the CA | `ParentID` set, `Type != Root`                                      | parent must be an Active issuer visible from the scope of the new issuer (org-wide, or of the same project), or a platform issuer whose `config.allowed_profiles` contains `Profile`; the CA profile is resolved in the scope of the parent (section 6). The chain of the parent must leave room for a subordinate CA with the profile's `max_path_len` (RFC 5280 pathLenConstraint): an issuing CA with path length zero signs no subordinate. A `Root` with a `ParentID` is refused: only a self-signed certificate is a trust anchor. This is how SHAKEN delegated CAs are issued per org from the platform `DELEGATED_L1_CA`. |
+| Externally signed    | no `ParentID`, `Type != Root`                                       | key generated, `Pending` with `Csr` and the key identifier of the key as `skid`; `ActivateIssuer` uploads the certificate and chain, which must be for that key and verify to the given root                                                     |
 
 `ImportIssuer` covers bring-your-own-CA: certificate plus either a provider
-key URI (`awskms://`, `gcpkms://`, `pkcs11:`) or a PEM key that is stored
-wrapped by the `dataprotection.Provider`.
+key URI (`pkcs11:` form, as the providers export it) or a PEM key that is
+stored wrapped by the `dataprotection.Provider`; the key must match the
+certificate and the chain must verify to the given or the self-signed root.
+
+The `chain_pem` of an issuer holds the CA certificates between the issuer
+and its root, never the root itself; `root_pem` holds the root, and a
+self-signed issuer is its own root. Stored PEM has no trailing newline.
 
 ### 5.3 Keys
 
 - Default `KeySpec` is ECDSA P-256. RSA 2048 to 4096 and P-384 are accepted.
-- The key provider is chosen per issuer (`KeyProvider`) with a server default
-  configured under a new `ca.crypto` config section. Production defaults to a
-  KMS provider; `inmem` is for tests only and stores the wrapped key in
-  `key_protected`.
+- The key provider is chosen per issuer (`KeyProvider`, a `manufacturer` or
+  `manufacturer/model` of `crypto_provider`); empty is the default provider.
+  Production defaults to a KMS provider; `inmem` is for tests and
+  development only.
+- A key a provider holds is referenced by its key URI in `key_id`, with the
+  manufacturer in `key_provider`, and never leaves the provider. A software
+  key (generated by `inmem`, or given as PEM to `ImportIssuer` or in a
+  bootstrap key file) is wrapped by the `dataprotection.Provider` into
+  `key_protected`, with `key_provider = inmem` and the key label in
+  `key_id`.
 - Key labels in the provider are `trustyca/{org_id}/{project_id}/{label}`.
-- `Destroyed` calls `KeyManager.DestroyKeyPairOnSlot` where supported and
-  clears `key_protected`.
+- The key identifier of a key is the SHA-1 of its public key bits (RFC 5280
+  method 1): the SKID the CA puts in the certificates it issues, the IKID of
+  the certificates the key signs, and the issuer key hash of their OCSP
+  requests.
+- `Destroyed` calls `KeyManager.DestroyKeyPairOnSlot` where the provider
+  manages keys and clears `key_protected`; a provider key that cannot be
+  destroyed is logged for the operator.
 
 ### 5.4 Renewal
 
 Renewing an issuer means registering a new issuer with a new key (new SKID)
 and archiving the old one. Reusing a key would give two certificates the same
 SKID and make `/v1/crl/{ikid}` ambiguous, so `UNIQUE (skid)` forbids it.
+The label is unique per scope in every lifecycle status today, so the old
+issuer must be archived under another label before the new one takes the
+label; a unique index on Active issuers only is planned (ROADMAP.md).
 
 ## 6. Profiles
 
@@ -424,9 +485,29 @@ Resolution at `SignCertificate(OrgID, ProjectID, Profile, IssuerLabel)`:
 4. the caller's role at the project scope (`User` or an API key with
    `certs:issue`), when the caller is not the RA.
 
-Platform profiles are never visible to tenants. Tenant onboarding copies a set
-of template profiles into the org (a CTL command), which keeps tenant
+An inactive profile is not found and does not fall back to the org scope.
+Platform profiles are never visible to tenants; the platform scope resolves
+only for the parent of a tenant issuer. Tenant onboarding copies a set of
+template profiles into the org (a CTL command), which keeps tenant
 configuration explicit and auditable.
+
+The registry caches a resolution under the scope and label of the request,
+for `ca.issuer_cache_ttl`, and only resolutions that succeed; a request for
+an unknown profile queries the DB every time.
+
+Reads and mutations by ID follow the same visibility. The interceptor
+authorizes the scope a request names, but `GetIssuer`, `GetProfile`,
+`UpdateIssuer`, `ActivateIssuer` and `DeleteProfile` resolve a row whose
+project the request did not name, so the service authorizes the row's
+project again with the method's roles: an org-wide row is visible to every
+member of the org and to every API key of the org; a project row to the
+members with a grant in that project (an org-wide role is inherited) and to
+the API keys restricted to it. A row of a project the caller cannot read is
+not found, a row it can read but not change is forbidden. A list without a
+project returns the org-wide rows and the rows of the caller's projects for
+a member with project grants only (section 3.3); an org-wide role lists
+every project. The parent of a new issuer must be visible from the scope of
+the new issuer: platform, org-wide or the same project.
 
 ## 7. Signing flow
 
@@ -456,9 +537,13 @@ maximum) generated by `xpki/authority`.
   missing or within `crl_renewal` of `next_update` (or `Force`). CRL number is
   `issuer.crl_number + 1`. Entries come from `revoked WHERE ikid = ? AND not_after > now()`.
   The scheduled task `crl_renewal` calls the same code path.
-- `SignOCSP` resolves the issuer by IKID or by issuer key hash from the
-  request, looks up `(ikid, serial_number)` and answers `good`, `revoked` or
-  `unknown` with `ocsp_expiry` validity. When `delegated_ocsp_profile` is set the
+- `SignOCSP` resolves the issuer by the issuer key hash of the request: the
+  issuers in memory match any hash algorithm, and a SHA-1 hash is looked up
+  through the `skid` index, since it is the key identifier of a CA
+  certificate this CA issued (section 5.3). It then looks up
+  `(ikid, serial_number)` and answers `good`, `revoked` or `unknown` with
+  `ocsp_expiry` validity. The CIS route carries the IKID and will pass it on
+  (ROADMAP.md), which makes the lookup exact for every hash. When `delegated_ocsp_profile` is set the
   issuer signs with a delegated responder certificate created lazily with
   `authority.Issuer.CreateDelegatedOCSPSigner`.
 - CIS never holds issuer keys. Its OCSP handler forwards DER requests to
@@ -525,15 +610,14 @@ tenant listing: every lookup needs an IKID, serial, SKID, SHA-256 or ID.
 orgs:
   default_org_name: Default # org created for a user without grants; empty disables
   default_project_name: Default # project created in the default org; empty disables
+crypto_provider:
+  default: ${TRUSTYCA_CONFIG_DIR}/kms/aws-dev-kms.yaml # the default key provider
+  providers: [] # more providers, selected by KeyProvider
 ca:
-  bootstrap_config: ${TRUSTYCA_CONFIG_DIR}/ca-config.bootstrap.yaml
-  crypto:
-    default: ${TRUSTYCA_CONFIG_DIR}/kms-provider.yaml
-    providers: []
-  default_key_spec: { algo: ECDSA, size: 256 }
-  cis_url: https://cis.dev.trustyca.io
-  crl_publish_locations: []
-  issuer_cache_ttl: 5m
+  bootstrap_config: ${TRUSTYCA_CONFIG_DIR}/ca-config.local.yaml # platform issuers and profiles
+  issuer_cache_ttl: 5m # staleness bound of the cached issuers and profiles
+  issuer_cache_size: 1000 # issuers kept in memory
+  # planned: cis_url, crl_publish_locations (phases 4 and 5)
 tasks:
   - name: crl_renewal
     schedule: "every 10 minutes"
@@ -581,3 +665,7 @@ Metrics follow `internal/metricskey`: `ca_sign_total{profile,org}`,
   roughly 100M rows.
 - Publishing CRLs and certificates to object storage and CDN.
 - Idempotency keys on `SignCertificate` for RA retries.
+- Issuer renewal under one label: a unique index on Active issuers per
+  scope, or a rename of the archived issuer.
+- `OCSPRequest.IKID` from the CIS route, so that an issuer is found for any
+  hash algorithm without being in memory.

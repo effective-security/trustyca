@@ -11,22 +11,19 @@ import (
 	"github.com/effective-security/porto/pkg/discovery"
 	"github.com/effective-security/porto/pkg/tasks"
 	"github.com/effective-security/trustyca/api/client"
-	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/authctx"
+	"github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/internal/db"
-	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/xdb/pkg/flake"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/authority"
-	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/crypto11"
 	"github.com/effective-security/xpki/cryptoprov"
 	"github.com/effective-security/xpki/dataprotection"
 	"github.com/effective-security/xpki/jwt"
 	"github.com/effective-security/xpki/jwt/accesstoken"
 	"github.com/effective-security/xpki/jwt/oauth2client"
-	"github.com/stretchr/testify/assert/yaml"
 	"go.uber.org/dig"
 
 	// register providers
@@ -69,8 +66,8 @@ type ProvideOAuth2ClientsFn func(cfg *config.Configuration) (*oauth2client.Provi
 // ProvideCryptoFn defines Crypto provider
 type ProvideCryptoFn func(cfg *config.Configuration) (*cryptoprov.Crypto, error)
 
-// ProvideAuthorityFn defines Crypto provider
-type ProvideAuthorityFn func(cfg *config.Configuration, crypto *cryptoprov.Crypto, db db.CaDb) (*authority.Authority, error)
+// ProvideCAFn defines the provider of the CA issuer registry
+type ProvideCAFn func(cfg *config.Configuration, crypto *cryptoprov.Crypto, dp dataprotection.Provider, caDb db.CaDb) (*ca.Registry, error)
 
 // CloseRegistrator provides interface to release resources on close
 type CloseRegistrator interface {
@@ -90,7 +87,7 @@ type ContainerFactory struct {
 	dpProvider            ProvideDataprotectionFn
 	oauthProviderProvider ProvideOAuth2ClientsFn
 	cryptoProvider        ProvideCryptoFn
-	authorityProvider     ProvideAuthorityFn
+	caProvider            ProvideCAFn
 	cacheProvider         ProvideCacheFn
 	authorizerProvider    ProvideAuthorizerFn
 
@@ -120,7 +117,7 @@ func NewContainerFactory(closer CloseRegistrator) *ContainerFactory {
 		WithAuthorizerProvider(provideAuthorizer).
 		WithOAuth2ClientsProvider(provideOAuth2Clients).
 		WithCryptoProvider(provideCrypto).
-		WithAuthorityProvider(provideAuthority)
+		WithCAProvider(provideCA)
 }
 
 // WithConfigurationProvider allows to specify configuration
@@ -135,9 +132,10 @@ func (f *ContainerFactory) WithCryptoProvider(p ProvideCryptoFn) *ContainerFacto
 	return f
 }
 
-// WithAuthorityProvider allows to specify custom Authority
-func (f *ContainerFactory) WithAuthorityProvider(p ProvideAuthorityFn) *ContainerFactory {
-	f.authorityProvider = p
+// WithCAProvider allows to specify a custom provider of the CA issuer
+// registry
+func (f *ContainerFactory) WithCAProvider(p ProvideCAFn) *ContainerFactory {
+	f.caProvider = p
 	return f
 }
 
@@ -217,7 +215,7 @@ func (f *ContainerFactory) CreateContainerWithDependencies() (*dig.Container, er
 		f.authorizerProvider,
 		f.oauthProviderProvider,
 		f.cryptoProvider,
-		f.authorityProvider,
+		f.caProvider,
 	}
 
 	for idx, c := range constructors {
@@ -346,121 +344,34 @@ func provideCrypto(cfg *config.Configuration) (*cryptoprov.Crypto, error) {
 	return crypto, nil
 }
 
-func provideAuthority(cfg *config.Configuration, crypto *cryptoprov.Crypto, db db.CaDb) (*authority.Authority, error) {
-	caCfg, err := authority.LoadConfig(cfg.Authority)
-	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to authority load config")
-	}
-	ca, err := authority.NewAuthority(caCfg, crypto)
-	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to create authority")
-	}
-
-	ctx := context.Background()
-	lreq := &query.ListIssuersRequest{
-		AllOrgs: true,
-		Status:  pb.IssuerStatus_Active,
-		Limit:   100,
-	}
-	for {
-		list, err := db.ListIssuers(ctx, lreq)
+// provideCA gives the CA service its issuer registry over the CA tables,
+// the crypto providers and the data protection provider, and mirrors the
+// platform issuers and profiles of `ca.bootstrap_config` into the platform
+// rows first. The bootstrap loads every enabled platform issuer: one whose
+// key does not load or whose delegated OCSP profile does not bind fails the
+// start.
+func provideCA(cfg *config.Configuration, crypto *cryptoprov.Crypto, dp dataprotection.Provider, caDb db.CaDb) (*ca.Registry, error) {
+	keys := ca.NewKeys(crypto, dp)
+	registry := ca.NewRegistry(caDb, keys, ca.Options{
+		TTL:  cfg.CA.IssuerCacheTTL,
+		Size: cfg.CA.IssuerCacheSize,
+	})
+	if path := cfg.CA.BootstrapConfig; path != "" {
+		acfg, err := authority.LoadConfig(path)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "failed to list issuers")
+			return nil, errors.WithMessagef(err, "failed to load CA bootstrap config: %s", path)
 		}
-
-		for _, l := range list.Rows {
-			logger.KV(xlog.TRACE, "issuer", l.Label)
-
-			var cfg = new(authority.IssuerConfig)
-			err := yaml.Unmarshal([]byte(l.Config), cfg)
-			if err != nil {
-				// TODO: error on the entire service or just a log and continue?
-				logger.KV(xlog.ERROR,
-					"issuer", l.Label,
-					"org_id", l.OrgID.UInt64(),
-					"reason", "unable to decode configuration",
-					"err", err.Error())
-				continue
-			}
-
-			if cfg.Profiles == nil {
-				cfg.Profiles = make(map[string]*authority.CertProfile)
-			}
-
-			signer, err := crypto.NewSignerFromPEM([]byte(cfg.KeyFile))
-			if err != nil {
-				logger.KV(xlog.ERROR,
-					"issuer", l.Label,
-					"org_id", l.OrgID.UInt64(),
-					"reason", "unable to create signer from private key",
-					"err", err.Error())
-				continue
-			}
-
-			profiles, err := db.ListProfiles(ctx, &query.ListProfilesRequest{
-				OrgID:       l.OrgID.UInt64(),
-				IssuerLabel: cfg.Label,
-				Status:      pb.ItemStatus_Active,
-				Limit:       100,
-			})
-			if err != nil {
-				logger.KV(xlog.ERROR,
-					"issuer", l.Label,
-					"org_id", l.OrgID.UInt64(),
-					"reason", "unable to load profiles",
-					"err", err.Error())
-				continue
-			}
-
-			for _, p := range profiles.Rows {
-				var profile = new(authority.CertProfile)
-				err := yaml.Unmarshal([]byte(p.Config), profile)
-				if err != nil {
-					logger.KV(xlog.ERROR,
-						"issuer", l.Label,
-						"org_id", l.OrgID.UInt64(),
-						"profile", p.Label,
-						"reason", "unable to decode profile",
-						"err", err.Error())
-					continue
-				}
-
-				cfg.Profiles[p.Label] = profile
-				if profile.IssuerLabel == "*" {
-					ca.AddProfile(p.Label, profile)
-				}
-			}
-
-			issuer, err := authority.CreateIssuer(cfg,
-				[]byte(cfg.CertFile),
-				certutil.JoinPEM([]byte(cfg.CABundleFile), ca.CaBundle),
-				certutil.JoinPEM([]byte(cfg.RootBundleFile), ca.RootBundle),
-				signer,
-			)
-			if err != nil {
-				logger.KV(xlog.ERROR,
-					"issuer", l.Label,
-					"org_id", l.OrgID.UInt64(),
-					"reason", "unable to create issuer",
-					"err", err.Error())
-				continue
-			}
-
-			err = ca.AddIssuer(issuer)
-			if err != nil {
-				logger.KV(xlog.ERROR,
-					"issuer", l.Label,
-					"org_id", l.OrgID.UInt64(),
-					"reason", "unable to add issuer",
-					"err", err.Error())
-				continue
-			}
+		res, err := registry.Bootstrap(context.Background(), caDb, acfg)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to bootstrap CA")
 		}
-		if !list.HasNextPage {
-			break
-		}
-		lreq.Offset = list.NextOffset
+		logger.KV(xlog.INFO,
+			"status", "ca_bootstrapped",
+			"issuers", res.Issuers,
+			"updated", res.Updated,
+			"archived", res.Archived,
+			"roots", res.Roots,
+			"profiles", res.Profiles)
 	}
-
-	return ca, nil
+	return registry, nil
 }

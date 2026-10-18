@@ -7,14 +7,20 @@ the local, gitignored `FINDINGS.md`, whose IDs are not cited here.
 ## Implemented baseline
 
 [PLAN.md](Documentation/PLAN.md) phase 1: login, orgs, projects, memberships,
-invites, API keys and the authorization layer. The CA and CIS services are
-stubs; their phases (2 to 7) are planned in PLAN.md.
+invites, API keys and the authorization layer; phase 2 and 2a: the CA
+tables, the CA core library (`internal/ca`: tenant-scoped issuer registry,
+keys, platform bootstrap) and the issuer, profile, root and signing methods
+of the CA service. Certificates, CRLs and the CIS service are stubs; their
+phases (3 to 7) are planned in PLAN.md.
 
 ## Active work
 
 | ID     | Work                               | Ownership / contract                                                                                                                                                         |
 | ------ | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | RM-001 | Public precondition error contract | server/service/orgs answers HTTP 409 `conflict` / gRPC FailedPrecondition (preconditionFailed); map FailedPrecondition to 409 in porto so Go gRPC clients agree, then pin it |
+| RM-002 | Issuer renewal under one label     | `UNIQUE NULLS NOT DISTINCT (org_id, project_id, label)` on `issuer` holds in every status, so a renewed issuer cannot take the label of the archived one and `internal/ca.Bootstrap` refuses a rotated key; replace it with a unique index on Active (and Pending) issuers, or rename archived issuers, with a migration and a bootstrap that archives in place (DESIGN.md §5.4) |
+| RM-003 | OCSP issuer lookup by IKID         | `pb.OCSPRequest` carries the DER request only; the CA finds an issuer that is not in memory by a SHA-1 key hash through the `skid` index. Add an optional `IKID` that the CIS route `/v1/ocsp/{ikid}` passes on, so every hash algorithm resolves without a scan (DESIGN.md §8) |
+| RM-004 | Project-scoped issuer and profile mutations | `UpdateIssuerRequest`, `ActivateIssuerRequest` and `DeleteProfileRequest` carry no `ProjectID`, so the interceptor authorizes them at org scope and a project Admin cannot archive, activate or delete the rows of its own project. Add `ProjectID` to the three requests; the service already authorizes the resolved row against its project (`rowAccess`, DESIGN.md §6) |
 
 ## Completion policy
 
