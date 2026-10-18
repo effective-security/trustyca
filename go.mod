@@ -12,7 +12,7 @@ require (
 	github.com/effective-security/x v1.0.109
 	github.com/effective-security/xdb v0.25.165
 	github.com/effective-security/xlog v1.0.69
-	github.com/effective-security/xpki v1.0.314
+	github.com/effective-security/xpki v1.0.316
 	github.com/go-jose/go-jose/v4 v4.1.6
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
@@ -97,6 +97,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/microsoft/go-mssqldb v1.11.2 // indirect
+	github.com/miekg/pkcs11 v1.1.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oleiade/reflections v1.1.0 // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
@@ -136,5 +137,3 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/effective-security/xpki => ../xpki

@@ -83,11 +83,25 @@ cache:
     server: redis://localhost:56379
     password: redis
     client_tls:
-      trusted_ca: ${HOME}/.trustyca/certs/trusty_root_ca.pem
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
 
 orgs:
   default_org_name: Default
   default_project_name: Default
+
+authority: ${TRUSTYCA_CONFIG_DIR}/ca-config.local.yaml
+
+# configuration for crypto providers
+crypto_provider:
+  #  the location of the configuration file for default provider
+  default: ${TRUSTYCA_CONFIG_DIR}/kms/aws-dev-kms.yaml
+  # the list of locations of the configuration files
+  # providers:
+  #   - ${TRUSTYCA_CONFIG_DIR}/kms/aws-dev-kms-shaken.yaml
+  # the list of supported manufactures of PKCS11 tokens
+  pkcs11_manufacturers:
+    - SoftHSM
+    # - Gemalto NV
 
 tasks:
   # - name: health_check
@@ -102,14 +116,14 @@ servers:
     server_tls:
       cert: ${HOME}/.trustyca/certs/trustyca_server.pem
       key: ${HOME}/.trustyca/certs/trustyca_server.key
-      trusted_ca: ${HOME}/.trustyca/certs/trusty_root_ca.pem
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
       client_cert_auth: false
     services:
       - status
       - auth
       - orgs
-      - admin
       - ui
+      - cis
     timeout:
       request: 3s
     cors: &cors
@@ -219,12 +233,12 @@ servers:
     server_tls:
       cert: ${HOME}/.trustyca/certs/trustyca_peer.pem
       key: ${HOME}/.trustyca/certs/trustyca_peer.key
-      trusted_ca: ${HOME}/.trustyca/certs/trusty_root_ca.pem
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
       client_cert_auth: false
     services:
       - status
-      - auth
       - admin
+      - ca
     timeout:
       request: 3s
     cors: *cors
@@ -268,7 +282,7 @@ client:
   client_tls:
     cert: ${HOME}/.trustyca/certs/trustyca_client.pem
     key: ${HOME}/.trustyca/certs/trustyca_client.key
-    trusted_ca: ${HOME}/.trustyca/certs/trusty_root_ca.pem
+    trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
   server_url:
     wfe: http://localhost:8880
     backend: http://localhost:8881

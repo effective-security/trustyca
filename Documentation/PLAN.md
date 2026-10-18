@@ -94,7 +94,7 @@ Follow-ups in this area:
      `3_revoked_index` adds the unique `(ikid, serial_number)` index of
      `revoked` for `GetRevoked` by issuer and serial (OCSP).
    - Tenancy fails closed: a list names `OrgID`, `Platform` (`org_id IS
-     NULL`) or `AllOrgs` (`ErrOrgScopeRequired` otherwise), and every
+NULL`) or `AllOrgs` (`ErrOrgScopeRequired` otherwise), and every
      mutation of a row names its exact org, so another org's row is not
      found; `FindIssuer`/`FindProfile` take an exact scope and the label,
      the resolution `(org, project, label) -> (org, 0, label)` belongs to
@@ -127,7 +127,7 @@ Follow-ups in this area:
 
 ## Phase 3: CA gRPC service
 
-`SignCertificate` and `SignOCSP` are implemented ahead of this phase as a
+`SignCertificate` and `SignOCSP` are partially implemented ahead of this phase as a
 proof of concept on the bootstrap `authority.Authority`
 (`server/service/ca/signer.go`, `tenant.go`): the org comes from the token
 or, for a `trustyca-*` service caller, from the request and is verified
@@ -166,7 +166,7 @@ certificates and mock the DB.
 3. `server/tasks/certstatus`: mark `Expired`, apply retention
    (`ca.retention.expired_after`, default 0 = keep forever). Needs a bulk
    `UPDATE certificate SET status = Expired WHERE status = Active AND
-   not_after < ?` paged by id, and a bulk delete; the DB layer has neither.
+not_after < ?` paged by id, and a bulk delete; the DB layer has neither.
 4. Tests: CRL contents after revoke, CRL number monotonicity, OCSP good/revoked/unknown.
 
 ## Phase 5: CIS service

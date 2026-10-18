@@ -22,8 +22,6 @@ all: clean folders tools generate version change_log gen_test_certs start-locals
 
 recover: clean folders tools generate version gen_test_certs start-localstack drop-sql start-sql build dry-run
 
-
-
 #
 # clean produced files
 #
@@ -89,10 +87,26 @@ commit_version:
 	git add .; git commit -m "Updated version"
 
 trusty_root:
-	echo "*** generating trusty root CA"
+	echo "*** extracting trusty root CA"
 	mkdir -p ${PROJ_DATA_DIR}/certs
-	tar -xzvf $(PROJ_ROOT)/etc/dev/certs/root/trusty_root_ca.key.tar.gz -C $(PROJ_ROOT)/etc/dev/certs/root/
-	cp $(PROJ_ROOT)/etc/dev/certs/root/trusty_root_ca.pem ${PROJ_DATA_DIR}/certs/trusty_root_ca.pem
+	tar -xzvf $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.key.tar.gz -C $(PROJ_ROOT)/etc/dev/certs/root/
+	cp $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.pem ${PROJ_DATA_DIR}/certs/trustyca_root.pem
+
+gen_test_root:
+	echo "*** generating test root CA"
+	mkdir -p ${PROJ_DATA_DIR}/certs
+	$(PROJ_ROOT)/.project/gen_certs.sh \
+		--hsm-config inmem \
+		--ca-config $(PROJ_ROOT)/etc/dev/certs/ca-config.bootstrap.yaml \
+		--output-dir $(PROJ_ROOT)/etc/dev/certs/root \
+		--csr-dir $(PROJ_ROOT)/etc/dev/certs/csr_profile \
+		--csr-prefix trustyca_ \
+		--out-prefix trustyca_ \
+		--key-label test_root_ \
+		--root-ca $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.pem \
+		--root-ca-key $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.key \
+		--root
+	cd $(PROJ_ROOT)/etc/dev/certs/root && tar -cvzf trustyca_root.key.tar.gz trustyca_root.key
 
 gen_test_certs: trusty_root
 	echo "*** Running gen_test_certs"
@@ -105,8 +119,8 @@ gen_test_certs: trusty_root
 		--csr-prefix trustyca_ \
 		--out-prefix trustyca_ \
 		--key-label test_ \
-		--root-ca $(PROJ_ROOT)/etc/dev/certs/root/trusty_root_ca.pem \
-		--root-ca-key $(PROJ_ROOT)/etc/dev/certs/root/trusty_root_ca.key \
+		--root-ca $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.pem \
+		--root-ca-key $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.key \
 		--ca1 --ca2  --bundle --server --peer --client --force
 
 start-localstack:
@@ -114,7 +128,7 @@ start-localstack:
 	# we need re-create ${PROJ_DATA_DIR}redis folder with certs
 	rm -rf ${PROJ_DATA_DIR}/redis
 	mkdir -p ${PROJ_DATA_DIR}/redis
-	cp $(PROJ_ROOT)/etc/dev/certs/root/trusty_root_ca.pem ${PROJ_DATA_DIR}/certs/trustyca_peer.* ${PROJ_DATA_DIR}/redis
+	cp $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.pem ${PROJ_DATA_DIR}/certs/trustyca_peer.* ${PROJ_DATA_DIR}/redis
 	chmod 644 ${PROJ_DATA_DIR}/redis/*
 	#
 	PROJ_DATA_DIR=$(PROJ_DATA_DIR) docker compose -f docker-compose.trustyca.yml -p trustyca up -d --force-recreate --remove-orphans

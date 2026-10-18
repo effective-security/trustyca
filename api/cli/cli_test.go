@@ -66,7 +66,7 @@ func TestParse(t *testing.T) {
 			"--server", "",
 			"--cfg", homeDir + "/.trustyca/cli/config.yaml",
 			"--storage", homeDir + "/.trustyca/cli",
-			//"--trusted-ca", homeDir + "/.trustyca/certs/trusty_root_ca.pem",
+			//"--trusted-ca", homeDir + "/.trustyca/certs/trustyca_root.pem",
 		})
 		assert.NoError(t, err)
 		require.Equal(t, "cmd", ctx.Command())
@@ -90,7 +90,7 @@ func TestParse(t *testing.T) {
 			"--timeout", "1",
 			"--cfg", homeDir + "/.trustyca/cli/config.yaml",
 			"--storage", homeDir + "/.trustyca/cli",
-			//"--trusted-ca", homeDir + "/.trustyca/certs/trusty_root_ca.pem",
+			//"--trusted-ca", homeDir + "/.trustyca/certs/trustyca_root.pem",
 		})
 		require.NoError(t, err)
 		require.Equal(t, "cmd", ctx.Command())
@@ -140,7 +140,7 @@ func TestClients(t *testing.T) {
 		"--timeout", "1",
 		"--cfg", homeDir + "/.trustyca/cli/config.yaml",
 		"--storage", homeDir + "/.trustyca/cli",
-		//"--trusted-ca", homeDir + "/.trustyca/certs/trusty_root_ca.pem",
+		//"--trusted-ca", homeDir + "/.trustyca/certs/trustyca_root.pem",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "cmd", ctx.Command())

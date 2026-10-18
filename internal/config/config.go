@@ -52,6 +52,12 @@ type Configuration struct {
 
 	// Orgs specifies the Orgs configuration
 	Orgs Orgs `json:"orgs" yaml:"orgs"`
+
+	// CryptoProv specifies the configuration for crypto providers
+	CryptoProv CryptoProv `json:"crypto_provider" yaml:"crypto_provider"`
+
+	// Authority specifies configuration file for CA
+	Authority string `json:"authority" yaml:"authority"`
 }
 
 // Service specifies the basic service info
@@ -129,4 +135,16 @@ type Orgs struct {
 	// DefaultProjectName specifies the default project name to be created for new users.
 	// If empty, no default project will be created.
 	DefaultProjectName string `json:"default_project_name" yaml:"default_project_name"`
+}
+
+// CryptoProv specifies the configuration for crypto providers
+type CryptoProv struct {
+	// Default specifies the location of the configuration file for default provider
+	Default string `json:"default,omitempty" yaml:"default,omitempty"`
+
+	// Providers specifies the list of locations of the configuration files
+	Providers []string `json:"providers,omitempty" yaml:"providers,omitempty"`
+
+	// PKCS11Manufacturers specifies the list of supported manufactures of PKCS11 tokens
+	PKCS11Manufacturers []string `json:"pkcs11_manufacturers,omitempty" yaml:"pkcs11_manufacturers,omitempty"`
 }

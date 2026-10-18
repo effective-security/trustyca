@@ -54,7 +54,15 @@ func (s *Service) tenantOrg(ctx context.Context, reqOrgID string) (xdb.ID, error
 // as not found, so that project existence is not leaked across orgs.
 func (s *Service) tenantProject(ctx context.Context, orgID xdb.ID, reqProjectID string) (xdb.ID, error) {
 	if reqProjectID == "" {
-		return xdb.ID{}, nil
+		tctx := authctx.FromContext(ctx)
+		if tctx.IsAPIKey() {
+			if keyProjectID := tctx.ProjectID(); !keyProjectID.IsZero() {
+				reqProjectID = keyProjectID.String()
+			}
+		}
+		if reqProjectID == "" {
+			return xdb.ID{}, nil
+		}
 	}
 	projectID, err := xdb.ParseID(reqProjectID)
 	if err != nil {

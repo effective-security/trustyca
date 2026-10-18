@@ -1,0 +1,122 @@
+---
+authority:
+  ca_bundles:
+    - ${HOME}/.trustyca/certs/shaken_cabundle.pem
+  root_bundles:
+    - ${HOME}/.trustyca/certs/shaken_root.pem
+  issuers:
+    - # specifies Issuer's label
+      label: SHAKEN_G1_CA
+      type: shaken
+      cert: ${HOME}/.trustyca/certs/shaken_ca.pem
+      key: ${HOME}/.trustyca/certs/shaken_ca.key
+      # location of the CA bundle file
+      ca_bundle:
+      # location of the Root CA file
+      root_bundle:
+      aia:
+        #crl_url: https://authenticate-api.iconectiv.com/download/v1/crl
+        issuer_url:
+        ocsp_url:
+        crl_expiry:
+        crl_renewal:
+        ocsp_expiry:
+    - # specifies Issuer's label
+      label: DELEGATED_L1_CA
+      type: delegated
+      cert: ${HOME}/.trustyca/certs/shaken_delegated_l1_ca.pem
+      key: ${HOME}/.trustyca/certs/shaken_delegated_l1_ca.key
+      # location of the CA bundle file
+      ca_bundle: ${HOME}/.trustyca/certs/shaken_cabundle.pem
+      # location of the Root CA file
+      root_bundle: ${HOME}/.trustyca/certs/shaken_root.pem
+      aia:
+        #crl_url: https://authenticate-api.iconectiv.com/download/v1/crl
+        issuer_url:
+        ocsp_url:
+        crl_expiry:
+        crl_renewal:
+        ocsp_expiry:
+
+# profile:
+#
+# description: string
+# expiry: duration
+# backdate: duration
+# usages: []string
+# ocsp_no_check: bool
+# allowed_extensions: []string
+# allowed_names: regex
+# allowed_dns: regex
+# allowed_email: regex
+# allowed_fields:
+#   subject: bool
+#   dns: bool
+#   ip: bool
+#   email: bool
+#   email: uri
+# policies: []
+#   oid:
+#   qualifiers:
+# ca_constraint:
+#   is_ca:
+#   max_path_len:
+#
+profiles:
+  SHAKEN:
+    issuer_label: SHAKEN_G1_CA
+    expiry: 8760h
+    backdate: 30m
+    usages:
+      - signing
+      - digital signature
+    policies:
+      - oid: 2.16.840.1.114569.1.1.1
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.26
+    allowed_fields:
+      subject: true
+      dns: false
+      ip: false
+      email: false
+    #allowed_names: ^C=US, O=Entity Name From Registration, CN=SHAKEN .*$
+
+  # Delegated Issuing CA,
+  # issued by presense of SPC token with CA=true
+  DELEGATED_ICA:
+    issuer_label: DELEGATED_L1_CA
+    expiry: 17520h # 2 years
+    backdate: 30m
+    usages:
+      - cert sign
+    ca_constraint:
+      is_ca: true
+      max_path_len: 0
+    policies:
+      - oid: 2.16.840.1.114569.1.1.1
+      - oid: 1.3.6.1.4.1.57973.1.1
+        qualifiers:
+          - type: id-qt-cps
+            value: https://stirshaken.com/CPS
+    allowed_extensions:
+      - 2.5.29.32 # Certificate Policies
+      - 1.3.6.1.5.5.7.1.26
+
+  # issued by DELEGATED_ICA_{org_id}
+  DELEGATED:
+    issuer_label: "*"
+    expiry: 168h
+    backdate: 30m
+    usages:
+      - signing
+      - digital signature
+    policies:
+      - oid: 2.16.840.1.114569.1.1.1
+    allowed_extensions:
+      - 1.3.6.1.5.5.7.1.26
+    allowed_fields:
+      subject: true
+      dns: false
+      ip: false
+      email: false
+    #allowed_names: ^C=US, O=Entity Name From Registration, CN=SHAKEN .*$

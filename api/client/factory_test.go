@@ -21,7 +21,7 @@ func TestFactory(t *testing.T) {
 		ClientTLS: gserver.TLSInfo{
 			CertFile:      homeDir + "/.trustyca/certs/trustyca_client.pem",
 			KeyFile:       homeDir + "/.trustyca/certs/trustyca_client.key",
-			TrustedCAFile: homeDir + "/.trustyca/certs/trusty_root_ca.pem",
+			TrustedCAFile: homeDir + "/.trustyca/certs/trustyca_root.pem",
 		},
 	}, WithTLS(nil))
 	_, _, err := f.StatusClient("invalid")

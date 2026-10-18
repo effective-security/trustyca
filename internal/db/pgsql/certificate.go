@@ -24,8 +24,11 @@ func (p *Provider) RegisterCertificate(ctx context.Context, m *model.Certificate
 	if im.ID.IsZero() {
 		im.ID = p.NextID()
 	}
-	if im.Status == pb.CertificateStatus_Unknown {
+	switch im.Status {
+	case pb.CertificateStatus_Unknown:
 		im.Status = pb.CertificateStatus_Active
+	case pb.CertificateStatus_Revoked:
+		return nil, errors.New("invalid status: cannot register a revoked certificate")
 	}
 
 	err := xdb.Validate(&im)

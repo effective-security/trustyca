@@ -1,0 +1,4 @@
+---
+manufacturer: AWSKMS
+model: unittest
+attributes: Endpoint=http://localhost:54551,Region=us-west-2

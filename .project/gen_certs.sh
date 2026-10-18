@@ -141,8 +141,8 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 [ -z "$CSR_DIR" ] &&  echo "Specify --csr-dir" && exit 1
 [ -z "$CA_CONFIG" ] && echo "Specify --ca-config" && exit 1
 [ -z "$HSM_CONFIG" ] && echo "Specify --hsm-config" && exit 1
-[ -z "$ROOT_CA_CERT" ] && ROOT_CA_CERT=${OUT_DIR}/${OUT_PREFIX}root_ca.pem
-[ -z "$ROOT_CA_KEY" ] && ROOT_CA_KEY=${OUT_DIR}/${OUT_PREFIX}root_ca.key
+[ -z "$ROOT_CA_CERT" ] && ROOT_CA_CERT=${OUT_DIR}/${OUT_PREFIX}root.pem
+[ -z "$ROOT_CA_KEY" ] && ROOT_CA_KEY=${OUT_DIR}/${OUT_PREFIX}root.key
 [ -z "$SAN" ] && SAN=127.0.0.1
 
 HOSTNAME=`hostname`
@@ -174,8 +174,8 @@ if [[ "$ROOTCA" == "YES" && ("$FORCE" == "YES" || ! -f ${ROOT_CA_KEY}) ]]; then 
         csr gen-cert --self-sign \
         --ca-config ${CA_CONFIG} \
         --profile ROOT \
-        --csr-profile ${CSR_DIR}/${CSR_PREFIX}root_ca.yaml \
-        --key-label "${KEY_LABEL}${OUT_PREFIX}root_ca*" \
+        --csr-profile ${CSR_DIR}/${CSR_PREFIX}root.yaml \
+        --key-label "${KEY_LABEL}${OUT_PREFIX}root*" \
         --output ${ROOT_CA_CERT/.pem/''}
 fi
 

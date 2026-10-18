@@ -62,7 +62,7 @@ func TestMain(m *testing.M) {
 		ServerTLS: &gserver.TLSInfo{
 			CertFile:      homeDir + "/.trustyca/certs/trustyca_peer.pem",
 			KeyFile:       homeDir + "/.trustyca/certs/trustyca_peer.key",
-			TrustedCAFile: homeDir + "/.trustyca/certs/trusty_root_ca.pem",
+			TrustedCAFile: homeDir + "/.trustyca/certs/trustyca_root.pem",
 		},
 		Services: []string{status.ServiceName},
 	}
