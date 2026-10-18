@@ -2,6 +2,7 @@
 tables:
   trustyca.apikey: APIKey
   trustyca.vw_membership_info: MembershipInfo
+  trustyca.vw_revoked_certificate: RevokedCertificate
 fields:
   trustyca.event.ref_id: ReferenceID
 types:
@@ -14,9 +15,12 @@ types:
   # keep sorted by name
   trustyca.apikey.status: pb.ItemStatus_Enum
   trustyca.certificate.status: pb.CertificateStatus_Enum
+  # JSON is the handwritten raw jsonb type in model/json.go
+  trustyca.certificate_profile.config: JSON
   trustyca.certificate_profile.status: pb.ItemStatus_Enum
   trustyca.event.type: pb.EventType_Enum
   trustyca.invite.role: pb.Role_Enum
+  trustyca.issuer.config: JSON
   trustyca.issuer.status: pb.IssuerStatus_Enum
   trustyca.issuer.type: pb.AuthorityType_Enum
   trustyca.login.provider: pb.IDP_Enum
@@ -32,6 +36,19 @@ types:
   trustyca.vw_membership_info.role: pb.Role_Enum
   trustyca.vw_membership_info.project_alias: string
   trustyca.vw_membership_info.project_name: string
+  trustyca.vw_revoked_certificate.ikid: string
+  trustyca.vw_revoked_certificate.issuer: string
+  trustyca.vw_revoked_certificate.issuers_pem: string
+  trustyca.vw_revoked_certificate.label: string
+  trustyca.vw_revoked_certificate.pem: string
+  trustyca.vw_revoked_certificate.profile: string
+  trustyca.vw_revoked_certificate.reason: pb.ReasonCode_Enum
+  trustyca.vw_revoked_certificate.reason_text: string
+  trustyca.vw_revoked_certificate.serial_number: string
+  trustyca.vw_revoked_certificate.sha256: string
+  trustyca.vw_revoked_certificate.skid: string
+  trustyca.vw_revoked_certificate.status: pb.CertificateStatus_Enum
+  trustyca.vw_revoked_certificate.subject: string
 
 # add cached props to the model
 with_cached_props:

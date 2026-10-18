@@ -23,8 +23,8 @@ func RegisterProject(args ...any) (string, string) {
 			Set(schema.Project.Name.Name, nil).
 			Set(schema.Project.Description.Name, nil).
 			SetExpr(schema.Project.Status.Name, "2").
-			SetExpr(schema.Project.CreatedAt.Name, "Now()").
-			SetExpr(schema.Project.UpdatedAt.Name, "Now()")
+			SetExpr(schema.Project.CreatedAt.Name, exprNow).
+			SetExpr(schema.Project.UpdatedAt.Name, exprNow)
 		return q
 	})
 }
@@ -74,7 +74,7 @@ func UpdateProject(args ...any) (string, string) {
 		if p.IsSet(schema.Project.Status.Position) {
 			q.Set(schema.Project.Status.Name, nil)
 		}
-		q.SetExpr(schema.Project.UpdatedAt.Name, "Now()")
+		q.SetExpr(schema.Project.UpdatedAt.Name, exprNow)
 		return q
 	})
 }

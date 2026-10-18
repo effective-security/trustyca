@@ -66,21 +66,43 @@ Follow-ups in this area:
 3. Cookie refresh on `SelectOrg` for browser sessions (`RememberMe`).
 4. API key rotation and a client helper that signs requests with the key
    (HMAC over method and timestamp) for `AuthenticateAPIKey`.
-5. Type mapping for `issuer.config` and `certificate_profile.config`: a new
-   `model.JSON` type (`json.RawMessage` with `Scan`/`Value`), because
+5. Done in phase 2: `issuer.config` and `certificate_profile.config` map to
+   `model.JSON` (`internal/db/model/json.go`) in `typesmap.yaml`, because
    `xdb.Metadata` is `map[string]string` and cannot hold the nested
-   `pb.IssuerConfig`/`pb.CertProfile`. Add it to `typesmap.yaml` before Phase 2.
+   `pb.IssuerConfig`/`pb.CertProfile`.
 6. Regeneration note: `make drop-sql start-sql gen-sql-schema docs` emits the two
    `*.gen.go` files without imports; run `goimports -w` on them afterwards.
 
 ## Phase 2: CA core library (`internal/ca`)
 
-1. `internal/db`: new `CaReadonlyDb` and `CaDb` interfaces and `pgsql` implementations
-   in lifecycle order (Register/Upsert, Get, List, Delete) for issuers, roots,
-   profiles, certificates, revoked, CRLs. Requests use `QueryParams()` structs;
-   lists are paginated with cursor on `id`.
-   - `RevokeCertificate` and `PublishCrl` are single transactions.
-   - `ListCertificates` supports `ProjectID`, `IKID`, `Profile`, `Status`, `ExpiringBefore`.
+1. `internal/db` (done): `CaReadonlyDb` and `CaDb` interfaces and `pgsql`
+   implementations in lifecycle order (Register/Upsert, Get, List, Delete) for
+   issuers, roots, profiles, certificates, revoked, CRLs. Requests use
+   `QueryParams()` structs; lists order by `id DESC` and paginate by offset or
+   with a cursor on `id` (`query.Cursor`, `query.ParseCursor`).
+   - `RegisterCertificate` with an event, `RevokeCertificate` and
+     `PublishCrl` are single transactions; `PublishCrl` only accepts a CRL
+     whose IKID is the issuer's SKID and whose number is greater than the
+     issuer's (`ErrStaleCrlNumber`), and a revoked certificate fails with
+     `ErrAlreadyRevoked`.
+   - `ListCertificates` supports `ProjectID`, `IKID`, `SKID`, `Profile`,
+     `Status`, `ExpiringBefore`; `ListRevoked` supports `IKID` and `ValidAfter`
+     for CRL generation.
+   - Migration `2_revoked_view` adds `vw_revoked_certificate` (revocation
+     joined with its certificate) for `ListRevokedCertificates`; the
+     `model.RevokedCertificate` row is generated from it. Migration
+     `3_revoked_index` adds the unique `(ikid, serial_number)` index of
+     `revoked` for `GetRevoked` by issuer and serial (OCSP).
+   - Tenancy fails closed: a list names `OrgID`, `Platform` (`org_id IS
+     NULL`) or `AllOrgs` (`ErrOrgScopeRequired` otherwise), and every
+     mutation of a row names its exact org, so another org's row is not
+     found; `FindIssuer`/`FindProfile` take an exact scope and the label,
+     the resolution `(org, project, label) -> (org, 0, label)` belongs to
+     `internal/ca`.
+   - Tests: query SQL goldens, model conversions, and DB integration tests
+     with real certificates from `tests/testutils.NewTestCA`
+     (`Test_Issuer`, `Test_Issuer_Activate`, `Test_Root`, `Test_Profile`,
+     `Test_Certificate`, `Test_Crl`).
 2. `internal/ca/keys`: crypto provider registry built from `config.CA.Crypto`
    using `cryptoprov.Load`; key label scheme `trustyca/{org}/{project}/{label}`;
    software keys wrapped with `dataprotection.Provider`.
@@ -91,6 +113,12 @@ Follow-ups in this area:
    (`authority.CreateIssuer` with a `crypto.Signer` from the provider), TTL cache
    keyed by issuer ID, invalidation on update; bootstrap loader that mirrors
    `authority.Config` issuers and profiles into `org_id = 0` rows at startup.
+   The loader needs an idempotent registration (`RegisterIssuer` is
+   insert-only and `UpdateIssuer` changes only status and config): decide
+   between an upsert by `(org_id, project_id, label)` that never touches
+   `crl_number` and a renewal as archive-old plus register-new, and whether
+   `RegisterIssuer(Type=Root)` inserts the `root_certificate` row in the same
+   transaction.
 5. `internal/ca/signer`: `SignCertificate` flow from DESIGN.md section 7,
    `RegisterIssuer` shapes from section 5.2 (root, parent-signed, pending),
    `ImportIssuer`, `ActivateIssuer`, `Revoke`, `BuildCRL`, `SignOCSP`.
@@ -99,8 +127,22 @@ Follow-ups in this area:
 
 ## Phase 3: CA gRPC service
 
-1. `server/service/ca`: implement `pb.CAServer` on top of `internal/ca`; wire
-   `db.CaDb` and the key registry through `appcontainer` providers.
+`SignCertificate` and `SignOCSP` are implemented ahead of this phase as a
+proof of concept on the bootstrap `authority.Authority`
+(`server/service/ca/signer.go`, `tenant.go`): the org comes from the token
+or, for a `trustyca-*` service caller, from the request and is verified
+through `db.OrgsReadonlyDb`; the project is verified with the authorizer;
+the certificate and its `CertificateIssued` event are one transaction; OCSP
+answers good, revoked (reason and time from `GetRevoked`) or unknown. The
+unit tests build the authority from `tests/testutils.NewTestCA`
+certificates and mock the DB.
+
+1. `server/service/ca`: implement the remaining `pb.CAServer` methods on top
+   of `internal/ca`; wire `db.CaDb`, `db.OrgsReadonlyDb`, the key registry
+   and the authority (today `*authority.Authority` has no `appcontainer`
+   provider, so a server that lists the `ca` service does not start) through
+   `appcontainer` providers; switch the two implemented methods from the
+   bootstrap authority to the DB-backed issuers and profiles.
 2. `authctx.CheckAccess` already enforces `allowed_roles` for user tokens and
    the `ca:*`/`certs:*` scopes for API keys, and passes `trustyca-*` service
    roles through; the CA service must additionally verify that an explicit `OrgID` from a service
@@ -116,10 +158,15 @@ Follow-ups in this area:
 ## Phase 4: revocation pipeline
 
 1. `PublishCrls` implementation and `server/tasks/crlrenewal` task; CRL number
-   increments in the same transaction as the `crl` upsert.
+   increments in the same transaction as the `crl` upsert (`db.PublishCrl`).
+   The due issuers are `ListIssuers` (Active, then Archived, with `AllOrgs`)
+   minus `ListCrls` with `ExpiringBefore`: add a joined `ListIssuersDueForCrl`
+   or a status set filter if that is too many queries.
 2. `SignOCSP` with delegated responder support and `unknown` for foreign serials.
 3. `server/tasks/certstatus`: mark `Expired`, apply retention
-   (`ca.retention.expired_after`, default 0 = keep forever).
+   (`ca.retention.expired_after`, default 0 = keep forever). Needs a bulk
+   `UPDATE certificate SET status = Expired WHERE status = Active AND
+   not_after < ?` paged by id, and a bulk delete; the DB layer has neither.
 4. Tests: CRL contents after revoke, CRL number monotonicity, OCSP good/revoked/unknown.
 
 ## Phase 5: CIS service

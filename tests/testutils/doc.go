@@ -7,6 +7,14 @@
 // CreateURL, CreateURLs and CreateBindAddr return free ports, none twice in
 // one process; another process may still bind one after the probe.
 //
+// NewTestCA builds an in-memory CA with real ECDSA keys for the DB and CA
+// tests; the certificates it issues carry the key identifiers the service
+// relies on:
+//
+//	root := testutils.NewTestCA(t, "Test Root", nil)
+//	ca := testutils.NewTestCA(t, "Test L2", root)
+//	crt := ca.Issue(t, "peer.example.com", notBefore, notAfter)
+//
 // CheckGolden compares output a test suite captured with a golden file:
 //
 //	testutils.CheckGolden(t, "testdata/prints_TestRpc.txt", entries)

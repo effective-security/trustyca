@@ -1,43 +1,11 @@
 package query
 
 import (
-	"slices"
-
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xdb/xsql"
 )
-
-// projectIDColumn is the tenancy column shared by membership and invite
-const projectIDColumn = "project_id"
-
-// setProjectScope records the project scope in the query params:
-// projectID != 0 -> project_id = ?
-// scope Org   -> project_id IS NULL
-// scope Project  -> project_id IS NOT NULL
-// otherwise   -> no filter
-func setProjectScope(b *xdb.QueryParamsBuilder, pos uint32, projectID uint64, scope pb.Scope_Enum) {
-	switch {
-	case projectID != 0:
-		b.Set(pos, projectID)
-	case scope == pb.Scope_Org:
-		b.SetNullColums([]string{projectIDColumn})
-	case scope == pb.Scope_Project:
-		b.SetEnum(pos, int32(pb.Scope_Project))
-	}
-}
-
-// whereProjectScope adds the project scope predicate recorded by setProjectScope
-func whereProjectScope(q xsql.Builder, p xdb.QueryParams, pos uint32) {
-	if slices.Contains(p.GetNullColumns(), projectIDColumn) {
-		q.Where(projectIDColumn + " IS NULL")
-	} else if _, ok := p.GetEnum(pos); ok {
-		q.Where(projectIDColumn + " IS NOT NULL")
-	} else if p.IsSet(pos) {
-		q.Where(projectIDColumn+" = ?", nil)
-	}
-}
 
 // AddMember returns SQL query to create or update a membership at its scope
 func AddMember(args ...any) (string, string) {
@@ -54,7 +22,7 @@ func AddMember(args ...any) (string, string) {
 			Set(schema.Membership.ProjectID.Name, nil).
 			Set(schema.Membership.UserID.Name, nil).
 			Set(schema.Membership.Role.Name, nil).
-			SetExpr(schema.Membership.CreatedAt.Name, "Now()")
+			SetExpr(schema.Membership.CreatedAt.Name, exprNow)
 		return q
 	})
 }

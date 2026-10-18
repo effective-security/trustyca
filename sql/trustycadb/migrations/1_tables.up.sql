@@ -547,6 +547,48 @@ CREATE INDEX IF NOT EXISTS idx_revoked_org_project_id_desc
     ON trustyca.revoked USING btree
     (org_id, project_id, id DESC);
 
+-- OCSP and the revocation lookups address a revoked certificate by the key
+-- identifier of its issuer and its serial number, which are unique per
+-- certificate (unique_certificate_ikid_serial) and copied to the revocation.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_revoked_ikid_serial
+    ON trustyca.revoked USING btree
+    (ikid COLLATE pg_catalog."default", serial_number COLLATE pg_catalog."default");
+
+--
+-- Revoked certificates joined with their certificate rows.
+--
+-- id is the revocation ID (the keyset pagination key), certificate_id the
+-- certificate. ListRevokedCertificates reads this view so a page of revoked
+-- certificates is one query; CRL generation reads trustyca.revoked directly.
+--
+CREATE VIEW trustyca.vw_revoked_certificate AS
+SELECT
+    r.id,
+    r.org_id,
+    r.project_id,
+    r.certificate_id,
+    c.skid,
+    c.ikid,
+    c.serial_number,
+    c.not_before,
+    c.not_after,
+    c.subject,
+    c.issuer,
+    c.sha256,
+    c.profile,
+    c.label,
+    c.locations,
+    c.metadata,
+    c.pem,
+    c.issuers_pem,
+    c.status,
+    c.created_at,
+    r.revoked_at,
+    r.reason,
+    r.reason_text
+FROM trustyca.revoked r
+JOIN trustyca.certificate c ON c.id = r.certificate_id;
+
 --
 -- CRL (current CRL per issuer; replaced on every publish)
 --

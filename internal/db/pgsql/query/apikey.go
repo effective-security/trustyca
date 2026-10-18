@@ -26,7 +26,7 @@ func RegisterAPIKey(args ...any) (string, string) {
 			Set(schema.APIKey.Metadata.Name, nil).
 			Set(schema.APIKey.Status.Name, nil).
 			Set(schema.APIKey.ExpiresAt.Name, nil).
-			SetExpr(schema.APIKey.CreatedAt.Name, "Now()")
+			SetExpr(schema.APIKey.CreatedAt.Name, exprNow)
 		return q
 	})
 }
@@ -127,7 +127,7 @@ func UseAPIKey(args ...any) (string, string) {
 			Returning(schema.APIKeyTableInfo.AllColumns())
 		// set all columns to nil as placeholders
 		q.SetExpr(schema.APIKey.UsedCount.Name, schema.APIKey.UsedCount.Name+"+1").
-			SetExpr(schema.APIKey.UsedAt.Name, "Now()")
+			SetExpr(schema.APIKey.UsedAt.Name, exprNow)
 		return q
 	})
 }

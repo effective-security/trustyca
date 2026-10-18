@@ -49,6 +49,13 @@ FROM trustyca.user
 WHERE email = $1`,
 		},
 		{
+			// the cached query is per column
+			query.GetRowByColumn, []any{&schema.UserTableInfo, "name"},
+			`SELECT ` + schema.UserTableInfo.AllColumns() + ` 
+FROM trustyca.user 
+WHERE name = $1`,
+		},
+		{
 			query.ListAllColumns, []any{&schema.UserTableInfo},
 			`SELECT ` + schema.UserTableInfo.AllColumns() + ` 
 FROM trustyca.user 
@@ -68,6 +75,12 @@ OFFSET $2`,
 			query.DeleteRowByID, []any{&schema.LoginTableInfo},
 			`DELETE FROM trustyca.login 
 WHERE id = $1`,
+		},
+		{
+			// the exact org scope of a CA row: NULL for the platform
+			query.DeleteRowByOrgAndID, []any{&schema.IssuerTableInfo},
+			`DELETE FROM trustyca.issuer 
+WHERE org_id IS NOT DISTINCT FROM $1 AND id = $2`,
 		},
 	})
 }

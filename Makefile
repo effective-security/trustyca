@@ -167,7 +167,8 @@ gen-sql-schema: #dry-run
 		--dependencies \
 		--out-model internal/db/model \
 		--out-schema internal/db/schema \
-		--view vw_membership_info
+		--view vw_membership_info \
+		--view vw_revoked_certificate
 	#goimports -w ./internal/db/model/*.gen.go ./internal/db/schema/*.gen.go
 
 docker: change_log

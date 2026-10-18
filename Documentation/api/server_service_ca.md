@@ -47,7 +47,7 @@ const ServiceName = "ca"
 ```
 
 <a name="Factory"></a>
-## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L29>)
+## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L34>)
 
 ```go
 func Factory(server gserver.GServer) any
@@ -56,9 +56,9 @@ func Factory(server gserver.GServer) any
 Factory returns a factory of the service
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L20-L26>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L23-L31>)
 
-Service defines the CA service
+Service defines the CA service. The issuers and profiles come from the bootstrap authority until internal/ca resolves them from the DB \(PLAN.md phase 2, items 3 to 5\).
 
 ```go
 type Service struct {
@@ -76,7 +76,7 @@ func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequ
 
 
 <a name="Service.Close"></a>
-### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L61>)
+### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L70>)
 
 ```go
 func (s *Service) Close()
@@ -139,7 +139,7 @@ func (s *Service) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest)
 
 
 <a name="Service.IsReady"></a>
-### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L56>)
+### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L65>)
 
 ```go
 func (s *Service) IsReady() bool
@@ -193,7 +193,7 @@ func (s *Service) ListRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.
 
 
 <a name="Service.Name"></a>
-### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L51>)
+### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L60>)
 
 ```go
 func (s *Service) Name() string
@@ -211,7 +211,7 @@ func (s *Service) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (
 
 
 <a name="Service.RegisterGRPC"></a>
-### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L66>)
+### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L75>)
 
 ```go
 func (s *Service) RegisterGRPC(r *grpc.Server)
@@ -256,22 +256,22 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 
 
 <a name="Service.SignCertificate"></a>
-### func \(\*Service\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L9>)
+### func \(\*Service\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L49>)
 
 ```go
 func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest) (*pb.CertificateResponse, error)
 ```
 
-
+SignCertificate signs a certificate request with the issuer that serves the profile and records the certificate with its issue event in one transaction.
 
 <a name="Service.SignOCSP"></a>
-### func \(\*Service\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L14>)
+### func \(\*Service\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L160>)
 
 ```go
 func (s *Service) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error)
 ```
 
-
+SignOCSP signs an OCSP response for the certificate of the request: good for a registered certificate, revoked with the reason and time of its revocation, and unknown for a serial the issuer never registered.
 
 <a name="Service.UpdateCertificateLabel"></a>
 ### func \(\*Service\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L19>)

@@ -25,7 +25,7 @@ func CreateInvite(args ...any) (string, string) {
 			Set(schema.Invite.InviterID.Name, nil).
 			Set(schema.Invite.Email.Name, nil).
 			Set(schema.Invite.Role.Name, nil).
-			SetExpr(schema.Invite.CreatedAt.Name, "Now()").
+			SetExpr(schema.Invite.CreatedAt.Name, exprNow).
 			Set(schema.Invite.ExpiresAt.Name, nil)
 		return q
 	})

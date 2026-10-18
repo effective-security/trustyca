@@ -140,7 +140,7 @@ var RevokedTableInfo = xdbschema.TableInfo{
 	Name:       "revoked",
 	PrimaryKey: "id",
 	Columns:    []string{"id", "org_id", "project_id", "certificate_id", "ikid", "serial_number", "not_after", "revoked_at", "reason", "reason_text"},
-	Indexes:    []string{"idx_revoked_ikid_notafter", "idx_revoked_org_project_id_desc", "revoked_pkey", "unique_revoked_certificate"},
+	Indexes:    []string{"idx_revoked_ikid_notafter", "idx_revoked_ikid_serial", "idx_revoked_org_project_id_desc", "revoked_pkey", "unique_revoked_certificate"},
 	Dialect:    xsql.Postgres,
 }
 
@@ -188,24 +188,36 @@ var MembershipInfoTableInfo = xdbschema.TableInfo{
 	Dialect:    xsql.Postgres,
 }
 
+// RevokedCertificateTableInfo provides table info for 'vw_revoked_certificate'
+var RevokedCertificateTableInfo = xdbschema.TableInfo{
+	SchemaName: "trustyca.vw_revoked_certificate",
+	Schema:     "trustyca",
+	Name:       "vw_revoked_certificate",
+	PrimaryKey: "",
+	Columns:    []string{"id", "org_id", "project_id", "certificate_id", "skid", "ikid", "serial_number", "not_before", "not_after", "subject", "issuer", "sha256", "profile", "label", "locations", "metadata", "pem", "issuers_pem", "status", "created_at", "revoked_at", "reason", "reason_text"},
+	Indexes:    []string{},
+	Dialect:    xsql.Postgres,
+}
+
 // TrustycadbTables provides tables map for trustycadb
 var TrustycadbTables = map[string]*xdbschema.TableInfo{
-	"apikey":              &APIKeyTableInfo,
-	"certificate":         &CertificateTableInfo,
-	"certificate_profile": &CertificateProfileTableInfo,
-	"crl":                 &CrlTableInfo,
-	"event":               &EventTableInfo,
-	"invite":              &InviteTableInfo,
-	"issuer":              &IssuerTableInfo,
-	"login":               &LoginTableInfo,
-	"membership":          &MembershipTableInfo,
-	"org":                 &OrgTableInfo,
-	"project":             &ProjectTableInfo,
-	"revoked":             &RevokedTableInfo,
-	"root_certificate":    &RootCertificateTableInfo,
-	"schema_migrations":   &SchemaMigrationTableInfo,
-	"user":                &UserTableInfo,
-	"vw_membership_info":  &MembershipInfoTableInfo,
+	"apikey":                 &APIKeyTableInfo,
+	"certificate":            &CertificateTableInfo,
+	"certificate_profile":    &CertificateProfileTableInfo,
+	"crl":                    &CrlTableInfo,
+	"event":                  &EventTableInfo,
+	"invite":                 &InviteTableInfo,
+	"issuer":                 &IssuerTableInfo,
+	"login":                  &LoginTableInfo,
+	"membership":             &MembershipTableInfo,
+	"org":                    &OrgTableInfo,
+	"project":                &ProjectTableInfo,
+	"revoked":                &RevokedTableInfo,
+	"root_certificate":       &RootCertificateTableInfo,
+	"schema_migrations":      &SchemaMigrationTableInfo,
+	"user":                   &UserTableInfo,
+	"vw_membership_info":     &MembershipInfoTableInfo,
+	"vw_revoked_certificate": &RevokedCertificateTableInfo,
 }
 
 // APIKey provides column definitions for table 'trustyca.apikey'.
@@ -627,8 +639,9 @@ var Project = struct {
 // Primary key: id
 // Indexes:
 //
-//	idx_revoked_ikid_notafter: [not_after,ikid]
-//	idx_revoked_org_project_id_desc: [project_id,id,org_id]
+//	idx_revoked_ikid_notafter: [ikid,not_after]
+//	idx_revoked_ikid_serial: UNIQUE [ikid,serial_number]
+//	idx_revoked_org_project_id_desc: [id,org_id,project_id]
 //	revoked_pkey: PRIMARY UNIQUE [id]
 //	unique_revoked_certificate: UNIQUE [certificate_id]
 var Revoked = struct {
@@ -758,4 +771,57 @@ var MembershipInfo = struct {
 	Name:         xdbschema.Column{Name: "name", Position: 11, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
 	Role:         xdbschema.Column{Name: "role", Position: 12, Type: "integer", UdtType: "int4", Nullable: true},
 	CreatedAt:    xdbschema.Column{Name: "created_at", Position: 13, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+}
+
+// RevokedCertificate provides column definitions for table 'trustyca.vw_revoked_certificate'.
+var RevokedCertificate = struct {
+	Table         *xdbschema.TableInfo
+	ID            xdbschema.Column // id bigint
+	OrgID         xdbschema.Column // org_id bigint
+	ProjectID     xdbschema.Column // project_id bigint
+	CertificateID xdbschema.Column // certificate_id bigint
+	Skid          xdbschema.Column // skid character varying
+	Ikid          xdbschema.Column // ikid character varying
+	SerialNumber  xdbschema.Column // serial_number character varying
+	NotBefore     xdbschema.Column // not_before timestamp with time zone
+	NotAfter      xdbschema.Column // not_after timestamp with time zone
+	Subject       xdbschema.Column // subject character varying
+	Issuer        xdbschema.Column // issuer character varying
+	Sha256        xdbschema.Column // sha256 character varying
+	Profile       xdbschema.Column // profile character varying
+	Label         xdbschema.Column // label character varying
+	Locations     xdbschema.Column // locations ARRAY
+	Metadata      xdbschema.Column // metadata jsonb
+	Pem           xdbschema.Column // pem text
+	IssuersPem    xdbschema.Column // issuers_pem text
+	Status        xdbschema.Column // status integer
+	CreatedAt     xdbschema.Column // created_at timestamp with time zone
+	RevokedAt     xdbschema.Column // revoked_at timestamp with time zone
+	Reason        xdbschema.Column // reason integer
+	ReasonText    xdbschema.Column // reason_text character varying
+}{
+	Table:         &RevokedCertificateTableInfo,
+	ID:            xdbschema.Column{Name: "id", Position: 1, Type: "bigint", UdtType: "int8", Nullable: true},
+	OrgID:         xdbschema.Column{Name: "org_id", Position: 2, Type: "bigint", UdtType: "int8", Nullable: true},
+	ProjectID:     xdbschema.Column{Name: "project_id", Position: 3, Type: "bigint", UdtType: "int8", Nullable: true},
+	CertificateID: xdbschema.Column{Name: "certificate_id", Position: 4, Type: "bigint", UdtType: "int8", Nullable: true},
+	Skid:          xdbschema.Column{Name: "skid", Position: 5, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
+	Ikid:          xdbschema.Column{Name: "ikid", Position: 6, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
+	SerialNumber:  xdbschema.Column{Name: "serial_number", Position: 7, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
+	NotBefore:     xdbschema.Column{Name: "not_before", Position: 8, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	NotAfter:      xdbschema.Column{Name: "not_after", Position: 9, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	Subject:       xdbschema.Column{Name: "subject", Position: 10, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 260},
+	Issuer:        xdbschema.Column{Name: "issuer", Position: 11, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 260},
+	Sha256:        xdbschema.Column{Name: "sha256", Position: 12, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
+	Profile:       xdbschema.Column{Name: "profile", Position: 13, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 64},
+	Label:         xdbschema.Column{Name: "label", Position: 14, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 260},
+	Locations:     xdbschema.Column{Name: "locations", Position: 15, Type: "ARRAY", UdtType: "_varchar", Nullable: true},
+	Metadata:      xdbschema.Column{Name: "metadata", Position: 16, Type: "jsonb", UdtType: "jsonb", Nullable: true},
+	Pem:           xdbschema.Column{Name: "pem", Position: 17, Type: "text", UdtType: "text", Nullable: true},
+	IssuersPem:    xdbschema.Column{Name: "issuers_pem", Position: 18, Type: "text", UdtType: "text", Nullable: true},
+	Status:        xdbschema.Column{Name: "status", Position: 19, Type: "integer", UdtType: "int4", Nullable: true},
+	CreatedAt:     xdbschema.Column{Name: "created_at", Position: 20, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	RevokedAt:     xdbschema.Column{Name: "revoked_at", Position: 21, Type: "timestamp with time zone", UdtType: "timestamptz", Nullable: true},
+	Reason:        xdbschema.Column{Name: "reason", Position: 22, Type: "integer", UdtType: "int4", Nullable: true},
+	ReasonText:    xdbschema.Column{Name: "reason_text", Position: 23, Type: "character varying", UdtType: "varchar", Nullable: true, MaxLength: 260},
 }

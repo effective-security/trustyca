@@ -267,7 +267,7 @@ type ProvideDataprotectionFn func() (dataprotection.Provider, error)
 ProvideDbFn defines DB provider
 
 ```go
-type ProvideDbFn func(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, error)
+type ProvideDbFn func(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, db.CaDb, db.CaReadonlyDb, error)
 ```
 
 <a name="ProvideDiscoveryFn"></a>

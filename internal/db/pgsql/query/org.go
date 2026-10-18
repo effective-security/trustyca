@@ -21,7 +21,7 @@ func RegisterOrg(args ...any) (string, string) {
 			Set(schema.Org.Name.Name, nil).
 			Set(schema.Org.Description.Name, nil).
 			SetExpr(schema.Org.Status.Name, "2").
-			SetExpr(schema.Org.CreatedAt.Name, "Now()")
+			SetExpr(schema.Org.CreatedAt.Name, exprNow)
 		return q
 	})
 }

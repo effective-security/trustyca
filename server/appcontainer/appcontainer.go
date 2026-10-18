@@ -43,7 +43,7 @@ type ProvideSchedulerFn func() (tasks.Scheduler, error)
 type ProvideJwtFn func(cfg *config.Configuration, dp dataprotection.Provider) (jwt.Parser, jwt.Signer, error)
 
 // ProvideDbFn defines DB provider
-type ProvideDbFn func(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, error)
+type ProvideDbFn func(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, db.CaDb, db.CaReadonlyDb, error)
 
 // ProvideClientFactoryFn defines client.Facroty provider
 type ProvideClientFactoryFn func(cfg *config.Configuration) (client.Factory, error)
@@ -215,7 +215,7 @@ func provideJwt(cfg *config.Configuration, dp dataprotection.Provider) (jwt.Pars
 	return at, at, nil
 }
 
-func provideDb(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, error) {
+func provideDb(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, db.CaDb, db.CaReadonlyDb, error) {
 	d, err := db.New(
 		cfg.SQL.DataSource,
 		cfg.SQL.MigrationsDir,
@@ -223,9 +223,9 @@ func provideDb(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadon
 		cfg.SQL.MigrateVersion,
 		flake.DefaultIDGenerator)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
-	return d, d, d, nil
+	return d, d, d, d, d, nil
 }
 
 func provideClientFactory(cfg *config.Configuration) (client.Factory, error) {
