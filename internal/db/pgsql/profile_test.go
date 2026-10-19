@@ -124,6 +124,15 @@ func Test_Profile(t *testing.T) {
 	require.Len(t, list.Rows, 1)
 	assert.Equal(t, prjProfile.ID.UInt64(), list.Rows[0].ID.UInt64())
 
+	// the org-wide rows and the rows of the caller's projects
+	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), ProjectIDs: []uint64{project.ID.UInt64()}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, list.Rows, 2)
+	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), ProjectIDs: []uint64{}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, list.Rows, 1)
+	assert.Equal(t, orgProfile.ID.UInt64(), list.Rows[0].ID.UInt64(), "no project grant: the org-wide rows only")
+
 	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), IssuerLabel: "L3", Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 1)

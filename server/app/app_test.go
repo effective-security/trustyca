@@ -115,6 +115,10 @@ func Test_AppInitWithCfg(t *testing.T) {
 }
 
 func Test_AppInstance_StartStop(t *testing.T) {
+	// the seed of the Makefile: the platform issuer the start bootstraps into
+	// the dev DB is wrapped with it, and a key wrapped with another seed
+	// fails the start
+	t.Setenv("TRUSTYCA_DP_SEED", "testseed")
 	cfgPath, err := filepath.Abs(projFolder + "etc/dev/" + config.ConfigFileName)
 	require.NoError(t, err)
 

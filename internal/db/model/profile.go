@@ -80,22 +80,34 @@ func (m *CertificateProfile) SetConfig(p *pb.CertProfile) error {
 	return nil
 }
 
-// Pb converts model to proto: the profile definition from the config with
-// the identity of the row
-func (m *CertificateProfile) Pb() (*pb.CertProfile, error) {
+// Definition returns the profile definition from the config with the
+// labels and the status of the row, without its identity: the IDs are left
+// empty. It is for the rows a cache shares between goroutines, since an
+// xdb.ID formats itself into an unsynchronized cache.
+func (m *CertificateProfile) Definition() (*pb.CertProfile, error) {
 	p := new(pb.CertProfile)
 	err := m.Config.Unmarshal(p)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "invalid config of profile %s", m.ID.String())
+		return nil, errors.WithMessagef(err, "invalid config of profile %s", xdb.IDString(m.ID.UInt64()))
 	}
-	p.ID = m.ID.String()
-	p.OrgID = m.OrgID.String()
-	p.ProjectID = m.ProjectID.String()
 	p.Label = m.Label
 	p.IssuerLabel = m.IssuerLabel
 	p.Status = m.Status
 	p.CreatedAt = m.CreatedAt.String()
 	p.UpdatedAt = m.UpdatedAt.String()
+	return p, nil
+}
+
+// Pb converts model to proto: the profile definition from the config with
+// the identity of the row
+func (m *CertificateProfile) Pb() (*pb.CertProfile, error) {
+	p, err := m.Definition()
+	if err != nil {
+		return nil, err
+	}
+	p.ID = m.ID.String()
+	p.OrgID = m.OrgID.String()
+	p.ProjectID = m.ProjectID.String()
 	return p, nil
 }
 

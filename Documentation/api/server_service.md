@@ -21,6 +21,7 @@ var Factories = map[string]gserver.ServiceFactory{
     admin.ServiceName:  admin.Factory,
     auth.ServiceName:   auth.Factory,
     ca.ServiceName:     ca.Factory,
+    cis.ServiceName:    cis.Factory,
     orgs.ServiceName:   orgs.Factory,
     status.ServiceName: status.Factory,
     ui.ServiceName:     ui.Factory,
@@ -28,7 +29,7 @@ var Factories = map[string]gserver.ServiceFactory{
 ```
 
 <a name="GetPublicServerURL"></a>
-## func [GetPublicServerURL](<https://github.com/effective-security/trustyca/blob/main/server/service/service.go#L28>)
+## func [GetPublicServerURL](<https://github.com/effective-security/trustyca/blob/main/server/service/service.go#L30>)
 
 ```go
 func GetPublicServerURL(r *http.Request, relativeEndpoint string) *url.URL

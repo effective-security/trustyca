@@ -118,6 +118,25 @@ ORDER BY id DESC
 LIMIT $3`,
 		},
 		{
+			// the org-wide rows and the rows of the caller's projects, none here
+			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, ProjectIDs: []uint64{}, Status: pb.IssuerStatus_Active, Limit: 10, Cursor: cursor}},
+			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 
+FROM trustyca.issuer 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) AND status = $3 AND id < $4 
+ORDER BY id DESC 
+LIMIT $5`,
+		},
+		{
+			// an exact project takes precedence over the visible projects
+			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, ProjectID: 2, ProjectIDs: []uint64{3}, Limit: 10}},
+			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 
+FROM trustyca.issuer 
+WHERE org_id = $1 AND project_id = $2 
+ORDER BY id DESC 
+LIMIT $3 
+OFFSET $4`,
+		},
+		{
 			// the first cursor page has no cursor predicate
 			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, Scope: pb.Scope_Org, Limit: 10, Cursor: query.NewCursor(0)}},
 			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 

@@ -3,7 +3,8 @@ package ca
 import (
 	"context"
 	"crypto"
-	"database/sql"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
-	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
+	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
 	"github.com/stretchr/testify/assert"
@@ -20,20 +21,15 @@ import (
 	"golang.org/x/crypto/ocsp"
 )
 
-func notFoundErr(table string, id any) error {
-	return xdb.CheckNotFoundError(sql.ErrNoRows, table, id)
-}
-
 func TestService_SignCertificate(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cadb := mocktrustycadb.NewMockCaDb(ctrl)
-	orgsdb := mocktrustycadb.NewMockOrgsReadonlyDb(ctrl)
-	tca := newTestAuthority(t)
-	svc := &Service{db: cadb, orgs: orgsdb, authorizer: newFakeAuthorizer(), ca: tca.authority}
+	tca := newTestCA(t, ctrl)
+	cadb, orgsdb := tca.cadb, tca.orgsdb
+	svc := tca.service()
 	ctx := testCtx("42", "1")
 	csrDER, csrPEM := newCSR(t, "peer.example.com")
 
@@ -78,13 +74,47 @@ func TestService_SignCertificate(t *testing.T) {
 	_, err = svc.SignCertificate(ra, &pb.SignCertificateRequest{OrgID: "1", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "unexpected: unable to find org")
 
-	// issuer resolution
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "nope", Request: csrPEM, Profile: testProfile})
-	assert.EqualError(t, err, "not_found: issuer not found: nope")
+	// issuer resolution in the scope of the request (DESIGN.md section 6)
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "nope"})
-	assert.EqualError(t, err, "not_found: issuer not found for profile: nope")
+	assert.EqualError(t, err, "not_found: profile not found: nope")
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: testIssuerLabel, Request: csrPEM, Profile: "nope"})
-	assert.EqualError(t, err, `bad_request: issuer "L2_CA" does not support the profile: nope`)
+	assert.EqualError(t, err, "not_found: profile not found: nope")
+	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "nope", Request: csrPEM, Profile: testProfile})
+	assert.EqualError(t, err, `bad_request: issuer "nope" does not serve the profile: peer`)
+	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("orphan", "NOPE", "1h"))
+	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "orphan"})
+	assert.EqualError(t, err, "not_found: issuer not found for profile: orphan")
+	tca.addProfile(testOrgID(), xdb.ID{}, ocspProfileDef(testOCSPProfile))
+	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testOCSPProfile})
+	assert.EqualError(t, err, "bad_request: issuer label is required for profile: ocsp")
+	tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "L3", pb.AuthorityType_Issuing, nil)
+	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "L3", Request: csrPEM, Profile: testOCSPProfile})
+	assert.EqualError(t, err, `bad_request: issuer "L3" does not support the profile: ocsp`)
+	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "L3", Request: csrPEM, Profile: testProfile})
+	assert.EqualError(t, err, `bad_request: issuer "L3" does not serve the profile: peer`)
+	// another org has no access to the profiles and issuers of org 1
+	_, err = svc.SignCertificate(testCtx("42", "2"), &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
+	assert.EqualError(t, err, "not_found: profile not found: peer")
+	// an archived issuer does not sign
+	archived := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "OLD", pb.AuthorityType_Issuing, nil)
+	tca.rows.update(archived.ID, func(m *model.Issuer) { m.Status = pb.IssuerStatus_Archived })
+	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("old-peer", "OLD", "1h"))
+	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "old-peer"})
+	assert.EqualError(t, err, "conflict: issuer is not active")
+	// an issuer that does not load is a server error
+	broken := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "BROKEN", pb.AuthorityType_Issuing, nil)
+	tca.rows.update(broken.ID, func(m *model.Issuer) { m.KeyProtected = "AAAA" })
+	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("broken-peer", "BROKEN", "1h"))
+	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "broken-peer"})
+	assert.EqualError(t, err, "unexpected: unable to load issuer")
+	// so is one whose delegated OCSP profile is missing: the profile of the
+	// request exists
+	tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "NORESP", pb.AuthorityType_Issuing, &pb.IssuerConfig{
+		DelegatedOcspProfile: "nope",
+	})
+	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("noresp-peer", "NORESP", "1h"))
+	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "noresp-peer"})
+	assert.EqualError(t, err, "unexpected: unable to load issuer")
 
 	// request shape
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{RequestFormat: pb.EncodingFormat_PKCS7, Request: csrPEM, Profile: testProfile})
@@ -113,10 +143,10 @@ func TestService_SignCertificate(t *testing.T) {
 			assert.Equal(t, "edge-1", m.Label)
 			assert.Equal(t, xdb.Metadata{"requester": "ci"}, m.Metadata)
 			assert.NotEmpty(t, m.Skid)
-			assert.Equal(t, tca.issuer.SubjectKID(), m.Ikid)
-			assert.Equal(t, tca.issuer.PEM(), m.IssuersPem)
+			assert.Equal(t, tca.issuer.Skid, m.Ikid)
+			assert.Equal(t, strings.TrimSpace(tca.issuer.Pem), m.IssuersPem)
 			assert.Contains(t, m.Subject, "CN=peer.example.com")
-			assert.Equal(t, certutil.GetSubjectKeyID(tca.ca.Cert), m.Ikid)
+			assert.Equal(t, certutil.GetSubjectKeyID(tca.issuerCert), m.Ikid)
 
 			require.NotNil(t, evt)
 			assert.Equal(t, pb.EventType_CertificateIssued, evt.Type)
@@ -151,8 +181,24 @@ func TestService_SignCertificate(t *testing.T) {
 	crt, err := certutil.ParseFromPEM([]byte(res.Certificate.Pem))
 	require.NoError(t, err)
 	assert.Equal(t, []string{"peer.example.com"}, crt.DNSNames)
-	assert.Equal(t, tca.ca.Cert.Subject.String(), crt.Issuer.String())
-	assert.Equal(t, tca.issuer.PEM(), res.Certificate.IssuersPem)
+	assert.Equal(t, tca.issuerCert.Subject.String(), crt.Issuer.String())
+	assert.Equal(t, strings.TrimSpace(tca.issuer.Pem), res.Certificate.IssuersPem)
+	assert.Equal(t, 168*time.Hour, crt.NotAfter.Sub(crt.NotBefore).Round(time.Hour), "the org profile")
+
+	// a project profile with the same label shadows the org one
+	tca.addProfile(testOrgID(), testProject.ID, peerProfileDef(testProfile, testIssuerLabel, "24h"))
+	tca.registry.InvalidateProfile(testOrgID(), testProject.ID, testProfile)
+	cadb.EXPECT().RegisterCertificate(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, m *model.Certificate, _ *model.Event) (*model.Certificate, error) {
+			res := *m
+			res.ID = xdb.NewID(779)
+			return &res, nil
+		})
+	res, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{ProjectID: "201", Profile: testProfile, Request: csrPEM})
+	require.NoError(t, err)
+	crt, err = certutil.ParseFromPEM([]byte(res.Certificate.Pem))
+	require.NoError(t, err)
+	assert.Equal(t, 24*time.Hour, crt.NotAfter.Sub(crt.NotBefore).Round(time.Hour), "the project profile")
 
 	// a DER request from the RA for an explicit, active org; no caller email
 	orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
@@ -186,22 +232,64 @@ func TestService_SignCertificate(t *testing.T) {
 	assert.EqualError(t, err, "unexpected: failed to register certificate")
 }
 
+// TestService_SignCertificate_Concurrent signs with one issuer from many
+// requests at once: the resolution the registry serves is shared, and its
+// rows are only read
+func TestService_SignCertificate_Concurrent(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	tca := newTestCA(t, ctrl)
+	svc := tca.service()
+	tca.cadb.EXPECT().RegisterCertificate(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, m *model.Certificate, _ *model.Event) (*model.Certificate, error) {
+			res := *m
+			res.ID = xdb.NewID(900)
+			return &res, nil
+		}).AnyTimes()
+	_, csrPEM := newCSR(t, "many.example.com")
+	tca.addProfile(testOrgID(), testProject.ID, peerProfileDef(testProfile, testIssuerLabel, "24h"))
+
+	const workers = 24
+	var wg sync.WaitGroup
+	for i := range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// a request context of its own, as every request has
+			ctx := testCtx(orgAdminUser, "1")
+			req := &pb.SignCertificateRequest{Profile: testProfile, Request: csrPEM}
+			if i%2 == 0 {
+				req.ProjectID = "201"
+			}
+			res, err := svc.SignCertificate(ctx, req)
+			if assert.NoError(t, err) {
+				assert.Equal(t, tca.issuer.Skid, res.Certificate.IKID)
+			}
+			if i%6 == 0 {
+				tca.registry.InvalidateIssuer(tca.issuer)
+			}
+		}()
+	}
+	wg.Wait()
+}
+
 func TestService_SignOCSP(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cadb := mocktrustycadb.NewMockCaDb(ctrl)
-	tca := newTestAuthority(t)
-	svc := &Service{db: cadb, authorizer: newFakeAuthorizer(), ca: tca.authority}
+	tca := newTestCA(t, ctrl)
+	cadb := tca.cadb
+	svc := tca.service()
 	ctx := serviceCtx("trustyca-cis")
 
 	now := time.Now()
-	leaf := tca.ca.Issue(t, "ocsp.example.com", now.Add(-time.Minute), now.Add(time.Hour))
-	der, err := ocsp.CreateRequest(leaf, tca.ca.Cert, &ocsp.RequestOptions{Hash: crypto.SHA256})
+	leaf := tca.sign(t, "ocsp.example.com")
+	der, err := ocsp.CreateRequest(leaf, tca.issuerCert, &ocsp.RequestOptions{Hash: crypto.SHA256})
 	require.NoError(t, err)
-	ikid := tca.issuer.SubjectKID()
+	ikid := tca.issuer.Skid
 	serial := leaf.SerialNumber.String()
 	certID := xdb.NewID(5)
 
@@ -214,22 +302,37 @@ func TestService_SignOCSP(t *testing.T) {
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 
 	// a certificate of an issuer the CA does not know
-	otherLeaf := tca.root.Issue(t, "other.example.com", now.Add(-time.Minute), now.Add(time.Hour))
-	otherDer, err := ocsp.CreateRequest(otherLeaf, tca.root.Cert, nil)
+	other := testutils.NewTestCA(t, "Other Root", nil)
+	otherLeaf := other.Issue(t, "other.example.com", now.Add(-time.Minute), now.Add(time.Hour))
+	otherDer, err := ocsp.CreateRequest(otherLeaf, other.Cert, nil)
 	require.NoError(t, err)
 	_, err = svc.SignOCSP(ctx, &pb.OCSPRequest{Der: otherDer})
 	assert.EqualError(t, err, "not_found: issuer not found")
 
-	// good
+	// good, with the issuer found by its SHA-1 key hash through the SKID
+	// index when it is not in memory
+	tca.registry.Purge()
+	sha1Der, err := ocsp.CreateRequest(leaf, tca.issuerCert, &ocsp.RequestOptions{Hash: crypto.SHA1})
+	require.NoError(t, err)
 	cadb.EXPECT().GetCertificateByIssuerSerial(gomock.Any(), ikid, serial).
 		Return(&model.Certificate{ID: certID, Status: pb.CertificateStatus_Active}, nil)
-	res, err := svc.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
+	res, err := svc.SignOCSP(ctx, &pb.OCSPRequest{Der: sha1Der})
 	require.NoError(t, err)
-	resp, err := ocsp.ParseResponseForCert(res.Der, leaf, tca.ca.Cert)
+	resp, err := ocsp.ParseResponseForCert(res.Der, leaf, tca.issuerCert)
 	require.NoError(t, err)
 	assert.Equal(t, ocsp.Good, resp.Status)
 	assert.Equal(t, 0, leaf.SerialNumber.Cmp(resp.SerialNumber))
 	assert.True(t, resp.NextUpdate.After(resp.ThisUpdate))
+	assert.Equal(t, 8*time.Hour, resp.NextUpdate.Sub(resp.ThisUpdate), "the OCSP expiry of the issuer settings")
+
+	// good, with the loaded issuer found by its SHA-256 key hash
+	cadb.EXPECT().GetCertificateByIssuerSerial(gomock.Any(), ikid, serial).
+		Return(&model.Certificate{ID: certID, Status: pb.CertificateStatus_Active}, nil)
+	res, err = svc.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
+	require.NoError(t, err)
+	resp, err = ocsp.ParseResponseForCert(res.Der, leaf, tca.issuerCert)
+	require.NoError(t, err)
+	assert.Equal(t, ocsp.Good, resp.Status)
 
 	// revoked, with the reason and time of the revocation
 	revokedAt := now.Add(-30 * time.Minute).Truncate(time.Second).UTC()
@@ -245,7 +348,7 @@ func TestService_SignOCSP(t *testing.T) {
 		}, nil)
 	res, err = svc.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
 	require.NoError(t, err)
-	resp, err = ocsp.ParseResponseForCert(res.Der, leaf, tca.ca.Cert)
+	resp, err = ocsp.ParseResponseForCert(res.Der, leaf, tca.issuerCert)
 	require.NoError(t, err)
 	assert.Equal(t, ocsp.Revoked, resp.Status)
 	assert.Equal(t, ocsp.KeyCompromise, resp.RevocationReason)
@@ -256,7 +359,7 @@ func TestService_SignOCSP(t *testing.T) {
 		Return(nil, notFoundErr("certificate", ikid+"/"+serial))
 	res, err = svc.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
 	require.NoError(t, err)
-	resp, err = ocsp.ParseResponseForCert(res.Der, leaf, tca.ca.Cert)
+	resp, err = ocsp.ParseResponseForCert(res.Der, leaf, tca.issuerCert)
 	require.NoError(t, err)
 	assert.Equal(t, ocsp.Unknown, resp.Status)
 

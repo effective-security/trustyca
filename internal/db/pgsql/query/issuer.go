@@ -205,6 +205,11 @@ type ListIssuersRequest struct {
 	// Scope limits the result to Org scope (project_id IS NULL) or
 	// Project scope (project_id IS NOT NULL) issuers
 	Scope pb.Scope_Enum
+	// ProjectIDs limits the result to the org-wide rows and the rows of the
+	// projects, for a caller with grants in some projects only; nil applies
+	// no project filter and an empty list keeps the org-wide rows. ProjectID
+	// and Scope take precedence.
+	ProjectIDs []uint64
 	// ParentID limits the result to the issuers signed by the parent
 	ParentID uint64
 	// Status limits the result to the lifecycle status
@@ -229,6 +234,7 @@ func (r *ListIssuersRequest) QueryParams() xdb.QueryParams {
 	b := xdb.NewQueryParams("ListIssuers")
 	setOrgScope(b, schema.Issuer.OrgID.Position, r.OrgID, r.Platform)
 	setProjectScope(b, schema.Issuer.ProjectID.Position, r.ProjectID, r.Scope)
+	setVisibleProjects(b, schema.Issuer.ProjectID.Position, r.ProjectIDs)
 	if r.ParentID != 0 {
 		b.Set(schema.Issuer.ParentID.Position, r.ParentID)
 	}

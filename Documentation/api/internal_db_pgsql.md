@@ -324,7 +324,7 @@ func (p *Provider) DeleteAPIKey(ctx context.Context, orgID, id uint64) (int64, e
 DeleteAPIKey deletes an API key of the org and returns the number of deleted rows
 
 <a name="Provider.DeleteCertificate"></a>
-### func \(\*Provider\) [DeleteCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L232>)
+### func \(\*Provider\) [DeleteCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L235>)
 
 ```go
 func (p *Provider) DeleteCertificate(ctx context.Context, orgID, id uint64) (int64, error)
@@ -486,7 +486,7 @@ func (p *Provider) GetAPIKey(ctx context.Context, orgID, id uint64) (*model.APIK
 GetAPIKey returns an API key of the org by ID
 
 <a name="Provider.GetCertificate"></a>
-### func \(\*Provider\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L167>)
+### func \(\*Provider\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L170>)
 
 ```go
 func (p *Provider) GetCertificate(ctx context.Context, id uint64) (*model.Certificate, error)
@@ -495,7 +495,7 @@ func (p *Provider) GetCertificate(ctx context.Context, id uint64) (*model.Certif
 GetCertificate returns a certificate by ID
 
 <a name="Provider.GetCertificateByIssuerSerial"></a>
-### func \(\*Provider\) [GetCertificateByIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L193>)
+### func \(\*Provider\) [GetCertificateByIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L196>)
 
 ```go
 func (p *Provider) GetCertificateByIssuerSerial(ctx context.Context, ikid, serial string) (*model.Certificate, error)
@@ -504,7 +504,7 @@ func (p *Provider) GetCertificateByIssuerSerial(ctx context.Context, ikid, seria
 GetCertificateByIssuerSerial returns a certificate by the key identifier of its issuer and its serial number
 
 <a name="Provider.GetCertificateBySha256"></a>
-### func \(\*Provider\) [GetCertificateBySha256](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L180>)
+### func \(\*Provider\) [GetCertificateBySha256](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L183>)
 
 ```go
 func (p *Provider) GetCertificateBySha256(ctx context.Context, sha256 string) (*model.Certificate, error)
@@ -702,7 +702,7 @@ func (p *Provider) ListAPIKeys(ctx context.Context, r *query.ListAPIKeysRequest)
 ListAPIKeys lists API keys of an org
 
 <a name="Provider.ListCertificates"></a>
-### func \(\*Provider\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L206>)
+### func \(\*Provider\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L209>)
 
 ```go
 func (p *Provider) ListCertificates(ctx context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error)
@@ -972,7 +972,7 @@ func (p *Provider) Tx() xdb.Tx
 Tx returns underlying DB transaction
 
 <a name="Provider.UpdateCertificate"></a>
-### func \(\*Provider\) [UpdateCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L113>)
+### func \(\*Provider\) [UpdateCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L116>)
 
 ```go
 func (p *Provider) UpdateCertificate(ctx context.Context, req *query.UpdateCertificateRequest) (*model.Certificate, error)

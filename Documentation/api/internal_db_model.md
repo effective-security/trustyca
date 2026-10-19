@@ -42,6 +42,7 @@ A CA row with a zero OrgID is the platform's, and a project row needs an org \(v
   - [func \(m \*Certificate\) Validate\(\) error](<#Certificate.Validate>)
 - [type CertificateProfile](<#CertificateProfile>)
   - [func NewCertificateProfile\(orgID, projectID xdb.ID, p \*pb.CertProfile\) \(\*CertificateProfile, error\)](<#NewCertificateProfile>)
+  - [func \(m \*CertificateProfile\) Definition\(\) \(\*pb.CertProfile, error\)](<#CertificateProfile.Definition>)
   - [func \(m \*CertificateProfile\) Pb\(\) \(\*pb.CertProfile, error\)](<#CertificateProfile.Pb>)
   - [func \(m \*CertificateProfile\) ScanRow\(rows xdb.Row\) error](<#CertificateProfile.ScanRow>)
   - [func \(m \*CertificateProfile\) SetConfig\(p \*pb.CertProfile\) error](<#CertificateProfile.SetConfig>)
@@ -568,8 +569,17 @@ func NewCertificateProfile(orgID, projectID xdb.ID, p *pb.CertProfile) (*Certifi
 
 NewCertificateProfile builds a profile row of the scope from the profile definition: the label, issuer label and status come from the definition, the rest of it is stored as the config. A zero orgID is a platform profile.
 
+<a name="CertificateProfile.Definition"></a>
+### func \(\*CertificateProfile\) [Definition](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L87>)
+
+```go
+func (m *CertificateProfile) Definition() (*pb.CertProfile, error)
+```
+
+Definition returns the profile definition from the config with the labels and the status of the row, without its identity: the IDs are left empty. It is for the rows a cache shares between goroutines, since an xdb.ID formats itself into an unsynchronized cache.
+
 <a name="CertificateProfile.Pb"></a>
-### func \(\*CertificateProfile\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L85>)
+### func \(\*CertificateProfile\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L103>)
 
 ```go
 func (m *CertificateProfile) Pb() (*pb.CertProfile, error)
@@ -628,7 +638,7 @@ func (p *CertificateProfileResult) GetTableInfo() *xdbschema.TableInfo
 
 
 <a name="CertificateProfileResult.NextPage"></a>
-### func \(\*CertificateProfileResult\) [NextPage](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L103>)
+### func \(\*CertificateProfileResult\) [NextPage](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L115>)
 
 ```go
 func (v *CertificateProfileResult) NextPage() *pb.NextPage
@@ -637,7 +647,7 @@ func (v *CertificateProfileResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="CertificateProfileResult.Pb"></a>
-### func \(\*CertificateProfileResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L114>)
+### func \(\*CertificateProfileResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L126>)
 
 ```go
 func (v *CertificateProfileResult) Pb() (*pb.ProfilesResponse, error)

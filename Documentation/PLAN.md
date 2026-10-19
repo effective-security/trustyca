@@ -73,7 +73,7 @@ Follow-ups in this area:
 6. Regeneration note: `make drop-sql start-sql gen-sql-schema docs` emits the two
    `*.gen.go` files without imports; run `goimports -w` on them afterwards.
 
-## Phase 2: CA core library (`internal/ca`)
+## Phase 2: CA core library (`internal/ca`, done)
 
 1. `internal/db` (done): `CaReadonlyDb` and `CaDb` interfaces and `pgsql`
    implementations in lifecycle order (Register/Upsert, Get, List, Delete) for
@@ -103,57 +103,140 @@ NULL`) or `AllOrgs` (`ErrOrgScopeRequired` otherwise), and every
      with real certificates from `tests/testutils.NewTestCA`
      (`Test_Issuer`, `Test_Issuer_Activate`, `Test_Root`, `Test_Profile`,
      `Test_Certificate`, `Test_Crl`).
-2. `internal/ca/keys`: crypto provider registry built from `config.CA.Crypto`
-   using `cryptoprov.Load`; key label scheme `trustyca/{org}/{project}/{label}`;
-   software keys wrapped with `dataprotection.Provider`.
-3. `internal/ca/profiles`: conversion `pb.CertProfile <-> authority.CertProfile`,
-   validation via `authority.CertProfile.Validate`, resolution
-   `(org, project, label) -> (org, 0, label)`.
-4. `internal/ca/issuers`: build `authority.Issuer` from an `issuer` row
-   (`authority.CreateIssuer` with a `crypto.Signer` from the provider), TTL cache
-   keyed by issuer ID, invalidation on update; bootstrap loader that mirrors
-   `authority.Config` issuers and profiles into `org_id = 0` rows at startup.
-   The loader needs an idempotent registration (`RegisterIssuer` is
-   insert-only and `UpdateIssuer` changes only status and config): decide
-   between an upsert by `(org_id, project_id, label)` that never touches
-   `crl_number` and a renewal as archive-old plus register-new, and whether
-   `RegisterIssuer(Type=Root)` inserts the `root_certificate` row in the same
-   transaction.
-5. `internal/ca/signer`: `SignCertificate` flow from DESIGN.md section 7,
-   `RegisterIssuer` shapes from section 5.2 (root, parent-signed, pending),
-   `ImportIssuer`, `ActivateIssuer`, `Revoke`, `BuildCRL`, `SignOCSP`.
-6. Unit tests with the `inmem` provider and `xpki/testca`; table-driven tests for
-   profile resolution and parent-issuer authorization.
+2. `internal/ca/keys.go` (done): `Keys` over the `crypto_provider`
+   registry (`cryptoprov.Load`, provided by `appcontainer`) and the
+   `dataprotection.Provider`; `KeySpec` defaults and limits; key labels
+   `trustyca/{org}/{project}/{label}`; `KeyRef` with the key URI of a
+   provider key or the wrapped PEM of a software key; `Signer` loads either;
+   `ImportKey`, `Destroy`, `SubjectKeyID`.
+3. `internal/ca/profile.go`, `config.go` (done): `ProfileFromPb` with
+   `authority.CertProfile.Validate`, `ProfileToPb`, `ExtensionsFromPb`,
+   `IssuerConfigFromPb` (the AIA section is always present, so the CRL and
+   OCSP timings fall back to the authority defaults), `IssuerConfigToPb`.
+4. `internal/ca/registry.go`, `bootstrap.go` (done): the `Registry` of
+   phase 2a resolves `(org, project, label) -> (org, 0, label)` for profiles
+   and issuers, builds `authority.Issuer` from a row with
+   `authority.CreateIssuer` and the signer of `Keys`, and caches it by row
+   ID with a TTL. `Bootstrap` mirrors an `authority.Config` into platform
+   rows. The decisions the loader needed: a registered issuer with the same
+   SKID only has its settings refreshed in place (`UpdateIssuer` with the
+   config, never `crl_number`); a certificate for a new key is an error,
+   because the label is unique per scope in every status (ROADMAP.md);
+   `RegisterIssuer(Type=Root)` registers the `root_certificate` row after
+   the issuer, not in one transaction, and the service logs a failure since
+   `RegisterRoot` is idempotent.
+5. `internal/ca/issuer.go` (done for issuers): `NewRootIssuer`,
+   `NewSignedIssuer`, `NewPendingIssuer` (DESIGN.md section 5.2),
+   `ImportIssuer`, `ActivatedIssuer`. `SignCertificate` and `SignOCSP` stay
+   in the service on top of `Registry.Resolve` and `IssuerByKeyHash`;
+   `Revoke` and `BuildCRL` are phase 4.
+6. Tests (done): `internal/ca` over a map-backed fake DB and the `inmem`
+   provider, with the fixtures created through the package itself; profile
+   conversion tables; parent authorization and scope shadowing of the
+   registry; concurrency under the race detector.
+
+## Phase 2a: multi-tenant issuer resolution (done)
+
+Replaces the single bootstrap `*authority.Authority` the CA service signed
+with, which collided on issuer labels across orgs and loaded every issuer at
+startup. The decision is recorded in DESIGN.md section 5.1: an issuer
+registry keyed by row ID with scoped resolution, not an `Authority` per org,
+because labels are unique per `(org, project)` and project profiles shadow
+org profiles.
+
+1. `internal/ca.Registry`: `Resolve` (profile of the scope, the issuer it
+   binds to or the requested one for `*` profiles, Active only, profile
+   registered on the issuer under a versioned name), `FindProfile`,
+   `FindIssuer`, `Issuer`, `IssuerBySKID`, `IssuerByKeyHash`,
+   `IssuerByNameHash`, `InvalidateIssuer`, `InvalidateProfile`. Caches are
+   `hashicorp/golang-lru/v2/expirable` with `ca.issuer_cache_ttl` and
+   `ca.issuer_cache_size`; one build per issuer under a striped lock.
+2. `server/appcontainer.provideCA` provides `*ca.Registry` and runs
+   `Registry.Bootstrap` on `ca.bootstrap_config` (the `authority` config key
+   became the `ca` section): a `disabled` issuer is archived and enabled
+   again by the configuration, the anchor of a root issuer is registered on
+   every start, and every enabled issuer is loaded, so a platform issuer
+   that does not load fails the start.
+3. `server/service/ca`: `SignCertificate` resolves through the registry
+   (profile not found, issuer not found, label required, mismatch, not
+   allowed, not active are mapped to the API codes), `SignOCSP` through
+   `IssuerByKeyHash` and `IssuerByNameHash`; `RegisterIssuer`,
+   `ImportIssuer`, `ActivateIssuer`, `UpdateIssuer`, `GetIssuer`,
+   `ListIssuers`, `RegisterProfile`, `GetProfile`, `ListProfiles`,
+   `DeleteProfile`, `RegisterRoot`, `ListRoots` are implemented, with audit
+   events and registry invalidation after every mutation. A row resolved by
+   ID or IKID is authorized against its own project (`rowAccess`), a list
+   without a project is limited to the projects of a member with project
+   grants only (`listProjects`, `ProjectIDs` of the list queries), and the
+   parent of a new issuer must be visible from the new issuer's scope
+   (DESIGN.md section 6).
+4. Benchmarks (`internal/ca/bench_test.go`, `server/service/ca/bench_test.go`;
+   `go test -bench . -benchmem`), measured on 2026-10-18 on a 16-thread
+   desktop with the `inmem` provider, an in-memory fake DB and mocked
+   registration; the figures are a guide to the shape of the cost, not a
+   target:
+
+   | Benchmark                                                   | ns/op   | allocs/op |
+   | ----------------------------------------------------------- | ------- | --------- |
+   | `Registry.Resolve`, warm                                    | 294     | 3         |
+   | `Registry.Resolve`, warm, rotating over 16 orgs             | 310     | 3         |
+   | `Registry.Resolve`, cold (lookups, key load, construction)  | 206,145 | 466       |
+   | `Registry.Resolve` + `Issuer.Sign`                          | 193,959 | 431       |
+   | option A: `Authority.GetIssuerByProfile` + `Issuer.Sign`    | 191,999 | 428       |
+   | option A: `Authority.GetIssuerByProfile` alone              | 8       | 0         |
+   | `Service.SignCertificate`, warm                             | 211,389 | 539       |
+   | `Service.SignOCSP`, warm                                    | 53,531  | 283       |
+
+   The warm resolution adds about 0.3 µs to a signature of about 190 µs
+   (a KMS signature adds a network round trip of milliseconds), so the
+   registry costs nothing measurable on the hot path compared with the
+   single authority. A cold issuer pays its DB lookups (two to four
+   queries) and about 0.2 ms of construction once per TTL and instance.
+
+Follow-ups:
+
+1. Issuer renewal under one label (ROADMAP.md).
+2. `OCSPRequest.IKID` from the CIS route (ROADMAP.md); until then an issuer
+   that is not in memory is found by a SHA-1 key hash only.
+3. `pb.Issuer.Profiles` is not populated; `GetIssuer` could list the
+   profiles bound to the issuer.
+4. Negative resolutions are not cached: an unknown profile costs DB lookups
+   on every request.
+5. Tenants list only the trust anchors of their org; platform anchors are
+   served by CIS.
+6. `UpdateIssuer`, `ActivateIssuer` and `DeleteProfile` carry no
+   `ProjectID`, so a project Admin cannot manage the rows of its project
+   through them (ROADMAP.md).
 
 ## Phase 3: CA gRPC service
 
-`SignCertificate` and `SignOCSP` are partially implemented ahead of this phase as a
-proof of concept on the bootstrap `authority.Authority`
-(`server/service/ca/signer.go`, `tenant.go`): the org comes from the token
-or, for a `trustyca-*` service caller, from the request and is verified
-through `db.OrgsReadonlyDb`; the project is verified with the authorizer;
-the certificate and its `CertificateIssued` event are one transaction; OCSP
-answers good, revoked (reason and time from `GetRevoked`) or unknown. The
-unit tests build the authority from `tests/testutils.NewTestCA`
-certificates and mock the DB.
+The issuer, profile, root and signing methods are done in phase 2a
+(`server/service/ca/issuer.go`, `profile.go`, `root.go`, `signer.go`,
+`tenant.go`): the org comes from the token or, for a `trustyca-*` service
+caller, from the request and is verified through `db.OrgsDb`; the project
+is verified with the authorizer; the certificate and its
+`CertificateIssued` event are one transaction; OCSP answers good, revoked
+(reason and time from `GetRevoked`) or unknown. The service tests build the
+CA through `internal/ca` with the `inmem` provider over a mock DB whose
+reads serve in-memory rows (`service_test.go`).
 
 1. `server/service/ca`: implement the remaining `pb.CAServer` methods on top
-   of `internal/ca`; wire `db.CaDb`, `db.OrgsReadonlyDb`, the key registry
-   and the authority (today `*authority.Authority` has no `appcontainer`
-   provider, so a server that lists the `ca` service does not start) through
-   `appcontainer` providers; switch the two implemented methods from the
-   bootstrap authority to the DB-backed issuers and profiles.
+   of `internal/ca` and `db.CaDb`: `GetCertificate`, `ListCertificates`,
+   `UpdateCertificateLabel`, `RevokeCertificate`, `ListRevokedCertificates`
+   (`cert.go`), `GetCRL` and `PublishCrls` (`crl.go`, with phase 4).
 2. `authctx.CheckAccess` already enforces `allowed_roles` for user tokens and
    the `ca:*`/`certs:*` scopes for API keys, and passes `trustyca-*` service
-   roles through; the CA service must additionally verify that an explicit `OrgID` from a service
-   caller is a valid org and that `ProjectID` belongs to it.
-3. Config: `ca` section in `internal/config/config.go` and `etc/dev/trustyca-config.yaml`;
-   add `ca` to the `backend` listener, `trustyca-ra` and `trustyca-cis` TLS roles,
+   roles through; `tenantOrg` and `tenantProject` verify that an explicit
+   `OrgID` from a service caller is an active org and that `ProjectID`
+   belongs to it (done).
+3. Config: the `ca` section (`bootstrap_config`, `issuer_cache_ttl`,
+   `issuer_cache_size`) and the `backend` listener with `ca` are done; add
+   the `trustyca-ra` and `trustyca-cis` TLS roles and
    `authz.allow: /pb.CA:trustyca-ra,trustyca-admin`.
 4. Client: `api/client` factory method for `pb.CAClient`; `api/pb/pb.go` already has
    mockgen directives for `ca` and `cis`.
-5. Tests: service tests with `tests/mockappcontainer`, gRPC end-to-end sign, get,
-   list, revoke, CRL with the bootstrap L2 issuer.
+5. Tests: gRPC end-to-end sign, get, list, revoke, CRL with the bootstrap
+   `trusty.svc` issuer through `tests/mockappcontainer`.
 
 ## Phase 4: revocation pipeline
 
@@ -212,3 +295,8 @@ not_after < ?` paged by id, and a bulk delete; the DB layer has neither.
 - Schema changes: `make drop-sql start-sql gen-sql-schema docs` and commit the
   regenerated `internal/db/model`, `internal/db/schema`, `internal/db/README.md`
   and `Documentation/api/internal_db_*.md`.
+
+## NOTES
+
+- do not create new SQL migrations until explicitly asked, the service is in development and not deployed.
+  We continue using `sql/trustycadb/migrations/1_tables.up.sql` and if needed can drop and re-create the schema on migration changes.

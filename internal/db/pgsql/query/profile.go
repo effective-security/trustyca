@@ -81,6 +81,11 @@ type ListProfilesRequest struct {
 	// Scope limits the result to Org scope (project_id IS NULL) or
 	// Project scope (project_id IS NOT NULL) profiles
 	Scope pb.Scope_Enum
+	// ProjectIDs limits the result to the org-wide rows and the rows of the
+	// projects, for a caller with grants in some projects only; nil applies
+	// no project filter and an empty list keeps the org-wide rows. ProjectID
+	// and Scope take precedence.
+	ProjectIDs []uint64
 	// IssuerLabel limits the result to the profiles bound to the issuer label
 	IssuerLabel string
 	// Status limits the result to the status
@@ -103,6 +108,7 @@ func (r *ListProfilesRequest) QueryParams() xdb.QueryParams {
 	b := xdb.NewQueryParams("ListProfiles")
 	setOrgScope(b, schema.CertificateProfile.OrgID.Position, r.OrgID, r.Platform)
 	setProjectScope(b, schema.CertificateProfile.ProjectID.Position, r.ProjectID, r.Scope)
+	setVisibleProjects(b, schema.CertificateProfile.ProjectID.Position, r.ProjectIDs)
 	if r.IssuerLabel != "" {
 		b.Set(schema.CertificateProfile.IssuerLabel.Position, r.IssuerLabel)
 	}

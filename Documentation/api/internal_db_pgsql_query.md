@@ -472,7 +472,7 @@ func ListEvents(args ...any) (string, string)
 ListEvents returns SQL query
 
 <a name="ListIssuers"></a>
-## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L246>)
+## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L252>)
 
 ```go
 func ListIssuers(args ...any) (string, string)
@@ -499,7 +499,7 @@ func ListOrgs(args ...any) (string, string)
 ListOrgs returns SQL query
 
 <a name="ListProfiles"></a>
-## func [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L117>)
+## func [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L123>)
 
 ```go
 func ListProfiles(args ...any) (string, string)
@@ -544,7 +544,7 @@ func ListRoots(args ...any) (string, string)
 ListRoots returns SQL query to list trust anchors
 
 <a name="LocationsArg"></a>
-## func [LocationsArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L63>)
+## func [LocationsArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L67>)
 
 ```go
 func LocationsArg(locations []string) pq.StringArray
@@ -553,7 +553,7 @@ func LocationsArg(locations []string) pq.StringArray
 LocationsArg returns the value of a NOT NULL varchar\[\] locations column: pq.StringArray writes a nil slice as NULL, so an empty array is written instead
 
 <a name="MetadataArg"></a>
-## func [MetadataArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L53>)
+## func [MetadataArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L57>)
 
 ```go
 func MetadataArg(m xdb.Metadata) any
@@ -562,7 +562,7 @@ func MetadataArg(m xdb.Metadata) any
 MetadataArg returns the value of a NOT NULL jsonb metadata column: xdb.Metadata.Value\(\) returns NULL for an empty map, so an explicit empty object is written instead
 
 <a name="OrgArg"></a>
-## func [OrgArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L29>)
+## func [OrgArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L33>)
 
 ```go
 func OrgArg(orgID uint64) xdb.ID
@@ -1116,7 +1116,7 @@ func (r *ListEventsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListIssuersRequest"></a>
-## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L194-L220>)
+## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L194-L225>)
 
 ListIssuersRequest defines request to list issuers, newest first. The request names its org scope: OrgID, Platform or AllOrgs; without ProjectID and Scope the issuers of every scope of the org are returned.
 
@@ -1135,6 +1135,11 @@ type ListIssuersRequest struct {
     // Scope limits the result to Org scope (project_id IS NULL) or
     // Project scope (project_id IS NOT NULL) issuers
     Scope pb.Scope_Enum
+    // ProjectIDs limits the result to the org-wide rows and the rows of the
+    // projects, for a caller with grants in some projects only; nil applies
+    // no project filter and an empty list keeps the org-wide rows. ProjectID
+    // and Scope take precedence.
+    ProjectIDs []uint64
     // ParentID limits the result to the issuers signed by the parent
     ParentID uint64
     // Status limits the result to the lifecycle status
@@ -1151,7 +1156,7 @@ type ListIssuersRequest struct {
 ```
 
 <a name="ListIssuersRequest.QueryParams"></a>
-### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L228>)
+### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L233>)
 
 ```go
 func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
@@ -1160,7 +1165,7 @@ func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L223>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L228>)
 
 ```go
 func (r *ListIssuersRequest) Validate() error
@@ -1226,7 +1231,7 @@ func (r *ListOrgsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListProfilesRequest"></a>
-## type [ListProfilesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L70-L94>)
+## type [ListProfilesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L70-L99>)
 
 ListProfilesRequest defines request to list certificate profiles, newest first. The request names its org scope: OrgID, Platform or AllOrgs; without ProjectID and Scope the profiles of every scope of the org are returned.
 
@@ -1245,6 +1250,11 @@ type ListProfilesRequest struct {
     // Scope limits the result to Org scope (project_id IS NULL) or
     // Project scope (project_id IS NOT NULL) profiles
     Scope pb.Scope_Enum
+    // ProjectIDs limits the result to the org-wide rows and the rows of the
+    // projects, for a caller with grants in some projects only; nil applies
+    // no project filter and an empty list keeps the org-wide rows. ProjectID
+    // and Scope take precedence.
+    ProjectIDs []uint64
     // IssuerLabel limits the result to the profiles bound to the issuer label
     IssuerLabel string
     // Status limits the result to the status
@@ -1259,7 +1269,7 @@ type ListProfilesRequest struct {
 ```
 
 <a name="ListProfilesRequest.QueryParams"></a>
-### func \(\*ListProfilesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L102>)
+### func \(\*ListProfilesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L107>)
 
 ```go
 func (r *ListProfilesRequest) QueryParams() xdb.QueryParams
@@ -1268,7 +1278,7 @@ func (r *ListProfilesRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListProfilesRequest.Validate"></a>
-### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L97>)
+### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L102>)
 
 ```go
 func (r *ListProfilesRequest) Validate() error

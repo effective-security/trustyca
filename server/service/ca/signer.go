@@ -6,8 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
+	core "github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/events"
@@ -43,9 +45,9 @@ var signRequestErrorMarkers = []string{
 	"unsupported profile",
 }
 
-// SignCertificate signs a certificate request with the issuer that serves
-// the profile and records the certificate with its issue event in one
-// transaction.
+// SignCertificate signs a certificate request with the issuer of the
+// profile, resolved in the scope of the request (DESIGN.md section 6), and
+// records the certificate with its issue event in one transaction.
 func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest) (*pb.CertificateResponse, error) {
 	if req == nil || len(req.Request) == 0 {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
@@ -56,8 +58,9 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	if len(req.Label) > model.MaxLenForName {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid label length")
 	}
-	if s.ca == nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.Unavailable, "CA is not configured")
+	err := s.requireCA(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	orgID, err := s.tenantOrg(ctx, req.OrgID)
@@ -73,27 +76,21 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	if err != nil {
 		return nil, err
 	}
-	issuer, err := s.issuerFor(ctx, req.IssuerLabel, req.Profile)
+	res, err := s.resolve(ctx, orgID, projectID, req.Profile, req.IssuerLabel)
 	if err != nil {
 		return nil, err
 	}
+	issuer := res.Issuer
 
 	cr := csr.SignRequest{
 		Request: pemReq,
-		Profile: req.Profile,
+		Profile: res.ProfileName,
 		SAN:     req.SAN,
 		Subject: subjectOf(req.Subject),
 	}
-	for _, ex := range req.Extensions {
-		oid, err := csr.ParseObjectIdentifier(ex.ID)
-		if err != nil {
-			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid extension OID: %s", ex.ID)
-		}
-		cr.Extensions = append(cr.Extensions, csr.X509Extension{
-			ID:       oid,
-			Critical: ex.Critical,
-			Value:    ex.Value,
-		})
+	cr.Extensions, err = core.ExtensionsFromPb(req.Extensions)
+	if err != nil {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
 	cr.NotBefore, err = parseTime(ctx, req.NotBefore, "NotBefore")
 	if err != nil {
@@ -108,6 +105,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	if err != nil {
 		logger.ContextKV(ctx, xlog.WARNING,
 			"reason", "sign",
+			"issuer_id", logID(res.Row.ID),
 			"issuer", issuer.Label(),
 			"profile", req.Profile,
 			"err", err.Error())
@@ -130,10 +128,11 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	if err != nil {
 		logger.ContextKV(ctx, xlog.ERROR,
 			"reason", "register_certificate",
+			"issuer_id", logID(res.Row.ID),
 			"issuer", issuer.Label(),
 			"sha256", mcert.Sha256,
 			"err", err.Error())
-		if strings.Contains(err.Error(), uniqueCertificateConstraint) {
+		if violates(err, uniqueCertificateConstraint) {
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "certificate is already registered")
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to register certificate")
@@ -144,6 +143,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 		"id", registered.ID.UnderscoreString(),
 		"org_id", registered.OrgID.UnderscoreString(),
 		"project_id", registered.ProjectID.UnderscoreString(),
+		"issuer_id", logID(res.Row.ID),
 		"issuer", issuer.Label(),
 		"profile", registered.Profile,
 		"subject", registered.Subject,
@@ -161,8 +161,9 @@ func (s *Service) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPRe
 	if req == nil || len(req.Der) == 0 {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	if s.ca == nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.Unavailable, "CA is not configured")
+	err := s.requireCA(ctx)
+	if err != nil {
+		return nil, err
 	}
 	ocspReq, err := ocsp.ParseRequest(req.Der)
 	if err != nil || ocspReq.SerialNumber == nil {
@@ -221,27 +222,46 @@ func (s *Service) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPRe
 	return &pb.OCSPResponse{Der: der}, nil
 }
 
-// issuerFor resolves the issuer of a sign request: the issuer with the label
-// when one is given, otherwise the issuer that serves the profile. The issuer
-// must serve the profile.
-func (s *Service) issuerFor(ctx context.Context, label, profile string) (*authority.Issuer, error) {
-	var issuer *authority.Issuer
-	var err error
-	if label != "" {
-		issuer, err = s.ca.GetIssuerByLabel(label)
-		if err != nil {
-			return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found: %s", label)
-		}
-	} else {
-		issuer, err = s.ca.GetIssuerByProfile(profile)
-		if err != nil {
-			return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found for profile: %s", profile)
-		}
+// resolve returns the issuer and the profile of a sign request in the
+// scope, mapping the registry errors to the status codes of the API: a
+// missing profile or issuer is not found, a profile and an issuer that do
+// not go together is a bad request, an issuer that does not sign is a
+// precondition failure, and an issuer that does not load is internal.
+func (s *Service) resolve(ctx context.Context, orgID, projectID xdb.ID, profile, issuerLabel string) (*core.Resolution, error) {
+	res, err := s.registry.Resolve(ctx, &core.ResolveRequest{
+		OrgID:       orgID,
+		ProjectID:   projectID,
+		Profile:     profile,
+		IssuerLabel: issuerLabel,
+	})
+	if err == nil {
+		return res, nil
 	}
-	if issuer.Profile(profile) == nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer %q does not support the profile: %s", issuer.Label(), profile)
+	switch {
+	case errors.Is(err, core.ErrProfileNotFound):
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "profile not found: %s", profile)
+	case errors.Is(err, core.ErrIssuerNotFound):
+		if issuerLabel != "" {
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found: %s", issuerLabel)
+		}
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found for profile: %s", profile)
+	case errors.Is(err, core.ErrIssuerLabelRequired):
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer label is required for profile: %s", profile)
+	case errors.Is(err, core.ErrIssuerMismatch):
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer %q does not serve the profile: %s", issuerLabel, profile)
+	case errors.Is(err, core.ErrProfileNotAllowed):
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer %q does not support the profile: %s", issuerLabel, profile)
+	case errors.Is(err, core.ErrIssuerNotActive):
+		return nil, preconditionFailed(ctx, "issuer is not active")
 	}
-	return issuer, nil
+	logger.ContextKV(ctx, xlog.ERROR,
+		"reason", "load_issuer",
+		"org_id", orgID.UnderscoreString(),
+		"project_id", projectID.UnderscoreString(),
+		"profile", profile,
+		"issuer", issuerLabel,
+		"err", err.Error())
+	return nil, httperror.NewGrpcFromCtx(ctx, codes.Internal, "unable to load issuer")
 }
 
 // ocspIssuer resolves the issuer of an OCSP request by the hash of its key,
@@ -251,14 +271,20 @@ func (s *Service) ocspIssuer(ctx context.Context, ocspReq *ocsp.Request) (*autho
 	var err error
 	switch {
 	case len(ocspReq.IssuerKeyHash) > 0:
-		issuer, err = s.ca.GetIssuerByKeyHash(ocspReq.HashAlgorithm, ocspReq.IssuerKeyHash)
+		issuer, _, err = s.registry.IssuerByKeyHash(ctx, ocspReq.HashAlgorithm, ocspReq.IssuerKeyHash)
 	case len(ocspReq.IssuerNameHash) > 0:
-		issuer, err = s.ca.GetIssuerByNameHash(ocspReq.HashAlgorithm, ocspReq.IssuerNameHash)
+		issuer, _, err = s.registry.IssuerByNameHash(ctx, ocspReq.HashAlgorithm, ocspReq.IssuerNameHash)
 	default:
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer not specified")
 	}
 	if err != nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found")
+		if errors.Is(err, core.ErrIssuerNotFound) || errors.Is(err, core.ErrIssuerNotActive) {
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found")
+		}
+		logger.ContextKV(ctx, xlog.ERROR,
+			"reason", "load_issuer",
+			"err", err.Error())
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.Internal, "unable to load issuer")
 	}
 	return issuer, nil
 }
