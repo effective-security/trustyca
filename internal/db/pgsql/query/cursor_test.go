@@ -29,7 +29,7 @@ func Test_Cursor(t *testing.T) {
 	_, err = query.ParseCursor("not base64!")
 	assert.ErrorContains(t, err, "invalid cursor")
 
-	_, err = query.ParseCursor(query.EncodeCursor(xdb.ID{}))
+	_, err = query.ParseCursor(query.EncodeCursor(xdb.ID(0)))
 	assert.EqualError(t, err, "invalid cursor: missing id")
 
 	c, err = query.ParseCursor(xdb.EncodeCursor(map[string]any{"id": 5}))

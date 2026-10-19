@@ -10,7 +10,7 @@ require (
 	github.com/effective-security/protoc-gen-go v0.25.122
 	github.com/effective-security/servefiles v0.0.0-20231231152618-8f0e3ad31aae
 	github.com/effective-security/x v1.0.109
-	github.com/effective-security/xdb v0.25.165
+	github.com/effective-security/xdb v1.0.166
 	github.com/effective-security/xlog v1.0.69
 	github.com/effective-security/xpki v1.0.316
 	github.com/go-jose/go-jose/v4 v4.1.6
@@ -111,7 +111,7 @@ require (
 	github.com/redis/go-redis/v9 v9.23.0 // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/shopspring/decimal v1.5.0 // indirect
+	github.com/shopspring/decimal v1.6.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/ugorji/go/codec v1.3.2 // indirect

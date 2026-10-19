@@ -45,8 +45,8 @@ func Test_Revoked(t *testing.T) {
 		mod  func(m *model.Revoked)
 		err  string
 	}{
-		{"project without org", func(m *model.Revoked) { m.OrgID = xdb.ID{} }, "invalid org ID: a project scope requires an org"},
-		{"certificate", func(m *model.Revoked) { m.CertificateID = xdb.ID{} }, "invalid certificate ID"},
+		{"project without org", func(m *model.Revoked) { m.OrgID = xdb.ID(0) }, "invalid org ID: a project scope requires an org"},
+		{"certificate", func(m *model.Revoked) { m.CertificateID = xdb.ID(0) }, "invalid certificate ID"},
 		{"ikid", func(m *model.Revoked) { m.Ikid = "" }, "invalid ikid: required"},
 		{"serial", func(m *model.Revoked) { m.SerialNumber = "" }, "invalid serial number: required"},
 		{"reason text", func(m *model.Revoked) { m.ReasonText = string(make([]byte, 261)) }, "invalid reason text length: 261"},

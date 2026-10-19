@@ -508,15 +508,15 @@ func newTestCA(t testing.TB, ctrl *gomock.Controller) *testCA {
 		rows:     rows,
 	}
 
-	tca.addProfile(testOrgID(), xdb.ID{}, caProfileDef(testCAProfile, testRootLabel))
-	tca.root = tca.newRoot(t, testOrgID(), xdb.ID{}, testRootLabel)
-	tca.issuer = tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, testIssuerLabel, pb.AuthorityType_Issuing, &pb.IssuerConfig{
+	tca.addProfile(testOrgID(), xdb.ID(0), caProfileDef(testCAProfile, testRootLabel))
+	tca.root = tca.newRoot(t, testOrgID(), xdb.ID(0), testRootLabel)
+	tca.issuer = tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), testIssuerLabel, pb.AuthorityType_Issuing, &pb.IssuerConfig{
 		AllowedProfiles: []string{testOCSPProfile},
 		OcspExpiry:      "8h",
 	})
 	tca.issuerCert, err = certutil.ParseFromPEM([]byte(tca.issuer.Pem))
 	require.NoError(t, err)
-	tca.peer = tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef(testProfile, testIssuerLabel, "168h"))
+	tca.peer = tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef(testProfile, testIssuerLabel, "168h"))
 	return tca
 }
 

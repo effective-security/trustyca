@@ -128,8 +128,8 @@ func TestService_GetProfile(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
 	ctx := testCtx("42", "1")
-	org2Peer := tca.addProfile(xdb.NewID(2), xdb.ID{}, peerProfileDef(testProfile, testIssuerLabel, "1h"))
-	platform := tca.addProfile(xdb.ID{}, xdb.ID{}, peerProfileDef("platform", "PROOT", "1h"))
+	org2Peer := tca.addProfile(xdb.NewID(2), xdb.ID(0), peerProfileDef(testProfile, testIssuerLabel, "1h"))
+	platform := tca.addProfile(xdb.ID(0), xdb.ID(0), peerProfileDef("platform", "PROOT", "1h"))
 
 	_, err := svc.GetProfile(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
@@ -303,7 +303,7 @@ func TestService_DeleteProfile(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
 	ctx := testCtx("42", "1")
-	org2Peer := tca.addProfile(xdb.NewID(2), xdb.ID{}, peerProfileDef(testProfile, testIssuerLabel, "1h"))
+	org2Peer := tca.addProfile(xdb.NewID(2), xdb.ID(0), peerProfileDef(testProfile, testIssuerLabel, "1h"))
 
 	_, err := svc.DeleteProfile(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
@@ -331,7 +331,7 @@ func TestService_DeleteProfile(t *testing.T) {
 	assert.ErrorIs(t, err, core.ErrProfileNotFound, "the deleted profile left the registry at once")
 
 	// a row that is gone by the time of the delete
-	other := tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("other", testIssuerLabel, "1h"))
+	other := tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("other", testIssuerLabel, "1h"))
 	tca.cadb.EXPECT().DeleteProfile(gomock.Any(), uint64(1), other.ID.UInt64()).Return(int64(0), nil)
 	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{ID: other.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found")

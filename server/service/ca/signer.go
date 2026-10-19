@@ -105,7 +105,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	if err != nil {
 		logger.ContextKV(ctx, xlog.WARNING,
 			"reason", "sign",
-			"issuer_id", logID(res.Row.ID),
+			"issuer_id", res.Row.ID.UnderscoreString(),
 			"issuer", issuer.Label(),
 			"profile", req.Profile,
 			"err", err.Error())
@@ -128,7 +128,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	if err != nil {
 		logger.ContextKV(ctx, xlog.ERROR,
 			"reason", "register_certificate",
-			"issuer_id", logID(res.Row.ID),
+			"issuer_id", res.Row.ID.UnderscoreString(),
 			"issuer", issuer.Label(),
 			"sha256", mcert.Sha256,
 			"err", err.Error())
@@ -143,7 +143,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 		"id", registered.ID.UnderscoreString(),
 		"org_id", registered.OrgID.UnderscoreString(),
 		"project_id", registered.ProjectID.UnderscoreString(),
-		"issuer_id", logID(res.Row.ID),
+		"issuer_id", res.Row.ID.UnderscoreString(),
 		"issuer", issuer.Label(),
 		"profile", registered.Profile,
 		"subject", registered.Subject,

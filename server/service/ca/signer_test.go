@@ -81,13 +81,13 @@ func TestService_SignCertificate(t *testing.T) {
 	assert.EqualError(t, err, "not_found: profile not found: nope")
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "nope", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, `bad_request: issuer "nope" does not serve the profile: peer`)
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("orphan", "NOPE", "1h"))
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("orphan", "NOPE", "1h"))
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "orphan"})
 	assert.EqualError(t, err, "not_found: issuer not found for profile: orphan")
-	tca.addProfile(testOrgID(), xdb.ID{}, ocspProfileDef(testOCSPProfile))
+	tca.addProfile(testOrgID(), xdb.ID(0), ocspProfileDef(testOCSPProfile))
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testOCSPProfile})
 	assert.EqualError(t, err, "bad_request: issuer label is required for profile: ocsp")
-	tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "L3", pb.AuthorityType_Issuing, nil)
+	tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "L3", pb.AuthorityType_Issuing, nil)
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "L3", Request: csrPEM, Profile: testOCSPProfile})
 	assert.EqualError(t, err, `bad_request: issuer "L3" does not support the profile: ocsp`)
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "L3", Request: csrPEM, Profile: testProfile})
@@ -96,23 +96,23 @@ func TestService_SignCertificate(t *testing.T) {
 	_, err = svc.SignCertificate(testCtx("42", "2"), &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "not_found: profile not found: peer")
 	// an archived issuer does not sign
-	archived := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "OLD", pb.AuthorityType_Issuing, nil)
+	archived := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "OLD", pb.AuthorityType_Issuing, nil)
 	tca.rows.update(archived.ID, func(m *model.Issuer) { m.Status = pb.IssuerStatus_Archived })
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("old-peer", "OLD", "1h"))
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("old-peer", "OLD", "1h"))
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "old-peer"})
 	assert.EqualError(t, err, "conflict: issuer is not active")
 	// an issuer that does not load is a server error
-	broken := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "BROKEN", pb.AuthorityType_Issuing, nil)
+	broken := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "BROKEN", pb.AuthorityType_Issuing, nil)
 	tca.rows.update(broken.ID, func(m *model.Issuer) { m.KeyProtected = "AAAA" })
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("broken-peer", "BROKEN", "1h"))
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("broken-peer", "BROKEN", "1h"))
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "broken-peer"})
 	assert.EqualError(t, err, "unexpected: unable to load issuer")
 	// so is one whose delegated OCSP profile is missing: the profile of the
 	// request exists
-	tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "NORESP", pb.AuthorityType_Issuing, &pb.IssuerConfig{
+	tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "NORESP", pb.AuthorityType_Issuing, &pb.IssuerConfig{
 		DelegatedOcspProfile: "nope",
 	})
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("noresp-peer", "NORESP", "1h"))
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("noresp-peer", "NORESP", "1h"))
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "noresp-peer"})
 	assert.EqualError(t, err, "unexpected: unable to load issuer")
 

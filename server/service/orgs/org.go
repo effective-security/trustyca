@@ -19,7 +19,7 @@ import (
 func tokenOrg(ctx context.Context) (xdb.ID, error) {
 	orgID := authctx.FromContext(ctx).OrgID()
 	if orgID.UInt64() == 0 {
-		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org not selected")
+		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org not selected")
 	}
 	return orgID, nil
 }

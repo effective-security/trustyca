@@ -19,7 +19,7 @@ func Test_Crl(t *testing.T) {
 
 	root := testutils.NewTestCA(t, "CRL Root", nil)
 	ca := testutils.NewTestCA(t, "CRL L2", root)
-	issuer := registerIssuer(t, newTestIssuer(org.ID, xdb.ID{}, "CRL_L2", ca, pb.AuthorityType_Issuing, xdb.ID{}))
+	issuer := registerIssuer(t, newTestIssuer(org.ID, xdb.ID(0), "CRL_L2", ca, pb.AuthorityType_Issuing, xdb.ID(0)))
 	now := xdb.Now()
 
 	newCrl := func(number int64, pem string) *model.Crl {
@@ -138,7 +138,7 @@ func Test_Crl(t *testing.T) {
 	assert.ErrorIs(t, err, db.ErrOrgScopeRequired)
 
 	// a second issuer for cursor pagination
-	other := registerIssuer(t, newTestIssuer(org.ID, xdb.ID{}, "CRL_OTHER", testutils.NewTestCA(t, "CRL Other", root), pb.AuthorityType_Issuing, xdb.ID{}))
+	other := registerIssuer(t, newTestIssuer(org.ID, xdb.ID(0), "CRL_OTHER", testutils.NewTestCA(t, "CRL Other", root), pb.AuthorityType_Issuing, xdb.ID(0)))
 	otherCrl := newCrl(1, "other")
 	otherCrl.IssuerID = other.ID
 	otherCrl.Ikid = other.Skid

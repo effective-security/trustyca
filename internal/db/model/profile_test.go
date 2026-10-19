@@ -94,7 +94,7 @@ func Test_CertificateProfile(t *testing.T) {
 		mod  func(m *model.CertificateProfile)
 		err  string
 	}{
-		{"project without org", func(m *model.CertificateProfile) { m.OrgID = xdb.ID{} }, "invalid org ID: a project scope requires an org"},
+		{"project without org", func(m *model.CertificateProfile) { m.OrgID = xdb.ID(0) }, "invalid org ID: a project scope requires an org"},
 		{"label", func(m *model.CertificateProfile) { m.Label = "" }, "invalid label: required"},
 		{"issuer label", func(m *model.CertificateProfile) { m.IssuerLabel = "" }, "invalid issuer label: required"},
 		{"status", func(m *model.CertificateProfile) { m.Status = pb.ItemStatus_Unknown }, "invalid profile status"},
@@ -108,7 +108,7 @@ func Test_CertificateProfile(t *testing.T) {
 		})
 	}
 
-	m, err = model.NewCertificateProfile(xdb.ID{}, xdb.ID{}, &pb.CertProfile{Label: "ocsp", IssuerLabel: model.AnyIssuerLabel, Status: pb.ItemStatus_Inactive})
+	m, err = model.NewCertificateProfile(xdb.ID(0), xdb.ID(0), &pb.CertProfile{Label: "ocsp", IssuerLabel: model.AnyIssuerLabel, Status: pb.ItemStatus_Inactive})
 	require.NoError(t, err)
 	require.NoError(t, m.Validate())
 	assert.Equal(t, pb.ItemStatus_Inactive, m.Status)

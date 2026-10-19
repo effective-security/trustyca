@@ -127,7 +127,7 @@ func TestBootstrap(t *testing.T) {
 	assert.Equal(t, "ocsp", cfg2.DelegatedOcspProfile)
 
 	// the root and the profiles
-	rootRow, err := f.db.RegisterRoot(f.ctx, model.NewRootCertificate(root.Cert, xdb.ID{}, pb.Trust_Private, testutils.CertPEM(root.Cert)))
+	rootRow, err := f.db.RegisterRoot(f.ctx, model.NewRootCertificate(root.Cert, xdb.ID(0), pb.Trust_Private, testutils.CertPEM(root.Cert)))
 	require.NoError(t, err)
 	assert.True(t, rootRow.OrgID.IsZero())
 	assert.Equal(t, 1, f.db.Calls("RegisterRoot")-1, "the bootstrap registered it once")

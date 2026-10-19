@@ -111,7 +111,7 @@ func TestMembershipInfoSliceFinders(t *testing.T) {
 	assert.Equal(t, 0, m.CountOrgRole(100, pb.Role_Viewer))
 	assert.Equal(t, 1, m.CountOrgRole(101, pb.Role_Owner))
 
-	assert.Equal(t, pb.Scope_Org, ScopeOf(xdb.ID{}))
+	assert.Equal(t, pb.Scope_Org, ScopeOf(xdb.ID(0)))
 	assert.Equal(t, pb.Scope_Project, ScopeOf(xdb.NewID(1)))
 
 	pm := m[1].Pb()

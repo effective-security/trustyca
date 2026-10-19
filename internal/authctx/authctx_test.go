@@ -218,7 +218,7 @@ func Test_Authorizer(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, g.IsMember())
 
-		_, err = a.Grants(ctx, xdb.ID{}, userID())
+		_, err = a.Grants(ctx, xdb.ID(0), userID())
 		assert.ErrorIs(t, err, authctx.ErrOrgNotSelected)
 	})
 
@@ -242,37 +242,37 @@ func Test_Authorizer(t *testing.T) {
 		assert.ErrorIs(t, err, authctx.ErrAccessDenied)
 		_, err = a.Project(ctx, orgID(), xdb.NewID(999))
 		assert.ErrorIs(t, err, authctx.ErrAccessDenied)
-		_, err = a.Project(ctx, xdb.ID{}, xdb.NewID(201))
+		_, err = a.Project(ctx, xdb.ID(0), xdb.NewID(201))
 		assert.ErrorIs(t, err, authctx.ErrOrgNotSelected)
 	})
 
 	t.Run("check_role_org_scope", func(t *testing.T) {
-		role, _, err := a.CheckRole(ctx, orgID(), xdb.ID{}, ownerID(), "Owner")
+		role, _, err := a.CheckRole(ctx, orgID(), xdb.ID(0), ownerID(), "Owner")
 		require.NoError(t, err)
 		assert.Equal(t, pb.Role_Owner, role)
-		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, adminID(), "Owner")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), adminID(), "Owner")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
-		role, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, adminID(), "Owner", "Admin")
+		role, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), adminID(), "Owner", "Admin")
 		require.NoError(t, err, "any of the allowed roles")
 		assert.Equal(t, pb.Role_Admin, role)
 		// minimum roles: Security assumes User, Viewer does not
-		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, securityID(), "User", "APIKey")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), securityID(), "User", "APIKey")
 		require.NoError(t, err)
-		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, viewerID(), "User", "APIKey")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), viewerID(), "User", "APIKey")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
 		// derived Viewer has the minimal org context only
-		role, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, projOnlyID(), "Viewer")
+		role, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), projOnlyID(), "Viewer")
 		require.NoError(t, err)
 		assert.Equal(t, pb.Role_Viewer, role)
-		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, projOnlyID(), "User")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), projOnlyID(), "User")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
 		// project Admin never becomes org Admin
-		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, userID(), "Admin")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), userID(), "Admin")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
 		// stranger
-		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, strangerID(), "Viewer")
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), strangerID(), "Viewer")
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole)
-		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID{}, strangerID())
+		_, _, err = a.CheckRole(ctx, orgID(), xdb.ID(0), strangerID())
 		assert.ErrorIs(t, err, authctx.ErrInsufficientRole, "membership is required even without allowed roles")
 	})
 
@@ -313,7 +313,7 @@ func Test_Authorizer(t *testing.T) {
 		assert.ErrorContains(t, err, "unable to get user memberships")
 		_, err = failing.Project(ctx, orgID(), xdb.NewID(201))
 		assert.ErrorContains(t, err, "unable to get project")
-		_, _, err = failing.CheckRole(ctx, orgID(), xdb.ID{}, adminID(), "Viewer")
+		_, _, err = failing.CheckRole(ctx, orgID(), xdb.ID(0), adminID(), "Viewer")
 		assert.ErrorContains(t, err, "unable to get user memberships")
 	})
 }

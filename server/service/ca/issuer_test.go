@@ -160,7 +160,7 @@ func TestService_RegisterIssuer(t *testing.T) {
 	req.Profile = testProfile
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, `bad_request: profile "peer" is not a CA profile`)
-	tca.addProfile(testOrgID(), xdb.ID{}, rootProfileDef("SELF"))
+	tca.addProfile(testOrgID(), xdb.ID(0), rootProfileDef("SELF"))
 	req.Profile = "SELF"
 	var rootSkid string
 	storeIssuer(tca, func(m *model.Issuer) {
@@ -184,7 +184,7 @@ func TestService_RegisterIssuer(t *testing.T) {
 	assert.Equal(t, rootSkid, root.SKID)
 
 	// the new root signs a subordinate CA with a CA profile bound to it
-	tca.addProfile(testOrgID(), xdb.ID{}, caProfileDef("R2CA", "R2"))
+	tca.addProfile(testOrgID(), xdb.ID(0), caProfileDef("R2CA", "R2"))
 	req = valid()
 	req.Label = "R2CHILD"
 	req.ParentID = root.ID
@@ -211,11 +211,11 @@ func TestService_RegisterIssuer(t *testing.T) {
 	req.ParentID = "9999"
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, "not_found: parent issuer not found")
-	org2Root := tca.newRoot(t, xdb.NewID(2), xdb.ID{}, testRootLabel)
+	org2Root := tca.newRoot(t, xdb.NewID(2), xdb.ID(0), testRootLabel)
 	req.ParentID = org2Root.ID.String()
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, "not_found: parent issuer not found", "the parent of another org")
-	archived := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "ARCH", pb.AuthorityType_Intermediate, nil)
+	archived := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "ARCH", pb.AuthorityType_Intermediate, nil)
 	tca.rows.update(archived.ID, func(m *model.Issuer) { m.Status = pb.IssuerStatus_Archived })
 	req.ParentID = archived.ID.String()
 	_, err = svc.RegisterIssuer(ctx, req)
@@ -224,7 +224,7 @@ func TestService_RegisterIssuer(t *testing.T) {
 	req.Profile = testProfile
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, `bad_request: issuer "ROOT" does not serve the profile: peer`)
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("root-peer", testRootLabel, "1h"))
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("root-peer", testRootLabel, "1h"))
 	req.Profile = "root-peer"
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, `bad_request: profile "root-peer" is not a CA profile`)
@@ -252,7 +252,7 @@ func TestService_RegisterIssuer(t *testing.T) {
 	assert.Empty(t, l4Cert.DNSNames, "a CA certificate carries no names")
 
 	// an issuing CA has path length zero: it signs no subordinate CA
-	tca.addProfile(testOrgID(), xdb.ID{}, caProfileDef("L4CA", "L4"))
+	tca.addProfile(testOrgID(), xdb.ID(0), caProfileDef("L4CA", "L4"))
 	req = valid()
 	req.Label = "UNDER_L4"
 	req.ParentID = l4.ID
@@ -261,7 +261,7 @@ func TestService_RegisterIssuer(t *testing.T) {
 	assert.EqualError(t, err, `bad_request: failed to create issuer: the path length of "CN=Tenant CA" disallows a subordinate CA`)
 
 	// the new issuer signs through the service once a profile binds to it
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("l4-peer", "L4", "1h"))
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("l4-peer", "L4", "1h"))
 	storeCertificate(tca)
 	_, csrPEM := newCSR(t, "leaf.example.com")
 	signed, err := svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: "l4-peer", Request: csrPEM})
@@ -269,8 +269,8 @@ func TestService_RegisterIssuer(t *testing.T) {
 	assert.Equal(t, l4.SKID, signed.Certificate.IKID)
 
 	// a platform parent signs tenant CAs with the profiles it allows
-	tca.addProfile(xdb.ID{}, xdb.ID{}, caProfileDef("PCA", "PROOT"))
-	proot := tca.newRoot(t, xdb.ID{}, xdb.ID{}, "PROOT")
+	tca.addProfile(xdb.ID(0), xdb.ID(0), caProfileDef("PCA", "PROOT"))
+	proot := tca.newRoot(t, xdb.ID(0), xdb.ID(0), "PROOT")
 	tca.rows.update(proot.ID, func(m *model.Issuer) {
 		_ = m.SetConfig(&pb.IssuerConfig{AllowedProfiles: []string{"PCA"}})
 	})
@@ -416,7 +416,7 @@ func TestService_ImportIssuer(t *testing.T) {
 	assert.Equal(t, res.ID, evt.ReferenceID.String())
 
 	// the imported issuer signs
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("byo-peer", "BYO", "1h"))
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("byo-peer", "BYO", "1h"))
 	storeCertificate(tca)
 	_, csrPEM := newCSR(t, "leaf.example.com")
 	signed, err := svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: "byo-peer", Request: csrPEM})
@@ -452,7 +452,7 @@ func TestService_ActivateIssuer(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
 	ctx := testCtx("42", "1")
-	pending := tca.newPending(t, testOrgID(), xdb.ID{}, "EXT")
+	pending := tca.newPending(t, testOrgID(), xdb.ID(0), "EXT")
 
 	// an external CA, here the root of the org, signs the request
 	res, err := tca.registry.Resolve(tca.ctx, &core.ResolveRequest{OrgID: testOrgID(), Profile: testCAProfile, IssuerLabel: testRootLabel})
@@ -486,7 +486,7 @@ func TestService_ActivateIssuer(t *testing.T) {
 	req.ID = "9999"
 	_, err = svc.ActivateIssuer(ctx, req)
 	assert.EqualError(t, err, "not_found: issuer not found")
-	other := tca.newPending(t, xdb.NewID(2), xdb.ID{}, "EXT")
+	other := tca.newPending(t, xdb.NewID(2), xdb.ID(0), "EXT")
 	req.ID = other.ID.String()
 	_, err = svc.ActivateIssuer(ctx, req)
 	assert.EqualError(t, err, "not_found: issuer not found", "a pending issuer of another org")
@@ -532,7 +532,7 @@ func TestService_ActivateIssuer(t *testing.T) {
 	assert.Contains(t, evt.Description.String(), `issuer "EXT" activated`)
 
 	// the activated issuer signs
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("ext-peer", "EXT", "1h"))
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("ext-peer", "EXT", "1h"))
 	storeCertificate(tca)
 	_, csrPEM := newCSR(t, "leaf.example.com")
 	signed, err := svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: "ext-peer", Request: csrPEM})
@@ -540,7 +540,7 @@ func TestService_ActivateIssuer(t *testing.T) {
 	assert.Equal(t, activated.SKID, signed.Certificate.IKID)
 
 	// races with the DB
-	p2 := tca.newPending(t, testOrgID(), xdb.ID{}, "EXT2")
+	p2 := tca.newPending(t, testOrgID(), xdb.ID(0), "EXT2")
 	crt2, certPEM2, err := res.Issuer.Sign(csr.SignRequest{Request: p2.CsrPem, Profile: res.ProfileName})
 	require.NoError(t, err)
 	require.NotEqual(t, crt.SerialNumber, crt2.SerialNumber)
@@ -564,8 +564,8 @@ func TestService_UpdateIssuer(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
 	ctx := testCtx("42", "1")
-	issuer := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID{}, "UPD", pb.AuthorityType_Issuing, nil)
-	tca.addProfile(testOrgID(), xdb.ID{}, peerProfileDef("upd-peer", "UPD", "1h"))
+	issuer := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "UPD", pb.AuthorityType_Issuing, nil)
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("upd-peer", "UPD", "1h"))
 	_, csrPEM := newCSR(t, "leaf.example.com")
 
 	_, err := svc.UpdateIssuer(ctx, nil)
@@ -579,7 +579,7 @@ func TestService_UpdateIssuer(t *testing.T) {
 	assert.EqualError(t, err, "bad_request: missing issuer ID")
 	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: "9999", Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "not_found: issuer not found")
-	org2Root := tca.newRoot(t, xdb.NewID(2), xdb.ID{}, testRootLabel)
+	org2Root := tca.newRoot(t, xdb.NewID(2), xdb.ID(0), testRootLabel)
 	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: org2Root.ID.String(), Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "not_found: issuer not found", "an issuer of another org")
 
@@ -660,8 +660,8 @@ func TestService_GetIssuer(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
 	ctx := testCtx("42", "1")
-	org2Root := tca.newRoot(t, xdb.NewID(2), xdb.ID{}, testRootLabel)
-	platformRoot := tca.newRoot(t, xdb.ID{}, xdb.ID{}, "PROOT")
+	org2Root := tca.newRoot(t, xdb.NewID(2), xdb.ID(0), testRootLabel)
+	platformRoot := tca.newRoot(t, xdb.ID(0), xdb.ID(0), "PROOT")
 
 	_, err := svc.GetIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
@@ -735,7 +735,7 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 	projectIssuer := tca.newChild(t, tca.root, testCAProfile, testOrgID(), testProject.ID, "PRJ", pb.AuthorityType_Issuing, nil)
 	// the sibling is an intermediate with path length one, so that it can
 	// sign a subordinate below
-	tca.addProfile(testOrgID(), xdb.ID{}, caProfileDefWithPathLen("INTCA", testRootLabel, 1))
+	tca.addProfile(testOrgID(), xdb.ID(0), caProfileDefWithPathLen("INTCA", testRootLabel, 1))
 	sibling := tca.newChild(t, tca.root, "INTCA", testOrgID(), siblingProject.ID, "SIB", pb.AuthorityType_Intermediate, nil)
 	gone := tca.newChild(t, tca.root, testCAProfile, testOrgID(), inactiveProject.ID, "GONE", pb.AuthorityType_Issuing, nil)
 

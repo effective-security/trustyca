@@ -195,12 +195,12 @@ type hierarchy struct {
 // equal labels in different orgs
 func (f *fixture) org(orgID xdb.ID) *hierarchy {
 	f.t.Helper()
-	f.profile(orgID, xdb.ID{}, caProfileDef(caProfile, rootLabel))
-	root := f.root(orgID, xdb.ID{}, rootLabel, nil)
-	issuer := f.child(root, caProfile, orgID, xdb.ID{}, issuerLabel, pb.AuthorityType_Issuing, &pb.IssuerConfig{
+	f.profile(orgID, xdb.ID(0), caProfileDef(caProfile, rootLabel))
+	root := f.root(orgID, xdb.ID(0), rootLabel, nil)
+	issuer := f.child(root, caProfile, orgID, xdb.ID(0), issuerLabel, pb.AuthorityType_Issuing, &pb.IssuerConfig{
 		AllowedProfiles: []string{ocspProfile},
 	})
-	peer := f.profile(orgID, xdb.ID{}, peerProfileDef(peerProfile, issuerLabel, "168h"))
+	peer := f.profile(orgID, xdb.ID(0), peerProfileDef(peerProfile, issuerLabel, "168h"))
 	return &hierarchy{
 		platformRoot: root,
 		issuer:       issuer,

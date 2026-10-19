@@ -25,29 +25,29 @@ func (s *Service) tenantOrg(ctx context.Context, reqOrgID string) (xdb.ID, error
 	orgID := tctx.OrgID()
 	if !orgID.IsZero() {
 		if reqOrgID != "" && reqOrgID != orgID.String() {
-			return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org mismatch")
+			return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org mismatch")
 		}
 		return orgID, nil
 	}
 	if !strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
-		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org not selected")
+		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org not selected")
 	}
 	if reqOrgID == "" {
-		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "org ID is required")
+		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "org ID is required")
 	}
 	orgID, err := xdb.ParseID(reqOrgID)
 	if err != nil {
-		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid org ID")
+		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid org ID")
 	}
 	org, err := s.orgs.GetOrg(ctx, orgID.UInt64())
 	if err != nil {
 		if xdb.IsNotFoundError(err) {
-			return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "org not found")
+			return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.NotFound, "org not found")
 		}
-		return xdb.ID{}, httperror.WrapWithCtx(ctx, err, "unable to find org")
+		return xdb.ID(0), httperror.WrapWithCtx(ctx, err, "unable to find org")
 	}
 	if org.Status != pb.ItemStatus_Active {
-		return xdb.ID{}, preconditionFailed(ctx, "org is deleted")
+		return xdb.ID(0), preconditionFailed(ctx, "org is deleted")
 	}
 	return orgID, nil
 }
@@ -64,19 +64,19 @@ func (s *Service) tenantProject(ctx context.Context, orgID xdb.ID, reqProjectID 
 			}
 		}
 		if reqProjectID == "" {
-			return xdb.ID{}, nil
+			return xdb.ID(0), nil
 		}
 	}
 	projectID, err := xdb.ParseID(reqProjectID)
 	if err != nil {
-		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid project ID")
+		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid project ID")
 	}
 	_, err = s.authorizer.Project(ctx, orgID, projectID)
 	if err != nil {
 		if errors.Is(err, authctx.ErrAccessDenied) {
-			return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "project not found")
+			return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.NotFound, "project not found")
 		}
-		return xdb.ID{}, httperror.WrapWithCtx(ctx, err, "unable to find project")
+		return xdb.ID(0), httperror.WrapWithCtx(ctx, err, "unable to find project")
 	}
 	return projectID, nil
 }
@@ -113,11 +113,11 @@ func (s *Service) requireCA(ctx context.Context) error {
 // parseID parses a required ID of a request
 func parseID(ctx context.Context, val, what string) (xdb.ID, error) {
 	if val == "" {
-		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing %s", what)
+		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing %s", what)
 	}
 	id, err := xdb.ParseID(val)
 	if err != nil {
-		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid %s", what)
+		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid %s", what)
 	}
 	return id, nil
 }
@@ -140,17 +140,6 @@ func listLimit(limit uint32) uint32 {
 // constraint
 func violates(err error, constraint string) bool {
 	return err != nil && strings.Contains(err.Error(), constraint)
-}
-
-// logID formats an ID of a row that goroutines share, for a log, in the
-// form of UnderscoreString: xdb.ID caches its string form without
-// synchronization, so the rows the registry serves are never formatted
-// with its methods
-func logID(id xdb.ID) string {
-	if id.IsZero() {
-		return ""
-	}
-	return "_" + xdb.IDString(id.UInt64())
 }
 
 // rowAccess checks that the caller may call the method on a row of the

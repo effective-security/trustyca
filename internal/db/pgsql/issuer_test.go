@@ -29,7 +29,7 @@ func Test_Issuer(t *testing.T) {
 
 	// a platform root, an org intermediate and a project issuing CA
 	platformLabel := "ROOT_" + certutil.RandomString(8)
-	rootIssuer := registerIssuer(t, newTestIssuer(xdb.ID{}, xdb.ID{}, platformLabel, root, pb.AuthorityType_Root, xdb.ID{}))
+	rootIssuer := registerIssuer(t, newTestIssuer(xdb.ID(0), xdb.ID(0), platformLabel, root, pb.AuthorityType_Root, xdb.ID(0)))
 	assert.True(t, rootIssuer.OrgID.IsZero(), "platform rows have no org")
 	assert.True(t, rootIssuer.ProjectID.IsZero())
 	assert.True(t, rootIssuer.ParentID.IsZero())
@@ -41,7 +41,7 @@ func Test_Issuer(t *testing.T) {
 	assert.Equal(t, root.Cert.NotAfter.UnixMilli(), rootIssuer.NotAfter.UnixMilli())
 	assert.False(t, rootIssuer.CreatedAt.IsZero())
 
-	orgIssuer := registerIssuer(t, newTestIssuer(org.ID, xdb.ID{}, "L1", l1, pb.AuthorityType_Intermediate, rootIssuer.ID))
+	orgIssuer := registerIssuer(t, newTestIssuer(org.ID, xdb.ID(0), "L1", l1, pb.AuthorityType_Intermediate, rootIssuer.ID))
 	assert.Equal(t, org.ID.UInt64(), orgIssuer.OrgID.UInt64())
 	assert.Equal(t, rootIssuer.ID.UInt64(), orgIssuer.ParentID.UInt64())
 	assert.Equal(t, rootIssuer.Skid, orgIssuer.Ikid, "the IKID is the parent's SKID")
@@ -52,9 +52,9 @@ func Test_Issuer(t *testing.T) {
 	assert.Equal(t, project.ID.UInt64(), prjIssuer.ProjectID.UInt64())
 
 	// the label is unique in its scope, the SKID across the table
-	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID{}, "L1", testutils.NewTestCA(t, "Other L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID))
+	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "L1", testutils.NewTestCA(t, "Other L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID))
 	assert.ErrorContains(t, err, "unique_issuer_org_project_label")
-	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID{}, "L1-copy", l1, pb.AuthorityType_Intermediate, rootIssuer.ID))
+	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "L1-copy", l1, pb.AuthorityType_Intermediate, rootIssuer.ID))
 	assert.ErrorContains(t, err, "unique_issuer_skid")
 	// the same label in another scope is another issuer
 	otherScope := registerIssuer(t, newTestIssuer(org.ID, project.ID, "L1", testutils.NewTestCA(t, "Project L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID))
@@ -171,15 +171,16 @@ func Test_Issuer(t *testing.T) {
 	assert.Empty(t, list.Cursor)
 
 	// a page that ends exactly at the limit reports a next page, which is empty
-	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Limit: 3, Cursor: query.NewCursor(0)})
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Limit: 2, Cursor: query.NewCursor(0)})
 	require.NoError(t, err)
-	require.Len(t, list.Rows, 3)
+	require.Len(t, list.Rows, 2)
 	require.True(t, list.HasNextPage)
 	next, err = query.ParseCursor(list.Cursor)
 	require.NoError(t, err)
 	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Limit: 3, Cursor: next})
 	require.NoError(t, err)
-	assert.Empty(t, list.Rows)
+	require.Len(t, list.Rows, 1)
+	assert.Equal(t, orgIssuer.ID.UInt64(), list.Rows[0].ID.UInt64())
 	assert.False(t, list.HasNextPage)
 
 	// update
@@ -218,7 +219,7 @@ func Test_Issuer(t *testing.T) {
 	assert.Equal(t, []string{"peer"}, cfg.AllowedProfiles)
 
 	// Destroyed clears the protected key material
-	soft := newTestIssuer(org.ID, xdb.ID{}, "soft", testutils.NewTestCA(t, "Soft L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID)
+	soft := newTestIssuer(org.ID, xdb.ID(0), "soft", testutils.NewTestCA(t, "Soft L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID)
 	soft.KeyProtected = "wrapped-key"
 	soft = registerIssuer(t, soft)
 	assert.Equal(t, xdb.NULLString("wrapped-key"), soft.KeyProtected)

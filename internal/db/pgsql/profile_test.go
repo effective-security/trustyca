@@ -42,7 +42,7 @@ func Test_Profile(t *testing.T) {
 		return res
 	}
 
-	orgProfile := registerProfile(org.ID, xdb.ID{}, def)
+	orgProfile := registerProfile(org.ID, xdb.ID(0), def)
 	assert.Equal(t, pb.ItemStatus_Active, orgProfile.Status)
 	assert.Equal(t, "peer", orgProfile.Label)
 	assert.Equal(t, "L2", orgProfile.IssuerLabel)
@@ -59,7 +59,7 @@ func Test_Profile(t *testing.T) {
 
 	// a platform profile for any issuer
 	platformLabel := "ocsp_" + certutil.RandomString(8)
-	platformProfile := registerProfile(xdb.ID{}, xdb.ID{}, &pb.CertProfile{Label: platformLabel, IssuerLabel: model.AnyIssuerLabel})
+	platformProfile := registerProfile(xdb.ID(0), xdb.ID(0), &pb.CertProfile{Label: platformLabel, IssuerLabel: model.AnyIssuerLabel})
 	assert.True(t, platformProfile.OrgID.IsZero())
 
 	// registering the label again in the same scope replaces the definition
@@ -68,7 +68,7 @@ func Test_Profile(t *testing.T) {
 	def2.IssuerLabel = "L3"
 	def2.Expiry = "24h"
 	def2.Status = pb.ItemStatus_Inactive
-	replaced := registerProfile(org.ID, xdb.ID{}, def2)
+	replaced := registerProfile(org.ID, xdb.ID(0), def2)
 	assert.Equal(t, orgProfile.ID.UInt64(), replaced.ID.UInt64(), "the row is kept")
 	assert.Equal(t, "L3", replaced.IssuerLabel)
 	assert.Equal(t, pb.ItemStatus_Inactive, replaced.Status)
