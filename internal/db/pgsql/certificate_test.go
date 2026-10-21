@@ -25,7 +25,7 @@ func Test_Certificate(t *testing.T) {
 
 	root := testutils.NewTestCA(t, "Cert Root", nil)
 	ca := testutils.NewTestCA(t, "Cert L2", root)
-	issuer := registerIssuer(t, newTestIssuer(org.ID, xdb.ID{}, "CERT_L2", ca, pb.AuthorityType_Issuing, xdb.ID{}))
+	issuer := registerIssuer(t, newTestIssuer(org.ID, xdb.ID(0), "CERT_L2", ca, pb.AuthorityType_Issuing, xdb.ID(0)))
 	now := time.Now()
 
 	_, err = provider.RegisterCertificate(ctx, &model.Certificate{OrgID: org.ID}, nil)
@@ -57,7 +57,7 @@ func Test_Certificate(t *testing.T) {
 
 	// an org scope certificate expiring soon, and a project one with locations
 	crt2 := ca.Issue(t, "b.example.com", now.Add(-time.Minute), now.Add(time.Hour))
-	c2 := registerCertificate(t, crt2, ca, org.ID, xdb.ID{}, "server", nil)
+	c2 := registerCertificate(t, crt2, ca, org.ID, xdb.ID(0), "server", nil)
 	assert.True(t, c2.ProjectID.IsZero())
 	assert.Empty(t, c2.Metadata)
 	crt3 := ca.Issue(t, "c.example.com", now.Add(-time.Minute), now.Add(48*time.Hour))
@@ -311,7 +311,7 @@ func Test_Certificate_RevokeConcurrently(t *testing.T) {
 	ca := testutils.NewTestCA(t, "Concurrent L2", nil)
 	now := time.Now()
 	crt := ca.Issue(t, "race.example.com", now.Add(-time.Minute), now.Add(time.Hour))
-	c := registerCertificate(t, crt, ca, org.ID, xdb.ID{}, "peer", nil)
+	c := registerCertificate(t, crt, ca, org.ID, xdb.ID(0), "peer", nil)
 	certID := c.ID.UInt64()
 	orgID := org.ID.UInt64()
 

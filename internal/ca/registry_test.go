@@ -58,24 +58,24 @@ func TestRegistry_Resolve_Tenancy(t *testing.T) {
 	assert.Equal(t, []string{"a.example.com"}, crt.DNSNames)
 
 	// a profile of another org is not found
-	f.profile(org2, xdb.ID{}, peerProfileDef("only2", issuerLabel, "1h"))
+	f.profile(org2, xdb.ID(0), peerProfileDef("only2", issuerLabel, "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org1, Profile: "only2"})
 	assert.ErrorIs(t, err, ca.ErrProfileNotFound)
 
 	// an issuer of another org is not found through a profile that names it
-	f.child(h2.platformRoot, caProfile, org2, xdb.ID{}, "L9", pb.AuthorityType_Issuing, nil)
-	f.profile(org1, xdb.ID{}, peerProfileDef("nine", "L9", "1h"))
+	f.child(h2.platformRoot, caProfile, org2, xdb.ID(0), "L9", pb.AuthorityType_Issuing, nil)
+	f.profile(org1, xdb.ID(0), peerProfileDef("nine", "L9", "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org1, Profile: "nine"})
 	assert.ErrorIs(t, err, ca.ErrIssuerNotFound)
 
 	// platform rows are not visible to tenants
-	f.profile(xdb.ID{}, xdb.ID{}, peerProfileDef("platform-only", issuerLabel, "1h"))
+	f.profile(xdb.ID(0), xdb.ID(0), peerProfileDef("platform-only", issuerLabel, "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org1, Profile: "platform-only"})
 	assert.ErrorIs(t, err, ca.ErrProfileNotFound)
 
 	// the platform scope resolves platform rows, for the parents of tenant issuers
-	f.profile(xdb.ID{}, xdb.ID{}, caProfileDef("PCA", "PROOT"))
-	proot := f.root(xdb.ID{}, xdb.ID{}, "PROOT", nil)
+	f.profile(xdb.ID(0), xdb.ID(0), caProfileDef("PCA", "PROOT"))
+	proot := f.root(xdb.ID(0), xdb.ID(0), "PROOT", nil)
 	pres, err := f.registry.Resolve(f.ctx, &ca.ResolveRequest{Profile: "PCA", IssuerLabel: "PROOT"})
 	require.NoError(t, err)
 	assert.Equal(t, proot.ID.UInt64(), pres.Row.ID.UInt64())
@@ -137,7 +137,7 @@ func TestRegistry_Resolve_AnyIssuer(t *testing.T) {
 	f := newFixture(t)
 	org := xdb.NewID(1)
 	h := f.org(org)
-	f.profile(org, xdb.ID{}, ocspProfileDef(ocspProfile))
+	f.profile(org, xdb.ID(0), ocspProfileDef(ocspProfile))
 
 	_, err := f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: ocspProfile})
 	assert.ErrorIs(t, err, ca.ErrIssuerLabelRequired)
@@ -149,7 +149,7 @@ func TestRegistry_Resolve_AnyIssuer(t *testing.T) {
 	assert.True(t, res.Profile.OCSPNoCheck)
 
 	// an issuer that does not list the profile does not serve it
-	f.child(h.platformRoot, caProfile, org, xdb.ID{}, "L3", pb.AuthorityType_Issuing, nil)
+	f.child(h.platformRoot, caProfile, org, xdb.ID(0), "L3", pb.AuthorityType_Issuing, nil)
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: ocspProfile, IssuerLabel: "L3"})
 	assert.ErrorIs(t, err, ca.ErrProfileNotAllowed)
 
@@ -171,7 +171,7 @@ func TestRegistry_Resolve_Status(t *testing.T) {
 	assert.EqualError(t, err, "profile is required")
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "nope"})
 	assert.ErrorIs(t, err, ca.ErrProfileNotFound)
-	f.profile(org, xdb.ID{}, peerProfileDef("orphan", "NOPE", "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef("orphan", "NOPE", "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "orphan"})
 	assert.ErrorIs(t, err, ca.ErrIssuerNotFound)
 
@@ -186,7 +186,7 @@ func TestRegistry_Resolve_Status(t *testing.T) {
 	require.NoError(t, err)
 	_, err = f.db.RegisterIssuer(f.ctx, pending)
 	require.NoError(t, err)
-	f.profile(org, xdb.ID{}, peerProfileDef("pend", "P1", "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef("pend", "P1", "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "pend"})
 	assert.ErrorIs(t, err, ca.ErrIssuerNotActive)
 
@@ -226,12 +226,12 @@ func TestRegistry_Resolve_Status(t *testing.T) {
 	_, _, err = f.registry.IssuerBySKID(f.ctx, h.issuer.Skid)
 	assert.EqualError(t, err, "unable to find issuer: db down")
 	f.db.Err = nil
-	f.profile(org, xdb.ID{}, peerProfileDef("late", "L2", "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef("late", "L2", "1h"))
 	f.db.Err = errors.New("db down")
-	_, err = f.registry.FindProfile(f.ctx, org, xdb.ID{}, "late")
+	_, err = f.registry.FindProfile(f.ctx, org, xdb.ID(0), "late")
 	assert.EqualError(t, err, "unable to find profile: db down")
 	f.db.Err = nil
-	_, err = f.registry.FindIssuer(f.ctx, org, xdb.ID{}, "L2")
+	_, err = f.registry.FindIssuer(f.ctx, org, xdb.ID(0), "L2")
 	require.NoError(t, err)
 }
 
@@ -270,13 +270,13 @@ func TestRegistry_Cache(t *testing.T) {
 	assert.Equal(t, 1, f.registry.Len(), "one issuer serves both scopes")
 
 	// a replaced profile is served from memory until it is invalidated
-	f.profile(org, xdb.ID{}, peerProfileDef(peerProfile, issuerLabel, "48h"))
+	f.profile(org, xdb.ID(0), peerProfileDef(peerProfile, issuerLabel, "48h"))
 	res3, err := f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: peerProfile})
 	require.NoError(t, err)
 	assert.Equal(t, res1.ProfileName, res3.ProfileName)
 	assert.Equal(t, csr.Duration(168*time.Hour), res3.Profile.Expiry)
 
-	f.registry.InvalidateProfile(org, xdb.ID{}, peerProfile)
+	f.registry.InvalidateProfile(org, xdb.ID(0), peerProfile)
 	res4, err := f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: peerProfile})
 	require.NoError(t, err)
 	assert.NotEqual(t, res1.ProfileName, res4.ProfileName, "a new version of the profile")
@@ -337,8 +337,8 @@ func TestRegistry_TTLAndSize(t *testing.T) {
 
 	// the issuer cache is bounded by its size
 	for _, label := range []string{"L3", "L4", "L5"} {
-		f.child(h.platformRoot, caProfile, org, xdb.ID{}, label, pb.AuthorityType_Issuing, nil)
-		f.profile(org, xdb.ID{}, peerProfileDef("peer-"+label, label, "1h"))
+		f.child(h.platformRoot, caProfile, org, xdb.ID(0), label, pb.AuthorityType_Issuing, nil)
+		f.profile(org, xdb.ID(0), peerProfileDef("peer-"+label, label, "1h"))
 		_, err := registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "peer-" + label})
 		require.NoError(t, err)
 	}
@@ -421,10 +421,10 @@ func TestRegistry_DelegatedOCSP(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
 	org := xdb.NewID(1)
-	f.profile(org, xdb.ID{}, caProfileDef(caProfile, rootLabel))
-	root := f.root(org, xdb.ID{}, rootLabel, nil)
-	f.profile(org, xdb.ID{}, ocspProfileDef(ocspProfile))
-	issuer := f.child(root, caProfile, org, xdb.ID{}, issuerLabel, pb.AuthorityType_Issuing, &pb.IssuerConfig{
+	f.profile(org, xdb.ID(0), caProfileDef(caProfile, rootLabel))
+	root := f.root(org, xdb.ID(0), rootLabel, nil)
+	f.profile(org, xdb.ID(0), ocspProfileDef(ocspProfile))
+	issuer := f.child(root, caProfile, org, xdb.ID(0), issuerLabel, pb.AuthorityType_Issuing, &pb.IssuerConfig{
 		AllowedProfiles:      []string{ocspProfile},
 		DelegatedOcspProfile: ocspProfile,
 		OcspExpiry:           "1h",
@@ -432,7 +432,7 @@ func TestRegistry_DelegatedOCSP(t *testing.T) {
 		CrlRenewal:           "12h",
 		OcspURL:              "http://cis.example.com/v1/ocsp/${ISSUER_ID}",
 	})
-	f.profile(org, xdb.ID{}, peerProfileDef(peerProfile, issuerLabel, "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef(peerProfile, issuerLabel, "1h"))
 
 	res, err := f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: peerProfile})
 	require.NoError(t, err)
@@ -458,29 +458,29 @@ func TestRegistry_DelegatedOCSP(t *testing.T) {
 	assert.Contains(t, resp.Certificate.ExtKeyUsage, x509.ExtKeyUsageOCSPSigning)
 
 	// an issuer whose delegated profile is not allowed for it does not load
-	f.child(root, caProfile, org, xdb.ID{}, "L3", pb.AuthorityType_Issuing, &pb.IssuerConfig{
+	f.child(root, caProfile, org, xdb.ID(0), "L3", pb.AuthorityType_Issuing, &pb.IssuerConfig{
 		DelegatedOcspProfile: ocspProfile,
 	})
-	f.profile(org, xdb.ID{}, peerProfileDef("p3", "L3", "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef("p3", "L3", "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "p3"})
 	assert.ErrorContains(t, err, `delegated OCSP profile "ocsp" is not bound to issuer`)
 
 	// nor one whose delegated profile does not exist
-	f.child(root, caProfile, org, xdb.ID{}, "L4", pb.AuthorityType_Issuing, &pb.IssuerConfig{
+	f.child(root, caProfile, org, xdb.ID(0), "L4", pb.AuthorityType_Issuing, &pb.IssuerConfig{
 		AllowedProfiles:      []string{"nope"},
 		DelegatedOcspProfile: "nope",
 	})
-	f.profile(org, xdb.ID{}, peerProfileDef("p4", "L4", "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef("p4", "L4", "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "p4"})
 	assert.NotErrorIs(t, err, ca.ErrProfileNotFound, "the profile of the request exists: the issuer does not load")
 	assert.ErrorContains(t, err, `delegated OCSP profile "nope" of issuer`)
 	assert.ErrorContains(t, err, "is not found")
 
 	// an invalid stored setting does not load either
-	f.child(root, caProfile, org, xdb.ID{}, "L5", pb.AuthorityType_Issuing, &pb.IssuerConfig{
+	f.child(root, caProfile, org, xdb.ID(0), "L5", pb.AuthorityType_Issuing, &pb.IssuerConfig{
 		OcspExpiry: "soon",
 	})
-	f.profile(org, xdb.ID{}, peerProfileDef("p5", "L5", "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef("p5", "L5", "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "p5"})
 	assert.ErrorContains(t, err, `invalid OcspExpiry: "soon" is not a duration`)
 }
@@ -530,7 +530,7 @@ func TestRegistry_Concurrent(t *testing.T) {
 				f.registry.InvalidateIssuer(h.issuer)
 			}
 			if i%4 == 1 {
-				f.registry.InvalidateProfile(org, xdb.ID{}, peerProfile)
+				f.registry.InvalidateProfile(org, xdb.ID(0), peerProfile)
 			}
 		}()
 	}

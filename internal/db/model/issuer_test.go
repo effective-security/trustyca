@@ -49,7 +49,7 @@ func Test_Issuer_Validate(t *testing.T) {
 		mod  func(m *model.Issuer)
 		err  string
 	}{
-		{"project without org", func(m *model.Issuer) { m.OrgID = xdb.ID{} }, "invalid org ID: a project scope requires an org"},
+		{"project without org", func(m *model.Issuer) { m.OrgID = xdb.ID(0) }, "invalid org ID: a project scope requires an org"},
 		{"label", func(m *model.Issuer) { m.Label = "" }, "invalid label: required"},
 		{"label length", func(m *model.Issuer) { m.Label = string(make([]byte, 65)) }, "invalid label length: 65"},
 		{"type", func(m *model.Issuer) { m.Type = pb.AuthorityType_Unknown }, "invalid issuer type"},
@@ -87,8 +87,8 @@ func Test_Issuer_Validate(t *testing.T) {
 	}
 	require.NoError(t, pending.Validate())
 	// a platform issuer has no org
-	m.OrgID = xdb.ID{}
-	m.ProjectID = xdb.ID{}
+	m.OrgID = xdb.ID(0)
+	m.ProjectID = xdb.ID(0)
 	require.NoError(t, m.Validate())
 }
 

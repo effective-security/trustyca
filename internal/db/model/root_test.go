@@ -36,7 +36,7 @@ func Test_RootCertificate(t *testing.T) {
 	assert.Equal(t, m.NotAfter.String(), p.NotAfter)
 
 	// platform root
-	platform := model.NewRootCertificate(root.Cert, xdb.ID{}, pb.Trust_Any, pem)
+	platform := model.NewRootCertificate(root.Cert, xdb.ID(0), pb.Trust_Any, pem)
 	require.NoError(t, platform.Validate())
 	assert.Empty(t, platform.Pb().OrgID)
 

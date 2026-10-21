@@ -115,7 +115,7 @@ func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.C
 			// a self-signing profile of a ca-config without issuers
 			def.IssuerLabel = model.AnyIssuerLabel
 		}
-		m, err := model.NewCertificateProfile(xdb.ID{}, xdb.ID{}, def)
+		m, err := model.NewCertificateProfile(xdb.ID(0), xdb.ID(0), def)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "profile %q", label)
 		}
@@ -123,13 +123,13 @@ func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.C
 		if err != nil {
 			return nil, errors.WithMessagef(err, "unable to register profile %q", label)
 		}
-		r.InvalidateProfile(xdb.ID{}, xdb.ID{}, label)
+		r.InvalidateProfile(xdb.ID(0), xdb.ID(0), label)
 		res.Profiles++
 	}
 	// the enabled issuers load with their keys and delegated OCSP profiles,
 	// or the start fails
 	for _, label := range enabled {
-		row, err := r.FindIssuer(ctx, xdb.ID{}, xdb.ID{}, label)
+		row, err := r.FindIssuer(ctx, xdb.ID(0), xdb.ID(0), label)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "issuer %q", label)
 		}
@@ -167,7 +167,7 @@ func registerRoots(ctx context.Context, caDb db.CaDb, bundle []byte) (int, error
 		if err != nil {
 			return 0, errors.WithMessage(err, "unable to encode root certificate")
 		}
-		_, err = caDb.RegisterRoot(ctx, model.NewRootCertificate(crt, xdb.ID{}, pb.Trust_Private, pem))
+		_, err = caDb.RegisterRoot(ctx, model.NewRootCertificate(crt, xdb.ID(0), pb.Trust_Private, pem))
 		if err != nil {
 			return 0, errors.WithMessagef(err, "unable to register root %q", crt.Subject.String())
 		}
@@ -258,7 +258,7 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 		return out, errors.WithMessage(err, "unable to read key")
 	}
 	key = []byte(strings.TrimSpace(string(key)))
-	keyLabel := KeyLabel(xdb.ID{}, xdb.ID{}, label)
+	keyLabel := KeyLabel(xdb.ID(0), xdb.ID(0), label)
 	var signer crypto.Signer
 	var ref *KeyRef
 	if IsKeyURI(string(key)) {
@@ -317,7 +317,7 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 	r.InvalidateIssuer(row)
 	out.registered = true
 	if row.Type == pb.AuthorityType_Root {
-		_, err = caDb.RegisterRoot(ctx, model.NewRootCertificate(crt, xdb.ID{}, pb.Trust_Private, row.Pem))
+		_, err = caDb.RegisterRoot(ctx, model.NewRootCertificate(crt, xdb.ID(0), pb.Trust_Private, row.Pem))
 		if err != nil {
 			return out, errors.WithMessage(err, "unable to register root")
 		}
@@ -381,7 +381,7 @@ func (r *Registry) refreshIssuer(ctx context.Context, caDb db.CaDb, existing *mo
 		if err != nil {
 			return out, errors.WithMessage(err, "invalid stored certificate")
 		}
-		_, err = caDb.RegisterRoot(ctx, model.NewRootCertificate(crt, xdb.ID{}, pb.Trust_Private, existing.Pem))
+		_, err = caDb.RegisterRoot(ctx, model.NewRootCertificate(crt, xdb.ID(0), pb.Trust_Private, existing.Pem))
 		if err != nil {
 			return out, errors.WithMessage(err, "unable to register root")
 		}

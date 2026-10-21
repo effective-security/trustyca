@@ -61,7 +61,7 @@ func TestKeySpec(t *testing.T) {
 func TestKeyLabel(t *testing.T) {
 	t.Parallel()
 	assert.Equal(t, "trustyca/1/201/L2", ca.KeyLabel(xdb.NewID(1), xdb.NewID(201), "L2"))
-	assert.Equal(t, "trustyca/0/0/ROOT", ca.KeyLabel(xdb.ID{}, xdb.ID{}, "ROOT"))
+	assert.Equal(t, "trustyca/0/0/ROOT", ca.KeyLabel(xdb.ID(0), xdb.ID(0), "ROOT"))
 	assert.True(t, ca.IsKeyURI("pkcs11:manufacturer=AWSKMS;id=1"))
 	assert.True(t, ca.IsKeyURI("  pkcs11:manufacturer=AWSKMS;id=1\n"))
 	assert.False(t, ca.IsKeyURI("-----BEGIN EC PRIVATE KEY-----"))
@@ -72,7 +72,7 @@ func TestSubjectKeyID(t *testing.T) {
 	t.Parallel()
 	// the identifier the authority puts in the certificates it issues
 	f := newFixture(t)
-	root := f.root(xdb.NewID(1), xdb.ID{}, "R", nil)
+	root := f.root(xdb.NewID(1), xdb.ID(0), "R", nil)
 	signer, err := f.keys.Signer(f.ctx, root)
 	require.NoError(t, err)
 	skid, err := ca.SubjectKeyID(signer.Public())
@@ -90,7 +90,7 @@ func inmemURI(prov cryptoprov.Provider, keyID string) string {
 func TestKeys_Generate(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
-	keyLabel := ca.KeyLabel(xdb.NewID(1), xdb.ID{}, "L2")
+	keyLabel := ca.KeyLabel(xdb.NewID(1), xdb.ID(0), "L2")
 
 	csrPEM, signer, ref, err := f.keys.Generate(f.ctx, f.prov, keyLabel, nil, &csr.CertificateRequest{CommonName: "Generated"})
 	require.NoError(t, err)

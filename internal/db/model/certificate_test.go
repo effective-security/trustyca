@@ -62,7 +62,7 @@ func Test_Certificate(t *testing.T) {
 		mod  func(m *model.Certificate)
 		err  string
 	}{
-		{"project without org", func(m *model.Certificate) { m.OrgID = xdb.ID{} }, "invalid org ID: a project scope requires an org"},
+		{"project without org", func(m *model.Certificate) { m.OrgID = xdb.ID(0) }, "invalid org ID: a project scope requires an org"},
 		{"skid", func(m *model.Certificate) { m.Skid = "" }, "invalid skid: required"},
 		{"ikid", func(m *model.Certificate) { m.Ikid = "" }, "invalid ikid: required"},
 		{"serial", func(m *model.Certificate) { m.SerialNumber = "" }, "invalid serial number: required"},

@@ -27,7 +27,7 @@ func Test_APIKey_Validate(t *testing.T) {
 	require.NoError(t, valid().Validate())
 
 	k := valid()
-	k.OrgID = xdb.ID{}
+	k.OrgID = xdb.ID(0)
 	assert.EqualError(t, k.Validate(), "invalid org ID")
 	k = valid()
 	k.Label = ""

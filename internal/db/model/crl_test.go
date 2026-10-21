@@ -45,8 +45,8 @@ func Test_Crl(t *testing.T) {
 		mod  func(m *model.Crl)
 		err  string
 	}{
-		{"project without org", func(m *model.Crl) { m.OrgID = xdb.ID{}; m.ProjectID = xdb.NewID(4) }, "invalid org ID: a project scope requires an org"},
-		{"issuer id", func(m *model.Crl) { m.IssuerID = xdb.ID{} }, "invalid issuer ID"},
+		{"project without org", func(m *model.Crl) { m.OrgID = xdb.ID(0); m.ProjectID = xdb.NewID(4) }, "invalid org ID: a project scope requires an org"},
+		{"issuer id", func(m *model.Crl) { m.IssuerID = xdb.ID(0) }, "invalid issuer ID"},
 		{"ikid", func(m *model.Crl) { m.Ikid = "" }, "invalid ikid: required"},
 		{"number", func(m *model.Crl) { m.CrlNumber = 0 }, "invalid crl number: must be positive"},
 		{"period", func(m *model.Crl) { m.NextUpdate = m.ThisUpdate }, "invalid update period"},

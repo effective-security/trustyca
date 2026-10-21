@@ -43,12 +43,12 @@ func Test_Root(t *testing.T) {
 	// the same certificate in another scope conflicts
 	_, err = provider.RegisterRoot(ctx, model.NewRootCertificate(root.Cert, orgB.ID, pb.Trust_Private, pem))
 	assert.ErrorIs(t, err, db.ErrRootConflict)
-	_, err = provider.RegisterRoot(ctx, model.NewRootCertificate(root.Cert, xdb.ID{}, pb.Trust_Private, pem))
+	_, err = provider.RegisterRoot(ctx, model.NewRootCertificate(root.Cert, xdb.ID(0), pb.Trust_Private, pem))
 	assert.ErrorIs(t, err, db.ErrRootConflict)
 
 	// platform root
 	platform := testutils.NewTestCA(t, "Platform Root", nil)
-	pr, err := provider.RegisterRoot(ctx, model.NewRootCertificate(platform.Cert, xdb.ID{}, pb.Trust_Any, testutils.CertPEM(platform.Cert)))
+	pr, err := provider.RegisterRoot(ctx, model.NewRootCertificate(platform.Cert, xdb.ID(0), pb.Trust_Any, testutils.CertPEM(platform.Cert)))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_, _ = provider.DeleteRoot(ctx, 0, pr.ID.UInt64())

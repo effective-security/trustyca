@@ -171,7 +171,7 @@ func TestKeys_NewSignedIssuer(t *testing.T) {
 
 	// the issuing CA has path length zero: it signs no subordinate CA, whose
 	// certificates would never verify (RFC 5280 section 4.2.1.9)
-	f.profile(org, xdb.ID{}, caProfileDef("SUB", issuerLabel))
+	f.profile(org, xdb.ID(0), caProfileDef("SUB", issuerLabel))
 	subReq := &ca.IssuerRequest{
 		OrgID:     org,
 		ProjectID: project,
@@ -186,9 +186,9 @@ func TestKeys_NewSignedIssuer(t *testing.T) {
 	assert.EqualError(t, err, `the path length of "CN=L2 CA" disallows a subordinate CA`)
 
 	// an intermediate with path length one signs a project issuer
-	f.profile(org, xdb.ID{}, caProfileDefWithPathLen("INT", rootLabel, 1))
-	intermediate := f.child(h.platformRoot, "INT", org, xdb.ID{}, "L2INT", pb.AuthorityType_Intermediate, nil)
-	f.profile(org, xdb.ID{}, caProfileDef("SUBINT", "L2INT"))
+	f.profile(org, xdb.ID(0), caProfileDefWithPathLen("INT", rootLabel, 1))
+	intermediate := f.child(h.platformRoot, "INT", org, xdb.ID(0), "L2INT", pb.AuthorityType_Intermediate, nil)
+	f.profile(org, xdb.ID(0), caProfileDef("SUBINT", "L2INT"))
 	sub := f.child(intermediate, "SUBINT", org, project, "L3", pb.AuthorityType_Issuing, nil)
 	assert.Equal(t, project.UInt64(), sub.ProjectID.UInt64())
 	assert.Equal(t, intermediate.ID.UInt64(), sub.ParentID.UInt64())
@@ -224,7 +224,7 @@ func TestKeys_NewSignedIssuer(t *testing.T) {
 	subReq.Label = "L4"
 	_, err = f.keys.NewSignedIssuer(f.ctx, subReq, refused)
 	assert.EqualError(t, err, `the path length of "CN=L3 CA" disallows a subordinate CA`)
-	f.profile(org, xdb.ID{}, caProfileDefWithPathLen("WIDE", "L2INT", 1))
+	f.profile(org, xdb.ID(0), caProfileDefWithPathLen("WIDE", "L2INT", 1))
 	refused, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "WIDE"})
 	require.NoError(t, err)
 	_, err = f.keys.NewSignedIssuer(f.ctx, subReq, refused)
@@ -232,9 +232,9 @@ func TestKeys_NewSignedIssuer(t *testing.T) {
 
 	// a deeper chain carries every parent, nearest first, and ends where
 	// the most distant constraint ends
-	f.profile(org, xdb.ID{}, caProfileDefWithPathLen("INT2", rootLabel, 2))
-	deep1 := f.child(h.platformRoot, "INT2", org, xdb.ID{}, "DEEP1", pb.AuthorityType_Intermediate, nil)
-	f.profile(org, xdb.ID{}, caProfileDefWithPathLen("MID", "DEEP1", 1))
+	f.profile(org, xdb.ID(0), caProfileDefWithPathLen("INT2", rootLabel, 2))
+	deep1 := f.child(h.platformRoot, "INT2", org, xdb.ID(0), "DEEP1", pb.AuthorityType_Intermediate, nil)
+	f.profile(org, xdb.ID(0), caProfileDefWithPathLen("MID", "DEEP1", 1))
 	deep2 := f.child(deep1, "MID", org, project, "DEEP2", pb.AuthorityType_Intermediate, nil)
 	f.profile(org, project, caProfileDef("LAST", "DEEP2"))
 	deep3 := f.child(deep2, "LAST", org, project, "DEEP3", pb.AuthorityType_Issuing, nil)
@@ -330,7 +330,7 @@ func TestKeys_PendingAndActivate(t *testing.T) {
 	assert.Empty(t, row.CsrPem)
 
 	// the activated issuer signs
-	f.profile(org, xdb.ID{}, peerProfileDef("ext-peer", "EXT", "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef("ext-peer", "EXT", "1h"))
 	res, err := f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "ext-peer"})
 	require.NoError(t, err)
 	leaf, _, err := res.Issuer.Sign(csr.SignRequest{Request: newCSR(t, "leaf"), Profile: res.ProfileName})
@@ -388,7 +388,7 @@ func TestKeys_ImportIssuer(t *testing.T) {
 	require.NoError(t, m.Validate())
 	row, err := f.db.RegisterIssuer(f.ctx, m)
 	require.NoError(t, err)
-	f.profile(org, xdb.ID{}, peerProfileDef("byo-peer", "BYO", "1h"))
+	f.profile(org, xdb.ID(0), peerProfileDef("byo-peer", "BYO", "1h"))
 	res, err := f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "byo-peer"})
 	require.NoError(t, err)
 	assert.Equal(t, row.ID.UInt64(), res.Row.ID.UInt64())

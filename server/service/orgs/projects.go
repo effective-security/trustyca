@@ -22,11 +22,11 @@ const defaultListLimit = 100
 // parseOptionalID parses an optional ID; an empty value returns a zero ID
 func parseOptionalID(ctx context.Context, val, what string) (xdb.ID, error) {
 	if val == "" {
-		return xdb.ID{}, nil
+		return xdb.ID(0), nil
 	}
 	id, err := xdb.ParseID(val)
 	if err != nil {
-		return xdb.ID{}, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid %s", what)
+		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid %s", what)
 	}
 	return id, nil
 }

@@ -94,7 +94,7 @@ func ProjectFromRequest(req any) (xdb.ID, error) {
 			return xdb.ParseID(pid)
 		}
 	}
-	return xdb.ID{}, nil
+	return xdb.ID(0), nil
 }
 
 // GetCallerScope returns the caller's resolved scope in the org selected in
