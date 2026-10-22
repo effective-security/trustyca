@@ -95,6 +95,11 @@ const (
 // (`issuer_url`, `crl_url`): a renamed path leaves the URLs embedded in the
 // issued certificates without a route.
 const (
+	// PathForCIS provides the base path of the JSON API of the CIS service
+	//
+	// Verbs: POST
+	PathForCIS = "/pb.CIS/:action"
+
 	// PathForCert provides the issuer certificate by IKID
 	//
 	// Verbs: GET

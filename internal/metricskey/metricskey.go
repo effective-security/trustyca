@@ -206,6 +206,27 @@ var (
 	}
 )
 
+// CIS
+var (
+	// CISCacheHit is counter metric for the responses the CIS serves from
+	// its cache; the type is the response: ocsp
+	CISCacheHit = metrics.Describe{
+		Type:         metrics.TypeCounter,
+		Name:         "cis_cache_hit",
+		Help:         "provides the counter of CIS responses served from the cache",
+		RequiredTags: []string{"type"},
+	}
+
+	// CISCacheMiss is counter metric for the responses the CIS fetched from
+	// the CA; the type is the response: ocsp
+	CISCacheMiss = metrics.Describe{
+		Type:         metrics.TypeCounter,
+		Name:         "cis_cache_miss",
+		Help:         "provides the counter of CIS responses fetched from the CA",
+		RequiredTags: []string{"type"},
+	}
+)
+
 // Metrics provides the list of emitted metrics by this repo
 var Metrics = []*metrics.Describe{
 	&AIADownloadFailCert,
@@ -225,6 +246,8 @@ var Metrics = []*metrics.Describe{
 	&CAOcspSigned,
 	&CertExpiryDays,
 	&CertExpiryHours,
+	&CISCacheHit,
+	&CISCacheMiss,
 	&LoginCount,
 	&PerfDbOperation,
 	&PerfMethodRun,

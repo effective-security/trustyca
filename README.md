@@ -64,6 +64,29 @@ Review coverage report:
 
     make docker docker-citest
 
+## Certificate Information Service
+
+The `cis` service of the `wfe` listener serves the public side of the CA
+without authentication: the issuer certificates (AIA), CRLs (CDP) and the
+OCSP responder that the issued certificates point at, and a JSON API
+(`POST /pb.CIS/GetRoots`, `GetIssuer`, `GetCertificate`,
+`GetCertificateStatus`, `GetCRL`). It holds no keys: OCSP requests are
+forwarded to `CA.SignOCSP` on the backend listener with the certificate of
+the `cis` section (`make gen_test_certs` creates `trustyca_cis`), and the
+signed responses are cached until their next update.
+
+    # the issuer certificate and the CRL of an issuer, by its key identifier
+    curl -sk https://localhost:8880/v1/cert/$IKID -o issuer.der
+    curl -sk https://localhost:8880/v1/crl/$IKID -o issuer.crl
+    # the status of a certificate
+    openssl ocsp -issuer issuer.pem -cert leaf.pem -url https://localhost:8880/v1/ocsp -resp_text
+    curl -sk https://localhost:8880/pb.CIS/GetIssuer -H 'Content-Type: application/json' -d "{\"IKID\":\"$IKID\"}"
+
+The URL templates of an issuer (`aia.issuer_url`, `crl_url`, `ocsp_url` of
+a ca-config file, `Config` of `RegisterIssuer`) name the CIS routes with
+`:ISSUER_ID` or `${ISSUER_ID}` for the key identifier, as in
+`etc/dev/ca-config.local.yaml`.
+
 ## Debug
 
 Add the launch configuration to .vscode/launch.json:

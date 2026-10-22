@@ -120,7 +120,6 @@ func NewFactory(cfg Config, ops ...Option) Factory {
 }
 
 func (f *factory) NewClient(svc string, ops ...Option) (*rpcclient.Client, error) {
-	var tlscfg *tls.Config
 	var err error
 
 	dops := f.dops
@@ -133,7 +132,10 @@ func (f *factory) NewClient(svc string, ops ...Option) (*rpcclient.Client, error
 		return nil, errors.Errorf("service %s not found", svc)
 	}
 
-	if dops.tlsCfg == nil && strings.HasPrefix(targetHost, "https://") {
+	// the TLS configuration of the WithTLS option, else one built from the
+	// client TLS files for an https server
+	tlscfg := dops.tlsCfg
+	if tlscfg == nil && strings.HasPrefix(targetHost, "https://") {
 		var tlsCert, tlsKey string
 		tlsCA := resolve.ExpandPath(f.cfg.ClientTLS.TrustedCAFile)
 		if !f.cfg.ClientTLS.Empty() {

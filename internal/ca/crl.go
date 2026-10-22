@@ -269,6 +269,9 @@ func (p *CrlPublisher) publish(ctx context.Context, row *model.Issuer, current *
 		if err != nil {
 			return nil, false, errors.WithMessage(err, "unable to read issuer")
 		}
+		if row.Status != pb.IssuerStatus_Active && row.Status != pb.IssuerStatus_Archived {
+			return nil, false, errors.WithStack(ErrIssuerNotActive)
+		}
 		current, err = p.currentCrl(ctx, row.Skid)
 		if err != nil {
 			return nil, false, err

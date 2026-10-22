@@ -104,6 +104,19 @@ ca:
   retention:
     expired_after: 0
 
+# configuration for the Certificate Information Service: the public,
+# read-only side of the CA served by the wfe listener (service `cis`)
+cis:
+  # the TLS certificate the CIS presents to the CA backend when it forwards
+  # OCSP requests, mapped to the trustyca-cis role (spiffe://trustyca/cis)
+  # by the backend listener; empty uses client.client_tls
+  client_tls:
+    cert: ${HOME}/.trustyca/certs/trustyca_cis.pem
+    key: ${HOME}/.trustyca/certs/trustyca_cis.key
+    trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+  # the number of OCSP responses kept in memory, each until its NextUpdate
+  ocsp_cache_size: 1000
+
 # configuration for crypto providers
 crypto_provider:
   #  the location of the configuration file for default provider
@@ -184,6 +197,8 @@ servers:
         - /metrics
         - /healthz
         - /pb.Status
+        # the CIS is public: its JSON API, and its binary routes under /v1
+        - /pb.CIS
         - /v1/webhooks
       # allow any authenticated request that includes a non empty role
       allow_any_role:
@@ -217,6 +232,14 @@ servers:
         - /v1/status/node
         - /v1/status/server
         - /v1/status/version
+        # the CIS routes with a fixed path; the AIA, CRL and OCSP routes by
+        # issuer carry the key identifier and are public through allow_any
+        - /pb.CIS/GetRoots
+        - /pb.CIS/GetIssuer
+        - /pb.CIS/GetCertificate
+        - /pb.CIS/GetCertificateStatus
+        - /pb.CIS/GetCRL
+        - /v1/ocsp
       cookies:
         auth: avn_trustyca_access_token
         csrf: avn_trustyca_csrf_token
@@ -293,7 +316,10 @@ servers:
     identity_map:
       debug_logs: false
       strict: true
+      # the TLS client certificate is the identity of a backend caller; the
+      # mapping is off unless enabled, and a caller is then a guest
       tls:
+        enabled: true
         default_authenticated_role: user
         roles:
           trustyca-peer:
@@ -315,8 +341,8 @@ client:
     key: ${HOME}/.trustyca/certs/trustyca_client.key
     trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
   server_url:
-    wfe: http://localhost:8880
-    backend: http://localhost:8881
+    wfe: https://localhost:8880
+    backend: https://localhost:8881
   dial_timeout: 30s
   dial_keep_alive_time: 300s
   dial_keep_alive_timeout: 30s

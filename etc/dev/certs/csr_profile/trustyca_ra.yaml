@@ -1,0 +1,8 @@
+---
+common_name: trustyca-ra
+san:
+  - spiffe://trustyca/ra
+names:
+  - C: US
+    L: WA
+    O: Tbilicode

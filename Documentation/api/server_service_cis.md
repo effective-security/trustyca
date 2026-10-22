@@ -6,12 +6,26 @@
 import "github.com/effective-security/trustyca/server/service/cis"
 ```
 
+Package cis implements the Certificate Information Service \(pb.CIS\): the public, read\-only side of the CA. It serves the trust anchors, issuer chains, certificate information and revocation status of every org over the JSON API \(POST /pb.CIS/\{Method\}\) and the binary routes the issued certificates point at: the issuer certificate \(AIA caIssuers, GET /v1/cert/\{ikid\}\), the current CRL \(CDP, GET /v1/crl/\{ikid\}\) and the OCSP responder \(GET and POST under /v1/ocsp and /v1/ocspi\).
+
+The service holds no issuer keys. An OCSP request is forwarded to pb.CA.SignOCSP over the backend gRPC client, which is created on the first request with the certificate of the \`cis.client\_tls\` configuration, and the signed response is cached by the hash of the request until its NextUpdate. Every lookup needs an IKID, a serial, a SKID, a thumbprint or an ID: the service lists nothing of an org but its trust anchors.
+
+The service is built by its Factory from the app container; a test wires a CA directly:
+
+```
+svc, err := cis.New(cfg, caReadonlyDb, caServer, nil)
+if err != nil {
+	return err
+}
+svc.RegisterRoute(router)
+```
+
 ## Index
 
 - [Constants](<#constants>)
 - [func Factory\(server gserver.GServer\) any](<#Factory>)
-- [type OCSPResponder](<#OCSPResponder>)
 - [type Service](<#Service>)
+  - [func New\(cfg \*config.Configuration, caDb db.CaReadonlyDb, ca pb.CAServer, clients client.Factory\) \(\*Service, error\)](<#New>)
   - [func \(s \*Service\) CRLHandler\(\) restserver.Handle](<#Service.CRLHandler>)
   - [func \(s \*Service\) CisHTTPHandler\(\) restserver.Handle](<#Service.CisHTTPHandler>)
   - [func \(s \*Service\) Close\(\)](<#Service.Close>)
@@ -38,7 +52,7 @@ const ServiceName = "cis"
 ```
 
 <a name="Factory"></a>
-## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L31>)
+## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L53>)
 
 ```go
 func Factory(server gserver.GServer) any
@@ -46,25 +60,10 @@ func Factory(server gserver.GServer) any
 
 Factory returns a factory of the service
 
-<a name="OCSPResponder"></a>
-## type [OCSPResponder](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L179-L181>)
-
-OCSPResponder represents the logical source of OCSP responses, i.e., the logic that actually chooses a response based on a request. In order to create an actual responder, wrap one of these in a Responder object and pass it to http.Handle. By default the Responder will set the headers:
-
-Cache\-Control to "max\-age=\(response.NextUpdate\-now\), public, no\-transform, must\-revalidate", Last\-Modified to response.ThisUpdate, Expires to response.NextUpdate, ETag to the SHA256 hash of the response, Content\-Type to application/ocsp\-response.
-
-To override these headers, or set extra headers, OCSPResponder should return a http.Header with the headers to override, or nil otherwise.
-
-```go
-type OCSPResponder interface {
-    Response(*ocsp.Request) ([]byte, http.Header, error)
-}
-```
-
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L22-L28>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L37-L50>)
 
-Service defines the CA service
+Service defines the Certificate Information Service: the public, read\-only view of the CA tables \(trust anchors, issuer chains, certificates, revocation status and CRLs\) and the binary AIA, CDP and OCSP routes the issued certificates point at. It holds no issuer keys: OCSP requests are forwarded to the CA over the backend gRPC client and the responses are cached until their NextUpdate.
 
 ```go
 type Service struct {
@@ -72,26 +71,35 @@ type Service struct {
 }
 ```
 
+<a name="New"></a>
+### func [New](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L74>)
+
+```go
+func New(cfg *config.Configuration, caDb db.CaReadonlyDb, ca pb.CAServer, clients client.Factory) (*Service, error)
+```
+
+New returns the service over the CA tables. The CA is the server the OCSP requests are forwarded to; when it is nil, a client of the backend is created with the factory on the first request.
+
 <a name="Service.CRLHandler"></a>
-### func \(\*Service\) [CRLHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L56>)
+### func \(\*Service\) [CRLHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L97>)
 
 ```go
 func (s *Service) CRLHandler() restserver.Handle
 ```
 
-
+CRLHandler serves the current CRL of the issuer with the key identifier in DER, the CRL Distribution Point of the certificates it issued
 
 <a name="Service.CisHTTPHandler"></a>
-### func \(\*Service\) [CisHTTPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L67>)
+### func \(\*Service\) [CisHTTPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L115>)
 
 ```go
 func (s *Service) CisHTTPHandler() restserver.Handle
 ```
 
-
+CisHTTPHandler returns the handler of the JSON API; there is no access check, since the CIS data is public
 
 <a name="Service.Close"></a>
-### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L63>)
+### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L102>)
 
 ```go
 func (s *Service) Close()
@@ -100,61 +108,61 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.GetCRL"></a>
-### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L29>)
+### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L156>)
 
 ```go
 func (s *Service) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (*pb.CrlResponse, error)
 ```
 
-
+GetCRL returns the current CRL of the issuer with the key identifier
 
 <a name="Service.GetCertificate"></a>
-### func \(\*Service\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L19>)
+### func \(\*Service\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L100>)
 
 ```go
 func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateInfoRequest) (*pb.CertificateResponse, error)
 ```
 
-
+GetCertificate returns the public view of a certificate by its ID, its Subject Key Identifier \(the newest certificate of the key\), its SHA\-256 thumbprint, or the key identifier of its issuer and its serial number. The tenancy and the client\-owned fields \(label, metadata, profile\) are not part of the view.
 
 <a name="Service.GetCertificateStatus"></a>
-### func \(\*Service\) [GetCertificateStatus](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L24>)
+### func \(\*Service\) [GetCertificateStatus](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L117>)
 
 ```go
 func (s *Service) GetCertificateStatus(ctx context.Context, req *pb.GetCertificateInfoRequest) (*pb.CertificateStatusResponse, error)
 ```
 
-
+GetCertificateStatus returns the revocation status of a certificate named as in GetCertificate: Active, Expired \(an Active certificate whose validity has ended, before the cert\_status task marks it\) or Revoked with the time and reason of its revocation
 
 <a name="Service.GetIssuer"></a>
-### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L14>)
+### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L58>)
 
 ```go
 func (s *Service) GetIssuer(ctx context.Context, req *pb.GetIssuerInfoRequest) (*pb.IssuerInfo, error)
 ```
 
-
+GetIssuer returns the public view of the issuer with the key identifier: its chain, status and the AIA, CRL and OCSP URLs of its settings with the key identifier in place of the placeholder. A Pending issuer has no certificate and is not found.
 
 <a name="Service.GetOcspHandler"></a>
-### func \(\*Service\) [GetOcspHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L95>)
+### func \(\*Service\) [GetOcspHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L128>)
 
 ```go
 func (s *Service) GetOcspHandler() restserver.Handle
 ```
 
-GetOcspHandler returns OCSP via GET
+GetOcspHandler answers an OCSP request sent as the URL\-encoded base64 of its DER encoding in the path \(RFC 6960 A.1\); the issuer segment of the route by issuer is not needed to answer, the request carries the issuer
 
 <a name="Service.GetRoots"></a>
-### func \(\*Service\) [GetRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L9>)
+### func \(\*Service\) [GetRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L25>)
 
 ```go
 func (s *Service) GetRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.RootsResponse, error)
 ```
 
-
+GetRoots returns the published trust anchors, newest first: of the platform when the request names no org, else of the org. An unknown org has none.
 
 <a name="Service.IsReady"></a>
-### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L58>)
+### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L97>)
 
 ```go
 func (s *Service) IsReady() bool
@@ -163,16 +171,16 @@ func (s *Service) IsReady() bool
 IsReady indicates that the service is ready to serve its end\-points
 
 <a name="Service.IssuerHandler"></a>
-### func \(\*Service\) [IssuerHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L17>)
+### func \(\*Service\) [IssuerHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L70>)
 
 ```go
 func (s *Service) IssuerHandler() restserver.Handle
 ```
 
-
+IssuerHandler serves the certificate of the issuer with the key identifier in DER, the AIA caIssuers URL of the certificates it issued
 
 <a name="Service.Name"></a>
-### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L53>)
+### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L92>)
 
 ```go
 func (s *Service) Name() string
@@ -181,7 +189,7 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.OCSPHandler"></a>
-### func \(\*Service\) [OCSPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L137>)
+### func \(\*Service\) [OCSPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L165>)
 
 ```go
 func (s *Service) OCSPHandler() restserver.Handle
@@ -190,7 +198,7 @@ func (s *Service) OCSPHandler() restserver.Handle
 OCSPHandler answers an OCSP request posted as the body, which is read up to maxOCSPRequestSize whatever the request declares
 
 <a name="Service.RegisterGRPC"></a>
-### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L85>)
+### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L135>)
 
 ```go
 func (s *Service) RegisterGRPC(r *grpc.Server)
@@ -199,12 +207,12 @@ func (s *Service) RegisterGRPC(r *grpc.Server)
 RegisterGRPC registers gRPC handler
 
 <a name="Service.RegisterRoute"></a>
-### func \(\*Service\) [RegisterRoute](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L73>)
+### func \(\*Service\) [RegisterRoute](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L121>)
 
 ```go
 func (s *Service) RegisterRoute(r restserver.Router)
 ```
 
-RegisterRoute adds the Status API endpoints to the overall URL router
+RegisterRoute adds the JSON API and the binary AIA, CDP and OCSP routes to the overall URL router
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)

@@ -14,9 +14,10 @@ of the CA service; phase 3: the certificate, revocation and current CRL
 methods of the CA service, the `trustyca-ra` and `trustyca-cis` roles of
 the backend listener and the CA client; phase 4: CRL publishing
 (`internal/ca.CrlPublisher`, `PublishCrls`, the `crl_renewal` task) and the
-`cert_status` task (expiry and retention). The CIS service is a stub; its
-phase and the operator tooling and hardening (5 to 7) are planned in
-PLAN.md.
+`cert_status` task (expiry and retention); phase 5: the CIS service
+(`server/service/cis`: the public AIA, CRL and OCSP routes, the JSON API
+and the OCSP response cache). The operator tooling and hardening (6 and 7)
+are planned in PLAN.md.
 
 ## Active work
 
@@ -24,7 +25,7 @@ PLAN.md.
 | ------ | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | RM-001 | Public precondition error contract | server/service/orgs answers HTTP 409 `conflict` / gRPC FailedPrecondition (preconditionFailed); map FailedPrecondition to 409 in porto so Go gRPC clients agree, then pin it |
 | RM-002 | Issuer renewal under one label     | `UNIQUE NULLS NOT DISTINCT (org_id, project_id, label)` on `issuer` holds in every status, so a renewed issuer cannot take the label of the archived one and `internal/ca.Bootstrap` refuses a rotated key; replace it with a unique index on Active (and Pending) issuers, or rename archived issuers, with a migration and a bootstrap that archives in place (DESIGN.md §5.4) |
-| RM-003 | OCSP issuer lookup by IKID         | `pb.OCSPRequest` carries the DER request only; the CA finds an issuer that is not in memory by a SHA-1 key hash through the `skid` index. Add an optional `IKID` that the CIS route `/v1/ocsp/{ikid}` passes on, so every hash algorithm resolves without a scan (DESIGN.md §8) |
+| RM-003 | OCSP issuer lookup by IKID         | `pb.OCSPRequest` carries the DER request only; the CA finds an issuer that is not in memory by a SHA-1 key hash through the `skid` index. Add an optional `IKID` that the CIS routes `/v1/ocspi/{ikid}` pass on, so every hash algorithm resolves without a scan (DESIGN.md §8) |
 | RM-004 | Project-scoped issuer and profile mutations | `UpdateIssuerRequest`, `ActivateIssuerRequest` and `DeleteProfileRequest` carry no `ProjectID`, so the interceptor authorizes them at org scope and a project Admin cannot archive, activate or delete the rows of its own project. Add `ProjectID` to the three requests, as `UpdateCertificateLabelRequest` and `RevokeCertificateRequest` have it (the row must belong to the named project); the service already authorizes the resolved row against its project (`rowAccess`, DESIGN.md §6) |
 
 ## Completion policy

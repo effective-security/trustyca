@@ -233,6 +233,30 @@ var (
 )
 ```
 
+<a name="CISCacheHit"></a>CIS
+
+```go
+var (
+    // CISCacheHit is counter metric for the responses the CIS serves from
+    // its cache; the type is the response: ocsp
+    CISCacheHit = metrics.Describe{
+        Type:         metrics.TypeCounter,
+        Name:         "cis_cache_hit",
+        Help:         "provides the counter of CIS responses served from the cache",
+        RequiredTags: []string{"type"},
+    }
+
+    // CISCacheMiss is counter metric for the responses the CIS fetched from
+    // the CA; the type is the response: ocsp
+    CISCacheMiss = metrics.Describe{
+        Type:         metrics.TypeCounter,
+        Name:         "cis_cache_miss",
+        Help:         "provides the counter of CIS responses fetched from the CA",
+        RequiredTags: []string{"type"},
+    }
+)
+```
+
 <a name="Metrics"></a>Metrics provides the list of emitted metrics by this repo
 
 ```go
@@ -254,6 +278,8 @@ var Metrics = []*metrics.Describe{
     &CAOcspSigned,
     &CertExpiryDays,
     &CertExpiryHours,
+    &CISCacheHit,
+    &CISCacheMiss,
     &LoginCount,
     &PerfDbOperation,
     &PerfMethodRun,

@@ -36,6 +36,7 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 - [Variables](<#variables>)
 - [func AuthorityProfile\(p \*model.CertificateProfile\) \(\*authority.CertProfile, error\)](<#AuthorityProfile>)
 - [func CrlDue\(current \*model.Crl, renewal time.Duration, now time.Time\) bool](<#CrlDue>)
+- [func ExpandIssuerURL\(template, skid string\) string](<#ExpandIssuerURL>)
 - [func ExtensionsFromPb\(list \[\]\*pb.X509Extension\) \(\[\]csr.X509Extension, error\)](<#ExtensionsFromPb>)
 - [func ExtensionsToPb\(list \[\]csr.X509Extension\) \[\]\*pb.X509Extension](<#ExtensionsToPb>)
 - [func IsKeyURI\(key string\) bool](<#IsKeyURI>)
@@ -95,6 +96,15 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 
 
 ## Constants
+
+<a name="IssuerIDVariable"></a>The placeholders of the issuer in the AIA, CRL and OCSP URL templates of an issuer configuration: \`$\{ISSUER\_ID\}\` of the API and \`:ISSUER\_ID\`, which the config loader does not expand as an environment variable. Both are replaced with the Subject Key Identifier of the issuer.
+
+```go
+const (
+    IssuerIDVariable    = "${ISSUER_ID}"
+    IssuerIDPlaceholder = ":ISSUER_ID"
+)
+```
 
 <a name="SoftwareKeyProvider"></a>
 
@@ -179,13 +189,22 @@ func AuthorityProfile(p *model.CertificateProfile) (*authority.CertProfile, erro
 AuthorityProfile converts a profile row to the profile the authority signs with. It reads the row only: a row the registry returned is shared with other requests, and its IDs must not be formatted \(model.Definition\).
 
 <a name="CrlDue"></a>
-## func [CrlDue](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L391>)
+## func [CrlDue](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L394>)
 
 ```go
 func CrlDue(current *model.Crl, renewal time.Duration, now time.Time) bool
 ```
 
 CrlDue reports whether a CRL must be published at the time: the issuer has none, or the next update of the current one is within the renewal period
+
+<a name="ExpandIssuerURL"></a>
+## func [ExpandIssuerURL](<https://github.com/effective-security/trustyca/blob/main/internal/ca/config.go#L84>)
+
+```go
+func ExpandIssuerURL(template, skid string) string
+```
+
+ExpandIssuerURL returns the URL of an AIA, CRL or OCSP template of an issuer with its Subject Key Identifier in place of the placeholders, as the authority puts it in the certificates it issues
 
 <a name="ExtensionsFromPb"></a>
 ## func [ExtensionsFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/profile.go#L159>)
@@ -224,7 +243,7 @@ func IsSelfSigned(crt *x509.Certificate) bool
 IsSelfSigned reports whether the certificate is its own issuer
 
 <a name="IssuerConfigFromPb"></a>
-## func [IssuerConfigFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/config.go#L15>)
+## func [IssuerConfigFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/config.go#L16>)
 
 ```go
 func IssuerConfigFromPb(label string, c *pb.IssuerConfig) (*authority.IssuerConfig, error)
@@ -233,7 +252,7 @@ func IssuerConfigFromPb(label string, c *pb.IssuerConfig) (*authority.IssuerConf
 IssuerConfigFromPb converts the runtime settings of an issuer row to the configuration of the authority issuer with the label. The AIA section is always present, so that the CRL and OCSP timings fall back to the authority defaults when the row does not set them; the profiles are empty and are registered by the Registry.
 
 <a name="IssuerConfigToPb"></a>
-## func [IssuerConfigToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/config.go#L54>)
+## func [IssuerConfigToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/config.go#L55>)
 
 ```go
 func IssuerConfigToPb(c *authority.IssuerConfig) *pb.IssuerConfig
