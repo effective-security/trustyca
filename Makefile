@@ -128,7 +128,7 @@ gen_test_certs: trusty_root
 		--key-label test_ \
 		--root-ca $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.pem \
 		--root-ca-key $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.key \
-		--ca1 --ca2  --bundle --server --peer --client --admin --ra --cis --force
+		--ca1 --ca2  --bundle --server --peer --client --admin --ra --aia --force
 
 start-localstack:
 	echo "*** starting localstack"

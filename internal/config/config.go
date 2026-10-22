@@ -15,6 +15,9 @@ const (
 	WFEServerName     = "wfe"
 	BackendServerName = "backend"
 	RouterServerName  = "router"
+	// AIAServerName is the plain HTTP listener of the Authority Information
+	// Access service: the AIA, CRL and OCSP routes of the issued certificates
+	AIAServerName = "aia"
 
 	// EnvironmentProd is the service.environment of a production instance: it
 	// refuses the settings of development, such as software issuer keys
@@ -68,8 +71,8 @@ type Configuration struct {
 	// CA specifies the Certification Authority configuration
 	CA CA `json:"ca" yaml:"ca"`
 
-	// CIS specifies the Certificate Information Service configuration
-	CIS CIS `json:"cis" yaml:"cis"`
+	// AIA specifies the Authority Information Access service configuration
+	AIA AIA `json:"aia" yaml:"aia"`
 }
 
 // Service specifies the basic service info
@@ -187,14 +190,15 @@ type CA struct {
 	AllowSoftwareKeys bool `json:"allow_software_keys" yaml:"allow_software_keys"`
 }
 
-// CIS specifies the Certificate Information Service configuration: the
-// public, read-only service that serves issuer certificates, CRLs and OCSP
-// responses. It holds no keys: OCSP requests are forwarded to the CA over
-// the backend gRPC client (`client.server_url.backend`).
-type CIS struct {
-	// ClientTLS specifies the TLS certificate the CIS presents to the CA
-	// backend, mapped to the `trustyca-cis` role by the backend listener
-	// (`spiffe://trustyca/cis`). Empty uses the `client.client_tls`
+// AIA specifies the Authority Information Access service configuration:
+// the public, read-only service over plain HTTP that serves the issuer
+// certificates, CRLs and OCSP responses the issued certificates point at.
+// It holds no keys: OCSP requests are forwarded to the CA over the backend
+// gRPC client (`client.server_url.backend`).
+type AIA struct {
+	// ClientTLS specifies the TLS certificate the AIA presents to the CA
+	// backend, mapped to the `trustyca-aia` role by the backend listener
+	// (`spiffe://trustyca/aia`). Empty uses the `client.client_tls`
 	// certificate.
 	ClientTLS gserver.TLSInfo `json:"client_tls,omitempty" yaml:"client_tls,omitempty"`
 

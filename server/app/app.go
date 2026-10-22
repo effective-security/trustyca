@@ -41,6 +41,7 @@ type appFlags struct {
 	WfeListenURL        []string `help:"URL for the WFE listening end-point"`
 	RouterListenURL     []string `help:"URL for the Router listening end-point"`
 	BackendListenURL    []string `help:"URL for the Backend listening end-point"`
+	AiaListenURL        []string `help:"URL for the AIA listening end-point"`
 	HttpsCertFile       string   `help:"HTTPS server certificate file"`
 	HttpsKeyFile        string   `help:"HTTPS server key file"`
 	HttpsTrustedCAFile  string   `help:"HTTPS server trusted CA file"`
@@ -449,6 +450,12 @@ func (a *App) loadConfig() error {
 			case config.RouterServerName:
 				if len(a.flags.RouterListenURL) > 0 {
 					httpCfg.ListenURLs = a.flags.RouterListenURL
+					httpCfg.Disabled = len(httpCfg.ListenURLs) == 1 && httpCfg.ListenURLs[0] == "none"
+				}
+
+			case config.AIAServerName:
+				if len(a.flags.AiaListenURL) > 0 {
+					httpCfg.ListenURLs = a.flags.AiaListenURL
 					httpCfg.Disabled = len(httpCfg.ListenURLs) == 1 && httpCfg.ListenURLs[0] == "none"
 				}
 

@@ -66,32 +66,46 @@ Review coverage report:
 
 ## Certificate Information Service
 
-The `cis` service of the `wfe` listener serves the public side of the CA
-without authentication: the issuer certificates (AIA), CRLs (CDP) and the
-OCSP responder that the issued certificates point at, and a JSON API
-(`POST /pb.CIS/GetRoots`, `GetIssuer`, `GetCertificate`,
-`GetCertificateStatus`, `GetCRL`). It holds no keys: OCSP requests are
-forwarded to `CA.SignOCSP` on the backend listener with the certificate of
-the `cis` section (`make gen_test_certs` creates `trustyca_cis`), and the
-signed responses are cached until their next update.
+The `cis` service of the `wfe` listener is the read-only view of the CA for
+authenticated users: a JSON and gRPC API (`POST /pb.CIS/GetRoots`,
+`GetIssuer`, `GetCertificate`, `GetCertificateStatus`, `GetCRL`) that
+serves the trust anchors, issuer chains, certificate information and status
+and CRLs of every org without their tenancy. The listener admits any
+authenticated caller to `/pb.CIS` and refuses a guest. The service holds no
+keys and needs no configuration.
 
-    # the issuer certificate and the CRL of an issuer, by its key identifier
-    curl -sk https://localhost:8880/v1/cert/$IKID -o issuer.der
-    curl -sk https://localhost:8880/v1/crl/$IKID -o issuer.crl
-    # the status of a certificate
-    openssl ocsp -issuer issuer.pem -cert leaf.pem -url https://localhost:8880/v1/ocsp -resp_text
-    curl -sk https://localhost:8880/pb.CIS/GetIssuer -H 'Content-Type: application/json' -d "{\"IKID\":\"$IKID\"}"
+    curl -sk https://localhost:8880/pb.CIS/GetIssuer -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d "{\"IKID\":\"$IKID\"}"
 
-The URL templates of an issuer (`aia.issuer_url`, `crl_url`, `ocsp_url` of
-a ca-config file, `Config` of `RegisterIssuer`) name the CIS routes with
-`:ISSUER_ID` or `${ISSUER_ID}` for the key identifier, as in
-`etc/dev/ca-config.local.yaml`.
+The `trustyca` CLI reads it with the token of the login:
 
-The `trustyca` CLI reads the same service without a login:
-
+    bin/trustyca -s https://localhost:8880 auth login
     bin/trustyca -s https://localhost:8880 issuer get $IKID
     bin/trustyca -s https://localhost:8880 cert status --ikid $IKID --serial $SERIAL
     bin/trustyca -s https://localhost:8880 root list
+
+## Authority Information Access
+
+The `aia` service serves the URLs embedded in the issued certificates on
+its own plain HTTP listener (`http://localhost:8888` in the dev
+configuration), without TLS or authentication, as a TLS verifier fetches
+them: the issuer certificate (AIA caIssuers, `GET /v1/cert/{ikid}`), the
+CRL (CRL Distribution Point, `GET /v1/crl/{ikid}`) and the OCSP responder
+(`/v1/ocsp`, `/v1/ocspi/{ikid}`). The listener serves nothing else. The
+service holds no keys: OCSP requests are forwarded to `CA.SignOCSP` on the
+backend listener with the certificate of the `aia` section
+(`make gen_test_certs` creates `trustyca_aia`), and the signed responses
+are cached until their next update.
+
+    # the issuer certificate and the CRL of an issuer, by its key identifier
+    curl -s http://localhost:8888/v1/cert/$IKID -o issuer.der
+    curl -s http://localhost:8888/v1/crl/$IKID -o issuer.crl
+    # the status of a certificate
+    openssl ocsp -issuer issuer.pem -cert leaf.pem -url http://localhost:8888/v1/ocsp -resp_text
+
+The URL templates of an issuer (`aia.issuer_url`, `crl_url`, `ocsp_url` of
+a ca-config file, `Config` of `RegisterIssuer`) name the AIA routes with
+`:ISSUER_ID` or `${ISSUER_ID}` for the key identifier, as in
+`etc/dev/ca-config.local.yaml`.
 
 ## Certification Authority
 
@@ -118,9 +132,9 @@ request names the org:
     # onboard an org: its issuing CA under the platform intermediate, and the template profiles
     trustycactl ca org bootstrap --org $ORG --parent trusty.l1 --templates etc/dev/profiles \
         --cn "Example Issuing CA" --ocsp-profile ocsp \
-        --crl-url 'http://localhost:8880/v1/crl/${ISSUER_ID}' \
-        --ocsp-url 'http://localhost:8880/v1/ocspi/${ISSUER_ID}' \
-        --aia-url 'http://localhost:8880/v1/cert/${ISSUER_ID}'
+        --crl-url 'http://localhost:8888/v1/crl/${ISSUER_ID}' \
+        --ocsp-url 'http://localhost:8888/v1/ocspi/${ISSUER_ID}' \
+        --aia-url 'http://localhost:8888/v1/cert/${ISSUER_ID}'
     # the CA of the org
     trustycactl ca issuer list --org $ORG
     trustycactl ca profile register --org $ORG --file etc/dev/profiles/server.yaml --issuer issuing

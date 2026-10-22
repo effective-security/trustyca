@@ -11,14 +11,16 @@ invites, API keys and the authorization layer; phase 2 and 2a: the CA
 tables, the CA core library (`internal/ca`: tenant-scoped issuer registry,
 keys, platform bootstrap) and the issuer, profile, root and signing methods
 of the CA service; phase 3: the certificate, revocation and current CRL
-methods of the CA service, the `trustyca-ra` and `trustyca-cis` roles of
+methods of the CA service, the `trustyca-ra` and `trustyca-aia` roles of
 the backend listener and the CA client; phase 4: CRL publishing
 (`internal/ca.CrlPublisher`, `PublishCrls`, the `crl_renewal` task) and the
 `cert_status` task (expiry and retention); phase 5: the CIS service
-(`server/service/cis`: the public AIA, CRL and OCSP routes, the JSON API
-and the OCSP response cache); phase 6: the operator tooling (`trustycactl ca
-...` and `ca org bootstrap`, the `privpb.Admin` support lists across orgs,
-the CIS commands of `trustyca`). The hardening (7) is planned in PLAN.md.
+(`server/service/cis`: the JSON and gRPC API for authenticated callers);
+phase 6: the operator tooling (`trustycactl ca ...` and `ca org bootstrap`,
+the `privpb.Admin` support lists across orgs, the CIS commands of
+`trustyca`); phase 7: the hardening; phase 8: the AIA service
+(`server/service/aia`: the public AIA, CRL and OCSP routes and the OCSP
+response cache on a plain HTTP listener).
 
 ## Active work
 
@@ -26,7 +28,7 @@ the CIS commands of `trustyca`). The hardening (7) is planned in PLAN.md.
 | ------ | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | RM-001 | Public precondition error contract | server/service/orgs answers HTTP 409 `conflict` / gRPC FailedPrecondition (preconditionFailed); map FailedPrecondition to 409 in porto so Go gRPC clients agree, then pin it |
 | RM-002 | Issuer renewal under one label     | `UNIQUE NULLS NOT DISTINCT (org_id, project_id, label)` on `issuer` holds in every status, so a renewed issuer cannot take the label of the archived one and `internal/ca.Bootstrap` refuses a rotated key; replace it with a unique index on Active (and Pending) issuers, or rename archived issuers, with a migration and a bootstrap that archives in place (DESIGN.md §5.4) |
-| RM-003 | OCSP issuer lookup by IKID         | `pb.OCSPRequest` carries the DER request only; the CA finds an issuer that is not in memory by a SHA-1 key hash through the `skid` index. Add an optional `IKID` that the CIS routes `/v1/ocspi/{ikid}` pass on, so every hash algorithm resolves without a scan (DESIGN.md §8) |
+| RM-003 | OCSP issuer lookup by IKID         | `pb.OCSPRequest` carries the DER request only; the CA finds an issuer that is not in memory by a SHA-1 key hash through the `skid` index. Add an optional `IKID` that the AIA routes `/v1/ocspi/{ikid}` pass on, so every hash algorithm resolves without a scan (DESIGN.md §8) |
 | RM-005 | Deny by default on the wfe listener | The index page of the UI is served at `/`, so `/` stays under `authz.allow_any` of the wfe and every path without a rule is open to every identity at the authz layer; the services rely on the access check of each method. Serve the UI pages under a listed prefix, or add an exact-match rule to porto's authz, then remove `/` from `allow_any` as the backend listener does |
 | RM-004 | Project-scoped issuer and profile mutations | `UpdateIssuerRequest`, `ActivateIssuerRequest` and `DeleteProfileRequest` carry no `ProjectID`, so the interceptor authorizes them at org scope and a project Admin cannot archive, activate or delete the rows of its own project. Add `ProjectID` to the three requests, as `UpdateCertificateLabelRequest` and `RevokeCertificateRequest` have it (the row must belong to the named project); the service already authorizes the resolved row against its project (`rowAccess`, DESIGN.md §6) |
 

@@ -42,7 +42,7 @@ func TestService_EveryMethod_Access(t *testing.T) {
 		require.NotEmpty(t, info.Scopes, "%s declares the scopes of an API key", method)
 		require.NotNil(t, info.Allocator, method)
 
-		for _, role := range []string{"trustyca-ra", "trustyca-cis", "trustyca-admin"} {
+		for _, role := range []string{"trustyca-ra", "trustyca-aia", "trustyca-admin"} {
 			err := authctx.CheckAccess(serviceCtx(role), authorizer, info.Allocator(), method)
 			assert.NoError(t, err, "%s for %s", method, role)
 		}

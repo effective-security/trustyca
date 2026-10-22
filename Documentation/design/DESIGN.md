@@ -7,12 +7,13 @@ Status: accepted design for v1. Companion documents:
 ## 1. Scope
 
 Trusty CA is a multi-tenant Certification Authority used as a backend by other
-products. Two services are built from this repo:
+products. Three services are built from this repo:
 
-| Service                        | Transport | Exposure               | Purpose                                                                         |
-| ------------------------------ | --------- | ---------------------- | ------------------------------------------------------------------------------- |
-| CA (`pb.CA`)                   | gRPC only | backend network only   | issuers, profiles, signing, revocation, CRL/OCSP signing                        |
-| CIS (`pb.CIS` + binary routes) | REST      | may be internet facing | roots, issuer chains, certificate info, CRL Distribution Points, OCSP responder |
+| Service             | Transport     | Exposure                                        | Purpose                                                              |
+| ------------------- | ------------- | ----------------------------------------------- | -------------------------------------------------------------------- |
+| CA (`pb.CA`)        | gRPC only     | backend network only                            | issuers, profiles, signing, revocation, CRL/OCSP signing             |
+| CIS (`pb.CIS`)      | gRPC and REST | HTTPS, authenticated callers of the `wfe`       | roots, issuer chains, certificate information and status, CRLs       |
+| AIA (binary routes) | REST only     | internet facing, plain HTTP, no authentication  | issuer certificates (AIA), CRL Distribution Points, OCSP responder   |
 
 Out of scope for this repo: Registration Authority (RA) and Validation Authority
 (VA). The RA is the only trusted caller of the CA. It authenticates end users,
@@ -31,9 +32,13 @@ features build on. Its model is described in section 3.
    │ Clients  │──────────▶ │   RA / VA    │───────────▶ │  CA service  │
    └──────────┘            │ (other repo) │             │  pb.CA       │
                            └──────────────┘             └──────┬───────┘
-   ┌──────────┐   HTTPS    ┌──────────────┐  gRPC/mTLS         │
-   │ TLS      │──────────▶ │ CIS service  │──SignOCSP──────────┘
+   ┌──────────┐   HTTP     ┌──────────────┐  gRPC/mTLS         │
+   │ TLS      │──────────▶ │ AIA service  │──SignOCSP──────────┘
    │ verifiers│  CRL/OCSP  │ REST         │                    │
+   └──────────┘            └──────┬───────┘                    │
+   ┌──────────┐   HTTPS    ┌──────┴───────┐                    │
+   │ Users,   │──────────▶ │ CIS service  │                    │
+   │ CLI      │  token     │ pb.CIS (wfe) │                    │
    └──────────┘            └──────┬───────┘                    │
                                   │ read-only                  │ read/write
                                   ▼                            ▼
@@ -48,12 +53,18 @@ features build on. Its model is described in section 3.
                                          └─────────────────────────────────┘
 ```
 
-Both services are `gserver` services in this binary (`server/service/ca`,
-`server/service/cis`) and are enabled per listener in `etc/dev/trustyca-config.yaml`:
+The three services are `gserver` services in this binary (`server/service/ca`,
+`server/service/cis`, `server/service/aia`) and are enabled per listener in
+`etc/dev/trustyca-config.yaml`:
 
 - `backend` listener: `status`, `admin`, `ca`. mTLS with client cert auth.
-- `wfe` listener (or a dedicated `cis` listener): `status`, `auth`, `orgs`, `ui`, `cis`.
-  CIS routes are anonymous and read-only.
+- `wfe` listener: `status`, `auth`, `orgs`, `ui`, `cis`. HTTPS; the CIS is
+  read-only and admits any authenticated caller.
+- `aia` listener: `status`, `aia`. Plain HTTP on its own port (8888 in the
+  dev configuration), no TLS and no identity mapping: the AIA, CRL and OCSP
+  URLs embedded in the certificates are fetched by verifiers that have not
+  validated anything yet, so they cannot depend on the TLS listener or on
+  its authorization, and the listener serves nothing else.
 
 Signing is done in process with `xpki/authority`. Private keys live in a
 `cryptoprov` provider and never leave it. Tasks (`server/tasks`) run CRL
@@ -204,7 +215,7 @@ scopes are `org:read`, `project:read`, `ca:read`, `ca:write`, `certs:read`,
 1. `privpb` and `pb.Status` are restricted to `trustyca-*` service roles as
    before, and `/pb.Auth/*` (login, `SelectOrg`, `RevokeToken`, discovery) is
    gated by the server's identity configuration, not by roles.
-2. Service identities (`trustyca-ra`, `trustyca-cis`, ...) bypass grants: they
+2. Service identities (`trustyca-ra`, `trustyca-aia`, ...) bypass grants: they
    pass tenant scope explicitly and authorized the end user themselves. On
    the backend listener they come from mTLS: the backend interceptor builds
    the caller context from the context the WFE forwards
@@ -386,7 +397,7 @@ records where the CRL was uploaded when external publishing is enabled.
    They are the service's own Root, L1 and L2 CAs and are created offline
    with `hsm-tool`. On startup `internal/ca.Bootstrap` mirrors them into
    `issuer` rows with `org_id IS NULL`, so that platform issuers sign tenant
-   CA certificates and CIS serves their chains and CRLs through the same
+   CA certificates and the CIS and AIA serve their chains and CRLs through the same
    tables; the root bundle becomes `root_certificate` rows and the profiles
    `certificate_profile` rows with `org_id IS NULL`. The key file of an
    issuer is either a key URI, stored as the key reference, or key material,
@@ -581,18 +592,18 @@ maximum) generated by `xpki/authority`.
   through the `skid` index, since it is the key identifier of a CA
   certificate this CA issued (section 5.3). It then looks up
   `(ikid, serial_number)` and answers `good`, `revoked` or `unknown` with
-  `ocsp_expiry` validity. The CIS route carries the IKID and will pass it on
+  `ocsp_expiry` validity. The AIA route carries the IKID and will pass it on
   (ROADMAP.md), which makes the lookup exact for every hash. When `delegated_ocsp_profile` is set the
   issuer signs with a delegated responder certificate created lazily with
   `authority.Issuer.CreateDelegatedOCSPSigner`.
-- CIS never holds issuer keys. Its OCSP handler forwards DER requests to
-  `CA.SignOCSP` over the backend gRPC client, created on the first request
-  with the `cis.client_tls` identity, and caches the signed responses by
-  request hash until their `NextUpdate`, so a revocation reaches a cached
-  `good` answer when it expires (`ocsp_expiry`). A failure of the CA is an
-  OCSP error response (malformedRequest, unauthorized for an issuer the CA
-  does not serve, tryLater when the CA cannot be reached, internalError)
-  and is not cached.
+- Neither the CIS nor the AIA holds issuer keys. The OCSP handler of the
+  AIA forwards DER requests to `CA.SignOCSP` over the backend gRPC client,
+  created on the first request with the `aia.client_tls` identity, and
+  caches the signed responses by request hash until their `NextUpdate`, so
+  a revocation reaches a cached `good` answer when it expires
+  (`ocsp_expiry`). A failure of the CA is an OCSP error response
+  (malformedRequest, unauthorized for an issuer the CA does not serve,
+  tryLater when the CA cannot be reached, internalError) and is not cached.
 
 ## 9. APIs
 
@@ -612,7 +623,7 @@ Tenant requests carry no `OrgID`; the server takes the org from the token.
 maps these to `auth org`, `auth allowed`, `auth scope`, `org ...`,
 `member ...` (org-wide grants), `project ...` / `project member ...` and
 `api-key ...`. Its read-only `cert get|status`, `issuer get`, `crl get` and
-`root list` commands read the CIS (section 9.3) without a token.
+`root list` commands read the CIS (section 9.3) with the token of the login.
 
 ### 9.2 CA (`api/pb/protos/ca.proto`)
 
@@ -644,8 +655,23 @@ across orgs (`ca issuer list` and `ca cert list` without `--org`).
 ### 9.3 CIS (`api/pb/protos/cis.proto`)
 
 JSON endpoints follow the repo convention `POST /pb.CIS/{Method}`: `GetRoots`,
-`GetIssuer`, `GetCertificate`, `GetCertificateStatus`, `GetCRL`. Binary
-endpoints are hand-registered in `cis.Service.RegisterRoute`:
+`GetIssuer`, `GetCertificate`, `GetCertificateStatus`, `GetCRL`; the same
+methods are served over gRPC. The CIS is the `cis` service of the `wfe`
+listener and admits any authenticated caller (`authz.allow_any_role`): the
+methods declare no roles, since the views carry no tenancy, and the
+listener refuses a guest. It exposes no tenant listing: every lookup needs
+an IKID, serial, SKID, SHA-256 or ID, and `GetRoots` lists the anchors of
+the platform or of one org. The public views carry no tenancy and no
+client-owned fields: a certificate is returned without its org, project,
+profile, label and metadata, a CRL without its org. `GetIssuer` returns the
+AIA, CRL and OCSP URLs of the issuer with the key identifier in place of
+the placeholder of the template.
+
+### 9.4 AIA (`server/service/aia`)
+
+The binary endpoints the issued certificates reference are hand-registered
+in `aia.Service.RegisterRoute` and served by the `aia` listener over plain
+HTTP to any caller; the service has no gRPC API:
 
 | Route                                                                                                                     | Media type                  | Source                         |
 | ------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------ |
@@ -654,14 +680,12 @@ endpoints are hand-registered in `cis.Service.RegisterRoute`:
 | `GET /v1/ocspi/{ikid}/{base64-request}`, `POST /v1/ocspi/{ikid}`, `GET /v1/ocsp/{base64-request}`, `POST /v1/ocsp`       | `application/ocsp-response` | `CA.SignOCSP`                  |
 
 Issuer `IssuerConfig` URL templates use `${ISSUER_ID}` (or `:ISSUER_ID` in a
-ca-config file) which is replaced by the issuer SKID. CIS responses set
-`Cache-Control`, `Expires` and `Last-Modified` from `next_update` and
-`this_update` (an issuer certificate is cached for a day) with an `ETag`,
-and expose no tenant listing: every lookup needs an IKID, serial, SKID,
-SHA-256 or ID, and `GetRoots` lists the anchors of the platform or of one
-org. The public views carry no tenancy and no client-owned fields: a
-certificate is returned without its org, project, profile, label and
-metadata, a CRL without its org.
+ca-config file) which is replaced by the issuer SKID; they name the public
+URL of the `aia` listener. The responses set `Cache-Control`, `Expires` and
+`Last-Modified` from `next_update` and `this_update` (an issuer certificate
+is cached for a day) with an `ETag`, so that public caches and verifiers
+revalidate instead of downloading. A path the listener does not list is
+refused: the AIA serves nothing but these routes and the status routes.
 
 ## 10. Configuration
 
@@ -680,10 +704,10 @@ ca:
     expired_after: 0 # delete certificates this long after their expiry; 0 keeps them
   allow_software_keys: true # keys stored wrapped by the data protection provider; dev only, refused in prod
   # planned: crl_publish_locations
-cis:
-  client_tls: # the identity the CIS presents to the CA backend (spiffe://trustyca/cis)
-    cert: ${HOME}/.trustyca/certs/trustyca_cis.pem
-    key: ${HOME}/.trustyca/certs/trustyca_cis.key
+aia: # the CIS needs no configuration
+  client_tls: # the identity the AIA presents to the CA backend (spiffe://trustyca/aia)
+    cert: ${HOME}/.trustyca/certs/trustyca_aia.pem
+    key: ${HOME}/.trustyca/certs/trustyca_aia.key
     trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
   ocsp_cache_size: 10000 # OCSP responses kept in memory until their NextUpdate
 tasks:
@@ -693,18 +717,22 @@ tasks:
     schedule: "every 1 hour"
 ```
 
-Backend listener: `trustyca-ra` and `trustyca-cis` TLS roles
+Backend listener: `trustyca-ra` and `trustyca-aia` TLS roles
 (`identity_map.tls.enabled: true`), `authz.allow:
-/pb.CA:trustyca-ra,trustyca-admin`; it lists no root path under
+/pb.CA:trustyca-ra,trustyca-admin` and `/pb.CA/SignOCSP` for `trustyca-aia`
+as well, the only method the AIA calls; it lists no root path under
 `authz.allow_any`, so a path without a rule is refused to every identity
 (the status routes are listed). The `wfe` listener keeps `/` public for the
 index page of the UI, which opens every path without a rule at this layer:
-its services rely on the access check of each method. On the `wfe` listener the
-CIS is public: `/pb.CIS` and `/v1` are listed under `authz.allow_any`, and
-the CIS paths without a parameter (the JSON methods, `/v1/ocsp`) under
-`identity_map.skip_auth`. The CIS forwards OCSP to `client.server_url.backend`
-with the certificate of `cis.client_tls`; `make gen_test_certs` generates it
-(`trustyca_cis`) with the RA one (`trustyca_ra`).
+its services rely on the access check of each method; `/pb.CIS` is listed
+under `authz.allow_any_role`, so the CIS admits any authenticated caller
+and refuses a guest, and no CIS path is under `identity_map.skip_auth`.
+The `aia` listener is plain HTTP without an identity map (every caller is
+a guest) and lists only the AIA and status routes under `authz.allow_any`,
+so every other path is refused. The AIA forwards OCSP to
+`client.server_url.backend` with the certificate of `aia.client_tls`;
+`make gen_test_certs` generates it (`trustyca_aia`) with the RA one
+(`trustyca_ra`).
 
 ## 11. Audit and observability
 
@@ -732,8 +760,8 @@ Metrics follow `internal/metricskey`: `ca_cert_issued{ca,profile,org}` and
 sample of a signing (the signature and the insert of the certificate with
 its event), `ca_cert_revoked{ikid}`, `ca_crl_published{ca}` and
 `ca_fail_publish_crl{ca}`, `ca_ocsp_signed{ikid,status}`,
-`cis_cache_hit{type}` and `cis_cache_miss{type}`, the `aia_download_*`
-counters of the CIS routes, `perf_db_query{method}` and `perf_task_run{task}`.
+`aia_cache_hit{type}` and `aia_cache_miss{type}`, the `aia_download_*`
+counters of the AIA routes, `perf_db_query{method}` and `perf_task_run{task}`.
 
 ## 12. Open items
 
@@ -751,5 +779,5 @@ counters of the CIS routes, `perf_db_query{method}` and `perf_task_run{task}`.
 - Idempotency keys on `SignCertificate` for RA retries.
 - Issuer renewal under one label: a unique index on Active issuers per
   scope, or a rename of the archived issuer.
-- `OCSPRequest.IKID` from the CIS route, so that an issuer is found for any
+- `OCSPRequest.IKID` from the AIA route, so that an issuer is found for any
   hash algorithm without being in memory.

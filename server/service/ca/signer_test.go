@@ -286,7 +286,7 @@ func TestService_SignOCSP(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	cadb := tca.cadb
 	svc := tca.service()
-	ctx := serviceCtx("trustyca-cis")
+	ctx := serviceCtx("trustyca-aia")
 
 	now := time.Now()
 	leaf := tca.sign(t, "ocsp.example.com")
@@ -396,7 +396,7 @@ func TestService_SignOCSP_Delegated(t *testing.T) {
 
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
-	ctx := serviceCtx("trustyca-cis")
+	ctx := serviceCtx("trustyca-aia")
 	const delegatingLabel = "DELEGATING"
 	const delegatedPeerProfile = "delegated_peer"
 

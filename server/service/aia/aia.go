@@ -1,4 +1,4 @@
-package cis
+package aia
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/porto/xhttp/marshal"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/metricskey"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
@@ -122,6 +123,22 @@ func (s *Service) CRLHandler() restserver.Handle {
 	}
 }
 
+// issuedIssuer returns the issuer with the key identifier when it has a
+// certificate; a Pending issuer, which has none, is not found
+func (s *Service) issuedIssuer(ctx context.Context, ikid string) (*model.Issuer, error) {
+	row, err := s.db.GetIssuerBySKID(ctx, ikid)
+	if err != nil {
+		if xdb.IsNotFoundError(err) {
+			return nil, httperror.NotFound("issuer not found")
+		}
+		return nil, httperror.Unexpected("unable to find issuer").WithCause(err)
+	}
+	if row.Status == pb.IssuerStatus_Pending || row.Pem == "" {
+		return nil, httperror.NotFound("issuer not found")
+	}
+	return row, nil
+}
+
 // GetOcspHandler answers an OCSP request sent as the URL-encoded base64 of
 // its DER encoding in the path (RFC 6960 A.1); the issuer segment of the
 // route by issuer is not needed to answer, the request carries the issuer
@@ -202,12 +219,12 @@ func (s *Service) ocspResponse(w http.ResponseWriter, r *http.Request, requestBo
 	now := time.Now()
 	key := keyOf(requestBody)
 	if e, ok := s.cache.get(key, now); ok {
-		metricskey.CISCacheHit.IncrCounter(1, cacheMetricOCSP)
+		metricskey.AIACacheHit.IncrCounter(1, cacheMetricOCSP)
 		metricskey.AIADownloadSuccessOCSP.IncrCounter(1)
 		writeCacheable(w, r, contentTypeOCSPResponse, e.der, e.thisUpdate, e.nextUpdate)
 		return
 	}
-	metricskey.CISCacheMiss.IncrCounter(1, cacheMetricOCSP)
+	metricskey.AIACacheMiss.IncrCounter(1, cacheMetricOCSP)
 
 	ca, err := s.caClient()
 	if err != nil {

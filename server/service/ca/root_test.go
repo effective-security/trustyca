@@ -103,16 +103,16 @@ func TestService_ListRoots(t *testing.T) {
 	assert.Nil(t, res.NextPage)
 
 	// a service caller lists the platform anchors, or names an org
-	cis := serviceCtx("trustyca-cis")
+	svcCaller := serviceCtx("trustyca-admin")
 	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{Platform: true, Limit: 10, Offset: 20}).
 		Return(&model.RootCertificateResult{}, nil)
-	res, err = svc.ListRoots(cis, &pb.ListRootsRequest{Limit: 10, Offset: 20})
+	res, err = svc.ListRoots(svcCaller, &pb.ListRootsRequest{Limit: 10, Offset: 20})
 	require.NoError(t, err)
 	assert.Empty(t, res.Roots)
 	tca.orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
 	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: defaultListLimit}).
 		Return(&model.RootCertificateResult{}, nil)
-	_, err = svc.ListRoots(cis, &pb.ListRootsRequest{OrgID: "1"})
+	_, err = svc.ListRoots(svcCaller, &pb.ListRootsRequest{OrgID: "1"})
 	require.NoError(t, err)
 
 	tca.cadb.EXPECT().ListRoots(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))

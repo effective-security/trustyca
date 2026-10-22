@@ -394,16 +394,17 @@ func (c *Cli) OrgsClient() (pb.OrgsServer, error) {
 }
 
 // CISClient returns the client of the Certificate Information Service,
-// the public, read-only side of the CA: it needs no token
+// the read-only view of the CA for authenticated callers: the token of the
+// login is sent with every request
 func (c *Cli) CISClient() (pb.CISServer, error) {
 	if c.HTTP {
-		h, err := c.HTTPClient(true)
+		h, err := c.HTTPClient(false)
 		if err != nil {
 			return nil, err
 		}
 		return proxypb.NewHTTPCISClient(h), nil
 	}
-	r, err := c.RPCClient(true)
+	r, err := c.RPCClient(false)
 	if err != nil {
 		return nil, err
 	}

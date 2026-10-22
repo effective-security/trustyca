@@ -20,7 +20,7 @@ set -e
 #   --jobs                  - specifies if jobs certificate and key should be generated
 #   --peer                  - specifies if peer certificate and key should be generated
 #   --ra                    - specifies if the RA service certificate (spiffe://trustyca/ra) should be generated
-#   --cis                   - specifies if the CIS service certificate (spiffe://trustyca/cis) should be generated
+#   --aia                   - specifies if the AIA service certificate (spiffe://trustyca/aia) should be generated
 #   --bundle                - specifies if Int CA Bundle should be created
 #   --san                   - specifies SAN for server and peer certs
 #   --force                 - specifies to force issuing the cert even if it exists
@@ -119,8 +119,8 @@ case $key in
     RA=YES
     shift # past argument
     ;;
-    --cis)
-    CIS=YES
+    --aia)
+    AIA=YES
     shift # past argument
     ;;
     --force)
@@ -313,8 +313,8 @@ if [[ "$PEERS" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}pe
 fi
 
 # the service identities of the CA API (DESIGN.md section 10): the backend
-# listener maps spiffe://trustyca/ra and spiffe://trustyca/cis to the
-# trustyca-ra and trustyca-cis roles
+# listener maps spiffe://trustyca/ra and spiffe://trustyca/aia to the
+# trustyca-ra and trustyca-aia roles
 if [[ "$RA" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}ra.key) ]]; then
     echo "*** generating ra cert: ${OUT_DIR}/${OUT_PREFIX}ra.pem"
     hsm-tool ${FLAGS} \
@@ -332,8 +332,8 @@ if [[ "$RA" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}ra.ke
     cat ${CABUNDLE} >> ${OUT_DIR}/${OUT_PREFIX}ra.pem
 fi
 
-if [[ "$CIS" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}cis.key) ]]; then
-    echo "*** generating cis cert: ${OUT_DIR}/${OUT_PREFIX}cis.pem"
+if [[ "$AIA" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}aia.key) ]]; then
+    echo "*** generating aia cert: ${OUT_DIR}/${OUT_PREFIX}aia.pem"
     hsm-tool ${FLAGS} \
         --cfg ${HSM_CONFIG}  ${CRYPTO_PROV} \
         csr gen-cert --plain-key \
@@ -341,12 +341,12 @@ if [[ "$CIS" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}cis.
         --profile client \
         --ca-cert ${OUT_DIR}/${OUT_PREFIX}l2_ca.pem \
         --ca-key ${OUT_DIR}/${OUT_PREFIX}l2_ca.key \
-        --csr-profile ${CSR_DIR}/${CSR_PREFIX}cis.yaml \
-        --san spiffe://trustyca/cis \
-        --key-label "${KEY_LABEL}${OUT_PREFIX}cis*" \
-        --output ${OUT_DIR}/${OUT_PREFIX}cis
+        --csr-profile ${CSR_DIR}/${CSR_PREFIX}aia.yaml \
+        --san spiffe://trustyca/aia \
+        --key-label "${KEY_LABEL}${OUT_PREFIX}aia*" \
+        --output ${OUT_DIR}/${OUT_PREFIX}aia
 
-    cat ${CABUNDLE} >> ${OUT_DIR}/${OUT_PREFIX}cis.pem
+    cat ${CABUNDLE} >> ${OUT_DIR}/${OUT_PREFIX}aia.pem
 fi
 
 chmod 400 ${OUT_DIR}/*.key

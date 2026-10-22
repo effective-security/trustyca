@@ -12,9 +12,9 @@ import "github.com/effective-security/trustyca/internal/config"
 - [func DefaultFactory\(\) \(\*configloader.Factory, error\)](<#DefaultFactory>)
 - [func LoadForHostName\(configFile, hostnameOverride string, config any\) error](<#LoadForHostName>)
 - [func LoadWithOverride\(configFile, configOverride string, config any, sc configloader.SecretProvider\) error](<#LoadWithOverride>)
+- [type AIA](<#AIA>)
 - [type Auth](<#Auth>)
 - [type CA](<#CA>)
-- [type CIS](<#CIS>)
 - [type Cache](<#Cache>)
 - [type Configuration](<#Configuration>)
   - [func Load\(configFile string\) \(\*Configuration, error\)](<#Load>)
@@ -36,6 +36,9 @@ const (
     WFEServerName     = "wfe"
     BackendServerName = "backend"
     RouterServerName  = "router"
+    // AIAServerName is the plain HTTP listener of the Authority Information
+    // Access service: the AIA, CRL and OCSP routes of the issued certificates
+    AIAServerName = "aia"
 
     // EnvironmentProd is the service.environment of a production instance: it
     // refuses the settings of development, such as software issuer keys
@@ -85,8 +88,29 @@ func LoadWithOverride(configFile, configOverride string, config any, sc configlo
 
 LoadWithOverride will load the configuration from the named config and optional override file
 
+<a name="AIA"></a>
+## type [AIA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L198-L210>)
+
+AIA specifies the Authority Information Access service configuration: the public, read\-only service over plain HTTP that serves the issuer certificates, CRLs and OCSP responses the issued certificates point at. It holds no keys: OCSP requests are forwarded to the CA over the backend gRPC client \(\`client.server\_url.backend\`\).
+
+```go
+type AIA struct {
+    // ClientTLS specifies the TLS certificate the AIA presents to the CA
+    // backend, mapped to the `trustyca-aia` role by the backend listener
+    // (`spiffe://trustyca/aia`). Empty uses the `client.client_tls`
+    // certificate.
+    ClientTLS gserver.TLSInfo `json:"client_tls,omitempty" yaml:"client_tls,omitempty"`
+
+    // OcspCacheSize is the number of OCSP responses kept in memory, keyed by
+    // the hash of the request and served until the NextUpdate of the
+    // response; the least recently used response is evicted first. The
+    // default is 10000.
+    OcspCacheSize int `json:"ocsp_cache_size" yaml:"ocsp_cache_size"`
+}
+```
+
 <a name="Auth"></a>
-## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L91-L111>)
+## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L94-L114>)
 
 Auth specifies the authentication configuration
 
@@ -115,7 +139,7 @@ type Auth struct {
 ```
 
 <a name="CA"></a>
-## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L161-L188>)
+## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L164-L191>)
 
 CA specifies the Certification Authority configuration
 
@@ -150,29 +174,8 @@ type CA struct {
 }
 ```
 
-<a name="CIS"></a>
-## type [CIS](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L194-L206>)
-
-CIS specifies the Certificate Information Service configuration: the public, read\-only service that serves issuer certificates, CRLs and OCSP responses. It holds no keys: OCSP requests are forwarded to the CA over the backend gRPC client \(\`client.server\_url.backend\`\).
-
-```go
-type CIS struct {
-    // ClientTLS specifies the TLS certificate the CIS presents to the CA
-    // backend, mapped to the `trustyca-cis` role by the backend listener
-    // (`spiffe://trustyca/cis`). Empty uses the `client.client_tls`
-    // certificate.
-    ClientTLS gserver.TLSInfo `json:"client_tls,omitempty" yaml:"client_tls,omitempty"`
-
-    // OcspCacheSize is the number of OCSP responses kept in memory, keyed by
-    // the hash of the request and served until the NextUpdate of the
-    // response; the least recently used response is evicted first. The
-    // default is 10000.
-    OcspCacheSize int `json:"ocsp_cache_size" yaml:"ocsp_cache_size"`
-}
-```
-
 <a name="Cache"></a>
-## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L114-L124>)
+## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L117-L127>)
 
 Cache specifies configuration of the cache.
 
@@ -191,7 +194,7 @@ type Cache struct {
 ```
 
 <a name="Configuration"></a>
-## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L31-L73>)
+## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L34-L76>)
 
 Configuration contains the user configurable data for the service
 
@@ -233,8 +236,8 @@ type Configuration struct {
     // CA specifies the Certification Authority configuration
     CA  CA  `json:"ca" yaml:"ca"`
 
-    // CIS specifies the Certificate Information Service configuration
-    CIS CIS `json:"cis" yaml:"cis"`
+    // AIA specifies the Authority Information Access service configuration
+    AIA AIA `json:"aia" yaml:"aia"`
 }
 ```
 
@@ -248,7 +251,7 @@ func Load(configFile string) (*Configuration, error)
 Load will load the configuration from the named config file, apply any overrides, and resolve relative directory locations.
 
 <a name="CryptoProv"></a>
-## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L149-L158>)
+## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L152-L161>)
 
 CryptoProv specifies the configuration for crypto providers
 
@@ -266,7 +269,7 @@ type CryptoProv struct {
 ```
 
 <a name="Orgs"></a>
-## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L139-L146>)
+## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L142-L149>)
 
 Orgs specifies the Orgs configuration
 
@@ -282,7 +285,7 @@ type Orgs struct {
 ```
 
 <a name="Retention"></a>
-## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L209-L214>)
+## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L213-L218>)
 
 Retention specifies the retention of expired certificates
 
@@ -321,7 +324,7 @@ type SQL struct {
 ```
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L76-L88>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L79-L91>)
 
 Service specifies the basic service info
 
@@ -342,7 +345,7 @@ type Service struct {
 ```
 
 <a name="Task"></a>
-## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L127-L136>)
+## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L130-L139>)
 
 Task specifies configuration of a single task.
 

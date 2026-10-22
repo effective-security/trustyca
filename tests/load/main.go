@@ -918,8 +918,8 @@ func samplePEM() string {
 		DNSNames:              []string{"synthetic.example.com"},
 		KeyUsage:              x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		CRLDistributionPoints: []string{"http://localhost:8880/v1/crl/0000000000000000000000000000000000000000"},
-		OCSPServer:            []string{"http://localhost:8880/v1/ocspi/0000000000000000000000000000000000000000"},
+		CRLDistributionPoints: []string{"http://localhost:8888/v1/crl/0000000000000000000000000000000000000000"},
+		OCSPServer:            []string{"http://localhost:8888/v1/ocspi/0000000000000000000000000000000000000000"},
 	}
 	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
 	if err != nil {

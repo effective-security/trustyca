@@ -17,25 +17,26 @@ import (
 
 // The identities the backend listener maps from client certificates
 // (identity_map.tls of etc/dev/trustyca-config.yaml)
-var backendRoles = []string{"trustyca-ra", "trustyca-cis", "trustyca-admin", "trustyca-peer", "trustyca-client", identity.GuestRoleName}
+var backendRoles = []string{"trustyca-ra", "trustyca-aia", "trustyca-admin", "trustyca-peer", "trustyca-client", identity.GuestRoleName}
 
-// cisMethods are the only methods of the CA the CIS identity may call: it
-// forwards OCSP requests and reads the public revocation data
-var cisMethods = map[string]bool{
-	pb.CA_SignOCSP_FullMethodName:  true,
-	pb.CA_GetCRL_FullMethodName:    true,
-	pb.CA_ListRoots_FullMethodName: true,
+// aiaMethods are the only methods of the CA the AIA identity may call: it
+// forwards OCSP requests
+var aiaMethods = map[string]bool{
+	pb.CA_SignOCSP_FullMethodName: true,
 }
 
 // Test_Authz_CAMethods checks the role matrix of the dev configuration
 // for every method of the CA and the Admin services, as the authorization
 // interceptor of each listener evaluates it: on the backend the RA and the
-// admin operate the CA, the CIS reaches its three methods, every other
-// identity is refused, and a path without a rule is refused to everyone;
-// the Admin API is for the admin and the peer. The wfe listener does not
-// serve the CA, and its Admin rule admits the admin only. The wfe keeps
-// the root path public for the UI, so a path without a rule is open there
-// at this layer and relies on the access check of the method.
+// admin operate the CA, the AIA reaches SignOCSP, every other identity is
+// refused, and a path without a rule is refused to everyone; the Admin API
+// is for the admin and the peer. The wfe listener does not serve the CA,
+// and its Admin rule admits the admin only; its CIS admits any
+// authenticated role and refuses a guest. The wfe keeps the root path
+// public for the UI, so a path without a rule is open there at this layer
+// and relies on the access check of the method. The aia listener is public
+// and denies by default: its routes and the status routes are open to a
+// guest, everything else is refused.
 func Test_Authz_CAMethods(t *testing.T) {
 	cfgPath, err := filepath.Abs(projFolder + "etc/dev/" + config.ConfigFileName)
 	require.NoError(t, err)
@@ -45,11 +46,15 @@ func Test_Authz_CAMethods(t *testing.T) {
 	require.NotNil(t, backend)
 	wfe := cfg.HTTPServers["wfe"]
 	require.NotNil(t, wfe)
+	aia := cfg.HTTPServers["aia"]
+	require.NotNil(t, aia)
 
 	caMethods := serviceMethods(&pb.CA_ServiceDesc)
 	adminMethods := serviceMethods(&privpb.Admin_ServiceDesc)
+	cisMethods := serviceMethods(&pb.CIS_ServiceDesc)
 	require.NotEmpty(t, caMethods)
 	require.NotEmpty(t, adminMethods)
+	require.NotEmpty(t, cisMethods)
 
 	allowed := func(t *testing.T, cfg *authz.Config, role, method string) bool {
 		t.Helper()
@@ -73,8 +78,8 @@ func Test_Authz_CAMethods(t *testing.T) {
 			switch role {
 			case "trustyca-ra", "trustyca-admin":
 				want = true
-			case "trustyca-cis":
-				want = cisMethods[method]
+			case "trustyca-aia":
+				want = aiaMethods[method]
 			}
 			assert.Equal(t, want, allowed(t, backend.Authz, role, method), "backend %s for %s", method, role)
 		}
@@ -96,11 +101,48 @@ func Test_Authz_CAMethods(t *testing.T) {
 	for _, path := range []string{pb.PathForStatusVersion, pb.Status_Version_FullMethodName, "/healthz"} {
 		assert.True(t, allowed(t, backend.Authz, identity.GuestRoleName, path), "backend %s", path)
 	}
-	// the CA is not served by the wfe listener, whose CIS is public
+
+	// the CA is not served by the wfe listener; its CIS is for
+	// authenticated callers of any role
 	assert.NotContains(t, wfe.Services, "ca")
 	assert.NotContains(t, wfe.Services, "admin")
+	assert.NotContains(t, wfe.Services, "aia")
+	assert.Contains(t, wfe.Services, "cis")
 	assert.Contains(t, backend.Services, "ca")
-	assert.True(t, allowed(t, wfe.Authz, identity.GuestRoleName, pb.CIS_GetCertificateStatus_FullMethodName))
+	for _, method := range cisMethods {
+		assert.False(t, allowed(t, wfe.Authz, identity.GuestRoleName, method), "wfe %s for a guest", method)
+		assert.True(t, allowed(t, wfe.Authz, "user", method), "wfe %s for a user", method)
+		assert.True(t, allowed(t, wfe.Authz, "trustyca-admin", method), "wfe %s for the admin", method)
+		assert.NotContains(t, wfe.IdentityMap.SkipAuthPaths, method, "the CIS methods are authenticated")
+	}
+
+	// the aia listener is public and plain HTTP: no identity mapping, the
+	// AIA and status routes open to a guest, every other path refused
+	assert.Nil(t, aia.IdentityMap)
+	assert.Nil(t, aia.ServerTLS)
+	assert.Equal(t, []string{"status", "aia"}, aia.Services)
+	for _, path := range []string{
+		pb.PathForOCSP,
+		"/v1/ocsp/MEowSDBGMEQwQjAJBgUrDgMCGgUA",
+		"/v1/ocspi/0a1b2c",
+		"/v1/ocspi/0a1b2c/MEowSDBGMEQwQjAJBgUrDgMCGgUA",
+		"/v1/cert/0a1b2c",
+		"/v1/crl/0a1b2c",
+		pb.PathForStatusNode,
+		pb.PathForStatusVersion,
+		pb.Status_Version_FullMethodName,
+		"/healthz",
+	} {
+		assert.True(t, allowed(t, aia.Authz, identity.GuestRoleName, path), "aia %s", path)
+	}
+	for _, path := range []string{"/", "/v1", "/v1/auth/providers", pb.PathForAuthorize, pb.Orgs_GetOrg_FullMethodName, pb.CA_SignOCSP_FullMethodName, privpb.Admin_ListOrgs_FullMethodName} {
+		for _, role := range backendRoles {
+			assert.False(t, allowed(t, aia.Authz, role, path), "aia %s for %s", path, role)
+		}
+	}
+	for _, path := range cisMethods {
+		assert.False(t, allowed(t, aia.Authz, "user", path), "aia %s: the JSON API is the wfe's", path)
+	}
 }
 
 // serviceMethods returns the full names of the methods of a gRPC service

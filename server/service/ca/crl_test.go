@@ -107,15 +107,15 @@ func TestService_GetCRL(t *testing.T) {
 
 	// a service caller that names no org reads any CRL; one that names
 	// the org reads the org's
-	cis := serviceCtx("trustyca-cis")
-	res, err = svc.GetCRL(cis, &pb.GetCrlRequest{IKID: platformRoot.Skid})
+	svcCaller := serviceCtx("trustyca-admin")
+	res, err = svc.GetCRL(svcCaller, &pb.GetCrlRequest{IKID: platformRoot.Skid})
 	require.NoError(t, err)
 	assert.Equal(t, "5", res.Crl.Number)
 	assert.Empty(t, res.Crl.OrgID)
-	res, err = svc.GetCRL(cis, &pb.GetCrlRequest{IKID: org2Root.Skid})
+	res, err = svc.GetCRL(svcCaller, &pb.GetCrlRequest{IKID: org2Root.Skid})
 	require.NoError(t, err)
 	assert.Equal(t, "2", res.Crl.OrgID)
-	_, err = svc.GetCRL(cis, &pb.GetCrlRequest{IKID: "nope"})
+	_, err = svc.GetCRL(svcCaller, &pb.GetCrlRequest{IKID: "nope"})
 	assert.EqualError(t, err, "not_found: CRL not found")
 	tca.orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil).Times(2)
 	res, err = svc.GetCRL(serviceCtx("trustyca-ra"), &pb.GetCrlRequest{OrgID: "1", IKID: sibling.Skid})

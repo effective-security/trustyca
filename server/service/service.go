@@ -7,6 +7,7 @@ import (
 	"github.com/effective-security/porto/gserver"
 	"github.com/effective-security/porto/xhttp/header"
 	"github.com/effective-security/trustyca/server/service/admin"
+	"github.com/effective-security/trustyca/server/service/aia"
 	"github.com/effective-security/trustyca/server/service/auth"
 	"github.com/effective-security/trustyca/server/service/ca"
 	"github.com/effective-security/trustyca/server/service/cis"
@@ -18,6 +19,7 @@ import (
 // Factories provides map of gserver.ServiceFactory
 var Factories = map[string]gserver.ServiceFactory{
 	admin.ServiceName:  admin.Factory,
+	aia.ServiceName:    aia.Factory,
 	auth.ServiceName:   auth.Factory,
 	ca.ServiceName:     ca.Factory,
 	cis.ServiceName:    cis.Factory,

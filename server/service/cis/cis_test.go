@@ -6,7 +6,6 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
-	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
 	"github.com/effective-security/trustyca/server/service/cis"
 	"github.com/stretchr/testify/assert"
@@ -22,13 +21,9 @@ func TestFactory(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	cadb := mocktrustycadb.NewMockCaReadonlyDb(ctrl)
-	_, err := cis.New(nil, cadb, nil, nil)
+	_, err := cis.New(nil)
 	assert.EqualError(t, err, "cis.New: invalid parameter")
-	_, err = cis.New(&config.Configuration{}, nil, nil, nil)
-	assert.EqualError(t, err, "cis.New: invalid parameter")
-	_, err = cis.New(&config.Configuration{CIS: config.CIS{OcspCacheSize: -1}}, cadb, nil, nil)
-	assert.EqualError(t, err, "unable to create the OCSP cache: must provide a positive size")
-	svc, err := cis.New(&config.Configuration{}, cadb, nil, nil)
+	svc, err := cis.New(cadb)
 	require.NoError(t, err)
 	assert.Equal(t, cis.ServiceName, svc.Name())
 	assert.True(t, svc.IsReady())
@@ -99,9 +94,9 @@ func TestService_GetIssuer(t *testing.T) {
 	assert.Equal(t, e.issuer.ChainPem, res.Intermediates)
 	assert.Equal(t, e.issuer.RootPem, res.Root)
 	// both placeholders are replaced with the key identifier
-	assert.Equal(t, "http://cis.test/v1/cert/"+e.issuer.Skid, res.AiaURL)
-	assert.Equal(t, "http://cis.test/v1/crl/"+e.issuer.Skid, res.CrlURL)
-	assert.Equal(t, "http://cis.test/v1/ocspi/"+e.issuer.Skid, res.OcspURL)
+	assert.Equal(t, "http://aia.test/v1/cert/"+e.issuer.Skid, res.AiaURL)
+	assert.Equal(t, "http://aia.test/v1/crl/"+e.issuer.Skid, res.CrlURL)
+	assert.Equal(t, "http://aia.test/v1/ocspi/"+e.issuer.Skid, res.OcspURL)
 
 	e.store.setFail(errors.New("db down"))
 	_, err = e.svc.GetIssuer(ctx, &pb.GetIssuerInfoRequest{IKID: e.issuer.Skid})

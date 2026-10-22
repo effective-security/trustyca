@@ -1,7 +1,7 @@
 ---
-common_name: trustyca-cis
+common_name: trustyca-aia
 san:
-  - spiffe://trustyca/cis
+  - spiffe://trustyca/aia
 names:
   - C: US
     L: WA
