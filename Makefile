@@ -214,7 +214,7 @@ proto-pub:
 		-v $(PROJ_ROOT)/api/pb:/dirs \
 		-v $(PROJ_ROOT)/api/pb/third_party:/third_party \
 		--name protoc-gen-go \
-		effectivesecurity/protoc-gen-go:sha-c3004f6 \
+		effectivesecurity/protoc-gen-go:sha-0841a17 \
 		--i "-I /third_party" \
 		--dirs /dirs/protos \
 		--golang ./.. \
@@ -239,7 +239,7 @@ proto-priv:
 		-v $(PROJ_ROOT)/api/pb/protos:/trustyca \
 		-v $(PROJ_ROOT)/api/pb/third_party:/third_party \
 		--name protoc-gen-go \
-		effectivesecurity/protoc-gen-go:sha-c3004f6 \
+		effectivesecurity/protoc-gen-go:sha-0841a17 \
 		--i "-I /trustyca -I /third_party" \
 		--dirs /dirs/protos \
 		--golang ./.. \

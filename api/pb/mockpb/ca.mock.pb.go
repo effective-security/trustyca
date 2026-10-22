@@ -231,8 +231,11 @@ func (m *MockCAServer) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (*pb.C
 	return m.next().(*pb.CrlResponse), nil
 }
 
-// PublishCrls generates and publishes CRLs on demand.
-// It is also invoked by the scheduled CRL renewal task.
+// PublishCrls generates and publishes CRLs on demand: the CRL of the
+// issuer of the IKID, or the due CRLs of the issuers in scope. A project
+// Admin and an API key restricted to a project publish for their project.
+// The scheduled CRL renewal task publishes the due CRLs of every org
+// in-process.
 
 func (m *MockCAServer) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
 	if m.Err != nil {

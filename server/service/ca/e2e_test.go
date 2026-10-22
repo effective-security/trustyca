@@ -50,8 +50,9 @@ const (
 // configured database, with the platform issuer of ca.bootstrap_config, and
 // calls it over gRPC as the RA: it registers a root of its own in a new
 // org, signs, reads, lists, relabels and revokes a certificate, checks the
-// revocation status through OCSP, and asks the bootstrap issuer for the
-// status of a certificate it issued outside the service. The data
+// revocation status through OCSP, publishes and reads the CRL of the root,
+// and asks the bootstrap issuer for the status of a certificate it issued
+// outside the service. The data
 // protection seed is the environment's, as for every process that uses the
 // dev DB: the platform issuer in it is wrapped under that seed.
 func TestService_EndToEnd(t *testing.T) {
@@ -257,11 +258,47 @@ func TestService_EndToEnd(t *testing.T) {
 	assert.Equal(t, ocsp.KeyCompromise, parsed.RevocationReason)
 	assert.WithinDuration(t, time.Now(), parsed.RevokedAt, time.Minute)
 
-	// no CRL is published yet: the pipeline is phase 4
+	// the CRL of the root: none until it is published, then the revoked
+	// certificate is listed with its reason, signed by the root
 	_, err = client.GetCRL(ctx, &pb.GetCrlRequest{OrgID: orgID, IKID: root.SKID})
 	requireStatus(t, err, codes.NotFound, "CRL not found")
-	_, err = client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
-	requireStatus(t, err, codes.Unimplemented, "CRL publishing is not implemented")
+	published, err := client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
+	require.NoError(t, err)
+	require.Len(t, published.Crls, 1)
+	assert.Equal(t, "1", published.Crls[0].Number)
+	assert.Equal(t, root.SKID, published.Crls[0].IKID)
+	assert.Equal(t, root.ID, published.Crls[0].IssuerID)
+	assert.Equal(t, orgID, published.Crls[0].OrgID)
+	crlRes, err := client.GetCRL(ctx, &pb.GetCrlRequest{OrgID: orgID, IKID: root.SKID})
+	require.NoError(t, err)
+	assert.Equal(t, published.Crls[0].ID, crlRes.Crl.ID)
+	assert.Equal(t, published.Crls[0].Pem, crlRes.Crl.Pem)
+	block, _ := pem.Decode([]byte(crlRes.Crl.Pem))
+	require.NotNil(t, block)
+	crl, err := x509.ParseRevocationList(block.Bytes)
+	require.NoError(t, err)
+	require.NoError(t, crl.CheckSignatureFrom(rootCert))
+	assert.EqualValues(t, 1, crl.Number.Int64())
+	assert.True(t, crl.NextUpdate.After(crl.ThisUpdate))
+	require.Len(t, crl.RevokedCertificateEntries, 1)
+	assert.Equal(t, 0, x509Cert.SerialNumber.Cmp(crl.RevokedCertificateEntries[0].SerialNumber))
+	assert.Equal(t, ocsp.KeyCompromise, crl.RevokedCertificateEntries[0].ReasonCode)
+	assert.WithinDuration(t, time.Now(), crl.RevokedCertificateEntries[0].RevocationTime, time.Minute)
+	gotRoot, err := client.GetIssuer(ctx, &pb.GetIssuerRequest{OrgID: orgID, ID: root.ID})
+	require.NoError(t, err)
+	assert.Equal(t, "1", gotRoot.CrlNumber, "the issuer records the number")
+
+	// a fresh CRL is not published again unless forced; the number grows
+	published, err = client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
+	require.NoError(t, err)
+	assert.Empty(t, published.Crls)
+	published, err = client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, Force: true})
+	require.NoError(t, err)
+	require.Len(t, published.Crls, 1, "every issuer of the org")
+	assert.Equal(t, "2", published.Crls[0].Number)
+	assert.Equal(t, root.SKID, published.Crls[0].IKID)
+	_, err = client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: certutil.GetSubjectKeyID(l2Cert)})
+	requireStatus(t, err, codes.NotFound, "issuer not found", "the platform issuer is not the org's")
 }
 
 // grpcClient serves the CA over an in-memory gRPC connection, as the RA
@@ -287,12 +324,12 @@ func grpcClient(t *testing.T, svc pb.CAServer) pb.CAClient {
 }
 
 // requireStatus asserts the gRPC status of an error
-func requireStatus(t *testing.T, err error, code codes.Code, msg string) {
+func requireStatus(t *testing.T, err error, code codes.Code, msg string, msgAndArgs ...any) {
 	t.Helper()
 	st, ok := status.FromError(err)
 	require.True(t, ok, "%v", err)
-	assert.Equal(t, code, st.Code())
-	assert.Equal(t, msg, st.Message())
+	assert.Equal(t, code, st.Code(), msgAndArgs...)
+	assert.Equal(t, msg, st.Message(), msgAndArgs...)
 }
 
 // readCert reads a certificate of the dev PKI from the home directory

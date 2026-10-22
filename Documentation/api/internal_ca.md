@@ -35,6 +35,7 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 - [Constants](<#constants>)
 - [Variables](<#variables>)
 - [func AuthorityProfile\(p \*model.CertificateProfile\) \(\*authority.CertProfile, error\)](<#AuthorityProfile>)
+- [func CrlDue\(current \*model.Crl, renewal time.Duration, now time.Time\) bool](<#CrlDue>)
 - [func ExtensionsFromPb\(list \[\]\*pb.X509Extension\) \(\[\]csr.X509Extension, error\)](<#ExtensionsFromPb>)
 - [func ExtensionsToPb\(list \[\]csr.X509Extension\) \[\]\*pb.X509Extension](<#ExtensionsToPb>)
 - [func IsKeyURI\(key string\) bool](<#IsKeyURI>)
@@ -48,6 +49,10 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 - [func PublicKeysEqual\(a, b crypto.PublicKey\) bool](<#PublicKeysEqual>)
 - [func SubjectKeyID\(pub crypto.PublicKey\) \(string, error\)](<#SubjectKeyID>)
 - [type BootstrapResult](<#BootstrapResult>)
+- [type CrlPublisher](<#CrlPublisher>)
+  - [func NewCrlPublisher\(caDb db.CaDb, registry \*Registry\) \*CrlPublisher](<#NewCrlPublisher>)
+  - [func \(p \*CrlPublisher\) PublishCrl\(ctx context.Context, row \*model.Issuer, force bool\) \(\*model.Crl, bool, error\)](<#CrlPublisher.PublishCrl>)
+  - [func \(p \*CrlPublisher\) PublishCrls\(ctx context.Context, req \*PublishCrlsRequest\) \(\*PublishCrlsResult, error\)](<#CrlPublisher.PublishCrls>)
 - [type ImportRequest](<#ImportRequest>)
 - [type IssuerRequest](<#IssuerRequest>)
 - [type KeyRef](<#KeyRef>)
@@ -68,6 +73,8 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
   - [func \(k \*Keys\) Provider\(name string\) \(cryptoprov.Provider, error\)](<#Keys.Provider>)
   - [func \(k \*Keys\) Signer\(ctx context.Context, m \*model.Issuer\) \(crypto.Signer, error\)](<#Keys.Signer>)
 - [type Options](<#Options>)
+- [type PublishCrlsRequest](<#PublishCrlsRequest>)
+- [type PublishCrlsResult](<#PublishCrlsResult>)
 - [type Registry](<#Registry>)
   - [func NewRegistry\(caDb db.CaReadonlyDb, keys \*Keys, opts Options\) \*Registry](<#NewRegistry>)
   - [func \(r \*Registry\) Bootstrap\(ctx context.Context, caDb db.CaDb, cfg \*authority.Config\) \(\*BootstrapResult, error\)](<#Registry.Bootstrap>)
@@ -123,6 +130,15 @@ const (
 )
 ```
 
+<a name="CrlPEMType"></a>
+
+```go
+const (
+    // CrlPEMType is the PEM block type of a CRL
+    CrlPEMType = "X509 CRL"
+)
+```
+
 ## Variables
 
 <a name="ErrProfileNotFound"></a>Errors of the issuer and profile resolution. They are returned wrapped with a stack, so compare them with errors.Is; the service maps them to its status codes.
@@ -147,6 +163,9 @@ var (
     // ErrProfileNotAllowed is returned when a profile bound to any issuer is
     // not listed in the AllowedProfiles of the issuer
     ErrProfileNotAllowed = errors.New("issuer does not allow the profile")
+    // ErrIssuerExpired is returned when the certificate of the issuer is no
+    // longer valid, so it signs no CRL
+    ErrIssuerExpired = errors.New("issuer certificate has expired")
 )
 ```
 
@@ -158,6 +177,15 @@ func AuthorityProfile(p *model.CertificateProfile) (*authority.CertProfile, erro
 ```
 
 AuthorityProfile converts a profile row to the profile the authority signs with. It reads the row only: a row the registry returned is shared with other requests, and its IDs must not be formatted \(model.Definition\).
+
+<a name="CrlDue"></a>
+## func [CrlDue](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L391>)
+
+```go
+func CrlDue(current *model.Crl, renewal time.Duration, now time.Time) bool
+```
+
+CrlDue reports whether a CRL must be published at the time: the issuer has none, or the next update of the current one is within the renewal period
 
 <a name="ExtensionsFromPb"></a>
 ## func [ExtensionsFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/profile.go#L159>)
@@ -287,6 +315,46 @@ type BootstrapResult struct {
     Profiles int
 }
 ```
+
+<a name="CrlPublisher"></a>
+## type [CrlPublisher](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L55-L58>)
+
+CrlPublisher signs and stores the CRLs of the issuers \(DESIGN.md section 8\). The PublishCrls method of the CA service and the crl\_renewal task share it: a CRL is published when the issuer has none, when the current one is within the renewal period of its next update, or on demand. The CRL number is the issuer's current number plus one, and db.PublishCrl stores the CRL and the number in one transaction, refusing a number that is not greater than the issuer's: when another instance publishes first, the CRL is signed again with the next number.
+
+A CrlPublisher is safe for concurrent use.
+
+```go
+type CrlPublisher struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewCrlPublisher"></a>
+### func [NewCrlPublisher](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L62>)
+
+```go
+func NewCrlPublisher(caDb db.CaDb, registry *Registry) *CrlPublisher
+```
+
+NewCrlPublisher returns a publisher over the CA tables and the registry that loads the issuers
+
+<a name="CrlPublisher.PublishCrl"></a>
+### func \(\*CrlPublisher\) [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L201>)
+
+```go
+func (p *CrlPublisher) PublishCrl(ctx context.Context, row *model.Issuer, force bool) (*model.Crl, bool, error)
+```
+
+PublishCrl signs and stores the CRL of the issuer row when it is due \(CrlDue with the renewal period of the issuer settings\), or when forced, and returns the CRL and true. When the current CRL \(db.GetCrl\) is not due it is returned with false. The row must be an Active or Archived issuer whose certificate is valid; its CRL number is the current one, so the row comes from the DB, not from a cache.
+
+<a name="CrlPublisher.PublishCrls"></a>
+### func \(\*CrlPublisher\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L106>)
+
+```go
+func (p *CrlPublisher) PublishCrls(ctx context.Context, req *PublishCrlsRequest) (*PublishCrlsResult, error)
+```
+
+PublishCrls publishes the due CRLs of the Active and Archived issuers of the scope, every CRL when forced. The current CRLs of a page of issuers are read in one query \(db.GetCrls\), and an issuer whose CRL is not due is skipped from the settings of its row, before its signer is loaded. An issuer that fails does not stop the run: the failure is logged and counted. The error is a failure to list the issuers or to read their CRLs; the CRLs published before it are in the result.
 
 <a name="ImportRequest"></a>
 ## type [ImportRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L296-L317>)
@@ -526,6 +594,46 @@ type Options struct {
     // Size is the number of issuers kept in memory; the least recently used
     // is evicted first. Zero is DefaultCacheSize.
     Size int
+}
+```
+
+<a name="PublishCrlsRequest"></a>
+## type [PublishCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L72-L85>)
+
+PublishCrlsRequest selects the issuers whose due CRLs are published: the Active and Archived issuers of the scope, as query.ListIssuersRequest names it
+
+```go
+type PublishCrlsRequest struct {
+    // OrgID limits the issuers to the org
+    OrgID xdb.ID
+    // AllOrgs selects the issuers of every org and the platform when OrgID
+    // is zero, for the renewal task
+    AllOrgs bool
+    // ProjectID limits the issuers to the project
+    ProjectID xdb.ID
+    // ProjectIDs limits the issuers to the org-wide ones and those of the
+    // projects; nil applies no project filter
+    ProjectIDs []uint64
+    // Force publishes the CRLs that are not due
+    Force bool
+}
+```
+
+<a name="PublishCrlsResult"></a>
+## type [PublishCrlsResult](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L88-L97>)
+
+PublishCrlsResult is the outcome of a run over the issuers of a scope
+
+```go
+type PublishCrlsResult struct {
+    // Crls are the CRLs the run published
+    Crls []*model.Crl
+    // Skipped is the number of issuers whose CRL was not due, and of the
+    // issuers whose certificate has expired
+    Skipped int
+    // Failed is the number of issuers whose CRL could not be published;
+    // every failure is logged
+    Failed int
 }
 ```
 

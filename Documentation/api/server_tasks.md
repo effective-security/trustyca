@@ -6,6 +6,18 @@
 import "github.com/effective-security/trustyca/server/tasks"
 ```
 
+Package tasks registers the scheduled tasks of the service. The \`tasks:\` section of the configuration names a task, its schedule and its arguments; App.scheduleTasks looks the name up in Factories and invokes the function the factory returns through the application container, so a task declares the dependencies it needs as the parameters of that function:
+
+```
+tasks:
+  - name: crl_renewal
+    schedule: "every 10 minutes"
+  - name: cert_status
+    schedule: "every 1 hour"
+```
+
+Every task runs once when it is scheduled, then on its schedule; the scheduler of porto/pkg/tasks recovers a panic of a run and never runs a task concurrently with itself. A task is multi\-instance safe by design: the CRL renewal relies on the CRL number of the DB, the certificate status on idempotent batches.
+
 ## Index
 
 - [Variables](<#variables>)
@@ -15,16 +27,19 @@ import "github.com/effective-security/trustyca/server/tasks"
 
 ## Variables
 
-<a name="Factories"></a>Factories provides map of Factory
+<a name="Factories"></a>Factories provides map of Factory by task name
 
 ```go
-var Factories = map[string]Factory{}
+var Factories = map[string]Factory{
+    crlrenewal.TaskName: crlrenewal.Factory,
+    certstatus.TaskName: certstatus.Factory,
+}
 ```
 
 <a name="Factory"></a>
-## type [Factory](<https://github.com/effective-security/trustyca/blob/main/server/tasks/tasks.go#L19-L24>)
+## type [Factory](<https://github.com/effective-security/trustyca/blob/main/server/tasks/tasks.go#L22-L27>)
 
-Factory creates tasks
+Factory creates tasks: it returns the function the application container invokes with the dependencies of the task
 
 ```go
 type Factory func(
@@ -36,7 +51,7 @@ type Factory func(
 ```
 
 <a name="Status"></a>
-## type [Status](<https://github.com/effective-security/trustyca/blob/main/server/tasks/tasks.go#L8>)
+## type [Status](<https://github.com/effective-security/trustyca/blob/main/server/tasks/tasks.go#L10>)
 
 Status indicates whether the task failed or succeeded
 

@@ -1,10 +1,12 @@
 package ca_test
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -28,9 +30,17 @@ type fakeDb struct {
 	issuers  map[uint64]*model.Issuer
 	profiles map[uint64]*model.CertificateProfile
 	roots    map[string]*model.RootCertificate
+	revoked  map[uint64]*model.Revoked
+	crls     map[string]*model.Crl
 	calls    map[string]int
 	// Err fails every query when set
 	Err error
+	// ErrOn fails the queries of the named method when set
+	ErrOn string
+	// Stale is the number of upcoming PublishCrl calls that behave as if
+	// another publisher stored a CRL of the issuer first: the issuer
+	// number is bumped and db.ErrStaleCrlNumber returned
+	Stale int
 }
 
 func newFakeDb() *fakeDb {
@@ -39,6 +49,8 @@ func newFakeDb() *fakeDb {
 		issuers:  map[uint64]*model.Issuer{},
 		profiles: map[uint64]*model.CertificateProfile{},
 		roots:    map[string]*model.RootCertificate{},
+		revoked:  map[uint64]*model.Revoked{},
+		crls:     map[string]*model.Crl{},
 		calls:    map[string]int{},
 	}
 }
@@ -52,6 +64,9 @@ func (f *fakeDb) enter(name string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.calls[name]++
+	if f.Err == nil && f.ErrOn == name {
+		return errors.Errorf("%s failed", name)
+	}
 	return f.Err
 }
 
@@ -311,4 +326,208 @@ func (f *fakeDb) configJSON(id xdb.ID) map[string]any {
 	var res map[string]any
 	_ = json.Unmarshal([]byte(f.issuers[id.UInt64()].Config), &res)
 	return res
+}
+
+// ListIssuers serves the org scope, project, visible projects and status
+// of the request, newest first, paged by the cursor
+func (f *fakeDb) ListIssuers(_ context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error) {
+	if err := f.enter("ListIssuers"); err != nil {
+		return nil, err
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var rows []*model.Issuer
+	for _, m := range f.issuers {
+		switch {
+		case req.OrgID != 0 && m.OrgID.UInt64() != req.OrgID:
+		case req.Platform && !m.OrgID.IsZero():
+		case req.ProjectID != 0 && m.ProjectID.UInt64() != req.ProjectID:
+		case req.ProjectID == 0 && req.ProjectIDs != nil && !m.ProjectID.IsZero() && !slices.Contains(req.ProjectIDs, m.ProjectID.UInt64()):
+		case req.Status != pb.IssuerStatus_Unknown && m.Status != req.Status:
+		default:
+			row := *m
+			rows = append(rows, &row)
+		}
+	}
+	var res model.IssuerResult
+	res.Rows = page(rows, func(m *model.Issuer) uint64 { return m.ID.UInt64() }, req.Limit, req.Cursor, &res.HasNextPage, &res.Cursor)
+	return &res, nil
+}
+
+// revoke records the revocation of a certificate of the issuer, as
+// RevokeCertificate copies it from the certificate row
+func (f *fakeDb) revoke(issuer *model.Issuer, serial string, notAfter, revokedAt time.Time, reason pb.ReasonCode_Enum) *model.Revoked {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	m := &model.Revoked{
+		ID:            f.id(),
+		OrgID:         issuer.OrgID,
+		ProjectID:     issuer.ProjectID,
+		CertificateID: f.id(),
+		Ikid:          issuer.Skid,
+		SerialNumber:  serial,
+		NotAfter:      xdb.UTC(notAfter),
+		RevokedAt:     xdb.UTC(revokedAt),
+		Reason:        reason,
+	}
+	f.revoked[m.ID.UInt64()] = m
+	res := *m
+	return &res
+}
+
+// ListRevoked serves the org scope, IKID and validity of the request,
+// newest first, paged by the cursor
+func (f *fakeDb) ListRevoked(_ context.Context, req *query.ListRevokedRequest) (*model.RevokedResult, error) {
+	if err := f.enter("ListRevoked"); err != nil {
+		return nil, err
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var rows []*model.Revoked
+	for _, m := range f.revoked {
+		switch {
+		case req.OrgID != 0 && m.OrgID.UInt64() != req.OrgID:
+		case req.IKID != "" && m.Ikid != req.IKID:
+		case req.ValidAfter != nil && !m.NotAfter.UTC().After(*req.ValidAfter):
+		default:
+			row := *m
+			rows = append(rows, &row)
+		}
+	}
+	var res model.RevokedResult
+	res.Rows = page(rows, func(m *model.Revoked) uint64 { return m.ID.UInt64() }, req.Limit, req.Cursor, &res.HasNextPage, &res.Cursor)
+	return &res, nil
+}
+
+// page sorts the rows newest first and returns the page of the cursor and
+// limit, setting the next cursor when the page is full, as listRows does
+func page[T any](rows []*T, id func(*T) uint64, limit uint32, cursor query.Cursor, hasNext *bool, next *string) []*T {
+	slices.SortFunc(rows, func(a, b *T) int {
+		return cmp.Compare(id(b), id(a))
+	})
+	if lastID := cursor.LastID(); lastID != 0 {
+		rows = slices.DeleteFunc(rows, func(m *T) bool { return id(m) >= lastID })
+	}
+	if limit != 0 && uint32(len(rows)) > limit {
+		rows = rows[:limit]
+	}
+	if limit != 0 && uint32(len(rows)) == limit && cursor.IsSet() {
+		*hasNext = true
+		*next = query.EncodeCursor(xdb.NewID(id(rows[len(rows)-1])))
+	}
+	return rows
+}
+
+func (f *fakeDb) GetCrl(_ context.Context, ikid string) (*model.Crl, error) {
+	if err := f.enter("GetCrl"); err != nil {
+		return nil, err
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if m, ok := f.crls[ikid]; ok {
+		res := *m
+		return &res, nil
+	}
+	return nil, notFound("crl", ikid)
+}
+
+// PublishCrl stores the CRL and the number on the issuer as the DB does:
+// the IKID must be the issuer's SKID and the number greater than the
+// issuer's, else nothing is stored
+func (f *fakeDb) GetCrls(_ context.Context, ikids []string) ([]*model.Crl, error) {
+	if err := f.enter("GetCrls"); err != nil {
+		return nil, err
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var res []*model.Crl
+	for _, ikid := range ikids {
+		if m, ok := f.crls[ikid]; ok {
+			row := *m
+			res = append(res, &row)
+		}
+	}
+	return res, nil
+}
+
+func (f *fakeDb) PublishCrl(_ context.Context, m *model.Crl) (*model.Crl, error) {
+	if err := f.enter("PublishCrl"); err != nil {
+		return nil, err
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	issuer, ok := f.issuers[m.IssuerID.UInt64()]
+	if !ok {
+		return nil, notFound("issuer", m.IssuerID.UInt64())
+	}
+	if issuer.Skid != m.Ikid {
+		return nil, errors.Errorf("crl ikid %s does not match issuer %s", m.Ikid, m.IssuerID.String())
+	}
+	if f.Stale > 0 {
+		f.Stale--
+		issuer.CrlNumber = m.CrlNumber
+		f.crls[m.Ikid] = &model.Crl{
+			ID:         f.id(),
+			OrgID:      issuer.OrgID,
+			ProjectID:  issuer.ProjectID,
+			IssuerID:   issuer.ID,
+			Ikid:       issuer.Skid,
+			CrlNumber:  m.CrlNumber,
+			ThisUpdate: m.ThisUpdate,
+			NextUpdate: m.NextUpdate,
+			Issuer:     issuer.Subject,
+			Pem:        "other publisher",
+			CreatedAt:  xdb.UTC(time.Now()),
+		}
+		return nil, errors.WithStack(db.ErrStaleCrlNumber)
+	}
+	if m.CrlNumber <= issuer.CrlNumber {
+		return nil, errors.WithStack(db.ErrStaleCrlNumber)
+	}
+	res := *m
+	res.OrgID = issuer.OrgID
+	res.ProjectID = issuer.ProjectID
+	res.Issuer = issuer.Subject
+	if err := res.Validate(); err != nil {
+		return nil, err
+	}
+	if cur, ok := f.crls[m.Ikid]; ok {
+		res.ID = cur.ID
+		res.CreatedAt = cur.CreatedAt
+	} else {
+		res.ID = f.id()
+		res.CreatedAt = xdb.UTC(time.Now())
+	}
+	issuer.CrlNumber = res.CrlNumber
+	f.crls[res.Ikid] = &res
+	out := res
+	return &out, nil
+}
+
+// setCrlNextUpdate moves the next update of the current CRL of the issuer,
+// to make it due or not
+func (f *fakeDb) setCrlNextUpdate(ikid string, nextUpdate time.Time) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.crls[ikid].NextUpdate = xdb.UTC(nextUpdate)
+}
+
+// setIssuerStatus changes the status of a stored issuer
+func (f *fakeDb) setIssuerStatus(id xdb.ID, status pb.IssuerStatus_Enum) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.issuers[id.UInt64()].Status = status
+}
+
+// setIssuerNotAfter changes the expiry of a stored issuer
+func (f *fakeDb) setIssuerNotAfter(id xdb.ID, notAfter time.Time) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.issuers[id.UInt64()].NotAfter = xdb.UTC(notAfter)
 }

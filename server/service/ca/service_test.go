@@ -193,14 +193,20 @@ func testCtx(userID, orgID string) context.Context {
 	return authctx.NewTrustyCtx(context.Background(), identity.NewRequestContext(uid, "/test"))
 }
 
-// apiKeyCtx returns a request context of an API key of the org, restricted
-// to the project when one is given
+// apiKeyCtx returns a request context of an API key of the org with the
+// read and issue scopes, restricted to the project when one is given
 func apiKeyCtx(orgID, projectID string) context.Context {
+	return apiKeyScopedCtx(orgID, projectID, "ca:read", "certs:issue")
+}
+
+// apiKeyScopedCtx returns a request context of an API key of the org with
+// the scopes, restricted to the project when one is given
+func apiKeyScopedCtx(orgID, projectID string, scopes ...string) context.Context {
 	claims := map[string]any{
 		"sub":                "key-1",
 		authctx.ClaimOrg:     orgID,
 		authctx.ClaimOrgRole: pb.Role_APIKey.String(),
-		authctx.ClaimScope:   []string{"ca:read", "certs:issue"},
+		authctx.ClaimScope:   scopes,
 	}
 	if projectID != "" {
 		claims[authctx.ClaimProject] = projectID
@@ -226,6 +232,19 @@ func (r *eventRecorder) record(evt *model.Event) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.events = append(r.events, evt)
+}
+
+// count returns the number of events of the type
+func (r *eventRecorder) count(typ pb.EventType_Enum) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	n := 0
+	for _, evt := range r.events {
+		if evt.Type == typ {
+			n++
+		}
+	}
+	return n
 }
 
 // last returns the last event of the type, or nil
@@ -527,6 +546,7 @@ func (tca *testCA) service() *Service {
 		orgs:       tca.orgsdb,
 		authorizer: newFakeAuthorizer(),
 		registry:   tca.registry,
+		publisher:  core.NewCrlPublisher(tca.cadb, tca.registry),
 	}
 }
 

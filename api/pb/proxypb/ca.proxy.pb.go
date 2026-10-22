@@ -714,8 +714,11 @@ func (s *postproxyCAClient) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (
 	return &res, nil
 }
 
-// PublishCrls generates and publishes CRLs on demand.
-// It is also invoked by the scheduled CRL renewal task.
+// PublishCrls generates and publishes CRLs on demand: the CRL of the
+// issuer of the IKID, or the due CRLs of the issuers in scope. A project
+// Admin and an API key restricted to a project publish for their project.
+// The scheduled CRL renewal task publishes the due CRLs of every org
+// in-process.
 func (s *proxyCAServer) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest, opts ...grpc.CallOption) (*pb.CrlsResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -726,8 +729,11 @@ func (s *proxyCAServer) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequ
 	return res, nil
 }
 
-// PublishCrls generates and publishes CRLs on demand.
-// It is also invoked by the scheduled CRL renewal task.
+// PublishCrls generates and publishes CRLs on demand: the CRL of the
+// issuer of the IKID, or the due CRLs of the issuers in scope. A project
+// Admin and an API key restricted to a project publish for their project.
+// The scheduled CRL renewal task publishes the due CRLs of every org
+// in-process.
 func (s *proxyCAClient) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -738,8 +744,11 @@ func (s *proxyCAClient) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequ
 	return res, nil
 }
 
-// PublishCrls generates and publishes CRLs on demand.
-// It is also invoked by the scheduled CRL renewal task.
+// PublishCrls generates and publishes CRLs on demand: the CRL of the
+// issuer of the IKID, or the due CRLs of the issuers in scope. A project
+// Admin and an API key restricted to a project publish for their project.
+// The scheduled CRL renewal task publishes the due CRLs of every org
+// in-process.
 func (s *postproxyCAClient) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
 	var res pb.CrlsResponse
 	path := pb.CA_PublishCrls_FullMethodName

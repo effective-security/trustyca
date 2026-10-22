@@ -227,7 +227,7 @@ var methods = map[string]*MethodInfo{
 
 	CA_PublishCrls_FullMethodName: {
 		Allocator:    func() any { return new(PublishCrlsRequest) },
-		AllowedRoles: []string{"Admin", "Security"},
+		AllowedRoles: []string{"Admin", "Security", "APIKey"},
 		Scopes:       []string{"ca:write"},
 	},
 

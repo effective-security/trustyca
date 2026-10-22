@@ -7,7 +7,7 @@ require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/effective-security/metrics v0.10.154
 	github.com/effective-security/porto v1.0.451
-	github.com/effective-security/protoc-gen-go v0.25.123
+	github.com/effective-security/protoc-gen-go v0.25.124
 	github.com/effective-security/servefiles v0.0.0-20231231152618-8f0e3ad31aae
 	github.com/effective-security/x v1.0.109
 	github.com/effective-security/xdb v1.0.166

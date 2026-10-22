@@ -145,8 +145,8 @@ github.com/effective-security/metrics v0.10.154 h1:mdz8ENepDo8AJOFG7ejKm6tWxvL41
 github.com/effective-security/metrics v0.10.154/go.mod h1:RZtOhtR6FdrY1r+i9IHp+pGyzlYPAtrzLHog0lfgX3E=
 github.com/effective-security/porto v1.0.451 h1:OgIuQ/cSKM/itxwFQKFnl38Ia9rwZnWa58F1YhwPnp8=
 github.com/effective-security/porto v1.0.451/go.mod h1:LqX6lvBlebYsTgIx38zsgVRjrtNUwczJeD0LhqLhbAw=
-github.com/effective-security/protoc-gen-go v0.25.123 h1:37ht7+/ibCYXw8plYrj5JMmpVX3YLHQLhr8eJIZonX0=
-github.com/effective-security/protoc-gen-go v0.25.123/go.mod h1:Mv1O9SMS37Jytp9iOqY7IPoYc2K6haZq8KsnAtKbmyQ=
+github.com/effective-security/protoc-gen-go v0.25.124 h1:l5+EAFb5eJnXov45GXeHZ4lXMr23a8TFHYiqMxd4Nzg=
+github.com/effective-security/protoc-gen-go v0.25.124/go.mod h1:Mv1O9SMS37Jytp9iOqY7IPoYc2K6haZq8KsnAtKbmyQ=
 github.com/effective-security/servefiles v0.0.0-20231231152618-8f0e3ad31aae h1:bNO5gHxW7B4tf5pQ2xnsQj+SwxA8jTboVkye4xQ/PKs=
 github.com/effective-security/servefiles v0.0.0-20231231152618-8f0e3ad31aae/go.mod h1:yH/H3BUBJORvjtx3B4ApJNYeU+D0WXerzr3DRveGcpI=
 github.com/effective-security/x v1.0.109 h1:iW/iDi2v6YMz0FnrzfjSNEaS/V6lL2Vha3AlO6b0WE0=

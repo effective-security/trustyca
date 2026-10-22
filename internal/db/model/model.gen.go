@@ -107,8 +107,9 @@ func (p *APIKeyResult) GetTableInfo() *xdbschema.TableInfo {
 // Indexes:
 //
 //	certificate_pkey: PRIMARY UNIQUE [id]
-//	idx_certificate_ikid_id_desc: [ikid,id]
-//	idx_certificate_org_project_id_desc: [project_id,id,org_id]
+//	idx_certificate_ikid_id_desc: [id,ikid]
+//	idx_certificate_notafter: [not_after]
+//	idx_certificate_org_project_id_desc: [org_id,project_id,id]
 //	idx_certificate_org_project_notafter: [not_after,org_id,project_id]
 //	idx_certificate_skid: [skid]
 //	unique_certificate_ikid_serial: UNIQUE [serial_number,ikid]

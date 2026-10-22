@@ -10,6 +10,7 @@ import (
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
+	"github.com/lib/pq"
 )
 
 // ErrStaleCrlNumber is returned by PublishCrl when the CRL number is not
@@ -124,6 +125,24 @@ func (p *Provider) GetCrl(ctx context.Context, ikid string) (*model.Crl, error) 
 	res, err := xdb.QueryRow[model.Crl](ctx, p, q, ikid)
 	if err != nil {
 		return nil, xdb.CheckNotFoundError(err, schema.CrlTableInfo.Name, ikid)
+	}
+	return res, nil
+}
+
+// GetCrls returns the current CRLs of the issuers with the key identifiers,
+// in any order; an issuer without a CRL has none in the result. The CRL
+// publisher reads the CRLs of a page of issuers in one query, so the list
+// is bounded by the caller's page; no key identifiers read nothing.
+func (p *Provider) GetCrls(ctx context.Context, ikids []string) ([]*model.Crl, error) {
+	if len(ikids) == 0 {
+		return nil, nil
+	}
+	q, name := query.GetCrlsByIKIDs()
+	defer DbMeasureQuerySince(name, time.Now())
+
+	res, err := xdb.ExecuteListQuery[model.Crl](ctx, p, q, pq.Array(ikids))
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 	return res, nil
 }

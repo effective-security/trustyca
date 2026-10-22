@@ -2133,6 +2133,12 @@ type PublishCrlsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// OrgID of the owning org; empty for all orgs
 	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID limits the scope to the project: the issuer of the IKID
+	// must belong to it, and without an IKID the issuers of the project
+	// publish. Empty publishes for the org-wide issuers and the projects the
+	// caller may read; a project Admin names the project, and an API key
+	// restricted to a project publishes for its project.
+	ProjectID string `protobuf:"bytes,4,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// IKID specifies Issuer Key ID; empty to publish for all issuers in scope
 	IKID string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
 	// Force specifies to publish even if the current CRL is not due for renewal
@@ -2174,6 +2180,13 @@ func (*PublishCrlsRequest) Descriptor() ([]byte, []int) {
 func (x *PublishCrlsRequest) GetOrgID() string {
 	if x != nil {
 		return x.OrgID
+	}
+	return ""
+}
+
+func (x *PublishCrlsRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
 	}
 	return ""
 }
@@ -2548,9 +2561,10 @@ const file_ca_proto_rawDesc = "" +
 	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"?\n" +
 	"\rGetCrlRequest\x12\x14\n" +
 	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x18\n" +
-	"\x04IKID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x04IKID\"T\n" +
+	"\x04IKID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x04IKID\"r\n" +
 	"\x12PublishCrlsRequest\x12\x14\n" +
-	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x12\n" +
+	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x04 \x01(\tR\tProjectID\x12\x12\n" +
 	"\x04IKID\x18\x02 \x01(\tR\x04IKID\x12\x14\n" +
 	"\x05Force\x18\x03 \x01(\bR\x05Force\"+\n" +
 	"\fCrlsResponse\x12\x1b\n" +
@@ -2560,7 +2574,7 @@ const file_ca_proto_rawDesc = "" +
 	"\vOCSPRequest\x12\x16\n" +
 	"\x03Der\x18\x01 \x01(\fB\x04\xe8\xf3\x18\x01R\x03Der\" \n" +
 	"\fOCSPResponse\x12\x10\n" +
-	"\x03Der\x18\x01 \x01(\fR\x03Der2\xea\x0e\n" +
+	"\x03Der\x18\x01 \x01(\fR\x03Der2\xf1\x0e\n" +
 	"\x02CA\x12L\n" +
 	"\x0eRegisterIssuer\x12\x19.pb.RegisterIssuerRequest\x1a\n" +
 	".pb.Issuer\"\x13\xfaB\x05Admin\x92C\bca:write\x12H\n" +
@@ -2590,8 +2604,8 @@ const file_ca_proto_rawDesc = "" +
 	"\x17ListRevokedCertificates\x12\".pb.ListRevokedCertificatesRequest\x1a\x1f.pb.RevokedCertificatesResponse\"\x1d\xfaB\rViewer,APIKey\x92C\n" +
 	"certs:read\x12K\n" +
 	"\x06GetCRL\x12\x11.pb.GetCrlRequest\x1a\x0f.pb.CrlResponse\"\x1d\xfaB\rViewer,APIKey\x92C\n" +
-	"certs:read\x12U\n" +
-	"\vPublishCrls\x12\x16.pb.PublishCrlsRequest\x1a\x10.pb.CrlsResponse\"\x1c\xfaB\x0eAdmin,Security\x92C\bca:write\x12K\n" +
+	"certs:read\x12\\\n" +
+	"\vPublishCrls\x12\x16.pb.PublishCrlsRequest\x1a\x10.pb.CrlsResponse\"#\xfaB\x15Admin,Security,APIKey\x92C\bca:write\x12K\n" +
 	"\bSignOCSP\x12\x0f.pb.OCSPRequest\x1a\x10.pb.OCSPResponse\"\x1c\xfaB\x0eAdmin,Security\x92C\bca:writeB/Z-github.com/effective-security/trustyca/api/pbb\x06proto3"
 
 var (

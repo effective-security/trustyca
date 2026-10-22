@@ -242,3 +242,43 @@ func (p *Provider) DeleteCertificate(ctx context.Context, orgID, id uint64) (int
 	}
 	return res.RowsAffected()
 }
+
+// ExpireCertificates sets the status of a batch of Active certificates
+// whose validity ended before the time to Expired, lowest IDs first, and
+// returns the number of certificates it changed. The caller repeats the
+// call until a batch is smaller than the limit: a changed row leaves the
+// set, so no offset is needed.
+func (p *Provider) ExpireCertificates(ctx context.Context, req *query.ExpireCertificatesRequest) (int64, error) {
+	err := xdb.Validate(req)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	q, name := query.ExpireCertificates()
+	defer DbMeasureQuerySince(name, time.Now())
+
+	res, err := p.ExecContext(ctx, q, req.Args()...)
+	if err != nil {
+		return 0, errors.WithMessage(err, "unable to expire certificates")
+	}
+	return res.RowsAffected()
+}
+
+// DeleteExpiredCertificates deletes a batch of certificates of any status
+// whose validity ended before the time, with their revocations, lowest IDs
+// first, and returns the number of deleted certificates. The caller repeats
+// the call until a batch is smaller than the limit. Retention is the only
+// deletion of certificates the service performs itself.
+func (p *Provider) DeleteExpiredCertificates(ctx context.Context, req *query.DeleteExpiredCertificatesRequest) (int64, error) {
+	err := xdb.Validate(req)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	q, name := query.DeleteExpiredCertificates()
+	defer DbMeasureQuerySince(name, time.Now())
+
+	res, err := p.ExecContext(ctx, q, req.Args()...)
+	if err != nil {
+		return 0, errors.WithMessage(err, "unable to delete expired certificates")
+	}
+	return res.RowsAffected()
+}

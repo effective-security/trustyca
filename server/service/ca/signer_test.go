@@ -3,6 +3,7 @@ package ca
 import (
 	"context"
 	"crypto"
+	"crypto/x509"
 	"strings"
 	"sync"
 	"testing"
@@ -10,11 +11,13 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
+	core "github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
+	"github.com/effective-security/xpki/csr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -379,4 +382,52 @@ func TestService_SignOCSP(t *testing.T) {
 		Return(nil, errors.New("db down"))
 	_, err = svc.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
 	assert.EqualError(t, err, "unexpected: unable to get revoked certificate")
+}
+
+// TestService_SignOCSP_Delegated covers an issuer whose settings name a
+// delegated OCSP profile: the response is signed by a responder
+// certificate the issuer issued, not by the issuer key, and is valid for
+// the OCSP expiry of the settings
+func TestService_SignOCSP_Delegated(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tca := newTestCA(t, ctrl)
+	svc := tca.service()
+	ctx := serviceCtx("trustyca-cis")
+	const delegatingLabel = "DELEGATING"
+	const delegatedPeerProfile = "delegated_peer"
+
+	tca.addProfile(testOrgID(), xdb.ID(0), ocspProfileDef(testOCSPProfile))
+	delegating := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), delegatingLabel, pb.AuthorityType_Issuing, &pb.IssuerConfig{
+		AllowedProfiles:      []string{testOCSPProfile},
+		DelegatedOcspProfile: testOCSPProfile,
+		OcspExpiry:           "1h",
+	})
+	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef(delegatedPeerProfile, delegatingLabel, "168h"))
+	delegatingCert, err := certutil.ParseFromPEM([]byte(delegating.Pem))
+	require.NoError(t, err)
+
+	res, err := tca.registry.Resolve(tca.ctx, &core.ResolveRequest{OrgID: testOrgID(), Profile: delegatedPeerProfile})
+	require.NoError(t, err)
+	_, csrPEM := newCSR(t, "delegated.example.com")
+	leaf, _, err := res.Issuer.Sign(csr.SignRequest{Request: string(csrPEM), Profile: res.ProfileName})
+	require.NoError(t, err)
+	der, err := ocsp.CreateRequest(leaf, delegatingCert, &ocsp.RequestOptions{Hash: crypto.SHA256})
+	require.NoError(t, err)
+
+	tca.cadb.EXPECT().GetCertificateByIssuerSerial(gomock.Any(), delegating.Skid, leaf.SerialNumber.String()).
+		Return(&model.Certificate{ID: xdb.NewID(6), Status: pb.CertificateStatus_Active}, nil)
+	ocspRes, err := svc.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
+	require.NoError(t, err)
+	resp, err := ocsp.ParseResponseForCert(ocspRes.Der, leaf, delegatingCert)
+	require.NoError(t, err, "the responder certificate is verified against the issuer")
+	assert.Equal(t, ocsp.Good, resp.Status)
+	require.NotNil(t, resp.Certificate, "a delegated responder certificate")
+	assert.NotEqual(t, delegatingCert.SerialNumber, resp.Certificate.SerialNumber)
+	assert.Contains(t, resp.Certificate.ExtKeyUsage, x509.ExtKeyUsageOCSPSigning)
+	assert.Equal(t, delegatingCert.RawSubject, resp.Certificate.RawIssuer)
+	assert.Equal(t, time.Hour, resp.NextUpdate.Sub(resp.ThisUpdate))
 }

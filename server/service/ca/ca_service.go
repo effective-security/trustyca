@@ -17,9 +17,10 @@ const ServiceName = "ca"
 var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca/server/service", ServiceName)
 
 // Service defines the CA service: issuers, trust anchors, profiles,
-// certificates and revocation status of the org of the request. Issuers
-// and profiles are resolved from the DB through the issuer registry of
-// internal/ca, which caches the built issuers per row.
+// certificates, revocation status and CRLs of the org of the request.
+// Issuers and profiles are resolved from the DB through the issuer registry
+// of internal/ca, which caches the built issuers per row, and CRLs are
+// signed by its publisher, which the crl_renewal task shares.
 type Service struct {
 	server     gserver.GServer
 	authorizer authctx.Authorizer
@@ -27,6 +28,7 @@ type Service struct {
 	db         db.CaDb
 	orgs       db.OrgsDb
 	registry   *core.Registry
+	publisher  *core.CrlPublisher
 }
 
 // Factory returns a factory of the service
@@ -47,6 +49,7 @@ func Factory(server gserver.GServer) any {
 			db:         caDb,
 			orgs:       orgsDb,
 			registry:   registry,
+			publisher:  core.NewCrlPublisher(caDb, registry),
 		}
 
 		server.AddService(svc)

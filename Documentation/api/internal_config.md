@@ -19,6 +19,7 @@ import "github.com/effective-security/trustyca/internal/config"
   - [func Load\(configFile string\) \(\*Configuration, error\)](<#Load>)
 - [type CryptoProv](<#CryptoProv>)
 - [type Orgs](<#Orgs>)
+- [type Retention](<#Retention>)
 - [type SQL](<#SQL>)
 - [type Service](<#Service>)
 - [type Task](<#Task>)
@@ -103,7 +104,7 @@ type Auth struct {
 ```
 
 <a name="CA"></a>
-## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L148-L162>)
+## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L148-L166>)
 
 CA specifies the Certification Authority configuration
 
@@ -122,6 +123,10 @@ type CA struct {
     // IssuerCacheSize is the number of issuers kept in memory; the least
     // recently used issuer is evicted first. The default is 1000.
     IssuerCacheSize int `json:"issuer_cache_size" yaml:"issuer_cache_size"`
+
+    // Retention specifies how long expired certificates are kept; the
+    // cert_status task applies it.
+    Retention Retention `json:"retention" yaml:"retention"`
 }
 ```
 
@@ -229,6 +234,20 @@ type Orgs struct {
     // DefaultProjectName specifies the default project name to be created for new users.
     // If empty, no default project will be created.
     DefaultProjectName string `json:"default_project_name" yaml:"default_project_name"`
+}
+```
+
+<a name="Retention"></a>
+## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L169-L174>)
+
+Retention specifies the retention of expired certificates
+
+```go
+type Retention struct {
+    // ExpiredAfter is how long after the end of its validity a certificate
+    // and its revocation are deleted. Zero keeps expired certificates
+    // forever.
+    ExpiredAfter time.Duration `json:"expired_after" yaml:"expired_after"`
 }
 ```
 

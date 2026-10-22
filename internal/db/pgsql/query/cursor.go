@@ -56,6 +56,12 @@ func (c Cursor) IsSet() bool {
 	return c.set
 }
 
+// LastID returns the ID of the last row of the previous page, after which
+// the listing continues; zero for the first page
+func (c Cursor) LastID() uint64 {
+	return c.id
+}
+
 // EncodeCursor returns the cursor of the page that follows the row with the ID
 func EncodeCursor(lastID xdb.ID) string {
 	return xdb.EncodeCursor(values.MapAny{cursorKeyID: lastID.String()})

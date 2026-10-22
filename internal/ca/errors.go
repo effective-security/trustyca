@@ -24,4 +24,7 @@ var (
 	// ErrProfileNotAllowed is returned when a profile bound to any issuer is
 	// not listed in the AllowedProfiles of the issuer
 	ErrProfileNotAllowed = errors.New("issuer does not allow the profile")
+	// ErrIssuerExpired is returned when the certificate of the issuer is no
+	// longer valid, so it signs no CRL
+	ErrIssuerExpired = errors.New("issuer certificate has expired")
 )
