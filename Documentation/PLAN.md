@@ -379,7 +379,7 @@ Follow-ups:
 4. CRL `locations` stay empty until CRLs are published to object storage
    (phase 7).
 
-## Phase 5: CIS service (done)
+## Phase 5: CIS service (done; the binary routes moved to the AIA service in phase 8)
 
 1. `server/service/cis` (done): `pb.CISServer` over `db.CaReadonlyDb`, with
    no access check since the data is public (DESIGN.md section 9.3).
@@ -580,6 +580,49 @@ Follow-ups:
    URI), and `allow_software_keys` stays off there.
 3. The load tool measures the DB half of SignCertificate; the signing half
    is `server/service/ca` bench_test.go.
+
+## Phase 8: AIA listener (done)
+
+1. `server/service/aia` (done): the binary routes of the issued
+   certificates (`/v1/cert/{ikid}`, `/v1/crl/{ikid}`, the OCSP routes) and
+   the OCSP response cache moved out of `server/service/cis` into a REST
+   only service on its own plain HTTP listener (`servers.aia`,
+   `http://0.0.0.0:8888` in the dev configuration). RFC 5280 AIA and CRL
+   Distribution Point URLs are fetched over HTTP by verifiers that cannot
+   authenticate and have not validated anything yet, so they belong
+   neither on the TLS listener of the UI nor behind its authorization. The
+   listener has no identity map and denies by default: only the AIA and
+   status routes are under `authz.allow_any`. The service forwards OCSP to
+   the CA with the `aia.client_tls` certificate: the `cis` configuration
+   section became `aia`, the `trustyca-cis` identity became `trustyca-aia`
+   (`spiffe://trustyca/aia`, `.project/gen_certs.sh --aia`,
+   `trustyca_aia`) and is allowed `SignOCSP` only on the backend listener,
+   and the cache metrics became `aia_cache_hit` and `aia_cache_miss`.
+2. `server/service/cis` (done): `pb.CIS` over `db.CaReadonlyDb` only, over
+   gRPC and the JSON API of the `wfe` listener, for authenticated callers:
+   `/pb.CIS` moved from `authz.allow_any` to `authz.allow_any_role` and its
+   methods left `identity_map.skip_auth`, so a guest is refused at the
+   listener; the methods declare no roles, since the views carry no
+   tenancy. `trustyca cert|issuer|crl|root` send the token of the login
+   (`Cli.CISClient`). The service needs no configuration.
+3. Tests (done): `server/service/aia` keeps the route, OCSP, cache and lazy
+   client tests over the mock `CaReadonlyDb` and the fake CA, and an
+   `e2e_test.go` that follows the URLs of the certificates a new org
+   issues to the AIA over plain HTTP (with `openssl verify -crl_check`);
+   `server/service/cis` keeps the JSON method tests and an `e2e_test.go`
+   that reads the same objects back through the JSON API; `server/app`
+   Test_Authz_CAMethods evaluates the rules of the three listeners: the
+   AIA identity reaches `SignOCSP` only, the wfe CIS refuses a guest and
+   admits any role, the aia listener opens its routes to a guest and
+   refuses every other path.
+
+Follow-ups:
+
+1. The AIA listener has no rate limit beyond porto's defaults and no
+   in-memory cache of the certificates and CRLs it serves (phase 5
+   follow-ups 3 and 4 moved here).
+2. `OCSPRequest.IKID` from the `/v1/ocspi/{ikid}` routes (ROADMAP.md
+   RM-003) is still open.
 
 ## Verification checklist per phase
 

@@ -19,6 +19,7 @@ import "github.com/effective-security/trustyca/server/service"
 ```go
 var Factories = map[string]gserver.ServiceFactory{
     admin.ServiceName:  admin.Factory,
+    aia.ServiceName:    aia.Factory,
     auth.ServiceName:   auth.Factory,
     ca.ServiceName:     ca.Factory,
     cis.ServiceName:    cis.Factory,
@@ -29,7 +30,7 @@ var Factories = map[string]gserver.ServiceFactory{
 ```
 
 <a name="GetPublicServerURL"></a>
-## func [GetPublicServerURL](<https://github.com/effective-security/trustyca/blob/main/server/service/service.go#L30>)
+## func [GetPublicServerURL](<https://github.com/effective-security/trustyca/blob/main/server/service/service.go#L32>)
 
 ```go
 func GetPublicServerURL(r *http.Request, relativeEndpoint string) *url.URL

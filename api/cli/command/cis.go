@@ -6,9 +6,9 @@ import (
 )
 
 // The commands of this file read the Certificate Information Service, the
-// public side of the CA: no login is needed, and every lookup names a
-// certificate or an issuer, since the CIS lists nothing of an org but its
-// trust anchors.
+// read-only view of the CA for authenticated users: they need a login, and
+// every lookup names a certificate or an issuer, since the CIS lists
+// nothing of an org but its trust anchors.
 
 // CertCmd is the base command of the certificate information
 type CertCmd struct {

@@ -58,7 +58,7 @@ func BenchmarkService_SignOCSP(b *testing.B) {
 	der, err := ocsp.CreateRequest(leaf, tca.issuerCert, &ocsp.RequestOptions{Hash: crypto.SHA1})
 	require.NoError(b, err)
 	svc := tca.service()
-	ctx := serviceCtx("trustyca-cis")
+	ctx := serviceCtx("trustyca-aia")
 	req := &pb.OCSPRequest{Der: der}
 	_, err = svc.SignOCSP(ctx, req)
 	require.NoError(b, err)

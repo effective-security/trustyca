@@ -2171,7 +2171,7 @@ const (
 )
 ```
 
-<a name="PathForCIS"></a>CIS service API In addition to the JSON API below, CIS registers binary endpoints that are referenced from issued certificates \(AIA and CDP extensions\):
+<a name="PathForCert"></a>AIA service API: the binary endpoints the issued certificates reference \(the AIA and CDP extensions\), served by the aia service over plain HTTP to any caller:
 
 ```
 GET  /v1/cert/{ikid}           application/pkix-cert   issuer certificate
@@ -2186,11 +2186,6 @@ The issuer and CRL paths are the AIA and CDP templates of the issuers \(\`issuer
 
 ```go
 const (
-    // PathForCIS provides the base path of the JSON API of the CIS service
-    //
-    // Verbs: POST
-    PathForCIS = "/pb.CIS/:action"
-
     // PathForCert provides the issuer certificate by IKID
     //
     // Verbs: GET
@@ -2318,6 +2313,17 @@ const IssuerStatus_Enum_SupportedNamesHelp = "Unknown,Pending,Active,Archived,De
 
 ```go
 const ItemStatus_Enum_SupportedNamesHelp = "Unknown,Inactive,Active,Invalid"
+```
+
+<a name="PathForCIS"></a>CIS service API: the JSON API of the Certificate Information Service, served by the wfe listener to authenticated callers
+
+```go
+const (
+    // PathForCIS provides the base path of the JSON API of the CIS service
+    //
+    // Verbs: POST
+    PathForCIS = "/pb.CIS/:action"
+)
 ```
 
 <a name="PathForWebhooks"></a>Webhooks
@@ -10252,7 +10258,7 @@ func RegisterCAServer(s grpc.ServiceRegistrar, srv CAServer)
 
 
 <a name="RegisterCISServer"></a>
-## func [RegisterCISServer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L187>)
+## func [RegisterCISServer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L173>)
 
 ```go
 func RegisterCISServer(s grpc.ServiceRegistrar, srv CISServer)
@@ -12054,25 +12060,15 @@ type CAServer interface {
 ```
 
 <a name="CISClient"></a>
-## type [CISClient](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L50-L62>)
+## type [CISClient](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L43-L55>)
 
 CISClient is the client API for CIS service.
 
 For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 
-CIS is the Certificate Information Service. It is a read\-only, publicly exposable gRPC andREST service that serves trust anchors, issuer chains, certificate information and revocation status. It never holds CA private keys.
+CIS is the Certificate Information Service. It is the read\-only gRPC and REST view of the CA for authenticated callers: trust anchors, issuer chains, certificate information, revocation status and CRLs of every org, without their tenancy. It never holds CA private keys.
 
-In addition to the JSON API below, CIS registers binary endpoints that are referenced from issued certificates \(AIA and CDP extensions\):
-
-```
-GET  /v1/cert/{ikid}          application/pkix-cert   issuer certificate
-GET  /v1/crl/{ikid}           application/pkix-crl    current CRL (DER)
-GET  /v1/ocsp/{ikid}/{req}    application/ocsp-response
-POST /v1/ocsp/{ikid}          application/ocsp-response
-POST /v1/ocsp                 application/ocsp-response (issuer by KID)
-```
-
-OCSP requests are forwarded to CA.SignOCSP over gRPC and cached until the response NextUpdate.
+The binary endpoints the issued certificates reference \(the AIA issuer certificate, the CRL Distribution Point and the OCSP responder\) are the aia service, served over plain HTTP to any caller.
 
 ```go
 type CISClient interface {
@@ -12091,7 +12087,7 @@ type CISClient interface {
 ```
 
 <a name="NewCISClient"></a>
-### func [NewCISClient](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L68>)
+### func [NewCISClient](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L61>)
 
 ```go
 func NewCISClient(cc grpc.ClientConnInterface) CISClient
@@ -12100,23 +12096,13 @@ func NewCISClient(cc grpc.ClientConnInterface) CISClient
 
 
 <a name="CISServer"></a>
-## type [CISServer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L142-L154>)
+## type [CISServer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L128-L140>)
 
 CISServer is the server API for CIS service. All implementations should embed UnimplementedCISServer for forward compatibility.
 
-CIS is the Certificate Information Service. It is a read\-only, publicly exposable gRPC andREST service that serves trust anchors, issuer chains, certificate information and revocation status. It never holds CA private keys.
+CIS is the Certificate Information Service. It is the read\-only gRPC and REST view of the CA for authenticated callers: trust anchors, issuer chains, certificate information, revocation status and CRLs of every org, without their tenancy. It never holds CA private keys.
 
-In addition to the JSON API below, CIS registers binary endpoints that are referenced from issued certificates \(AIA and CDP extensions\):
-
-```
-GET  /v1/cert/{ikid}          application/pkix-cert   issuer certificate
-GET  /v1/crl/{ikid}           application/pkix-crl    current CRL (DER)
-GET  /v1/ocsp/{ikid}/{req}    application/ocsp-response
-POST /v1/ocsp/{ikid}          application/ocsp-response
-POST /v1/ocsp                 application/ocsp-response (issuer by KID)
-```
-
-OCSP requests are forwarded to CA.SignOCSP over gRPC and cached until the response NextUpdate.
+The binary endpoints the issued certificates reference \(the AIA issuer certificate, the CRL Distribution Point and the OCSP responder\) are the aia service, served over plain HTTP to any caller.
 
 ```go
 type CISServer interface {
@@ -27341,7 +27327,7 @@ func (UnimplementedCAServer) UpdateIssuer(context.Context, *UpdateIssuerRequest)
 
 
 <a name="UnimplementedCISServer"></a>
-## type [UnimplementedCISServer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L161>)
+## type [UnimplementedCISServer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L147>)
 
 UnimplementedCISServer should be embedded to have forward compatible implementations.
 
@@ -27352,7 +27338,7 @@ type UnimplementedCISServer struct{}
 ```
 
 <a name="UnimplementedCISServer.GetCRL"></a>
-### func \(UnimplementedCISServer\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L175>)
+### func \(UnimplementedCISServer\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L161>)
 
 ```go
 func (UnimplementedCISServer) GetCRL(context.Context, *GetCrlRequest) (*CrlResponse, error)
@@ -27361,7 +27347,7 @@ func (UnimplementedCISServer) GetCRL(context.Context, *GetCrlRequest) (*CrlRespo
 
 
 <a name="UnimplementedCISServer.GetCertificate"></a>
-### func \(UnimplementedCISServer\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L169>)
+### func \(UnimplementedCISServer\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L155>)
 
 ```go
 func (UnimplementedCISServer) GetCertificate(context.Context, *GetCertificateInfoRequest) (*CertificateResponse, error)
@@ -27370,7 +27356,7 @@ func (UnimplementedCISServer) GetCertificate(context.Context, *GetCertificateInf
 
 
 <a name="UnimplementedCISServer.GetCertificateStatus"></a>
-### func \(UnimplementedCISServer\) [GetCertificateStatus](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L172>)
+### func \(UnimplementedCISServer\) [GetCertificateStatus](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L158>)
 
 ```go
 func (UnimplementedCISServer) GetCertificateStatus(context.Context, *GetCertificateInfoRequest) (*CertificateStatusResponse, error)
@@ -27379,7 +27365,7 @@ func (UnimplementedCISServer) GetCertificateStatus(context.Context, *GetCertific
 
 
 <a name="UnimplementedCISServer.GetIssuer"></a>
-### func \(UnimplementedCISServer\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L166>)
+### func \(UnimplementedCISServer\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L152>)
 
 ```go
 func (UnimplementedCISServer) GetIssuer(context.Context, *GetIssuerInfoRequest) (*IssuerInfo, error)
@@ -27388,7 +27374,7 @@ func (UnimplementedCISServer) GetIssuer(context.Context, *GetIssuerInfoRequest) 
 
 
 <a name="UnimplementedCISServer.GetRoots"></a>
-### func \(UnimplementedCISServer\) [GetRoots](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L163>)
+### func \(UnimplementedCISServer\) [GetRoots](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L149>)
 
 ```go
 func (UnimplementedCISServer) GetRoots(context.Context, *ListRootsRequest) (*RootsResponse, error)
@@ -27630,7 +27616,7 @@ type UnsafeCAServer interface {
 ```
 
 <a name="UnsafeCISServer"></a>
-## type [UnsafeCISServer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L183-L185>)
+## type [UnsafeCISServer](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis_grpc.pb.go#L169-L171>)
 
 UnsafeCISServer may be embedded to opt out of forward compatibility for this service. Use of this interface is not recommended, as added methods to CISServer will result in compilation errors.
 

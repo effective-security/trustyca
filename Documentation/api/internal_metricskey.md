@@ -245,25 +245,25 @@ var (
 )
 ```
 
-<a name="CISCacheHit"></a>CIS
+<a name="AIACacheHit"></a>AIA cache
 
 ```go
 var (
-    // CISCacheHit is counter metric for the responses the CIS serves from
+    // AIACacheHit is counter metric for the responses the AIA serves from
     // its cache; the type is the response: ocsp
-    CISCacheHit = metrics.Describe{
+    AIACacheHit = metrics.Describe{
         Type:         metrics.TypeCounter,
-        Name:         "cis_cache_hit",
-        Help:         "provides the counter of CIS responses served from the cache",
+        Name:         "aia_cache_hit",
+        Help:         "provides the counter of AIA responses served from the cache",
         RequiredTags: []string{"type"},
     }
 
-    // CISCacheMiss is counter metric for the responses the CIS fetched from
+    // AIACacheMiss is counter metric for the responses the AIA fetched from
     // the CA; the type is the response: ocsp
-    CISCacheMiss = metrics.Describe{
+    AIACacheMiss = metrics.Describe{
         Type:         metrics.TypeCounter,
-        Name:         "cis_cache_miss",
-        Help:         "provides the counter of CIS responses fetched from the CA",
+        Name:         "aia_cache_miss",
+        Help:         "provides the counter of AIA responses fetched from the CA",
         RequiredTags: []string{"type"},
     }
 )
@@ -273,6 +273,8 @@ var (
 
 ```go
 var Metrics = []*metrics.Describe{
+    &AIACacheHit,
+    &AIACacheMiss,
     &AIADownloadFailCert,
     &AIADownloadFailCrl,
     &AIADownloadFailOCSP,
@@ -291,8 +293,6 @@ var Metrics = []*metrics.Describe{
     &CASignLatency,
     &CertExpiryDays,
     &CertExpiryHours,
-    &CISCacheHit,
-    &CISCacheMiss,
     &LoginCount,
     &PerfDbOperation,
     &PerfMethodRun,

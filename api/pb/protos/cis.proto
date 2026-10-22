@@ -10,21 +10,14 @@ import "pkix.proto";
 import "ca.proto";
 
 // CIS is the Certificate Information Service.
-// It is a read-only, publicly exposable gRPC andREST service that serves
-// trust anchors, issuer chains, certificate information and revocation
-// status. It never holds CA private keys.
+// It is the read-only gRPC and REST view of the CA for authenticated
+// callers: trust anchors, issuer chains, certificate information,
+// revocation status and CRLs of every org, without their tenancy. It never
+// holds CA private keys.
 //
-// In addition to the JSON API below, CIS registers binary endpoints that
-// are referenced from issued certificates (AIA and CDP extensions):
-//
-//   GET  /v1/cert/{ikid}          application/pkix-cert   issuer certificate
-//   GET  /v1/crl/{ikid}           application/pkix-crl    current CRL (DER)
-//   GET  /v1/ocsp/{ikid}/{req}    application/ocsp-response
-//   POST /v1/ocsp/{ikid}          application/ocsp-response
-//   POST /v1/ocsp                 application/ocsp-response (issuer by KID)
-//
-// OCSP requests are forwarded to CA.SignOCSP over gRPC and cached until
-// the response NextUpdate.
+// The binary endpoints the issued certificates reference (the AIA issuer
+// certificate, the CRL Distribution Point and the OCSP responder) are the
+// aia service, served over plain HTTP to any caller.
 service CIS {
     // GetRoots returns the published trust anchors
     rpc GetRoots(ListRootsRequest) returns (RootsResponse) {

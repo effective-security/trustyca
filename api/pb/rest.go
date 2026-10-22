@@ -80,9 +80,18 @@ const (
 	PathForRemoveCookie = "/v1/auth/removecookie"
 )
 
-// CIS service API
-// In addition to the JSON API below, CIS registers binary endpoints that
-// are referenced from issued certificates (AIA and CDP extensions):
+// CIS service API: the JSON API of the Certificate Information Service,
+// served by the wfe listener to authenticated callers
+const (
+	// PathForCIS provides the base path of the JSON API of the CIS service
+	//
+	// Verbs: POST
+	PathForCIS = "/pb.CIS/:action"
+)
+
+// AIA service API: the binary endpoints the issued certificates reference
+// (the AIA and CDP extensions), served by the aia service over plain HTTP
+// to any caller:
 //
 //	GET  /v1/cert/{ikid}           application/pkix-cert   issuer certificate
 //	GET  /v1/crl/{ikid}            application/pkix-crl    current CRL (DER)
@@ -95,11 +104,6 @@ const (
 // (`issuer_url`, `crl_url`): a renamed path leaves the URLs embedded in the
 // issued certificates without a route.
 const (
-	// PathForCIS provides the base path of the JSON API of the CIS service
-	//
-	// Verbs: POST
-	PathForCIS = "/pb.CIS/:action"
-
 	// PathForCert provides the issuer certificate by IKID
 	//
 	// Verbs: GET
