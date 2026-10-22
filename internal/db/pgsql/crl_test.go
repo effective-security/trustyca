@@ -145,6 +145,23 @@ func Test_Crl(t *testing.T) {
 	oc, err := provider.PublishCrl(ctx, otherCrl)
 	require.NoError(t, err)
 
+	// the CRLs of a page of issuers in one query: an issuer without a CRL
+	// has none, and no IKIDs read nothing
+	crls, err := provider.GetCrls(ctx, []string{issuer.Skid, other.Skid, "nope"})
+	require.NoError(t, err)
+	require.Len(t, crls, 2)
+	byIkid := map[string]*model.Crl{}
+	for _, c := range crls {
+		byIkid[c.Ikid] = c
+	}
+	require.NotNil(t, byIkid[issuer.Skid])
+	assert.Equal(t, "crl-10", byIkid[issuer.Skid].Pem)
+	require.NotNil(t, byIkid[other.Skid])
+	assert.Equal(t, "other", byIkid[other.Skid].Pem)
+	crls, err = provider.GetCrls(ctx, nil)
+	require.NoError(t, err)
+	assert.Empty(t, crls)
+
 	// the CRL's IKID must be the SKID of the issuer whose number it bumps
 	mixed := newCrl(11, "crl-mixed")
 	mixed.Ikid = other.Skid

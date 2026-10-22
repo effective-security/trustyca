@@ -159,4 +159,16 @@ type CA struct {
 	// IssuerCacheSize is the number of issuers kept in memory; the least
 	// recently used issuer is evicted first. The default is 1000.
 	IssuerCacheSize int `json:"issuer_cache_size" yaml:"issuer_cache_size"`
+
+	// Retention specifies how long expired certificates are kept; the
+	// cert_status task applies it.
+	Retention Retention `json:"retention" yaml:"retention"`
+}
+
+// Retention specifies the retention of expired certificates
+type Retention struct {
+	// ExpiredAfter is how long after the end of its validity a certificate
+	// and its revocation are deleted. Zero keeps expired certificates
+	// forever.
+	ExpiredAfter time.Duration `json:"expired_after" yaml:"expired_after"`
 }

@@ -25,6 +25,9 @@ func Test_Cursor(t *testing.T) {
 	c, err = query.ParseCursor(encoded)
 	require.NoError(t, err)
 	assert.Equal(t, query.NewCursor(18446744073709551615), c, "a 64-bit ID round trips")
+	assert.Equal(t, uint64(18446744073709551615), c.LastID())
+	assert.Zero(t, query.NewCursor(0).LastID(), "the first page")
+	assert.Zero(t, query.Cursor{}.LastID(), "offset pagination")
 
 	_, err = query.ParseCursor("not base64!")
 	assert.ErrorContains(t, err, "invalid cursor")

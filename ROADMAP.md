@@ -12,9 +12,11 @@ tables, the CA core library (`internal/ca`: tenant-scoped issuer registry,
 keys, platform bootstrap) and the issuer, profile, root and signing methods
 of the CA service; phase 3: the certificate, revocation and current CRL
 methods of the CA service, the `trustyca-ra` and `trustyca-cis` roles of
-the backend listener and the CA client. CRL publishing (`PublishCrls`
-answers Unimplemented) and the CIS service are stubs; their phases (4 to 7)
-are planned in PLAN.md.
+the backend listener and the CA client; phase 4: CRL publishing
+(`internal/ca.CrlPublisher`, `PublishCrls`, the `crl_renewal` task) and the
+`cert_status` task (expiry and retention). The CIS service is a stub; its
+phase and the operator tooling and hardening (5 to 7) are planned in
+PLAN.md.
 
 ## Active work
 

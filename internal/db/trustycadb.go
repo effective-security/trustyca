@@ -195,6 +195,10 @@ type CaReadonlyDb interface {
 
 	// GetCrl returns the current CRL of the issuer with the key identifier
 	GetCrl(ctx context.Context, ikid string) (*model.Crl, error)
+	// GetCrls returns the current CRLs of the issuers with the key
+	// identifiers, in any order; an issuer without a CRL has none in the
+	// result. The list is bounded by the caller: a page of issuers.
+	GetCrls(ctx context.Context, ikids []string) ([]*model.Crl, error)
 	// ListCrls lists the current CRLs, newest first
 	ListCrls(ctx context.Context, req *query.ListCrlsRequest) (*model.CrlResult, error)
 }
@@ -248,6 +252,15 @@ type CaDb interface {
 	RevokeCertificate(ctx context.Context, req *query.RevokeCertificateRequest) (*model.RevokedCertificate, error)
 	// DeleteCertificate deletes a certificate and its revocation
 	DeleteCertificate(ctx context.Context, orgID, id uint64) (int64, error)
+	// ExpireCertificates sets a batch of Active certificates that expired
+	// before the time to Expired, lowest IDs first, and returns how many it
+	// changed; the certificate status task repeats it until a batch is
+	// smaller than the limit
+	ExpireCertificates(ctx context.Context, req *query.ExpireCertificatesRequest) (int64, error)
+	// DeleteExpiredCertificates deletes a batch of certificates of any
+	// status that expired before the time, with their revocations, lowest
+	// IDs first, and returns how many it deleted (retention)
+	DeleteExpiredCertificates(ctx context.Context, req *query.DeleteExpiredCertificatesRequest) (int64, error)
 
 	// PublishCrl stores the current CRL of an issuer and records its number
 	// on the issuer in one transaction; the CRL's IKID must be the issuer's

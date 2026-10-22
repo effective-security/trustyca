@@ -98,6 +98,11 @@ ca:
   issuer_cache_ttl: 5m
   # the number of issuers kept in memory
   issuer_cache_size: 1000
+  # the retention of expired certificates, applied by the cert_status task:
+  # how long after its expiry a certificate and its revocation are deleted;
+  # 0 keeps them forever
+  retention:
+    expired_after: 0
 
 # configuration for crypto providers
 crypto_provider:
@@ -112,8 +117,13 @@ crypto_provider:
     # - Gemalto NV
 
 tasks:
-  # - name: health_check
-  #   schedule: "every 60 seconds"
+  # publishes the CRLs that are due: an issuer without a CRL, or a CRL
+  # within crl_renewal of its next update
+  - name: crl_renewal
+    schedule: "every 10 minutes"
+  # marks expired certificates and applies ca.retention
+  - name: cert_status
+    schedule: "every 1 hour"
 
 servers:
   wfe:

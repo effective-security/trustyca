@@ -2,6 +2,8 @@ package tasks
 
 import (
 	"github.com/effective-security/porto/pkg/tasks"
+	"github.com/effective-security/trustyca/server/tasks/certstatus"
+	"github.com/effective-security/trustyca/server/tasks/crlrenewal"
 )
 
 // Status indicates whether the task failed or succeeded
@@ -15,7 +17,8 @@ const (
 	SUCCESS Status = 1
 )
 
-// Factory creates tasks
+// Factory creates tasks: it returns the function the application
+// container invokes with the dependencies of the task
 type Factory func(
 	scheduler tasks.Scheduler,
 	name string,
@@ -23,9 +26,8 @@ type Factory func(
 	args ...string,
 ) any
 
-// Factories provides map of Factory
+// Factories provides map of Factory by task name
 var Factories = map[string]Factory{
-	// certsmonitor.TaskName: certsmonitor.Factory,
-	// stats.TaskName:        stats.Factory,
-	// healthcheck.TaskName:  healthcheck.Factory,
+	crlrenewal.TaskName: crlrenewal.Factory,
+	certstatus.TaskName: certstatus.Factory,
 }

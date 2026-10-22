@@ -52,6 +52,17 @@ func GetCrlByIKID(args ...any) (string, string) {
 	})
 }
 
+// GetCrlsByIKIDs returns SQL query to find the current CRLs of the issuers
+// with the key identifiers; the argument is the array of IKIDs
+func GetCrlsByIKIDs(args ...any) (string, string) {
+	const key = "GetCrlsByIKIDs"
+	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
+		return schema.CrlTableInfo.
+			Select().
+			Where(schema.Crl.Ikid.Name+" = ANY(?)", nil)
+	})
+}
+
 // DeleteCrl returns SQL query to delete the CRL of an issuer by the exact
 // org scope (NULL for the platform) and IKID
 func DeleteCrl(args ...any) (string, string) {

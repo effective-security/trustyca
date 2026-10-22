@@ -47,7 +47,7 @@ const ServiceName = "ca"
 ```
 
 <a name="Factory"></a>
-## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L33>)
+## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L35>)
 
 ```go
 func Factory(server gserver.GServer) any
@@ -56,9 +56,9 @@ func Factory(server gserver.GServer) any
 Factory returns a factory of the service
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L23-L30>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L24-L32>)
 
-Service defines the CA service: issuers, trust anchors, profiles, certificates and revocation status of the org of the request. Issuers and profiles are resolved from the DB through the issuer registry of internal/ca, which caches the built issuers per row.
+Service defines the CA service: issuers, trust anchors, profiles, certificates, revocation status and CRLs of the org of the request. Issuers and profiles are resolved from the DB through the issuer registry of internal/ca, which caches the built issuers per row, and CRLs are signed by its publisher, which the crl\_renewal task shares.
 
 ```go
 type Service struct {
@@ -76,7 +76,7 @@ func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequ
 ActivateIssuer sets the externally signed certificate of a Pending issuer of the org and activates it; the certificate must be for the key of the issuer and its chain must verify
 
 <a name="Service.Close"></a>
-### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L67>)
+### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L70>)
 
 ```go
 func (s *Service) Close()
@@ -94,7 +94,7 @@ func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileReques
 DeleteProfile deletes a profile of the org
 
 <a name="Service.GetCRL"></a>
-### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L19>)
+### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L24>)
 
 ```go
 func (s *Service) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (*pb.CrlResponse, error)
@@ -139,7 +139,7 @@ func (s *Service) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest)
 ImportIssuer registers an issuer from an existing certificate and key: a key in a crypto provider by its URI, or a PEM key that is stored wrapped. The chain must verify to the given or the self\-signed root.
 
 <a name="Service.IsReady"></a>
-### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L62>)
+### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L65>)
 
 ```go
 func (s *Service) IsReady() bool
@@ -193,7 +193,7 @@ func (s *Service) ListRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.
 ListRoots returns the trust anchors of the org, newest first; a trusted service caller that names no org lists the platform anchors
 
 <a name="Service.Name"></a>
-### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L57>)
+### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L60>)
 
 ```go
 func (s *Service) Name() string
@@ -202,16 +202,16 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.PublishCrls"></a>
-### func \(\*Service\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L60>)
+### func \(\*Service\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L76>)
 
 ```go
 func (s *Service) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error)
 ```
 
-PublishCrls is the revocation pipeline of PLAN.md phase 4: it is not implemented yet and answers Unimplemented, so that a caller never gets an empty success
+PublishCrls publishes the CRLs that are due, or every CRL in scope when forced, and returns the CRLs it published. A tenant publishes for the issuers of its org: the one of the IKID, which must belong to the project when the request names one; the Active and Archived issuers of the project the request names, or of a restricted API key; or else the org\-wide issuers and those of the projects the caller may read. A trusted service caller that names no org publishes for every org and the platform, as the crl\_renewal task does in\-process. An issuer that does not publish CRLs \(Pending, Destroyed, expired\) is refused with a precondition failure when named by its IKID; in a scope it is skipped, and an issuer whose CRL fails is logged and counted, so the request fails after the others are published. Every published CRL records a CrlPublished event before the request fails, since a retry finds those CRLs fresh.
 
 <a name="Service.RegisterGRPC"></a>
-### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L72>)
+### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L75>)
 
 ```go
 func (s *Service) RegisterGRPC(r *grpc.Server)

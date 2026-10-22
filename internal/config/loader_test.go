@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/x/configloader"
@@ -62,6 +63,14 @@ func TestLoadYAML(t *testing.T) {
 	var c Configuration
 	_, err = f.Load(cfgFile, &c)
 	require.NoError(t, err, "failed to load config: %v", cfgFile)
+
+	// the CA section and the scheduled tasks of the dev configuration
+	assert.Equal(t, 5*time.Minute, c.CA.IssuerCacheTTL)
+	assert.Equal(t, 1000, c.CA.IssuerCacheSize)
+	assert.Zero(t, c.CA.Retention.ExpiredAfter, "expired certificates are kept")
+	require.Len(t, c.Tasks, 2)
+	assert.Equal(t, Task{Name: "crl_renewal", Schedule: "every 10 minutes"}, c.Tasks[0])
+	assert.Equal(t, Task{Name: "cert_status", Schedule: "every 1 hour"}, c.Tasks[1])
 }
 
 func TestLoadYAMLOverrideByHostname(t *testing.T) {

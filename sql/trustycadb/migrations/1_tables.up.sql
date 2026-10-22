@@ -514,6 +514,13 @@ CREATE INDEX IF NOT EXISTS idx_certificate_skid
     ON trustyca.certificate USING btree
     (skid COLLATE pg_catalog."default");
 
+-- the certificate status task marks expired certificates and applies the
+-- retention across every tenant: status = Active AND not_after < now(), and
+-- not_after < cutoff
+CREATE INDEX IF NOT EXISTS idx_certificate_notafter
+    ON trustyca.certificate USING btree
+    (not_after);
+
 --
 -- Revoked certificates
 --

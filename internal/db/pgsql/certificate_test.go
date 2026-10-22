@@ -407,3 +407,138 @@ func Test_Certificate_RegisterWithEvent(t *testing.T) {
 	assert.Equal(t, project.ID.UInt64(), events.Rows[0].ProjectID.UInt64())
 	assert.Equal(t, "ra@example.com", events.Rows[0].Email.String())
 }
+
+// Test_Certificate_Expiry covers the batches of the certificate status task:
+// expired Active certificates become Expired, and retention deletes expired
+// certificates of any status with their revocations. The certificates
+// expired decades ago, so the statements touch the rows of this test only.
+func Test_Certificate_Expiry(t *testing.T) {
+	_, org := setupOwnerAndOrg(t, "Test_Certificate_Expiry")
+	root := testutils.NewTestCA(t, "Expiry Root", nil)
+	ca := testutils.NewTestCA(t, "Expiry L2", root)
+	registerIssuer(t, newTestIssuer(org.ID, xdb.ID(0), "EXPIRY_L2", ca, pb.AuthorityType_Issuing, xdb.ID(0)))
+	orgID := org.ID.UInt64()
+
+	// the validity periods: ancient, old and current
+	ancientEnd := time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC)
+	oldEnd := time.Date(2002, 1, 1, 0, 0, 0, 0, time.UTC)
+	cutoff := time.Date(2003, 1, 1, 0, 0, 0, 0, time.UTC)
+	ancient := registerCertificate(t, ca.Issue(t, "ancient.example.com", ancientEnd.Add(-time.Hour), ancientEnd), ca, org.ID, xdb.ID(0), "peer", nil)
+	revoked := registerCertificate(t, ca.Issue(t, "revoked.example.com", ancientEnd.Add(-time.Hour), ancientEnd), ca, org.ID, xdb.ID(0), "peer", nil)
+	old := registerCertificate(t, ca.Issue(t, "old.example.com", oldEnd.Add(-time.Hour), oldEnd), ca, org.ID, xdb.ID(0), "peer", nil)
+	current := registerCertificate(t, ca.Issue(t, "current.example.com", time.Now().Add(-time.Minute), time.Now().Add(time.Hour)), ca, org.ID, xdb.ID(0), "peer", nil)
+	_, err := provider.RevokeCertificate(ctx, &query.RevokeCertificateRequest{
+		CertificateID: revoked.ID.UInt64(),
+		OrgID:         orgID,
+		Reason:        pb.ReasonCode_Superseded,
+	})
+	require.NoError(t, err)
+
+	status := func(id xdb.ID) pb.CertificateStatus_Enum {
+		t.Helper()
+		got, err := provider.GetCertificate(ctx, id.UInt64())
+		require.NoError(t, err)
+		return got.Status
+	}
+
+	// expire: the batches take the lowest IDs first, so the next batch
+	// continues without an offset; a Revoked certificate keeps its status
+	_, err = provider.ExpireCertificates(ctx, &query.ExpireCertificatesRequest{})
+	assert.EqualError(t, err, "expiry time is required")
+	_, err = provider.ExpireCertificates(ctx, &query.ExpireCertificatesRequest{Before: cutoff})
+	assert.EqualError(t, err, "limit is required")
+	n, err := provider.ExpireCertificates(ctx, &query.ExpireCertificatesRequest{Before: ancientEnd, Limit: 10})
+	require.NoError(t, err)
+	assert.EqualValues(t, 0, n, "nothing expired before the ancient end")
+	n, err = provider.ExpireCertificates(ctx, &query.ExpireCertificatesRequest{Before: cutoff, Limit: 1})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n)
+	assert.Equal(t, pb.CertificateStatus_Expired, status(ancient.ID), "the lowest ID first")
+	assert.Equal(t, pb.CertificateStatus_Active, status(old.ID))
+	n, err = provider.ExpireCertificates(ctx, &query.ExpireCertificatesRequest{Before: cutoff, Limit: 1})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n)
+	assert.Equal(t, pb.CertificateStatus_Expired, status(old.ID))
+	n, err = provider.ExpireCertificates(ctx, &query.ExpireCertificatesRequest{Before: cutoff, Limit: 1})
+	require.NoError(t, err)
+	assert.EqualValues(t, 0, n, "the batches are exhausted")
+	assert.Equal(t, pb.CertificateStatus_Revoked, status(revoked.ID))
+	assert.Equal(t, pb.CertificateStatus_Active, status(current.ID))
+
+	// retention: the certificates expired before the time are deleted with
+	// their revocations, whatever their status
+	_, err = provider.DeleteExpiredCertificates(ctx, &query.DeleteExpiredCertificatesRequest{})
+	assert.EqualError(t, err, "expiry time is required")
+	_, err = provider.DeleteExpiredCertificates(ctx, &query.DeleteExpiredCertificatesRequest{Before: cutoff})
+	assert.EqualError(t, err, "limit is required")
+	n, err = provider.DeleteExpiredCertificates(ctx, &query.DeleteExpiredCertificatesRequest{Before: oldEnd, Limit: 1})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n)
+	_, err = provider.GetCertificate(ctx, ancient.ID.UInt64())
+	assert.ErrorContains(t, err, "record not found", "the lowest ID first")
+	n, err = provider.DeleteExpiredCertificates(ctx, &query.DeleteExpiredCertificatesRequest{Before: oldEnd, Limit: 10})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n)
+	_, err = provider.GetCertificate(ctx, revoked.ID.UInt64())
+	assert.ErrorContains(t, err, "record not found")
+	_, err = provider.GetRevoked(ctx, &query.GetRevokedRequest{CertificateID: revoked.ID.UInt64()})
+	assert.ErrorContains(t, err, "record not found", "the revocation follows the certificate")
+	n, err = provider.DeleteExpiredCertificates(ctx, &query.DeleteExpiredCertificatesRequest{Before: oldEnd, Limit: 10})
+	require.NoError(t, err)
+	assert.EqualValues(t, 0, n)
+	assert.Equal(t, pb.CertificateStatus_Expired, status(old.ID), "not expired before the time")
+	n, err = provider.DeleteExpiredCertificates(ctx, &query.DeleteExpiredCertificatesRequest{Before: cutoff, Limit: 10})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n)
+	assert.Equal(t, pb.CertificateStatus_Active, status(current.ID))
+}
+
+// waitingExpiryQuery counts the sessions whose expiry statement waits for
+// a row lock
+const waitingExpiryQuery = `SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%trustyca.certificate WHERE status = % AND not_after < %'`
+
+// Test_Certificate_Expiry_Revoked checks that the expiry statement does not
+// overwrite a revocation it waited for: PostgreSQL rechecks the status of
+// the row the statement updates on the version the revocation committed
+func Test_Certificate_Expiry_Revoked(t *testing.T) {
+	_, org := setupOwnerAndOrg(t, "Test_Certificate_Expiry_Revoked")
+	root := testutils.NewTestCA(t, "Expiry Race Root", nil)
+	ca := testutils.NewTestCA(t, "Expiry Race L2", root)
+	registerIssuer(t, newTestIssuer(org.ID, xdb.ID(0), "EXPIRY_RACE_L2", ca, pb.AuthorityType_Issuing, xdb.ID(0)))
+	end := time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC)
+	crt := registerCertificate(t, ca.Issue(t, "race.example.com", end.Add(-time.Hour), end), ca, org.ID, xdb.ID(0), "peer", nil)
+	t.Cleanup(func() {
+		_, _ = provider.DeleteCertificate(ctx, org.ID.UInt64(), crt.ID.UInt64())
+	})
+
+	// the revocation locks the certificate row until it commits, as
+	// RevokeCertificate does
+	tx, err := provider.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer func() { _ = tx.Close() }()
+	forUpdate, _ := query.GetCertificateForUpdate()
+	_, err = xdb.QueryRow[model.Certificate](ctx, tx, forUpdate, crt.ID, query.OrgArg(org.ID.UInt64()))
+	require.NoError(t, err)
+
+	// the expiry statement selects the certificate and waits for the row
+	done := make(chan error, 1)
+	go func() {
+		_, err := provider.ExpireCertificates(ctx, &query.ExpireCertificatesRequest{Before: end.Add(time.Hour), Limit: 10})
+		done <- err
+	}()
+	require.Eventually(t, func() bool {
+		var waiting int
+		err := provider.QueryRowContext(ctx, waitingExpiryQuery).Scan(&waiting)
+		return err == nil && waiting > 0
+	}, 10*time.Second, 20*time.Millisecond, "the expiry statement waits for the lock")
+
+	// the revocation commits: the statement rechecks the row it waited for
+	setStatus, _ := query.UpdateCertificateStatus()
+	_, err = xdb.QueryRow[model.Certificate](ctx, tx, setStatus, pb.CertificateStatus_Revoked, crt.ID)
+	require.NoError(t, err)
+	require.NoError(t, tx.Commit())
+	require.NoError(t, <-done)
+	got, err := provider.GetCertificate(ctx, crt.ID.UInt64())
+	require.NoError(t, err)
+	assert.Equal(t, pb.CertificateStatus_Revoked, got.Status, "the revocation is kept")
+}

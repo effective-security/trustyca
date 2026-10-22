@@ -3484,6 +3484,19 @@ var PublishCrlsRequest_MessageDescription = &api.MessageDescription{
 			Documentation: `OrgID of the owning org; empty for all orgs`,
 		},
 		{
+			Name:          "ProjectID",
+			FullName:      "pb.PublishCrlsRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID limits the scope to the project: the issuer of the IKID
+must belong to it, and without an IKID the issuers of the project
+publish. Empty publishes for the org-wide issuers and the projects the
+caller may read; a project Admin names the project, and an API key
+restricted to a project publishes for its project.`,
+		},
+		{
 			Name:          "IKID",
 			FullName:      "pb.PublishCrlsRequest.IKID",
 			Type:          "string",

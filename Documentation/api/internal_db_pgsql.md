@@ -42,6 +42,7 @@ Lists page by offset or by a keyset cursor on id \(listRows\). The tests need th
   - [func \(p \*Provider\) DeleteAPIKey\(ctx context.Context, orgID, id uint64\) \(int64, error\)](<#Provider.DeleteAPIKey>)
   - [func \(p \*Provider\) DeleteCertificate\(ctx context.Context, orgID, id uint64\) \(int64, error\)](<#Provider.DeleteCertificate>)
   - [func \(p \*Provider\) DeleteCrl\(ctx context.Context, orgID uint64, ikid string\) \(int64, error\)](<#Provider.DeleteCrl>)
+  - [func \(p \*Provider\) DeleteExpiredCertificates\(ctx context.Context, req \*query.DeleteExpiredCertificatesRequest\) \(int64, error\)](<#Provider.DeleteExpiredCertificates>)
   - [func \(p \*Provider\) DeleteInvite\(ctx context.Context, r \*query.DeleteInviteRequest\) \(int64, error\)](<#Provider.DeleteInvite>)
   - [func \(p \*Provider\) DeleteInviteByID\(ctx context.Context, id uint64\) \(int64, error\)](<#Provider.DeleteInviteByID>)
   - [func \(p \*Provider\) DeleteIssuer\(ctx context.Context, orgID, id uint64\) \(int64, error\)](<#Provider.DeleteIssuer>)
@@ -53,6 +54,7 @@ Lists page by offset or by a keyset cursor on id \(listRows\). The tests need th
   - [func \(p \*Provider\) DeleteUser\(ctx context.Context, id uint64\) \(map\[string\]int64, error\)](<#Provider.DeleteUser>)
   - [func \(p \*Provider\) DeleteUserByEmail\(ctx context.Context, email string\) \(map\[string\]int64, error\)](<#Provider.DeleteUserByEmail>)
   - [func \(p \*Provider\) ExecContext\(ctx context.Context, query string, args ...any\) \(sql.Result, error\)](<#Provider.ExecContext>)
+  - [func \(p \*Provider\) ExpireCertificates\(ctx context.Context, req \*query.ExpireCertificatesRequest\) \(int64, error\)](<#Provider.ExpireCertificates>)
   - [func \(p \*Provider\) FindIssuer\(ctx context.Context, orgID, projectID uint64, label string\) \(\*model.Issuer, error\)](<#Provider.FindIssuer>)
   - [func \(p \*Provider\) FindOrg\(ctx context.Context, alias string\) \(\*model.Org, error\)](<#Provider.FindOrg>)
   - [func \(p \*Provider\) FindProfile\(ctx context.Context, orgID, projectID uint64, label string\) \(\*model.CertificateProfile, error\)](<#Provider.FindProfile>)
@@ -62,6 +64,7 @@ Lists page by offset or by a keyset cursor on id \(listRows\). The tests need th
   - [func \(p \*Provider\) GetCertificateByIssuerSerial\(ctx context.Context, ikid, serial string\) \(\*model.Certificate, error\)](<#Provider.GetCertificateByIssuerSerial>)
   - [func \(p \*Provider\) GetCertificateBySha256\(ctx context.Context, sha256 string\) \(\*model.Certificate, error\)](<#Provider.GetCertificateBySha256>)
   - [func \(p \*Provider\) GetCrl\(ctx context.Context, ikid string\) \(\*model.Crl, error\)](<#Provider.GetCrl>)
+  - [func \(p \*Provider\) GetCrls\(ctx context.Context, ikids \[\]string\) \(\[\]\*model.Crl, error\)](<#Provider.GetCrls>)
   - [func \(p \*Provider\) GetEvent\(ctx context.Context, id uint64\) \(\*model.Event, error\)](<#Provider.GetEvent>)
   - [func \(p \*Provider\) GetInvite\(ctx context.Context, id uint64\) \(\*model.Invite, error\)](<#Provider.GetInvite>)
   - [func \(p \*Provider\) GetInviteByOrgAndEmail\(ctx context.Context, orgID, projectID uint64, email string\) \(\*model.Invite, error\)](<#Provider.GetInviteByOrgAndEmail>)
@@ -333,13 +336,22 @@ func (p *Provider) DeleteCertificate(ctx context.Context, orgID, id uint64) (int
 DeleteCertificate deletes a certificate of the exact org scope \(a zero orgID is the platform\) and its revocation, and returns the number of deleted certificates. Certificates are audit records: the retention task and operators delete them, the tenant lifecycle does not.
 
 <a name="Provider.DeleteCrl"></a>
-### func \(\*Provider\) [DeleteCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L158>)
+### func \(\*Provider\) [DeleteCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L177>)
 
 ```go
 func (p *Provider) DeleteCrl(ctx context.Context, orgID uint64, ikid string) (int64, error)
 ```
 
 DeleteCrl deletes the current CRL of the issuer with the key identifier in the exact org scope \(a zero orgID is the platform\) and returns the number of deleted rows
+
+<a name="Provider.DeleteExpiredCertificates"></a>
+### func \(\*Provider\) [DeleteExpiredCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L271>)
+
+```go
+func (p *Provider) DeleteExpiredCertificates(ctx context.Context, req *query.DeleteExpiredCertificatesRequest) (int64, error)
+```
+
+DeleteExpiredCertificates deletes a batch of certificates of any status whose validity ended before the time, with their revocations, lowest IDs first, and returns the number of deleted certificates. The caller repeats the call until a batch is smaller than the limit. Retention is the only deletion of certificates the service performs itself.
 
 <a name="Provider.DeleteInvite"></a>
 ### func \(\*Provider\) [DeleteInvite](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/invite.go#L131>)
@@ -440,6 +452,15 @@ func (p *Provider) ExecContext(ctx context.Context, query string, args ...any) (
 
 ExecContext executes a query without returning any rows. The args are for any placeholder parameters in the query.
 
+<a name="Provider.ExpireCertificates"></a>
+### func \(\*Provider\) [ExpireCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/certificate.go#L251>)
+
+```go
+func (p *Provider) ExpireCertificates(ctx context.Context, req *query.ExpireCertificatesRequest) (int64, error)
+```
+
+ExpireCertificates sets the status of a batch of Active certificates whose validity ended before the time to Expired, lowest IDs first, and returns the number of certificates it changed. The caller repeats the call until a batch is smaller than the limit: a changed row leaves the set, so no offset is needed.
+
 <a name="Provider.FindIssuer"></a>
 ### func \(\*Provider\) [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L152>)
 
@@ -513,13 +534,22 @@ func (p *Provider) GetCertificateBySha256(ctx context.Context, sha256 string) (*
 GetCertificateBySha256 returns a certificate by its hex encoded SHA\-256 thumbprint
 
 <a name="Provider.GetCrl"></a>
-### func \(\*Provider\) [GetCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L120>)
+### func \(\*Provider\) [GetCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L121>)
 
 ```go
 func (p *Provider) GetCrl(ctx context.Context, ikid string) (*model.Crl, error)
 ```
 
 GetCrl returns the current CRL of the issuer with the key identifier
+
+<a name="Provider.GetCrls"></a>
+### func \(\*Provider\) [GetCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L136>)
+
+```go
+func (p *Provider) GetCrls(ctx context.Context, ikids []string) ([]*model.Crl, error)
+```
+
+GetCrls returns the current CRLs of the issuers with the key identifiers, in any order; an issuer without a CRL has none in the result. The CRL publisher reads the CRLs of a page of issuers in one query, so the list is bounded by the caller's page; no key identifiers read nothing.
 
 <a name="Provider.GetEvent"></a>
 ### func \(\*Provider\) [GetEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L78>)
@@ -711,7 +741,7 @@ func (p *Provider) ListCertificates(ctx context.Context, req *query.ListCertific
 ListCertificates lists certificates, newest first; the request names its org scope
 
 <a name="Provider.ListCrls"></a>
-### func \(\*Provider\) [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L133>)
+### func \(\*Provider\) [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L152>)
 
 ```go
 func (p *Provider) ListCrls(ctx context.Context, req *query.ListCrlsRequest) (*model.CrlResult, error)
@@ -846,7 +876,7 @@ func (p *Provider) NextID() xdb.ID
 NextID returns unique ID
 
 <a name="Provider.PublishCrl"></a>
-### func \(\*Provider\) [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L26>)
+### func \(\*Provider\) [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/crl.go#L27>)
 
 ```go
 func (p *Provider) PublishCrl(ctx context.Context, m *model.Crl) (*model.Crl, error)

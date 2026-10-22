@@ -3,6 +3,7 @@ package query
 import (
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
@@ -242,5 +243,110 @@ func ListCertificates(args ...any) (string, string) {
 		}
 		pageByID(q, p)
 		return q
+	})
+}
+
+// ExpireCertificatesRequest defines request to mark the Active certificates
+// whose validity ended before the time as Expired, a batch at a time. The
+// batch is the lowest IDs of the remaining Active certificates: the status
+// change removes a row from the set, so the next batch continues without an
+// offset (the certificate status task).
+type ExpireCertificatesRequest struct {
+	// Before is the time the validity ended before, typically now
+	Before time.Time
+	// Limit is the number of certificates one statement marks
+	Limit uint32
+}
+
+// Validate returns error if the request is not valid
+func (r *ExpireCertificatesRequest) Validate() error {
+	if r.Before.IsZero() {
+		return errors.New("expiry time is required")
+	}
+	if r.Limit == 0 {
+		return errors.New("limit is required")
+	}
+	return nil
+}
+
+// Args returns the positional arguments of ExpireCertificates: the Expired
+// status, the Active status of the updated rows, the Active status of the
+// batch, the time and the limit
+func (r *ExpireCertificatesRequest) Args() []any {
+	return []any{
+		pb.CertificateStatus_Expired,
+		pb.CertificateStatus_Active,
+		pb.CertificateStatus_Active,
+		r.Before.UTC(),
+		r.Limit,
+	}
+}
+
+// ExpireCertificates returns SQL query to set the status of a batch of
+// Active certificates that expired before a time to Expired: the arguments
+// are the Expired status, the Active status of the updated rows, the Active
+// status of the batch, the time and the batch limit. The batch subquery is
+// evaluated on the snapshot the statement started with, so the status is
+// checked again on the updated rows: PostgreSQL rechecks that predicate on
+// the current version of a row the statement waited for, and a certificate
+// RevokeCertificate revoked meanwhile keeps Revoked.
+func ExpireCertificates(args ...any) (string, string) {
+	const key = "ExpireCertificates"
+	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
+		return schema.CertificateTableInfo.
+			Update().
+			Set(schema.Certificate.Status.Name, nil).
+			Where(schema.Certificate.Status.Name+" = ?", nil).
+			Where(schema.Certificate.ID.Name+" IN (SELECT "+schema.Certificate.ID.Name+
+				" FROM "+schema.CertificateTableInfo.SchemaName+
+				" WHERE "+schema.Certificate.Status.Name+" = ? AND "+schema.Certificate.NotAfter.Name+" < ?"+
+				" ORDER BY "+schema.Certificate.ID.Name+" LIMIT ?)", nil, nil, nil)
+	})
+}
+
+// DeleteExpiredCertificatesRequest defines request to delete the
+// certificates of any status whose validity ended before the time, with
+// their revocations, a batch at a time (retention). The batch is the lowest
+// IDs of the remaining rows, so the next batch continues without an offset.
+type DeleteExpiredCertificatesRequest struct {
+	// Before is the time the validity ended before: now minus the retention
+	// period
+	Before time.Time
+	// Limit is the number of certificates one statement deletes
+	Limit uint32
+}
+
+// Validate returns error if the request is not valid
+func (r *DeleteExpiredCertificatesRequest) Validate() error {
+	if r.Before.IsZero() {
+		return errors.New("expiry time is required")
+	}
+	if r.Limit == 0 {
+		return errors.New("limit is required")
+	}
+	return nil
+}
+
+// Args returns the positional arguments of DeleteExpiredCertificates: the
+// time and the limit
+func (r *DeleteExpiredCertificatesRequest) Args() []any {
+	return []any{
+		r.Before.UTC(),
+		r.Limit,
+	}
+}
+
+// DeleteExpiredCertificates returns SQL query to delete a batch of
+// certificates that expired before a time; the revocations follow by
+// cascade. The arguments are the time and the batch limit.
+func DeleteExpiredCertificates(args ...any) (string, string) {
+	const key = "DeleteExpiredCertificates"
+	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
+		return schema.CertificateTableInfo.
+			DeleteFrom().
+			Where(schema.Certificate.ID.Name+" IN (SELECT "+schema.Certificate.ID.Name+
+				" FROM "+schema.CertificateTableInfo.SchemaName+
+				" WHERE "+schema.Certificate.NotAfter.Name+" < ?"+
+				" ORDER BY "+schema.Certificate.ID.Name+" LIMIT ?)", nil, nil)
 	})
 }

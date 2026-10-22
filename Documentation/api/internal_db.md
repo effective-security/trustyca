@@ -54,7 +54,7 @@ var (
 ```
 
 <a name="CaDb"></a>
-## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L208-L259>)
+## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L212-L272>)
 
 CaDb defines an interface for CRUD operations on the CA tables. Every mutation of an existing row names the exact org scope of the row \(a zero orgID is the platform\), so a row of another org is not found or not deleted. State changes that must agree are one transaction: a certificate and its issue event, a revocation and the certificate status, a CRL and the issuer's CRL number.
 
@@ -102,6 +102,15 @@ type CaDb interface {
     RevokeCertificate(ctx context.Context, req *query.RevokeCertificateRequest) (*model.RevokedCertificate, error)
     // DeleteCertificate deletes a certificate and its revocation
     DeleteCertificate(ctx context.Context, orgID, id uint64) (int64, error)
+    // ExpireCertificates sets a batch of Active certificates that expired
+    // before the time to Expired, lowest IDs first, and returns how many it
+    // changed; the certificate status task repeats it until a batch is
+    // smaller than the limit
+    ExpireCertificates(ctx context.Context, req *query.ExpireCertificatesRequest) (int64, error)
+    // DeleteExpiredCertificates deletes a batch of certificates of any
+    // status that expired before the time, with their revocations, lowest
+    // IDs first, and returns how many it deleted (retention)
+    DeleteExpiredCertificates(ctx context.Context, req *query.DeleteExpiredCertificatesRequest) (int64, error)
 
     // PublishCrl stores the current CRL of an issuer and records its number
     // on the issuer in one transaction; the CRL's IKID must be the issuer's
@@ -114,7 +123,7 @@ type CaDb interface {
 ```
 
 <a name="CaReadonlyDb"></a>
-## type [CaReadonlyDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L148-L200>)
+## type [CaReadonlyDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L148-L204>)
 
 CaReadonlyDb defines an interface for Read operations on the CA tables: issuers, trust anchors, profiles, certificates, revocations and CRLs. Rows with a zero OrgID are the platform's \(org\_id IS NULL\). A Get by ID returns the row of any scope and the caller verifies its org and project; a List names its org scope \(OrgID, Platform or AllOrgs\) or fails with ErrOrgScopeRequired.
 
@@ -169,6 +178,10 @@ type CaReadonlyDb interface {
 
     // GetCrl returns the current CRL of the issuer with the key identifier
     GetCrl(ctx context.Context, ikid string) (*model.Crl, error)
+    // GetCrls returns the current CRLs of the issuers with the key
+    // identifiers, in any order; an issuer without a CRL has none in the
+    // result. The list is bounded by the caller: a page of issuers.
+    GetCrls(ctx context.Context, ikids []string) ([]*model.Crl, error)
     // ListCrls lists the current CRLs, newest first
     ListCrls(ctx context.Context, req *query.ListCrlsRequest) (*model.CrlResult, error)
 }
@@ -306,7 +319,7 @@ type OrgsReadonlyDb interface {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L278-L283>)
+## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L291-L296>)
 
 Provider provides complete DB access
 
@@ -320,7 +333,7 @@ type Provider interface {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L286>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L299>)
 
 ```go
 func New(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator) (Provider, error)

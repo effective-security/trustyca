@@ -105,8 +105,11 @@ type CAClient interface {
 	ListRevokedCertificates(ctx context.Context, in *ListRevokedCertificatesRequest, opts ...grpc.CallOption) (*RevokedCertificatesResponse, error)
 	// GetCRL returns the current CRL of the issuer
 	GetCRL(ctx context.Context, in *GetCrlRequest, opts ...grpc.CallOption) (*CrlResponse, error)
-	// PublishCrls generates and publishes CRLs on demand.
-	// It is also invoked by the scheduled CRL renewal task.
+	// PublishCrls generates and publishes CRLs on demand: the CRL of the
+	// issuer of the IKID, or the due CRLs of the issuers in scope. A project
+	// Admin and an API key restricted to a project publish for their project.
+	// The scheduled CRL renewal task publishes the due CRLs of every org
+	// in-process.
 	PublishCrls(ctx context.Context, in *PublishCrlsRequest, opts ...grpc.CallOption) (*CrlsResponse, error)
 	// SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
 	SignOCSP(ctx context.Context, in *OCSPRequest, opts ...grpc.CallOption) (*OCSPResponse, error)
@@ -391,8 +394,11 @@ type CAServer interface {
 	ListRevokedCertificates(context.Context, *ListRevokedCertificatesRequest) (*RevokedCertificatesResponse, error)
 	// GetCRL returns the current CRL of the issuer
 	GetCRL(context.Context, *GetCrlRequest) (*CrlResponse, error)
-	// PublishCrls generates and publishes CRLs on demand.
-	// It is also invoked by the scheduled CRL renewal task.
+	// PublishCrls generates and publishes CRLs on demand: the CRL of the
+	// issuer of the IKID, or the due CRLs of the issuers in scope. A project
+	// Admin and an API key restricted to a project publish for their project.
+	// The scheduled CRL renewal task publishes the due CRLs of every org
+	// in-process.
 	PublishCrls(context.Context, *PublishCrlsRequest) (*CrlsResponse, error)
 	// SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
 	SignOCSP(context.Context, *OCSPRequest) (*OCSPResponse, error)

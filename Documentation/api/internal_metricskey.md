@@ -107,9 +107,10 @@ var (
 
     // CACrlPublished is counter metric for published CRL
     CACrlPublished = metrics.Describe{
-        Type: metrics.TypeCounter,
-        Name: "ca_crl_published",
-        Help: "provides the counter of published CRLs",
+        Type:         metrics.TypeCounter,
+        Name:         "ca_crl_published",
+        Help:         "provides the counter of published CRLs",
+        RequiredTags: []string{"ca"},
     }
 
     // CAOcspSigned is counter metric for signed ocsp

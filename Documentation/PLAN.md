@@ -291,19 +291,92 @@ Follow-ups:
    GET routes is a catch-all, since its base64 has '/' in it. The `ocsp_url` templates of `etc/dev/ca-config*.yaml`
    must point at `/v1/ocspi/:ISSUER_ID` (phase 5).
 
-## Phase 4: revocation pipeline
+## Phase 4: revocation pipeline (done)
 
-1. `PublishCrls` implementation and `server/tasks/crlrenewal` task; CRL number
-   increments in the same transaction as the `crl` upsert (`db.PublishCrl`).
-   The due issuers are `ListIssuers` (Active, then Archived, with `AllOrgs`)
-   minus `ListCrls` with `ExpiringBefore`: add a joined `ListIssuersDueForCrl`
-   or a status set filter if that is too many queries.
-2. `SignOCSP` with delegated responder support and `unknown` for foreign serials.
-3. `server/tasks/certstatus`: mark `Expired`, apply retention
-   (`ca.retention.expired_after`, default 0 = keep forever). Needs a bulk
-   `UPDATE certificate SET status = Expired WHERE status = Active AND
-not_after < ?` paged by id, and a bulk delete; the DB layer has neither.
-4. Tests: CRL contents after revoke, CRL number monotonicity, OCSP good/revoked/unknown.
+1. `internal/ca/crl.go` (done): `CrlPublisher` over `db.CaDb` and the
+   `Registry`, shared by the service and the renewal task. `PublishCrl`
+   signs the CRL of an Active or Archived issuer row when it is due
+   (`CrlDue`: no current CRL, or `next_update` within the `crl_renewal` of
+   the issuer settings), or when forced: the entries are the revocations of
+   the issuer whose certificate is still valid (`ListRevoked` with `IKID`
+   and `ValidAfter`, paged by cursor across every org, since the CRL is the
+   issuer's), with their reason codes; the validity is the `crl_expiry` of
+   the settings, capped at the expiry of the issuer certificate; the number
+   is the issuer's `crl_number + 1` and `db.PublishCrl` stores the CRL and
+   the number in one transaction. When another instance publishes first
+   (`ErrStaleCrlNumber`), the row is read again and the CRL signed once
+   more with the next number, unless the other instance's CRL is fresh and
+   the publish is not forced. `PublishCrls` runs over the Active, then the
+   Archived issuers of a scope (`ListIssuers` by status, paged by cursor),
+   reads the current CRLs of each page in one query (`db.GetCrls`) and
+   decides from the row settings whether a CRL is due before it loads the
+   issuer and its key, and counts the issuers it skipped (not due, or
+   whose certificate has expired) and those that failed (logged, the run
+   continues); the joined query of the plan was not needed.
+   `ErrIssuerExpired` names an issuer whose certificate no longer signs
+   CRLs.
+2. `server/service/ca/crl.go` (done): `PublishCrls` (`Admin,Security,APIKey`
+   with `ca:write`) publishes for the one issuer of the request's IKID,
+   authorized against its project with `rowAccess` and refused with a
+   precondition failure when it is Pending, Destroyed or expired, or for
+   the Active and Archived issuers of the project the request names
+   (`ProjectID`, which a project Admin and an API key restricted to a
+   project need, since the interceptor authorizes the request at that
+   project), or else of the org-wide scope and the projects the caller may
+   read; a `trustyca-*` caller that names no org publishes for every org
+   and the platform. Every published CRL records a `CrlPublished` event; a
+   run whose issuers failed, or whose listing failed after some CRLs were
+   published, records the events of the published CRLs, then fails with
+   Internal.
+3. `server/tasks/crlrenewal` (done): the `crl_renewal` task publishes the
+   due CRLs of every org and the platform through the same publisher,
+   records the `CrlPublished` events with the task as the source, and runs
+   at once when scheduled. `server/tasks/certstatus` (done): the
+   `cert_status` task marks expired Active certificates as Expired
+   (`db.ExpireCertificates`) and, with `ca.retention.expired_after`,
+   deletes the certificates of any status that expired longer ago than
+   that with their revocations (`db.DeleteExpiredCertificates`), in batches
+   of the lowest IDs (`UPDATE ... WHERE status = ? AND id IN (SELECT id ...
+   ORDER BY id LIMIT ?)`, the changed rows leave the set, so no offset; the
+   status outside the subquery is rechecked on the row a concurrent
+   revocation committed, so the revocation is kept) that the index
+   `idx_certificate_notafter` of migration 1 serves, bounded per run. The
+   dev configuration schedules both (`tasks:` of
+   `etc/dev/trustyca-config.yaml`).
+4. `SignOCSP` (done): the delegated responder is xpki's: an issuer whose
+   settings name `delegated_ocsp_profile` signs with a responder certificate
+   it issues lazily and renews before the OCSP expiry; a serial the issuer
+   never registered is `unknown`. Covered by `TestService_SignOCSP_Delegated`.
+5. Tests (done): `internal/ca/crl_test.go` over the fake DB (CRL contents
+   and reasons after revocations, expired entries left out, paging of the
+   entries, the renewal boundary, the number after a stale publish, the
+   failures, the run over a scope and its one CRL query per page);
+   `server/service/ca/crl_test.go` (`crlStore` behind the mock DB: the
+   authorization matrix, the project selector, events, Force, the scope of
+   every caller kind, a failing issuer, a listing that fails after a
+   publish, and the interceptor's `CheckAccess` for project Admins and API
+   keys); `server/tasks/crlrenewal` and `certstatus` (a run, the factory's
+   immediate run under a real scheduler, an invalid schedule); the DB tests
+   `Test_Certificate_Expiry` (batches, retention, the revocation follows
+   the certificate) and `Test_Certificate_Expiry_Revoked` (a revocation
+   the expiry statement waited for is kept); `e2e_test.go` publishes and reads the CRL of the
+   tenant root, verifies its signature, number and entry, and the number
+   after a forced publish.
+
+Follow-ups:
+
+1. A revocation does not publish a CRL: the certificate appears in the CRL
+   at the next due publish (the task schedule, or `crl_renewal` before
+   `next_update`), OCSP answers at once. Publishing in the background after
+   `RevokeCertificate`, or shortening the schedule, is a product choice.
+2. A new issuer has no CRL until the task runs (ten minutes in the dev
+   configuration); `RegisterIssuer` and `ActivateIssuer` could publish the
+   first CRL.
+3. `PublishCrls` over a scope hides the published CRLs when one issuer
+   fails, since gRPC returns either; the CRLs are stored and `GetCRL`
+   serves them.
+4. CRL `locations` stay empty until CRLs are published to object storage
+   (phase 7).
 
 ## Phase 5: CIS service
 

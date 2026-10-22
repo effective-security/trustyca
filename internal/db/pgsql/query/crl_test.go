@@ -35,6 +35,12 @@ ON CONFLICT ON CONSTRAINT unique_crl_ikid DO UPDATE SET
 RETURNING ` + schema.CrlTableInfo.AllColumns(),
 		},
 		{
+			query.GetCrlsByIKIDs, nil,
+			`SELECT ` + schema.CrlTableInfo.AllColumns() + ` 
+FROM trustyca.crl 
+WHERE ikid = ANY($1)`,
+		},
+		{
 			query.GetCrlByIKID, nil,
 			`SELECT ` + schema.CrlTableInfo.AllColumns() + ` 
 FROM trustyca.crl 

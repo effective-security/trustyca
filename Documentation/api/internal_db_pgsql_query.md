@@ -28,11 +28,13 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
 - [func CreateInvite\(args ...any\) \(string, string\)](<#CreateInvite>)
 - [func DeleteAPIKey\(args ...any\) \(string, string\)](<#DeleteAPIKey>)
 - [func DeleteCrl\(args ...any\) \(string, string\)](<#DeleteCrl>)
+- [func DeleteExpiredCertificates\(args ...any\) \(string, string\)](<#DeleteExpiredCertificates>)
 - [func DeleteInvite\(args ...any\) \(string, string\)](<#DeleteInvite>)
 - [func DeleteMember\(args ...any\) \(string, string\)](<#DeleteMember>)
 - [func DeleteRowByID\(args ...any\) \(string, string\)](<#DeleteRowByID>)
 - [func DeleteRowByOrgAndID\(args ...any\) \(string, string\)](<#DeleteRowByOrgAndID>)
 - [func EncodeCursor\(lastID xdb.ID\) string](<#EncodeCursor>)
+- [func ExpireCertificates\(args ...any\) \(string, string\)](<#ExpireCertificates>)
 - [func FindIssuer\(args ...any\) \(string, string\)](<#FindIssuer>)
 - [func FindProfile\(args ...any\) \(string, string\)](<#FindProfile>)
 - [func GetAPIKey\(args ...any\) \(string, string\)](<#GetAPIKey>)
@@ -40,6 +42,7 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
 - [func GetCertificateBySha256\(args ...any\) \(string, string\)](<#GetCertificateBySha256>)
 - [func GetCertificateForUpdate\(args ...any\) \(string, string\)](<#GetCertificateForUpdate>)
 - [func GetCrlByIKID\(args ...any\) \(string, string\)](<#GetCrlByIKID>)
+- [func GetCrlsByIKIDs\(args ...any\) \(string, string\)](<#GetCrlsByIKIDs>)
 - [func GetInvite\(args ...any\) \(string, string\)](<#GetInvite>)
 - [func GetIssuerBySKID\(args ...any\) \(string, string\)](<#GetIssuerBySKID>)
 - [func GetLoginBy\(args ...any\) \(string, string\)](<#GetLoginBy>)
@@ -92,10 +95,17 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
   - [func NewCursor\(lastID uint64\) Cursor](<#NewCursor>)
   - [func ParseCursor\(cursor string\) \(Cursor, error\)](<#ParseCursor>)
   - [func \(c Cursor\) IsSet\(\) bool](<#Cursor.IsSet>)
+  - [func \(c Cursor\) LastID\(\) uint64](<#Cursor.LastID>)
+- [type DeleteExpiredCertificatesRequest](<#DeleteExpiredCertificatesRequest>)
+  - [func \(r \*DeleteExpiredCertificatesRequest\) Args\(\) \[\]any](<#DeleteExpiredCertificatesRequest.Args>)
+  - [func \(r \*DeleteExpiredCertificatesRequest\) Validate\(\) error](<#DeleteExpiredCertificatesRequest.Validate>)
 - [type DeleteInviteRequest](<#DeleteInviteRequest>)
   - [func \(r \*DeleteInviteRequest\) QueryParams\(\) xdb.QueryParams](<#DeleteInviteRequest.QueryParams>)
 - [type DeleteMemberRequest](<#DeleteMemberRequest>)
   - [func \(r \*DeleteMemberRequest\) QueryParams\(\) xdb.QueryParams](<#DeleteMemberRequest.QueryParams>)
+- [type ExpireCertificatesRequest](<#ExpireCertificatesRequest>)
+  - [func \(r \*ExpireCertificatesRequest\) Args\(\) \[\]any](<#ExpireCertificatesRequest.Args>)
+  - [func \(r \*ExpireCertificatesRequest\) Validate\(\) error](<#ExpireCertificatesRequest.Validate>)
 - [type FindIssuerRequest](<#FindIssuerRequest>)
   - [func \(r \*FindIssuerRequest\) QueryParams\(\) xdb.QueryParams](<#FindIssuerRequest.QueryParams>)
 - [type FindProfileRequest](<#FindProfileRequest>)
@@ -211,13 +221,22 @@ func DeleteAPIKey(args ...any) (string, string)
 DeleteAPIKey returns SQL query to delete an API key of an org
 
 <a name="DeleteCrl"></a>
-## func [DeleteCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L57>)
+## func [DeleteCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L68>)
 
 ```go
 func DeleteCrl(args ...any) (string, string)
 ```
 
 DeleteCrl returns SQL query to delete the CRL of an issuer by the exact org scope \(NULL for the platform\) and IKID
+
+<a name="DeleteExpiredCertificates"></a>
+## func [DeleteExpiredCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L342>)
+
+```go
+func DeleteExpiredCertificates(args ...any) (string, string)
+```
+
+DeleteExpiredCertificates returns SQL query to delete a batch of certificates that expired before a time; the revocations follow by cascade. The arguments are the time and the batch limit.
 
 <a name="DeleteInvite"></a>
 ## func [DeleteInvite](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L112>)
@@ -256,13 +275,22 @@ func DeleteRowByOrgAndID(args ...any) (string, string)
 DeleteRowByOrgAndID returns SQL query to delete a row of a CA table by its exact org scope and ID: the first argument is the table info, the query arguments are the org ID \(NULL for the platform, see OrgArg\) and the row ID
 
 <a name="EncodeCursor"></a>
-## func [EncodeCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L60>)
+## func [EncodeCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L66>)
 
 ```go
 func EncodeCursor(lastID xdb.ID) string
 ```
 
 EncodeCursor returns the cursor of the page that follows the row with the ID
+
+<a name="ExpireCertificates"></a>
+## func [ExpireCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L293>)
+
+```go
+func ExpireCertificates(args ...any) (string, string)
+```
+
+ExpireCertificates returns SQL query to set the status of a batch of Active certificates that expired before a time to Expired: the arguments are the Expired status, the Active status of the updated rows, the Active status of the batch, the time and the batch limit. The batch subquery is evaluated on the snapshot the statement started with, so the status is checked again on the updated rows: PostgreSQL rechecks that predicate on the current version of a row the statement waited for, and a certificate RevokeCertificate revoked meanwhile keeps Revoked.
 
 <a name="FindIssuer"></a>
 ## func [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L169>)
@@ -292,7 +320,7 @@ func GetAPIKey(args ...any) (string, string)
 GetAPIKey returns API key by ID
 
 <a name="GetCertificateByIssuerSerial"></a>
-## func [GetCertificateByIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L139>)
+## func [GetCertificateByIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L140>)
 
 ```go
 func GetCertificateByIssuerSerial(args ...any) (string, string)
@@ -301,7 +329,7 @@ func GetCertificateByIssuerSerial(args ...any) (string, string)
 GetCertificateByIssuerSerial returns SQL query to find a certificate by its issuer key identifier and serial number
 
 <a name="GetCertificateBySha256"></a>
-## func [GetCertificateBySha256](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L128>)
+## func [GetCertificateBySha256](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L129>)
 
 ```go
 func GetCertificateBySha256(args ...any) (string, string)
@@ -310,7 +338,7 @@ func GetCertificateBySha256(args ...any) (string, string)
 GetCertificateBySha256 returns SQL query to find a certificate by its thumbprint
 
 <a name="GetCertificateForUpdate"></a>
-## func [GetCertificateForUpdate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L115>)
+## func [GetCertificateForUpdate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L116>)
 
 ```go
 func GetCertificateForUpdate(args ...any) (string, string)
@@ -326,6 +354,15 @@ func GetCrlByIKID(args ...any) (string, string)
 ```
 
 GetCrlByIKID returns SQL query to find the current CRL of an issuer
+
+<a name="GetCrlsByIKIDs"></a>
+## func [GetCrlsByIKIDs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L57>)
+
+```go
+func GetCrlsByIKIDs(args ...any) (string, string)
+```
+
+GetCrlsByIKIDs returns SQL query to find the current CRLs of the issuers with the key identifiers; the argument is the array of IKIDs
 
 <a name="GetInvite"></a>
 ## func [GetInvite](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L52>)
@@ -445,7 +482,7 @@ func ListAllColumns(args ...any) (string, string)
 ListAllColumns returns SQL query to list all columns
 
 <a name="ListCertificates"></a>
-## func [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L222>)
+## func [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L223>)
 
 ```go
 func ListCertificates(args ...any) (string, string)
@@ -454,7 +491,7 @@ func ListCertificates(args ...any) (string, string)
 ListCertificates returns SQL query to list certificates
 
 <a name="ListCrls"></a>
-## func [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L114>)
+## func [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L125>)
 
 ```go
 func ListCrls(args ...any) (string, string)
@@ -589,7 +626,7 @@ func RegisterAPIKey(args ...any) (string, string)
 RegisterAPIKey inserts a new API key into the database
 
 <a name="RegisterCertificate"></a>
-## func [RegisterCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L14>)
+## func [RegisterCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L15>)
 
 ```go
 func RegisterCertificate(args ...any) (string, string)
@@ -679,7 +716,7 @@ func SetIssuerCrlNumber(args ...any) (string, string)
 SetIssuerCrlNumber returns SQL query to record the number of a published CRL on the issuer whose SKID is the CRL's IKID. The number must be greater than the current one, so the CRL number of an IKID only grows: the arguments are the number, the issuer ID, the IKID and the number.
 
 <a name="UpdateCertificate"></a>
-## func [UpdateCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L77>)
+## func [UpdateCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L78>)
 
 ```go
 func UpdateCertificate(args ...any) (string, string)
@@ -688,7 +725,7 @@ func UpdateCertificate(args ...any) (string, string)
 UpdateCertificate returns SQL query to update a certificate
 
 <a name="UpdateCertificateStatus"></a>
-## func [UpdateCertificateStatus](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L101>)
+## func [UpdateCertificateStatus](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L102>)
 
 ```go
 func UpdateCertificateStatus(args ...any) (string, string)
@@ -797,6 +834,48 @@ func (c Cursor) IsSet() bool
 
 IsSet returns true when the request uses cursor pagination
 
+<a name="Cursor.LastID"></a>
+### func \(Cursor\) [LastID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L61>)
+
+```go
+func (c Cursor) LastID() uint64
+```
+
+LastID returns the ID of the last row of the previous page, after which the listing continues; zero for the first page
+
+<a name="DeleteExpiredCertificatesRequest"></a>
+## type [DeleteExpiredCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L311-L317>)
+
+DeleteExpiredCertificatesRequest defines request to delete the certificates of any status whose validity ended before the time, with their revocations, a batch at a time \(retention\). The batch is the lowest IDs of the remaining rows, so the next batch continues without an offset.
+
+```go
+type DeleteExpiredCertificatesRequest struct {
+    // Before is the time the validity ended before: now minus the retention
+    // period
+    Before time.Time
+    // Limit is the number of certificates one statement deletes
+    Limit uint32
+}
+```
+
+<a name="DeleteExpiredCertificatesRequest.Args"></a>
+### func \(\*DeleteExpiredCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L332>)
+
+```go
+func (r *DeleteExpiredCertificatesRequest) Args() []any
+```
+
+Args returns the positional arguments of DeleteExpiredCertificates: the time and the limit
+
+<a name="DeleteExpiredCertificatesRequest.Validate"></a>
+### func \(\*DeleteExpiredCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L320>)
+
+```go
+func (r *DeleteExpiredCertificatesRequest) Validate() error
+```
+
+Validate returns error if the request is not valid
+
 <a name="DeleteInviteRequest"></a>
 ## type [DeleteInviteRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L91-L96>)
 
@@ -842,6 +921,38 @@ func (r *DeleteMemberRequest) QueryParams() xdb.QueryParams
 ```
 
 QueryParams returns the query params builder
+
+<a name="ExpireCertificatesRequest"></a>
+## type [ExpireCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L254-L259>)
+
+ExpireCertificatesRequest defines request to mark the Active certificates whose validity ended before the time as Expired, a batch at a time. The batch is the lowest IDs of the remaining Active certificates: the status change removes a row from the set, so the next batch continues without an offset \(the certificate status task\).
+
+```go
+type ExpireCertificatesRequest struct {
+    // Before is the time the validity ended before, typically now
+    Before time.Time
+    // Limit is the number of certificates one statement marks
+    Limit uint32
+}
+```
+
+<a name="ExpireCertificatesRequest.Args"></a>
+### func \(\*ExpireCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L275>)
+
+```go
+func (r *ExpireCertificatesRequest) Args() []any
+```
+
+Args returns the positional arguments of ExpireCertificates: the Expired status, the Active status of the updated rows, the Active status of the batch, the time and the limit
+
+<a name="ExpireCertificatesRequest.Validate"></a>
+### func \(\*ExpireCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L262>)
+
+```go
+func (r *ExpireCertificatesRequest) Validate() error
+```
+
+Validate returns error if the request is not valid
 
 <a name="FindIssuerRequest"></a>
 ## type [FindIssuerRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L154-L158>)
@@ -969,7 +1080,7 @@ func (r *ListAPIKeysRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListCertificatesRequest"></a>
-## type [ListCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L153-L189>)
+## type [ListCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L154-L190>)
 
 ListCertificatesRequest defines request to list certificates, newest first. The request names its org scope: OrgID, Platform or AllOrgs; without ProjectID and Scope the certificates of every scope of the org are returned.
 
@@ -1014,7 +1125,7 @@ type ListCertificatesRequest struct {
 ```
 
 <a name="ListCertificatesRequest.QueryParams"></a>
-### func \(\*ListCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L197>)
+### func \(\*ListCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L198>)
 
 ```go
 func (r *ListCertificatesRequest) QueryParams() xdb.QueryParams
@@ -1023,7 +1134,7 @@ func (r *ListCertificatesRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListCertificatesRequest.Validate"></a>
-### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L192>)
+### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L193>)
 
 ```go
 func (r *ListCertificatesRequest) Validate() error
@@ -1032,7 +1143,7 @@ func (r *ListCertificatesRequest) Validate() error
 Validate returns ErrOrgScopeRequired when the request names no org scope
 
 <a name="ListCrlsRequest"></a>
-## type [ListCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L71-L94>)
+## type [ListCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L82-L105>)
 
 ListCrlsRequest defines request to list the current CRLs, newest first. The request names its org scope: OrgID, Platform or AllOrgs; the CRL renewal task lists every org with ExpiringBefore set to now plus the renewal period.
 
@@ -1064,7 +1175,7 @@ type ListCrlsRequest struct {
 ```
 
 <a name="ListCrlsRequest.QueryParams"></a>
-### func \(\*ListCrlsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L102>)
+### func \(\*ListCrlsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L113>)
 
 ```go
 func (r *ListCrlsRequest) QueryParams() xdb.QueryParams
@@ -1073,7 +1184,7 @@ func (r *ListCrlsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListCrlsRequest.Validate"></a>
-### func \(\*ListCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L97>)
+### func \(\*ListCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L108>)
 
 ```go
 func (r *ListCrlsRequest) Validate() error
@@ -1490,7 +1601,7 @@ type RevokeCertificateRequest struct {
 ```
 
 <a name="UpdateCertificateRequest"></a>
-## type [UpdateCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L47-L58>)
+## type [UpdateCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L48-L59>)
 
 UpdateCertificateRequest defines request to update the mutable, client\-provided columns of a certificate. A nil Label, Metadata or Locations keeps the current value; an empty one clears it.
 
@@ -1510,7 +1621,7 @@ type UpdateCertificateRequest struct {
 ```
 
 <a name="UpdateCertificateRequest.QueryParams"></a>
-### func \(\*UpdateCertificateRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L61>)
+### func \(\*UpdateCertificateRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L62>)
 
 ```go
 func (r *UpdateCertificateRequest) QueryParams() xdb.QueryParams

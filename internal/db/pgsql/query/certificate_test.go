@@ -50,6 +50,23 @@ WHERE id = $2
 RETURNING ` + schema.CertificateTableInfo.AllColumns(),
 		},
 		{
+			// the certificate status task: a batch of the lowest IDs of
+			// the Active certificates that expired before the time
+			// the status of the updated rows is checked again, on the row
+			// version a concurrent revocation committed
+			query.ExpireCertificates, nil,
+			`UPDATE trustyca.certificate 
+SET status=$1 
+WHERE status = $2 AND id IN (SELECT id FROM trustyca.certificate WHERE status = $3 AND not_after < $4 ORDER BY id LIMIT $5)`,
+		},
+		{
+			// retention: a batch of the lowest IDs of the certificates
+			// that expired before the time, of any status
+			query.DeleteExpiredCertificates, nil,
+			`DELETE FROM trustyca.certificate 
+WHERE id IN (SELECT id FROM trustyca.certificate WHERE not_after < $1 ORDER BY id LIMIT $2)`,
+		},
+		{
 			query.GetCertificateForUpdate, nil,
 			`SELECT ` + schema.CertificateTableInfo.AllColumns() + ` 
 FROM trustyca.certificate 
