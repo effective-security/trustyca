@@ -11,6 +11,7 @@ import (
 	"github.com/effective-security/porto/pkg/tasks"
 	"github.com/effective-security/trustyca/api/pb"
 	core "github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
@@ -55,7 +56,7 @@ func newTestCA(t *testing.T, ctrl *gomock.Controller) *testCA {
 	dp, err := dataprotection.NewSymmetric([]byte(testDPSeed))
 	require.NoError(t, err)
 	keys := core.NewKeys(crypto, dp)
-	profile, err := core.ProfileFromPb(&pb.CertProfile{
+	profile, err := pbconv.ProfileFromPb(&pb.CertProfile{
 		Label:       testRootLabel,
 		IssuerLabel: model.AnyIssuerLabel,
 		Expiry:      "8760h",

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/authority"
 	"github.com/effective-security/xpki/certutil"
@@ -109,7 +110,7 @@ func BenchmarkAuthority_Sign(b *testing.B) {
 	f, csrPEM := benchFixture(b)
 	auth, err := authority.NewAuthority(&authority.Config{Authority: &authority.CAConfig{}}, nil)
 	require.NoError(b, err)
-	profile, err := ca.ProfileFromPb(peerProfileDef(peerProfile, issuerLabel, "168h"))
+	profile, err := pbconv.ProfileFromPb(peerProfileDef(peerProfile, issuerLabel, "168h"))
 	require.NoError(b, err)
 	for i := range benchOrgs {
 		orgID := xdb.NewID(uint64(i + 1))
@@ -155,7 +156,7 @@ func BenchmarkAuthority_GetIssuerByProfile(b *testing.B) {
 	h := f.org(xdb.NewID(1))
 	signer, err := f.keys.Signer(f.ctx, h.issuer)
 	require.NoError(b, err)
-	profile, err := ca.ProfileFromPb(peerProfileDef(peerProfile, "1_L2", "168h"))
+	profile, err := pbconv.ProfileFromPb(peerProfileDef(peerProfile, "1_L2", "168h"))
 	require.NoError(b, err)
 	issuer, err := authority.CreateIssuer(&authority.IssuerConfig{
 		Label:    "1_L2",

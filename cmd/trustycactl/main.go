@@ -22,6 +22,7 @@ type app struct {
 
 	Org     admin.OrgCmd     `cmd:"" help:"org commands"`
 	Project admin.ProjectCmd `cmd:"" help:"project commands"`
+	CA      admin.CACmd      `cmd:"" name:"ca" help:"Certification Authority commands"`
 }
 
 func main() {

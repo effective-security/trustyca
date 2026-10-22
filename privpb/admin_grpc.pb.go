@@ -21,8 +21,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Admin_ListOrgs_FullMethodName     = "/privpb.Admin/ListOrgs"
-	Admin_ListProjects_FullMethodName = "/privpb.Admin/ListProjects"
+	Admin_ListOrgs_FullMethodName         = "/privpb.Admin/ListOrgs"
+	Admin_ListProjects_FullMethodName     = "/privpb.Admin/ListProjects"
+	Admin_ListIssuers_FullMethodName      = "/privpb.Admin/ListIssuers"
+	Admin_ListCertificates_FullMethodName = "/privpb.Admin/ListCertificates"
 )
 
 // AdminClient is the client API for Admin service.
@@ -68,6 +70,14 @@ type AdminClient interface {
 	//option (es.api.cli_cmd) = "org delete";
 	//}
 	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*pb.ProjectsResponse, error)
+	// ListIssuers lists the issuers of every org and of the platform, newest
+	// first, for support staff; the tenant view of an org is CA.ListIssuers.
+	// Private key material is never returned.
+	ListIssuers(ctx context.Context, in *ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error)
+	// ListCertificates lists the certificates of every org and of the
+	// platform, newest first, for support staff; the tenant view of an org
+	// is CA.ListCertificates
+	ListCertificates(ctx context.Context, in *ListCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error)
 }
 
 type adminClient struct {
@@ -92,6 +102,26 @@ func (c *adminClient) ListProjects(ctx context.Context, in *ListProjectsRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.ProjectsResponse)
 	err := c.cc.Invoke(ctx, Admin_ListProjects_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminClient) ListIssuers(ctx context.Context, in *ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.IssuersResponse)
+	err := c.cc.Invoke(ctx, Admin_ListIssuers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminClient) ListCertificates(ctx context.Context, in *ListCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.CertificatesResponse)
+	err := c.cc.Invoke(ctx, Admin_ListCertificates_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +171,14 @@ type AdminServer interface {
 	//option (es.api.cli_cmd) = "org delete";
 	//}
 	ListProjects(context.Context, *ListProjectsRequest) (*pb.ProjectsResponse, error)
+	// ListIssuers lists the issuers of every org and of the platform, newest
+	// first, for support staff; the tenant view of an org is CA.ListIssuers.
+	// Private key material is never returned.
+	ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error)
+	// ListCertificates lists the certificates of every org and of the
+	// platform, newest first, for support staff; the tenant view of an org
+	// is CA.ListCertificates
+	ListCertificates(context.Context, *ListCertificatesRequest) (*pb.CertificatesResponse, error)
 }
 
 // UnimplementedAdminServer should be embedded to have
@@ -155,6 +193,12 @@ func (UnimplementedAdminServer) ListOrgs(context.Context, *ListOrgsRequest) (*pb
 }
 func (UnimplementedAdminServer) ListProjects(context.Context, *ListProjectsRequest) (*pb.ProjectsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListProjects not implemented")
+}
+func (UnimplementedAdminServer) ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListIssuers not implemented")
+}
+func (UnimplementedAdminServer) ListCertificates(context.Context, *ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCertificates not implemented")
 }
 func (UnimplementedAdminServer) testEmbeddedByValue() {}
 
@@ -212,6 +256,42 @@ func _Admin_ListProjects_Handler(srv any, ctx context.Context, dec func(any) err
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Admin_ListIssuers_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListIssuersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServer).ListIssuers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Admin_ListIssuers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(AdminServer).ListIssuers(ctx, req.(*ListIssuersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Admin_ListCertificates_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListCertificatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServer).ListCertificates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Admin_ListCertificates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(AdminServer).ListCertificates(ctx, req.(*ListCertificatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Admin_ServiceDesc is the grpc.ServiceDesc for Admin service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -226,6 +306,14 @@ var Admin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjects",
 			Handler:    _Admin_ListProjects_Handler,
+		},
+		{
+			MethodName: "ListIssuers",
+			Handler:    _Admin_ListIssuers_Handler,
+		},
+		{
+			MethodName: "ListCertificates",
+			Handler:    _Admin_ListCertificates_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -109,6 +109,16 @@ LIMIT $5
 OFFSET $6`,
 		},
 		{
+			// a platform issuer by label, for the admin
+			query.ListIssuers, []any{&query.ListIssuersRequest{Platform: true, Label: "trusty.l1", Limit: 10}},
+			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 
+FROM trustyca.issuer 
+WHERE org_id IS NULL AND label = $1 
+ORDER BY id DESC 
+LIMIT $2 
+OFFSET $3`,
+		},
+		{
 			// platform rows of project scope, cursor page
 			query.ListIssuers, []any{&query.ListIssuersRequest{Platform: true, Scope: pb.Scope_Project, Status: pb.IssuerStatus_Active, Limit: 10, Cursor: cursor}},
 			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 

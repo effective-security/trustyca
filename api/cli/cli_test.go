@@ -151,6 +151,8 @@ func TestClients(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = cl.Cli.OrgsClient()
 	assert.NoError(t, err)
+	_, err = cl.Cli.CISClient()
+	assert.NoError(t, err)
 
 	cl.Cli.HTTP = true
 	_, err = cl.Cli.HTTPClient(true)
@@ -158,6 +160,8 @@ func TestClients(t *testing.T) {
 	_, err = cl.Cli.StatusClient()
 	assert.NoError(t, err)
 	_, err = cl.Cli.OrgsClient()
+	assert.NoError(t, err)
+	_, err = cl.Cli.CISClient()
 	assert.NoError(t, err)
 }
 

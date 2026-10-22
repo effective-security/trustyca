@@ -1,0 +1,10 @@
+---
+# Delegated OCSP responder certificate. The profile binds to any issuer of
+# the org that lists it in its allowed profiles (`--ocsp-profile ocsp`).
+description: Delegated OCSP responder certificate
+issuer_label: "*"
+expiry: 168h
+backdate: 30m
+usages:
+  - ocsp signing
+ocsp_no_check: true

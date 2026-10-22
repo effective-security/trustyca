@@ -16,10 +16,12 @@ const ServiceName = "admin"
 
 var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca/server/service", ServiceName)
 
-// Service defines the Admin service
+// Service defines the Admin service: the support views across orgs. It
+// reads the CA tables through db.CaReadonlyDb and holds no issuer keys.
 type Service struct {
 	server         gserver.GServer
 	db             db.OrgsDb
+	ca             db.CaReadonlyDb
 	dataprotection dataprotection.Provider
 }
 
@@ -29,10 +31,11 @@ func Factory(server gserver.GServer) any {
 		logger.Panic("admin.Factory: invalid parameter")
 	}
 
-	return func(orgsDb db.OrgsDb, dataprotection dataprotection.Provider) {
+	return func(orgsDb db.OrgsDb, caDb db.CaReadonlyDb, dataprotection dataprotection.Provider) {
 		svc := &Service{
 			server:         server,
 			db:             orgsDb,
+			ca:             caDb,
 			dataprotection: dataprotection,
 		}
 

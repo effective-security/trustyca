@@ -128,7 +128,7 @@ gen_test_certs: trusty_root
 		--key-label test_ \
 		--root-ca $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.pem \
 		--root-ca-key $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.key \
-		--ca1 --ca2  --bundle --server --peer --client --ra --cis --force
+		--ca1 --ca2  --bundle --server --peer --client --admin --ra --cis --force
 
 start-localstack:
 	echo "*** starting localstack"
@@ -257,7 +257,7 @@ docs:
 	echo "*** generating Docs"
 	rm -rf Documentation/api
 	mkdir -p Documentation/api
-	for pkg in $$(go list ./... | grep -v '/tests/' | grep -v '/mocks/' | grep -v '/pb/' | grep -v '/privpb/'); do \
+	for pkg in $$(go list ./... | grep -v '/cmd/' | grep -v '/tests/' | grep -v '/mocks/' | grep -v '/pb/' | grep -v '/privpb/'| grep -v 'api/cli/' | grep -v 'internal/ctl/'| grep -v 'server/tasks'); do \
 		out=Documentation/api/$$(echo $$pkg | sed 's#${REPO_NAME}/##; s#/#_#g').md; \
 		gomarkdoc --output $$out --repository.default-branch main $$pkg || exit 1; \
 	done

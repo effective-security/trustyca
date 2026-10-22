@@ -13,6 +13,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/xdb"
@@ -378,7 +379,7 @@ func (r *Registry) build(ctx context.Context, row *model.Issuer) (*issuerEntry, 
 	if err != nil {
 		return nil, err
 	}
-	acfg, err := IssuerConfigFromPb(row.Label, cfg)
+	acfg, err := pbconv.IssuerConfigFromPb(row.Label, cfg)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "invalid config of issuer %s", id)
 	}
@@ -470,7 +471,7 @@ func AuthorityProfile(p *model.CertificateProfile) (*authority.CertProfile, erro
 	if err != nil {
 		return nil, err
 	}
-	ap, err := ProfileFromPb(def)
+	ap, err := pbconv.ProfileFromPb(def)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "profile %s", idString(p.ID))
 	}

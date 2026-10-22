@@ -16,8 +16,9 @@ the backend listener and the CA client; phase 4: CRL publishing
 (`internal/ca.CrlPublisher`, `PublishCrls`, the `crl_renewal` task) and the
 `cert_status` task (expiry and retention); phase 5: the CIS service
 (`server/service/cis`: the public AIA, CRL and OCSP routes, the JSON API
-and the OCSP response cache). The operator tooling and hardening (6 and 7)
-are planned in PLAN.md.
+and the OCSP response cache); phase 6: the operator tooling (`trustycactl ca
+...` and `ca org bootstrap`, the `privpb.Admin` support lists across orgs,
+the CIS commands of `trustyca`). The hardening (7) is planned in PLAN.md.
 
 ## Active work
 

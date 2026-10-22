@@ -36,17 +36,10 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 - [Variables](<#variables>)
 - [func AuthorityProfile\(p \*model.CertificateProfile\) \(\*authority.CertProfile, error\)](<#AuthorityProfile>)
 - [func CrlDue\(current \*model.Crl, renewal time.Duration, now time.Time\) bool](<#CrlDue>)
-- [func ExpandIssuerURL\(template, skid string\) string](<#ExpandIssuerURL>)
-- [func ExtensionsFromPb\(list \[\]\*pb.X509Extension\) \(\[\]csr.X509Extension, error\)](<#ExtensionsFromPb>)
-- [func ExtensionsToPb\(list \[\]csr.X509Extension\) \[\]\*pb.X509Extension](<#ExtensionsToPb>)
 - [func IsKeyURI\(key string\) bool](<#IsKeyURI>)
 - [func IsSelfSigned\(crt \*x509.Certificate\) bool](<#IsSelfSigned>)
-- [func IssuerConfigFromPb\(label string, c \*pb.IssuerConfig\) \(\*authority.IssuerConfig, error\)](<#IssuerConfigFromPb>)
-- [func IssuerConfigToPb\(c \*authority.IssuerConfig\) \*pb.IssuerConfig](<#IssuerConfigToPb>)
 - [func KeyLabel\(orgID, projectID xdb.ID, label string\) string](<#KeyLabel>)
 - [func KeySpec\(spec \*pb.KeySpec\) \(string, int, error\)](<#KeySpec>)
-- [func ProfileFromPb\(p \*pb.CertProfile\) \(\*authority.CertProfile, error\)](<#ProfileFromPb>)
-- [func ProfileToPb\(label string, p \*authority.CertProfile\) \*pb.CertProfile](<#ProfileToPb>)
 - [func PublicKeysEqual\(a, b crypto.PublicKey\) bool](<#PublicKeysEqual>)
 - [func SubjectKeyID\(pub crypto.PublicKey\) \(string, error\)](<#SubjectKeyID>)
 - [type BootstrapResult](<#BootstrapResult>)
@@ -96,15 +89,6 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 
 
 ## Constants
-
-<a name="IssuerIDVariable"></a>The placeholders of the issuer in the AIA, CRL and OCSP URL templates of an issuer configuration: \`$\{ISSUER\_ID\}\` of the API and \`:ISSUER\_ID\`, which the config loader does not expand as an environment variable. Both are replaced with the Subject Key Identifier of the issuer.
-
-```go
-const (
-    IssuerIDVariable    = "${ISSUER_ID}"
-    IssuerIDPlaceholder = ":ISSUER_ID"
-)
-```
 
 <a name="SoftwareKeyProvider"></a>
 
@@ -180,7 +164,7 @@ var (
 ```
 
 <a name="AuthorityProfile"></a>
-## func [AuthorityProfile](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L468>)
+## func [AuthorityProfile](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L469>)
 
 ```go
 func AuthorityProfile(p *model.CertificateProfile) (*authority.CertProfile, error)
@@ -189,40 +173,13 @@ func AuthorityProfile(p *model.CertificateProfile) (*authority.CertProfile, erro
 AuthorityProfile converts a profile row to the profile the authority signs with. It reads the row only: a row the registry returned is shared with other requests, and its IDs must not be formatted \(model.Definition\).
 
 <a name="CrlDue"></a>
-## func [CrlDue](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L394>)
+## func [CrlDue](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L395>)
 
 ```go
 func CrlDue(current *model.Crl, renewal time.Duration, now time.Time) bool
 ```
 
 CrlDue reports whether a CRL must be published at the time: the issuer has none, or the next update of the current one is within the renewal period
-
-<a name="ExpandIssuerURL"></a>
-## func [ExpandIssuerURL](<https://github.com/effective-security/trustyca/blob/main/internal/ca/config.go#L84>)
-
-```go
-func ExpandIssuerURL(template, skid string) string
-```
-
-ExpandIssuerURL returns the URL of an AIA, CRL or OCSP template of an issuer with its Subject Key Identifier in place of the placeholders, as the authority puts it in the certificates it issues
-
-<a name="ExtensionsFromPb"></a>
-## func [ExtensionsFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/profile.go#L159>)
-
-```go
-func ExtensionsFromPb(list []*pb.X509Extension) ([]csr.X509Extension, error)
-```
-
-ExtensionsFromPb converts the extensions of a request or a profile; the value stays encoded, as csr.X509Extension expects it
-
-<a name="ExtensionsToPb"></a>
-## func [ExtensionsToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/profile.go#L182>)
-
-```go
-func ExtensionsToPb(list []csr.X509Extension) []*pb.X509Extension
-```
-
-ExtensionsToPb converts the extensions of an authority profile
 
 <a name="IsKeyURI"></a>
 ## func [IsKeyURI](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L88>)
@@ -234,31 +191,13 @@ func IsKeyURI(key string) bool
 IsKeyURI returns true when the key is a reference to a key in a crypto provider rather than key material
 
 <a name="IsSelfSigned"></a>
-## func [IsSelfSigned](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L399>)
+## func [IsSelfSigned](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L400>)
 
 ```go
 func IsSelfSigned(crt *x509.Certificate) bool
 ```
 
 IsSelfSigned reports whether the certificate is its own issuer
-
-<a name="IssuerConfigFromPb"></a>
-## func [IssuerConfigFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/config.go#L16>)
-
-```go
-func IssuerConfigFromPb(label string, c *pb.IssuerConfig) (*authority.IssuerConfig, error)
-```
-
-IssuerConfigFromPb converts the runtime settings of an issuer row to the configuration of the authority issuer with the label. The AIA section is always present, so that the CRL and OCSP timings fall back to the authority defaults when the row does not set them; the profiles are empty and are registered by the Registry.
-
-<a name="IssuerConfigToPb"></a>
-## func [IssuerConfigToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/config.go#L55>)
-
-```go
-func IssuerConfigToPb(c *authority.IssuerConfig) *pb.IssuerConfig
-```
-
-IssuerConfigToPb converts the configuration of a ca\-config issuer to the runtime settings stored on its row: the AIA section, the allowed profiles and the extension policy. File locations and the loaded profiles are not settings of the row.
 
 <a name="KeyLabel"></a>
 ## func [KeyLabel](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L82>)
@@ -277,24 +216,6 @@ func KeySpec(spec *pb.KeySpec) (string, int, error)
 ```
 
 KeySpec returns the algorithm and size of the key to generate for a request; a nil or empty specification takes the defaults, and a size the algorithm does not accept is an error
-
-<a name="ProfileFromPb"></a>
-## func [ProfileFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/profile.go#L17>)
-
-```go
-func ProfileFromPb(p *pb.CertProfile) (*authority.CertProfile, error)
-```
-
-ProfileFromPb converts a profile definition to the authority profile that signs with it and validates it with authority.CertProfile.Validate, which also compiles the allowed name patterns. The identity fields of the definition \(ID, scope, status and timestamps\) are not part of the result.
-
-<a name="ProfileToPb"></a>
-## func [ProfileToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/profile.go#L108>)
-
-```go
-func ProfileToPb(label string, p *authority.CertProfile) *pb.CertProfile
-```
-
-ProfileToPb converts an authority profile, such as one loaded from a ca\-config file, to the profile definition stored for the label
 
 <a name="PublicKeysEqual"></a>
 ## func [PublicKeysEqual](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L347>)
@@ -315,7 +236,7 @@ func SubjectKeyID(pub crypto.PublicKey) (string, error)
 SubjectKeyID returns the key identifier of a public key: the SHA\-1 of its subjectPublicKey bits \(RFC 5280 section 4.2.1.2 method 1\). It is the identifier the CA puts in the certificates it issues, the IKID of the certificates the key signs and the issuer key hash of their OCSP requests, so a Pending issuer is identified by it before it has a certificate.
 
 <a name="BootstrapResult"></a>
-## type [BootstrapResult](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L25-L37>)
+## type [BootstrapResult](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L26-L38>)
 
 BootstrapResult counts the rows a bootstrap registered or updated
 
@@ -336,7 +257,7 @@ type BootstrapResult struct {
 ```
 
 <a name="CrlPublisher"></a>
-## type [CrlPublisher](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L55-L58>)
+## type [CrlPublisher](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L56-L59>)
 
 CrlPublisher signs and stores the CRLs of the issuers \(DESIGN.md section 8\). The PublishCrls method of the CA service and the crl\_renewal task share it: a CRL is published when the issuer has none, when the current one is within the renewal period of its next update, or on demand. The CRL number is the issuer's current number plus one, and db.PublishCrl stores the CRL and the number in one transaction, refusing a number that is not greater than the issuer's: when another instance publishes first, the CRL is signed again with the next number.
 
@@ -349,7 +270,7 @@ type CrlPublisher struct {
 ```
 
 <a name="NewCrlPublisher"></a>
-### func [NewCrlPublisher](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L62>)
+### func [NewCrlPublisher](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L63>)
 
 ```go
 func NewCrlPublisher(caDb db.CaDb, registry *Registry) *CrlPublisher
@@ -358,7 +279,7 @@ func NewCrlPublisher(caDb db.CaDb, registry *Registry) *CrlPublisher
 NewCrlPublisher returns a publisher over the CA tables and the registry that loads the issuers
 
 <a name="CrlPublisher.PublishCrl"></a>
-### func \(\*CrlPublisher\) [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L201>)
+### func \(\*CrlPublisher\) [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L202>)
 
 ```go
 func (p *CrlPublisher) PublishCrl(ctx context.Context, row *model.Issuer, force bool) (*model.Crl, bool, error)
@@ -367,7 +288,7 @@ func (p *CrlPublisher) PublishCrl(ctx context.Context, row *model.Issuer, force 
 PublishCrl signs and stores the CRL of the issuer row when it is due \(CrlDue with the renewal period of the issuer settings\), or when forced, and returns the CRL and true. When the current CRL \(db.GetCrl\) is not due it is returned with false. The row must be an Active or Archived issuer whose certificate is valid; its CRL number is the current one, so the row comes from the DB, not from a cache.
 
 <a name="CrlPublisher.PublishCrls"></a>
-### func \(\*CrlPublisher\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L106>)
+### func \(\*CrlPublisher\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L107>)
 
 ```go
 func (p *CrlPublisher) PublishCrls(ctx context.Context, req *PublishCrlsRequest) (*PublishCrlsResult, error)
@@ -376,7 +297,7 @@ func (p *CrlPublisher) PublishCrls(ctx context.Context, req *PublishCrlsRequest)
 PublishCrls publishes the due CRLs of the Active and Archived issuers of the scope, every CRL when forced. The current CRLs of a page of issuers are read in one query \(db.GetCrls\), and an issuer whose CRL is not due is skipped from the settings of its row, before its signer is loaded. An issuer that fails does not stop the run: the failure is logged and counted. The error is a failure to list the issuers or to read their CRLs; the CRLs published before it are in the result.
 
 <a name="ImportRequest"></a>
-## type [ImportRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L296-L317>)
+## type [ImportRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L297-L318>)
 
 ImportRequest describes an issuer imported with an existing certificate and key: bring your own CA
 
@@ -406,7 +327,7 @@ type ImportRequest struct {
 ```
 
 <a name="IssuerRequest"></a>
-## type [IssuerRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L24-L45>)
+## type [IssuerRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L25-L46>)
 
 IssuerRequest describes an issuer to create: its scope and identity, the key to generate and its runtime settings \(DESIGN.md section 5.2\). The certificate request is built from Subject, SAN and Extensions.
 
@@ -484,7 +405,7 @@ func NewKeys(crypto *cryptoprov.Crypto, dp dataprotection.Provider) *Keys
 NewKeys returns the key management over the crypto providers and the data protection provider; either may be nil when the deployment has none, and the operations that need it fail
 
 <a name="Keys.ActivatedIssuer"></a>
-### func \(\*Keys\) [ActivatedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L368>)
+### func \(\*Keys\) [ActivatedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L369>)
 
 ```go
 func (k *Keys) ActivatedIssuer(ctx context.Context, row *model.Issuer, certPEM, intermediates, rootPEM string) (*model.Issuer, error)
@@ -520,7 +441,7 @@ func (k *Keys) Generate(ctx context.Context, prov cryptoprov.Provider, keyLabel 
 Generate generates the key of an issuer in the provider, with the label and specification, and signs the certificate request with it. It returns the PEM encoded CSR, the signer and the reference to store on the row.
 
 <a name="Keys.ImportIssuer"></a>
-### func \(\*Keys\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L322>)
+### func \(\*Keys\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L323>)
 
 ```go
 func (k *Keys) ImportIssuer(ctx context.Context, req *ImportRequest) (*model.Issuer, error)
@@ -547,7 +468,7 @@ func (k *Keys) KeyRefFromExport(ctx context.Context, prov cryptoprov.Provider, k
 KeyRefFromExport returns the reference of a key its provider exported \(cryptoprov.KeyGenerator.ExportKey, or the key authority.NewRoot returns\): a key URI references the key in the provider, key material is wrapped and the reference carries the key label
 
 <a name="Keys.NewPendingIssuer"></a>
-### func \(\*Keys\) [NewPendingIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L267>)
+### func \(\*Keys\) [NewPendingIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L268>)
 
 ```go
 func (k *Keys) NewPendingIssuer(ctx context.Context, req *IssuerRequest) (*model.Issuer, error)
@@ -556,7 +477,7 @@ func (k *Keys) NewPendingIssuer(ctx context.Context, req *IssuerRequest) (*model
 NewPendingIssuer generates the key of an issuer in the provider and its certificate request. The row is Pending with the CSR until ActivatedIssuer sets the certificate signed outside the CA.
 
 <a name="Keys.NewRootIssuer"></a>
-### func \(\*Keys\) [NewRootIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L107>)
+### func \(\*Keys\) [NewRootIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L108>)
 
 ```go
 func (k *Keys) NewRootIssuer(ctx context.Context, req *IssuerRequest, profileName string, profile *authority.CertProfile) (*model.Issuer, error)
@@ -565,7 +486,7 @@ func (k *Keys) NewRootIssuer(ctx context.Context, req *IssuerRequest, profileNam
 NewRootIssuer generates the key of a self\-signed root in the provider and signs its certificate with the CA profile, registered under profileName. The row is Active and its own trust anchor; the caller registers the root certificate.
 
 <a name="Keys.NewSignedIssuer"></a>
-### func \(\*Keys\) [NewSignedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L161>)
+### func \(\*Keys\) [NewSignedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L162>)
 
 ```go
 func (k *Keys) NewSignedIssuer(ctx context.Context, req *IssuerRequest, parent *Resolution) (*model.Issuer, error)
@@ -601,7 +522,7 @@ func (k *Keys) Signer(ctx context.Context, m *model.Issuer) (crypto.Signer, erro
 Signer returns the signer of an issuer row: the wrapped software key, or the key its URI references in a crypto provider
 
 <a name="Options"></a>
-## type [Options](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L45-L52>)
+## type [Options](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L46-L53>)
 
 Options configure a Registry
 
@@ -617,7 +538,7 @@ type Options struct {
 ```
 
 <a name="PublishCrlsRequest"></a>
-## type [PublishCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L72-L85>)
+## type [PublishCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L73-L86>)
 
 PublishCrlsRequest selects the issuers whose due CRLs are published: the Active and Archived issuers of the scope, as query.ListIssuersRequest names it
 
@@ -639,7 +560,7 @@ type PublishCrlsRequest struct {
 ```
 
 <a name="PublishCrlsResult"></a>
-## type [PublishCrlsResult](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L88-L97>)
+## type [PublishCrlsResult](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L89-L98>)
 
 PublishCrlsResult is the outcome of a run over the issuers of a scope
 
@@ -657,7 +578,7 @@ type PublishCrlsResult struct {
 ```
 
 <a name="Registry"></a>
-## type [Registry](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L68-L82>)
+## type [Registry](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L69-L83>)
 
 Registry resolves the issuer and the profile that serve a tenant request and keeps the built authority issuers in memory.
 
@@ -672,7 +593,7 @@ type Registry struct {
 ```
 
 <a name="NewRegistry"></a>
-### func [NewRegistry](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L128>)
+### func [NewRegistry](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L129>)
 
 ```go
 func NewRegistry(caDb db.CaReadonlyDb, keys *Keys, opts Options) *Registry
@@ -681,7 +602,7 @@ func NewRegistry(caDb db.CaReadonlyDb, keys *Keys, opts Options) *Registry
 NewRegistry returns a registry over the CA tables and the key management
 
 <a name="Registry.Bootstrap"></a>
-### func \(\*Registry\) [Bootstrap](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L57>)
+### func \(\*Registry\) [Bootstrap](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L60>)
 
 ```go
 func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.Config) (*BootstrapResult, error)
@@ -689,10 +610,10 @@ func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.C
 
 Bootstrap mirrors the issuers, trust anchors and profiles of a ca\-config into the platform rows \(org\_id IS NULL\), so that the platform issuers sign tenant CA certificates and CIS serves their chains from the same tables \(DESIGN.md section 5.1\), then loads every enabled issuer, so that a key that does not load or a delegated OCSP profile that does not bind fails the start instead of the first request.
 
-It is idempotent: a registered issuer with the same key only has its runtime settings refreshed, roots are registered by thumbprint and profiles are replaced by label. The key of an issuer is a key URI, stored as the reference, or key material, stored wrapped; both are checked against the certificate. An issuer whose certificate is for a new key is an error: renewal keeps the label unique, so the old issuer must be archived under another label first. A disabled issuer is archived, so that it stops signing on every instance, and enabled again when the configuration enables it; a destroyed one has no key and is an error. The anchor of a root issuer is registered again on every start, since it is a separate row that an earlier start may have failed to write.
+It is idempotent: a registered issuer with the same key only has its runtime settings refreshed, roots are registered by thumbprint and profiles are replaced by label. It is also safe when several instances start against one fresh DB at once: an issuer insert that loses the race to another instance continues with the row that instance registered. The key of an issuer is a key URI, stored as the reference, or key material, stored wrapped; both are checked against the certificate. An issuer whose certificate is for a new key is an error: renewal keeps the label unique, so the old issuer must be archived under another label first. A disabled issuer is archived, so that it stops signing on every instance, and enabled again when the configuration enables it; a destroyed one has no key and is an error. The anchor of a root issuer is registered again on every start, since it is a separate row that an earlier start may have failed to write.
 
 <a name="Registry.FindIssuer"></a>
-### func \(\*Registry\) [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L225>)
+### func \(\*Registry\) [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L226>)
 
 ```go
 func (r *Registry) FindIssuer(ctx context.Context, orgID, projectID xdb.ID, label string) (*model.Issuer, error)
@@ -701,7 +622,7 @@ func (r *Registry) FindIssuer(ctx context.Context, orgID, projectID xdb.ID, labe
 FindIssuer returns the issuer with the label of the project, or of the org when the project has none, in any lifecycle status
 
 <a name="Registry.FindProfile"></a>
-### func \(\*Registry\) [FindProfile](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L197>)
+### func \(\*Registry\) [FindProfile](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L198>)
 
 ```go
 func (r *Registry) FindProfile(ctx context.Context, orgID, projectID xdb.ID, label string) (*model.CertificateProfile, error)
@@ -710,7 +631,7 @@ func (r *Registry) FindProfile(ctx context.Context, orgID, projectID xdb.ID, lab
 FindProfile returns the active profile with the label of the project, or of the org when the project has none; an inactive profile is not found and does not fall back to the org
 
 <a name="Registry.InvalidateIssuer"></a>
-### func \(\*Registry\) [InvalidateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L316>)
+### func \(\*Registry\) [InvalidateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L317>)
 
 ```go
 func (r *Registry) InvalidateIssuer(row *model.Issuer)
@@ -719,7 +640,7 @@ func (r *Registry) InvalidateIssuer(row *model.Issuer)
 InvalidateIssuer drops the issuer and the resolutions of its label from memory, after a mutation of its row is committed
 
 <a name="Registry.InvalidateProfile"></a>
-### func \(\*Registry\) [InvalidateProfile](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L327>)
+### func \(\*Registry\) [InvalidateProfile](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L328>)
 
 ```go
 func (r *Registry) InvalidateProfile(orgID, projectID xdb.ID, label string)
@@ -728,7 +649,7 @@ func (r *Registry) InvalidateProfile(orgID, projectID xdb.ID, label string)
 InvalidateProfile drops the resolutions of the profile label of the scope from memory, after a mutation of the profile is committed: a project profile from its project, an org profile from every project of the org
 
 <a name="Registry.Issuer"></a>
-### func \(\*Registry\) [Issuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L251>)
+### func \(\*Registry\) [Issuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L252>)
 
 ```go
 func (r *Registry) Issuer(ctx context.Context, row *model.Issuer) (*authority.Issuer, error)
@@ -737,7 +658,7 @@ func (r *Registry) Issuer(ctx context.Context, row *model.Issuer) (*authority.Is
 Issuer returns the authority issuer of the row, built from its certificate, chain and key on the first use and kept until the TTL, an eviction or an invalidation
 
 <a name="Registry.IssuerByKeyHash"></a>
-### func \(\*Registry\) [IssuerByKeyHash](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L291>)
+### func \(\*Registry\) [IssuerByKeyHash](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L292>)
 
 ```go
 func (r *Registry) IssuerByKeyHash(ctx context.Context, alg crypto.Hash, hash []byte) (*authority.Issuer, *model.Issuer, error)
@@ -746,7 +667,7 @@ func (r *Registry) IssuerByKeyHash(ctx context.Context, alg crypto.Hash, hash []
 IssuerByKeyHash returns the issuer whose public key has the hash, as an OCSP request identifies it. The issuers in memory are matched for any algorithm; a SHA\-1 hash is also the Subject Key Identifier of a CA certificate this CA issued \(RFC 5280 method 1\), so it is looked up in the DB. A certificate of an issuer that is not in memory and whose key identifier is not its SHA\-1 key hash is not found.
 
 <a name="Registry.IssuerByNameHash"></a>
-### func \(\*Registry\) [IssuerByNameHash](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L305>)
+### func \(\*Registry\) [IssuerByNameHash](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L306>)
 
 ```go
 func (r *Registry) IssuerByNameHash(_ context.Context, alg crypto.Hash, hash []byte) (*authority.Issuer, *model.Issuer, error)
@@ -755,7 +676,7 @@ func (r *Registry) IssuerByNameHash(_ context.Context, alg crypto.Hash, hash []b
 IssuerByNameHash returns the issuer whose subject name has the hash, as an OCSP request may identify it; only the issuers in memory are matched
 
 <a name="Registry.IssuerBySKID"></a>
-### func \(\*Registry\) [IssuerBySKID](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L262>)
+### func \(\*Registry\) [IssuerBySKID](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L263>)
 
 ```go
 func (r *Registry) IssuerBySKID(ctx context.Context, skid string) (*authority.Issuer, *model.Issuer, error)
@@ -764,7 +685,7 @@ func (r *Registry) IssuerBySKID(ctx context.Context, skid string) (*authority.Is
 IssuerBySKID returns the issuer whose Subject Key Identifier is the IKID of the certificates it issued, for revocation status: an Active or Archived issuer, since an Archived one still answers for its certificates
 
 <a name="Registry.Keys"></a>
-### func \(\*Registry\) [Keys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L141>)
+### func \(\*Registry\) [Keys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L142>)
 
 ```go
 func (r *Registry) Keys() *Keys
@@ -773,7 +694,7 @@ func (r *Registry) Keys() *Keys
 Keys returns the key management of the registry
 
 <a name="Registry.Len"></a>
-### func \(\*Registry\) [Len](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L339>)
+### func \(\*Registry\) [Len](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L340>)
 
 ```go
 func (r *Registry) Len() int
@@ -782,7 +703,7 @@ func (r *Registry) Len() int
 Len returns the number of issuers in memory
 
 <a name="Registry.Purge"></a>
-### func \(\*Registry\) [Purge](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L332>)
+### func \(\*Registry\) [Purge](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L333>)
 
 ```go
 func (r *Registry) Purge()
@@ -791,7 +712,7 @@ func (r *Registry) Purge()
 Purge drops every cached issuer and resolution
 
 <a name="Registry.Resolve"></a>
-### func \(\*Registry\) [Resolve](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L149>)
+### func \(\*Registry\) [Resolve](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L150>)
 
 ```go
 func (r *Registry) Resolve(ctx context.Context, req *ResolveRequest) (*Resolution, error)
@@ -800,7 +721,7 @@ func (r *Registry) Resolve(ctx context.Context, req *ResolveRequest) (*Resolutio
 Resolve returns the issuer and the profile of a sign request: the profile of the scope, the issuer it binds to \(or the requested one, when the profile binds to any issuer that allows it\), which must be Active, with the profile registered on the issuer.
 
 <a name="Resolution"></a>
-## type [Resolution](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L113-L125>)
+## type [Resolution](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L114-L126>)
 
 Resolution is the issuer and the profile that sign a request
 
@@ -821,7 +742,7 @@ type Resolution struct {
 ```
 
 <a name="ResolveRequest"></a>
-## type [ResolveRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L100-L110>)
+## type [ResolveRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L101-L111>)
 
 ResolveRequest names the issuer and the profile of a sign request
 

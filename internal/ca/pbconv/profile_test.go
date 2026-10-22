@@ -1,4 +1,4 @@
-package ca_test
+package pbconv_test
 
 import (
 	"fmt"
@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/effective-security/trustyca/api/pb"
-	"github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
+	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/authority"
 	"github.com/effective-security/xpki/csr"
 	"github.com/stretchr/testify/assert"
@@ -59,7 +60,7 @@ func fullProfile() *pb.CertProfile {
 
 func TestProfileFromPb(t *testing.T) {
 	t.Parallel()
-	p, err := ca.ProfileFromPb(fullProfile())
+	p, err := pbconv.ProfileFromPb(fullProfile())
 	require.NoError(t, err)
 	assert.Equal(t, "L2", p.IssuerLabel)
 	assert.Equal(t, "server profile", p.Description)
@@ -88,7 +89,7 @@ func TestProfileFromPb(t *testing.T) {
 	assert.Equal(t, []string{"guest"}, p.DeniedRoles)
 
 	// a CA profile
-	cap, err := ca.ProfileFromPb(caProfileDef("CA", "ROOT"))
+	cap, err := pbconv.ProfileFromPb(caProfileDef("CA", "ROOT"))
 	require.NoError(t, err)
 	assert.True(t, cap.CAConstraint.IsCA)
 	assert.Equal(t, 0, cap.CAConstraint.MaxPathLen)
@@ -118,7 +119,7 @@ func TestProfileFromPb(t *testing.T) {
 				def = fullProfile()
 				tc.mod(def)
 			}
-			_, err := ca.ProfileFromPb(def)
+			_, err := pbconv.ProfileFromPb(def)
 			assert.ErrorContains(t, err, tc.err)
 		})
 	}
@@ -128,9 +129,9 @@ func TestProfileToPb(t *testing.T) {
 	t.Parallel()
 	// a definition survives the round trip through the authority profile
 	def := fullProfile()
-	p, err := ca.ProfileFromPb(def)
+	p, err := pbconv.ProfileFromPb(def)
 	require.NoError(t, err)
-	back := ca.ProfileToPb("server", p)
+	back := pbconv.ProfileToPb("server", p)
 	assert.Equal(t, "server", back.Label)
 	assert.Equal(t, def.IssuerLabel, back.IssuerLabel)
 	assert.Equal(t, def.Description, back.Description)
@@ -154,12 +155,12 @@ func TestProfileToPb(t *testing.T) {
 	assert.Equal(t, pb.ItemStatus_Unknown, back.Status)
 
 	// and the result converts again
-	again, err := ca.ProfileFromPb(back)
+	again, err := pbconv.ProfileFromPb(back)
 	require.NoError(t, err)
 	assert.Equal(t, p.Expiry, again.Expiry)
 
 	// a CA profile keeps its constraint, a file profile without backdate has none
-	cap := ca.ProfileToPb("ROOT", &authority.CertProfile{
+	cap := pbconv.ProfileToPb("ROOT", &authority.CertProfile{
 		Expiry:       csr.Duration(10 * 365 * 24 * time.Hour),
 		Usage:        []string{"cert sign", "crl sign"},
 		CAConstraint: authority.CAConstraint{IsCA: true, MaxPathLen: -1},
@@ -171,7 +172,7 @@ func TestProfileToPb(t *testing.T) {
 	assert.Nil(t, cap.AllowedFields)
 
 	// stored and restored by the row
-	m, err := model.NewCertificateProfile(xdbID(1), xdbID(0), back)
+	m, err := model.NewCertificateProfile(xdb.NewID(1), xdb.ID(0), back)
 	require.NoError(t, err)
 	stored, err := m.Pb()
 	require.NoError(t, err)
@@ -181,25 +182,25 @@ func TestProfileToPb(t *testing.T) {
 
 func TestExtensionsFromPb(t *testing.T) {
 	t.Parallel()
-	list, err := ca.ExtensionsFromPb(nil)
+	list, err := pbconv.ExtensionsFromPb(nil)
 	require.NoError(t, err)
 	assert.Nil(t, list)
-	list, err = ca.ExtensionsFromPb([]*pb.X509Extension{nil, {ID: "2.5.29.17", Critical: true, Value: "base64:BQA="}})
+	list, err = pbconv.ExtensionsFromPb([]*pb.X509Extension{nil, {ID: "2.5.29.17", Critical: true, Value: "base64:BQA="}})
 	require.NoError(t, err)
 	require.Len(t, list, 1)
 	assert.Equal(t, "2.5.29.17", list[0].ID.String())
 	assert.True(t, list[0].Critical)
 	assert.Equal(t, "base64:BQA=", list[0].Value)
-	_, err = ca.ExtensionsFromPb([]*pb.X509Extension{{ID: "nope"}})
+	_, err = pbconv.ExtensionsFromPb([]*pb.X509Extension{{ID: "nope"}})
 	assert.EqualError(t, err, "invalid extension OID: nope")
-	assert.Nil(t, ca.ExtensionsToPb(nil))
-	assert.Equal(t, fmt.Sprint([]*pb.X509Extension{{ID: "2.5.29.17", Critical: true, Value: "base64:BQA="}}), fmt.Sprint(ca.ExtensionsToPb(list)))
+	assert.Nil(t, pbconv.ExtensionsToPb(nil))
+	assert.Equal(t, fmt.Sprint([]*pb.X509Extension{{ID: "2.5.29.17", Critical: true, Value: "base64:BQA="}}), fmt.Sprint(pbconv.ExtensionsToPb(list)))
 }
 
 func TestIssuerConfig(t *testing.T) {
 	t.Parallel()
 	// nil settings take the authority defaults
-	acfg, err := ca.IssuerConfigFromPb("L2", nil)
+	acfg, err := pbconv.IssuerConfigFromPb("L2", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "L2", acfg.Label)
 	require.NotNil(t, acfg.AIA)
@@ -220,7 +221,7 @@ func TestIssuerConfig(t *testing.T) {
 		AllowedProfiles:        []string{"ocsp", "peer"},
 		OmitDisabledExtensions: true,
 	}
-	acfg, err = ca.IssuerConfigFromPb("L2", cfg)
+	acfg, err = pbconv.IssuerConfigFromPb("L2", cfg)
 	require.NoError(t, err)
 	assert.Equal(t, &authority.AIAConfig{
 		AiaURL:               cfg.AiaURL,
@@ -234,7 +235,7 @@ func TestIssuerConfig(t *testing.T) {
 	assert.Equal(t, []string{"ocsp", "peer"}, acfg.AllowedProfiles)
 	assert.True(t, acfg.OmitDisabledExtensions)
 
-	back := ca.IssuerConfigToPb(acfg)
+	back := pbconv.IssuerConfigToPb(acfg)
 	assert.Equal(t, "48h0m0s", back.CrlExpiry)
 	assert.Equal(t, "12h0m0s", back.CrlRenewal)
 	assert.Equal(t, "1h0m0s", back.OcspExpiry)
@@ -242,7 +243,7 @@ func TestIssuerConfig(t *testing.T) {
 	assert.Equal(t, cfg.String(), back.String())
 
 	// a file issuer without AIA
-	assert.True(t, proto.Equal(&pb.IssuerConfig{AllowedProfiles: []string{"a"}}, ca.IssuerConfigToPb(&authority.IssuerConfig{AllowedProfiles: []string{"a"}})))
+	assert.True(t, proto.Equal(&pb.IssuerConfig{AllowedProfiles: []string{"a"}}, pbconv.IssuerConfigToPb(&authority.IssuerConfig{AllowedProfiles: []string{"a"}})))
 
 	for _, tc := range []struct {
 		cfg *pb.IssuerConfig
@@ -252,7 +253,21 @@ func TestIssuerConfig(t *testing.T) {
 		{cfg: &pb.IssuerConfig{CrlRenewal: "x"}, err: `invalid CrlRenewal: "x" is not a duration`},
 		{cfg: &pb.IssuerConfig{OcspExpiry: "x"}, err: `invalid OcspExpiry: "x" is not a duration`},
 	} {
-		_, err := ca.IssuerConfigFromPb("L2", tc.cfg)
+		_, err := pbconv.IssuerConfigFromPb("L2", tc.cfg)
 		assert.EqualError(t, err, tc.err)
+	}
+}
+
+// caProfileDef is the profile a parent signs subordinate CAs with
+func caProfileDef(label, issuerLabel string) *pb.CertProfile {
+	return &pb.CertProfile{
+		Label:       label,
+		IssuerLabel: issuerLabel,
+		Expiry:      "8760h",
+		Backdate:    "30m",
+		Usages:      []string{"cert sign", "crl sign"},
+		CAConstraint: &pb.CAConstraint{
+			IsCA: true,
+		},
 	}
 }

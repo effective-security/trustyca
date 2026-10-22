@@ -5,6 +5,28 @@ authority:
   root_bundles:
     - ${HOME}/.trustyca/certs/trustyca_root.pem
   issuers:
+    - # the platform intermediate (path length 1) that signs the issuing CAs
+      # of the orgs: `trustycactl ca org bootstrap --parent trusty.l1`
+      label: trusty.l1
+      # specifies type: tls|codesign|timestamp|ocsp|spiffe|trusty
+      type: trusty
+      cert: ${HOME}/.trustyca/certs/trustyca_l1_ca.pem
+      key: ${HOME}/.trustyca/certs/trustyca_l1_ca.key
+      # location of the CA bundle file
+      ca_bundle:
+      # location of the Root CA file
+      root_bundle:
+      allowed_profiles:
+        - ocsp
+        - tenant_ca
+      aia:
+        issuer_url: http://localhost:8880/v1/cert/:ISSUER_ID
+        crl_url: http://localhost:8880/v1/crl/:ISSUER_ID
+        ocsp_url: http://localhost:8880/v1/ocspi/:ISSUER_ID
+        crl_expiry: 48h
+        crl_renewal: 12h
+        ocsp_expiry: 1h
+        delegated_ocsp_profile: ocsp
     - # specifies Issuer's label
       label: trusty.svc
       # specifies type: tls|codesign|timestamp|ocsp|spiffe|trusty
@@ -136,6 +158,18 @@ profiles:
     allowed_uri: ^spiffe://trusty/.*$
     allowed_fields:
       uri: true
+
+  tenant_ca:
+    description: Issuing CA of an org, signed by the platform intermediate
+    issuer_label: "*"
+    expiry: 43800h
+    backdate: 30m
+    usages:
+      - cert sign
+      - crl sign
+    ca_constraint:
+      is_ca: true
+      max_path_len: 0
 
   ocsp:
     description: Delegated OCSP responder profile

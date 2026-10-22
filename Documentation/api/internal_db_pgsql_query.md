@@ -509,7 +509,7 @@ func ListEvents(args ...any) (string, string)
 ListEvents returns SQL query
 
 <a name="ListIssuers"></a>
-## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L252>)
+## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L258>)
 
 ```go
 func ListIssuers(args ...any) (string, string)
@@ -1232,7 +1232,7 @@ func (r *ListEventsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListIssuersRequest"></a>
-## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L194-L225>)
+## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L194-L228>)
 
 ListIssuersRequest defines request to list issuers, newest first. The request names its org scope: OrgID, Platform or AllOrgs; without ProjectID and Scope the issuers of every scope of the org are returned.
 
@@ -1258,6 +1258,9 @@ type ListIssuersRequest struct {
     ProjectIDs []uint64
     // ParentID limits the result to the issuers signed by the parent
     ParentID uint64
+    // Label limits the result to the issuers with the label, in every scope
+    // the request covers
+    Label string
     // Status limits the result to the lifecycle status
     Status pb.IssuerStatus_Enum
     // Type limits the result to the authority type
@@ -1272,7 +1275,7 @@ type ListIssuersRequest struct {
 ```
 
 <a name="ListIssuersRequest.QueryParams"></a>
-### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L233>)
+### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L236>)
 
 ```go
 func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
@@ -1281,7 +1284,7 @@ func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L228>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L231>)
 
 ```go
 func (r *ListIssuersRequest) Validate() error

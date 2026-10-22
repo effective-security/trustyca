@@ -24,6 +24,7 @@ Lists page by offset or by a keyset cursor on id \(listRows\). The tests need th
 - [Variables](<#variables>)
 - [func DbMeasureQuerySince\(query string, start time.Time\)](<#DbMeasureQuerySince>)
 - [func DbMeasureSince\(start time.Time\)](<#DbMeasureSince>)
+- [func IsUniqueViolation\(err error, prefix string\) bool](<#IsUniqueViolation>)
 - [type Provider](<#Provider>)
   - [func New\(p xdb.Provider\) \(\*Provider, error\)](<#New>)
   - [func \(p \*Provider\) AcceptInvite\(ctx context.Context, inviteID, userID uint64\) \(\*model.Membership, error\)](<#Provider.AcceptInvite>)
@@ -126,6 +127,20 @@ Lists page by offset or by a keyset cursor on id \(listRows\). The tests need th
 
 ## Constants
 
+<a name="UniqueIssuerLabel"></a>The unique constraints of the CA tables, as PostgreSQL names them in a violation \(SQLSTATE 23505\)
+
+```go
+const (
+    // UniqueIssuerLabel is the label of an issuer in its org and project
+    UniqueIssuerLabel = "unique_issuer_org_project_label"
+    // UniqueIssuerSkid is the key identifier of an issuer, across the table
+    UniqueIssuerSkid = "unique_issuer_skid"
+    // UniqueCertificatePrefix is the prefix of the unique constraints of the
+    // certificate table: the thumbprint, and the issuer and serial pair
+    UniqueCertificatePrefix = "unique_certificate"
+)
+```
+
 <a name="DefaultInviteExpiry"></a>DefaultInviteExpiry is the validity of an invite when the caller does not set ExpiresAt
 
 ```go
@@ -175,6 +190,15 @@ func DbMeasureSince(start time.Time)
 ```
 
 DbMeasureSince emit DB operation perf, and logs a Warning for slow operations
+
+<a name="IsUniqueViolation"></a>
+## func [IsUniqueViolation](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/errors.go#L34>)
+
+```go
+func IsUniqueViolation(err error, prefix string) bool
+```
+
+IsUniqueViolation reports whether the error is a unique constraint violation of a constraint whose name starts with the prefix; an empty prefix matches every unique constraint. The driver's error is matched by its SQLSTATE and constraint name; an error that only carries the driver's message, as the fakes of the tests return, by the message.
 
 <a name="Provider"></a>
 ## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/provider.go#L24-L28>)

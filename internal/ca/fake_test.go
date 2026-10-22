@@ -41,6 +41,13 @@ type fakeDb struct {
 	// another publisher stored a CRL of the issuer first: the issuer
 	// number is bumped and db.ErrStaleCrlNumber returned
 	Stale int
+	// Race makes the next RegisterIssuer behave as if another instance
+	// registered the issuer between the caller's lookup and its insert:
+	// the row, changed by RaceEdit when set, is stored and the unique
+	// violation of the label, or of the key when the label differs, is
+	// returned
+	Race     bool
+	RaceEdit func(m *model.Issuer)
 }
 
 func newFakeDb() *fakeDb {
@@ -145,6 +152,21 @@ func (f *fakeDb) RegisterIssuer(_ context.Context, m *model.Issuer) (*model.Issu
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.Race {
+		f.Race = false
+		other := *m
+		if f.RaceEdit != nil {
+			f.RaceEdit(&other)
+		}
+		other.ID = f.id()
+		other.CreatedAt = xdb.UTC(time.Now())
+		other.UpdatedAt = other.CreatedAt
+		f.issuers[other.ID.UInt64()] = &other
+		if other.Label == m.Label {
+			return nil, errors.New(`pq: duplicate key value violates unique constraint "unique_issuer_org_project_label"`)
+		}
+		return nil, errors.New(`pq: duplicate key value violates unique constraint "unique_issuer_skid"`)
+	}
 	for _, r := range f.issuers {
 		if sameScope(r.OrgID, r.ProjectID, m.OrgID.UInt64(), m.ProjectID.UInt64()) && r.Label == m.Label {
 			return nil, errors.New(`pq: duplicate key value violates unique constraint "unique_issuer_org_project_label"`)

@@ -23,7 +23,9 @@ New runs the SQL migrations of the migrations directory. The DB layer is plain C
 
 ## Index
 
+- [Constants](<#constants>)
 - [Variables](<#variables>)
+- [func IsUniqueViolation\(err error, prefix string\) bool](<#IsUniqueViolation>)
 - [type CaDb](<#CaDb>)
 - [type CaReadonlyDb](<#CaReadonlyDb>)
 - [type OrgsDb](<#OrgsDb>)
@@ -31,6 +33,18 @@ New runs the SQL migrations of the migrations directory. The DB layer is plain C
 - [type Provider](<#Provider>)
   - [func New\(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator\) \(Provider, error\)](<#New>)
 
+
+## Constants
+
+<a name="UniqueIssuerLabel"></a>The unique constraints of the CA tables, as PostgreSQL names them in a violation: the label of an issuer in its scope, the key identifier of an issuer, and the prefix of the certificate constraints
+
+```go
+const (
+    UniqueIssuerLabel       = pgsql.UniqueIssuerLabel
+    UniqueIssuerSkid        = pgsql.UniqueIssuerSkid
+    UniqueCertificatePrefix = pgsql.UniqueCertificatePrefix
+)
+```
 
 ## Variables
 
@@ -52,6 +66,15 @@ var (
     ErrOrgScopeRequired = query.ErrOrgScopeRequired
 )
 ```
+
+<a name="IsUniqueViolation"></a>
+## func [IsUniqueViolation](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L286>)
+
+```go
+func IsUniqueViolation(err error, prefix string) bool
+```
+
+IsUniqueViolation reports whether the error is a unique constraint violation of a constraint whose name starts with the prefix \(empty for any\), so that a caller maps a conflict without parsing the message
 
 <a name="CaDb"></a>
 ## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L212-L272>)
@@ -319,7 +342,7 @@ type OrgsReadonlyDb interface {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L291-L296>)
+## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L307-L312>)
 
 Provider provides complete DB access
 
@@ -333,7 +356,7 @@ type Provider interface {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L299>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L315>)
 
 ```go
 func New(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator) (Provider, error)

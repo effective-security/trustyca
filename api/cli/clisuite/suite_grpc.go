@@ -21,6 +21,7 @@ type TestSuiteGrpc struct {
 	MockAuth   mockpb.MockAuthServer
 	MockStatus mockpb.MockStatusServer
 	MockOrgs   mockpb.MockOrgsServer
+	MockCIS    mockpb.MockCISServer
 	RPCServer  *grpc.Server
 }
 
@@ -88,6 +89,7 @@ func (s *TestSuiteGrpc) SetupMockGRPC() *grpc.Server {
 	pb.RegisterAuthServer(serv, &s.MockAuth)
 	pb.RegisterStatusServer(serv, &s.MockStatus)
 	pb.RegisterOrgsServer(serv, &s.MockOrgs)
+	pb.RegisterCISServer(serv, &s.MockCIS)
 	var lis net.Listener
 	var err error
 

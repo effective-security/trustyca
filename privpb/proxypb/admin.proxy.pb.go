@@ -221,3 +221,81 @@ func (s *postproxyAdminClient) ListProjects(ctx context.Context, req *privpb.Lis
 	}
 	return &res, nil
 }
+
+// ListIssuers lists the issuers of every org and of the platform, newest
+// first, for support staff; the tenant view of an org is CA.ListIssuers.
+// Private key material is never returned.
+func (s *proxyAdminServer) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListIssuers(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListIssuers lists the issuers of every org and of the platform, newest
+// first, for support staff; the tenant view of an org is CA.ListIssuers.
+// Private key material is never returned.
+func (s *proxyAdminClient) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListIssuers(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListIssuers lists the issuers of every org and of the platform, newest
+// first, for support staff; the tenant view of an org is CA.ListIssuers.
+// Private key material is never returned.
+func (s *postproxyAdminClient) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+	var res pb.IssuersResponse
+	path := privpb.Admin_ListIssuers_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListCertificates lists the certificates of every org and of the
+// platform, newest first, for support staff; the tenant view of an org
+// is CA.ListCertificates
+func (s *proxyAdminServer) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListCertificates(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListCertificates lists the certificates of every org and of the
+// platform, newest first, for support staff; the tenant view of an org
+// is CA.ListCertificates
+func (s *proxyAdminClient) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListCertificates(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListCertificates lists the certificates of every org and of the
+// platform, newest first, for support staff; the tenant view of an org
+// is CA.ListCertificates
+func (s *postproxyAdminClient) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+	var res pb.CertificatesResponse
+	path := privpb.Admin_ListCertificates_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}

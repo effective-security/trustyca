@@ -1,0 +1,1015 @@
+- TestRpc/Test_CertGetCmd/json:
+{
+	"Certificate": {
+		"ID": "30",
+		"OrgID": "5",
+		"ProjectID": "7",
+		"SKID": "ee00ee",
+		"IKID": "0a1b2c",
+		"SerialNumber": "98765",
+		"NotBefore": "2026-01-01T00:00:00Z",
+		"NotAfter": "2026-04-01T00:00:00Z",
+		"Subject": "CN=edge.example.com",
+		"Issuer": "CN=Corp Issuing CA",
+		"Sha256": "cafe01",
+		"Profile": "server",
+		"Pem": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+		"Label": "edge-1",
+		"Metadata": {
+			"requester": "ci"
+		},
+		"Status": 1,
+		"CreatedAt": "2026-01-01T00:00:00Z"
+	}
+}
+
+- TestRpc/Test_CertGetCmd/txt:
+ ID         │ 30                   
+ Org ID     │ 5                    
+ Project ID │ 7                    
+ Status     │ Active               
+ Profile    │ server               
+ Label      │ edge-1               
+ Subject    │ CN=edge.example.com  
+ Issuer     │ CN=Corp Issuing CA   
+ Serial     │ 98765                
+ SKID       │ ee00ee               
+ IKID       │ 0a1b2c               
+ SHA-256    │ cafe01               
+ Not Before │ 2026-01-01T00:00:00Z 
+ Not After  │ 2026-04-01T00:00:00Z 
+ Locations  │                      
+ Created    │ 2026-01-01T00:00:00Z 
+
+┌───────────┬───────┐
+│ METADATA  │ VALUE │
+├───────────┼───────┤
+│ requester │ ci    │
+└───────────┴───────┘
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_CertListCmd/json:
+{
+	"Certificates": [
+		{
+			"ID": "30",
+			"OrgID": "5",
+			"ProjectID": "7",
+			"SKID": "ee00ee",
+			"IKID": "0a1b2c",
+			"SerialNumber": "98765",
+			"NotBefore": "2026-01-01T00:00:00Z",
+			"NotAfter": "2026-04-01T00:00:00Z",
+			"Subject": "CN=edge.example.com",
+			"Issuer": "CN=Corp Issuing CA",
+			"Sha256": "cafe01",
+			"Profile": "server",
+			"Pem": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+			"Label": "edge-1",
+			"Metadata": {
+				"requester": "ci"
+			},
+			"Status": 1,
+			"CreatedAt": "2026-01-01T00:00:00Z"
+		}
+	]
+}
+
+- TestRpc/Test_CertListCmd/txt:
+┌────┬────────┬────────────┬────────┬─────────┬─────────────────────┬────────┬────────┬──────────────────────┬────────┐
+│ ID │ ORG ID │ PROJECT ID │ STATUS │ PROFILE │       SUBJECT       │ SERIAL │  IKID  │      NOT AFTER       │ LABEL  │
+├────┼────────┼────────────┼────────┼─────────┼─────────────────────┼────────┼────────┼──────────────────────┼────────┤
+│ 30 │ 5      │ 7          │ Active │ server  │ CN=edge.example.com │ 98765  │ 0a1b2c │ 2026-04-01T00:00:00Z │ edge-1 │
+└────┴────────┴────────────┴────────┴─────────┴─────────────────────┴────────┴────────┴──────────────────────┴────────┘
+
+
+- TestRpc/Test_CertRevokeCmd/json:
+{
+	"Revoked": {
+		"Certificate": {
+			"ID": "30",
+			"OrgID": "5",
+			"ProjectID": "7",
+			"SKID": "ee00ee",
+			"IKID": "0a1b2c",
+			"SerialNumber": "98765",
+			"NotBefore": "2026-01-01T00:00:00Z",
+			"NotAfter": "2026-04-01T00:00:00Z",
+			"Subject": "CN=edge.example.com",
+			"Issuer": "CN=Corp Issuing CA",
+			"Sha256": "cafe01",
+			"Profile": "server",
+			"Pem": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+			"Label": "edge-1",
+			"Metadata": {
+				"requester": "ci"
+			},
+			"Status": 1,
+			"CreatedAt": "2026-01-01T00:00:00Z"
+		},
+		"RevokedAt": "2026-02-01T00:00:00Z",
+		"Reason": 1,
+		"ReasonText": "leaked"
+	}
+}
+
+- TestRpc/Test_CertRevokeCmd/txt:
+ Revoked At  │ 2026-02-01T00:00:00Z 
+ Reason      │ Key Compromise       
+ Reason Text │ leaked               
+
+ ID         │ 30                   
+ Org ID     │ 5                    
+ Project ID │ 7                    
+ Status     │ Active               
+ Profile    │ server               
+ Label      │ edge-1               
+ Subject    │ CN=edge.example.com  
+ Issuer     │ CN=Corp Issuing CA   
+ Serial     │ 98765                
+ SKID       │ ee00ee               
+ IKID       │ 0a1b2c               
+ SHA-256    │ cafe01               
+ Not Before │ 2026-01-01T00:00:00Z 
+ Not After  │ 2026-04-01T00:00:00Z 
+ Locations  │                      
+ Created    │ 2026-01-01T00:00:00Z 
+
+┌───────────┬───────┐
+│ METADATA  │ VALUE │
+├───────────┼───────┤
+│ requester │ ci    │
+└───────────┴───────┘
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_CrlCmds/json:
+{
+	"Crl": {
+		"ID": "40",
+		"OrgID": "5",
+		"IssuerID": "10",
+		"IKID": "0a1b2c",
+		"Number": "4",
+		"ThisUpdate": "2026-01-02T00:00:00Z",
+		"NextUpdate": "2026-01-04T00:00:00Z",
+		"Issuer": "CN=Corp Issuing CA",
+		"Pem": "-----BEGIN X509 CRL-----\nMIIBcrl\n-----END X509 CRL-----\n"
+	}
+}
+
+- TestRpc/Test_CrlCmds/json#2:
+{
+	"Crls": [
+		{
+			"ID": "40",
+			"OrgID": "5",
+			"IssuerID": "10",
+			"IKID": "0a1b2c",
+			"Number": "4",
+			"ThisUpdate": "2026-01-02T00:00:00Z",
+			"NextUpdate": "2026-01-04T00:00:00Z",
+			"Issuer": "CN=Corp Issuing CA",
+			"Pem": "-----BEGIN X509 CRL-----\nMIIBcrl\n-----END X509 CRL-----\n"
+		}
+	]
+}
+
+- TestRpc/Test_CrlCmds/txt:
+ ID          │ 40                   
+ Org ID      │ 5                    
+ Issuer ID   │ 10                   
+ IKID        │ 0a1b2c               
+ Number      │ 4                    
+ Issuer      │ CN=Corp Issuing CA   
+ This Update │ 2026-01-02T00:00:00Z 
+ Next Update │ 2026-01-04T00:00:00Z 
+ Locations   │                      
+
+-----BEGIN X509 CRL-----
+MIIBcrl
+-----END X509 CRL-----
+
+
+- TestRpc/Test_CrlCmds/txt#2:
+{
+	"Crl": {
+		"ID": "40",
+		"OrgID": "5",
+		"IssuerID": "10",
+		"IKID": "0a1b2c",
+		"Number": "4",
+		"ThisUpdate": "2026-01-02T00:00:00Z",
+		"NextUpdate": "2026-01-04T00:00:00Z",
+		"Issuer": "CN=Corp Issuing CA",
+		"Pem": "-----BEGIN X509 CRL-----\nMIIBcrl\n-----END X509 CRL-----\n"
+	}
+}
+┌────┬────────┬───────────┬────────┬────────┬────────────────────┬──────────────────────┬──────────────────────┐
+│ ID │ ORG ID │ ISSUER ID │  IKID  │ NUMBER │       ISSUER       │     THIS UPDATE      │     NEXT UPDATE      │
+├────┼────────┼───────────┼────────┼────────┼────────────────────┼──────────────────────┼──────────────────────┤
+│ 40 │ 5      │ 10        │ 0a1b2c │ 4      │ CN=Corp Issuing CA │ 2026-01-02T00:00:00Z │ 2026-01-04T00:00:00Z │
+└────┴────────┴───────────┴────────┴────────┴────────────────────┴──────────────────────┴──────────────────────┘
+
+
+- TestRpc/Test_IssuerActivateCmd/json:
+{
+	"ID": "10",
+	"OrgID": "5",
+	"Label": "issuing",
+	"Type": 3,
+	"Status": 2,
+	"ParentID": "1",
+	"SKID": "0a1b2c",
+	"IKID": "l1l1l1",
+	"SerialNumber": "1234567890",
+	"Subject": "CN=Corp Issuing CA",
+	"Issuer": "CN=Test Trusty Level 1 CA",
+	"Sha256": "ab12cd34",
+	"NotBefore": "2026-01-01T00:00:00Z",
+	"NotAfter": "2031-01-01T00:00:00Z",
+	"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"KeyProvider": "inmem",
+	"Config": {
+		"AiaURL": "http://localhost:8880/v1/cert/${ISSUER_ID}",
+		"OcspURL": "http://localhost:8880/v1/ocspi/${ISSUER_ID}",
+		"CrlURL": "http://localhost:8880/v1/crl/${ISSUER_ID}",
+		"CrlExpiry": "48h",
+		"OcspExpiry": "1h",
+		"DelegatedOcspProfile": "ocsp",
+		"AllowedProfiles": [
+			"ocsp"
+		]
+	},
+	"CrlNumber": "3",
+	"CreatedAt": "2026-01-01T00:00:00Z",
+	"UpdatedAt": "2026-01-02T00:00:00Z"
+}
+
+- TestRpc/Test_IssuerActivateCmd/txt:
+ ID               │ 10                                          
+ Org ID           │ 5                                           
+ Project ID       │                                             
+ Label            │ issuing                                     
+ Type             │ Issuing                                     
+ Status           │ Active                                      
+ Parent ID        │ 1                                           
+ SKID             │ 0a1b2c                                      
+ IKID             │ l1l1l1                                      
+ Serial           │ 1234567890                                  
+ Subject          │ CN=Corp Issuing CA                          
+ Issuer           │ CN=Test Trusty Level 1 CA                   
+ SHA-256          │ ab12cd34                                    
+ Not Before       │ 2026-01-01T00:00:00Z                        
+ Not After        │ 2031-01-01T00:00:00Z                        
+ Key Provider     │ inmem                                       
+ CRL Number       │ 3                                           
+ AIA URL          │ http://localhost:8880/v1/cert/${ISSUER_ID}  
+ CRL URL          │ http://localhost:8880/v1/crl/${ISSUER_ID}   
+ OCSP URL         │ http://localhost:8880/v1/ocspi/${ISSUER_ID} 
+ CRL Expiry       │ 48h                                         
+ CRL Renewal      │                                             
+ OCSP Expiry      │ 1h                                          
+ OCSP Profile     │ ocsp                                        
+ Allowed Profiles │ ocsp                                        
+ Created          │ 2026-01-01T00:00:00Z                        
+ Updated          │ 2026-01-02T00:00:00Z                        
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_IssuerArchiveDestroyCmd/json:
+{
+	"ID": "10",
+	"OrgID": "5",
+	"Label": "issuing",
+	"Type": 3,
+	"Status": 3,
+	"ParentID": "1",
+	"SKID": "0a1b2c",
+	"IKID": "l1l1l1",
+	"SerialNumber": "1234567890",
+	"Subject": "CN=Corp Issuing CA",
+	"Issuer": "CN=Test Trusty Level 1 CA",
+	"Sha256": "ab12cd34",
+	"NotBefore": "2026-01-01T00:00:00Z",
+	"NotAfter": "2031-01-01T00:00:00Z",
+	"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"KeyProvider": "inmem",
+	"Config": {
+		"AiaURL": "http://localhost:8880/v1/cert/${ISSUER_ID}",
+		"OcspURL": "http://localhost:8880/v1/ocspi/${ISSUER_ID}",
+		"CrlURL": "http://localhost:8880/v1/crl/${ISSUER_ID}",
+		"CrlExpiry": "48h",
+		"OcspExpiry": "1h",
+		"DelegatedOcspProfile": "ocsp",
+		"AllowedProfiles": [
+			"ocsp"
+		]
+	},
+	"CrlNumber": "3",
+	"CreatedAt": "2026-01-01T00:00:00Z",
+	"UpdatedAt": "2026-01-02T00:00:00Z"
+}
+
+- TestRpc/Test_IssuerArchiveDestroyCmd/json#2:
+{
+	"ID": "10",
+	"OrgID": "5",
+	"Label": "issuing",
+	"Type": 3,
+	"Status": 4,
+	"ParentID": "1",
+	"SKID": "0a1b2c",
+	"IKID": "l1l1l1",
+	"SerialNumber": "1234567890",
+	"Subject": "CN=Corp Issuing CA",
+	"Issuer": "CN=Test Trusty Level 1 CA",
+	"Sha256": "ab12cd34",
+	"NotBefore": "2026-01-01T00:00:00Z",
+	"NotAfter": "2031-01-01T00:00:00Z",
+	"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"KeyProvider": "inmem",
+	"Config": {
+		"AiaURL": "http://localhost:8880/v1/cert/${ISSUER_ID}",
+		"OcspURL": "http://localhost:8880/v1/ocspi/${ISSUER_ID}",
+		"CrlURL": "http://localhost:8880/v1/crl/${ISSUER_ID}",
+		"CrlExpiry": "48h",
+		"OcspExpiry": "1h",
+		"DelegatedOcspProfile": "ocsp",
+		"AllowedProfiles": [
+			"ocsp"
+		]
+	},
+	"CrlNumber": "3",
+	"CreatedAt": "2026-01-01T00:00:00Z",
+	"UpdatedAt": "2026-01-02T00:00:00Z"
+}
+
+- TestRpc/Test_IssuerArchiveDestroyCmd/txt:
+ ID               │ 10                                          
+ Org ID           │ 5                                           
+ Project ID       │                                             
+ Label            │ issuing                                     
+ Type             │ Issuing                                     
+ Status           │ Archived                                    
+ Parent ID        │ 1                                           
+ SKID             │ 0a1b2c                                      
+ IKID             │ l1l1l1                                      
+ Serial           │ 1234567890                                  
+ Subject          │ CN=Corp Issuing CA                          
+ Issuer           │ CN=Test Trusty Level 1 CA                   
+ SHA-256          │ ab12cd34                                    
+ Not Before       │ 2026-01-01T00:00:00Z                        
+ Not After        │ 2031-01-01T00:00:00Z                        
+ Key Provider     │ inmem                                       
+ CRL Number       │ 3                                           
+ AIA URL          │ http://localhost:8880/v1/cert/${ISSUER_ID}  
+ CRL URL          │ http://localhost:8880/v1/crl/${ISSUER_ID}   
+ OCSP URL         │ http://localhost:8880/v1/ocspi/${ISSUER_ID} 
+ CRL Expiry       │ 48h                                         
+ CRL Renewal      │                                             
+ OCSP Expiry      │ 1h                                          
+ OCSP Profile     │ ocsp                                        
+ Allowed Profiles │ ocsp                                        
+ Created          │ 2026-01-01T00:00:00Z                        
+ Updated          │ 2026-01-02T00:00:00Z                        
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_IssuerArchiveDestroyCmd/txt#2:
+{
+	"ID": "10",
+	"OrgID": "5",
+	"Label": "issuing",
+	"Type": 3,
+	"Status": 3,
+	"ParentID": "1",
+	"SKID": "0a1b2c",
+	"IKID": "l1l1l1",
+	"SerialNumber": "1234567890",
+	"Subject": "CN=Corp Issuing CA",
+	"Issuer": "CN=Test Trusty Level 1 CA",
+	"Sha256": "ab12cd34",
+	"NotBefore": "2026-01-01T00:00:00Z",
+	"NotAfter": "2031-01-01T00:00:00Z",
+	"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"KeyProvider": "inmem",
+	"Config": {
+		"AiaURL": "http://localhost:8880/v1/cert/${ISSUER_ID}",
+		"OcspURL": "http://localhost:8880/v1/ocspi/${ISSUER_ID}",
+		"CrlURL": "http://localhost:8880/v1/crl/${ISSUER_ID}",
+		"CrlExpiry": "48h",
+		"OcspExpiry": "1h",
+		"DelegatedOcspProfile": "ocsp",
+		"AllowedProfiles": [
+			"ocsp"
+		]
+	},
+	"CrlNumber": "3",
+	"CreatedAt": "2026-01-01T00:00:00Z",
+	"UpdatedAt": "2026-01-02T00:00:00Z"
+}
+ ID               │ 10                                          
+ Org ID           │ 5                                           
+ Project ID       │                                             
+ Label            │ issuing                                     
+ Type             │ Issuing                                     
+ Status           │ Destroyed                                   
+ Parent ID        │ 1                                           
+ SKID             │ 0a1b2c                                      
+ IKID             │ l1l1l1                                      
+ Serial           │ 1234567890                                  
+ Subject          │ CN=Corp Issuing CA                          
+ Issuer           │ CN=Test Trusty Level 1 CA                   
+ SHA-256          │ ab12cd34                                    
+ Not Before       │ 2026-01-01T00:00:00Z                        
+ Not After        │ 2031-01-01T00:00:00Z                        
+ Key Provider     │ inmem                                       
+ CRL Number       │ 3                                           
+ AIA URL          │ http://localhost:8880/v1/cert/${ISSUER_ID}  
+ CRL URL          │ http://localhost:8880/v1/crl/${ISSUER_ID}   
+ OCSP URL         │ http://localhost:8880/v1/ocspi/${ISSUER_ID} 
+ CRL Expiry       │ 48h                                         
+ CRL Renewal      │                                             
+ OCSP Expiry      │ 1h                                          
+ OCSP Profile     │ ocsp                                        
+ Allowed Profiles │ ocsp                                        
+ Created          │ 2026-01-01T00:00:00Z                        
+ Updated          │ 2026-01-02T00:00:00Z                        
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_IssuerGetCmd/json:
+{
+	"ID": "10",
+	"OrgID": "5",
+	"Label": "issuing",
+	"Type": 3,
+	"Status": 2,
+	"ParentID": "1",
+	"SKID": "0a1b2c",
+	"IKID": "l1l1l1",
+	"SerialNumber": "1234567890",
+	"Subject": "CN=Corp Issuing CA",
+	"Issuer": "CN=Test Trusty Level 1 CA",
+	"Sha256": "ab12cd34",
+	"NotBefore": "2026-01-01T00:00:00Z",
+	"NotAfter": "2031-01-01T00:00:00Z",
+	"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"KeyProvider": "inmem",
+	"Config": {
+		"AiaURL": "http://localhost:8880/v1/cert/${ISSUER_ID}",
+		"OcspURL": "http://localhost:8880/v1/ocspi/${ISSUER_ID}",
+		"CrlURL": "http://localhost:8880/v1/crl/${ISSUER_ID}",
+		"CrlExpiry": "48h",
+		"OcspExpiry": "1h",
+		"DelegatedOcspProfile": "ocsp",
+		"AllowedProfiles": [
+			"ocsp"
+		]
+	},
+	"CrlNumber": "3",
+	"CreatedAt": "2026-01-01T00:00:00Z",
+	"UpdatedAt": "2026-01-02T00:00:00Z"
+}
+
+- TestRpc/Test_IssuerGetCmd/txt:
+ ID               │ 10                                          
+ Org ID           │ 5                                           
+ Project ID       │                                             
+ Label            │ issuing                                     
+ Type             │ Issuing                                     
+ Status           │ Active                                      
+ Parent ID        │ 1                                           
+ SKID             │ 0a1b2c                                      
+ IKID             │ l1l1l1                                      
+ Serial           │ 1234567890                                  
+ Subject          │ CN=Corp Issuing CA                          
+ Issuer           │ CN=Test Trusty Level 1 CA                   
+ SHA-256          │ ab12cd34                                    
+ Not Before       │ 2026-01-01T00:00:00Z                        
+ Not After        │ 2031-01-01T00:00:00Z                        
+ Key Provider     │ inmem                                       
+ CRL Number       │ 3                                           
+ AIA URL          │ http://localhost:8880/v1/cert/${ISSUER_ID}  
+ CRL URL          │ http://localhost:8880/v1/crl/${ISSUER_ID}   
+ OCSP URL         │ http://localhost:8880/v1/ocspi/${ISSUER_ID} 
+ CRL Expiry       │ 48h                                         
+ CRL Renewal      │                                             
+ OCSP Expiry      │ 1h                                          
+ OCSP Profile     │ ocsp                                        
+ Allowed Profiles │ ocsp                                        
+ Created          │ 2026-01-01T00:00:00Z                        
+ Updated          │ 2026-01-02T00:00:00Z                        
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_IssuerGetCmd/txt#2:
+ ID               │ 10                                          
+ Org ID           │ 5                                           
+ Project ID       │                                             
+ Label            │ issuing                                     
+ Type             │ Issuing                                     
+ Status           │ Pending                                     
+ Parent ID        │ 1                                           
+ SKID             │ 0a1b2c                                      
+ IKID             │ l1l1l1                                      
+ Serial           │ 1234567890                                  
+ Subject          │ CN=Corp Issuing CA                          
+ Issuer           │ CN=Test Trusty Level 1 CA                   
+ SHA-256          │ ab12cd34                                    
+ Not Before       │ 2026-01-01T00:00:00Z                        
+ Not After        │ 2031-01-01T00:00:00Z                        
+ Key Provider     │ inmem                                       
+ CRL Number       │ 3                                           
+ AIA URL          │ http://localhost:8880/v1/cert/${ISSUER_ID}  
+ CRL URL          │ http://localhost:8880/v1/crl/${ISSUER_ID}   
+ OCSP URL         │ http://localhost:8880/v1/ocspi/${ISSUER_ID} 
+ CRL Expiry       │ 48h                                         
+ CRL Renewal      │                                             
+ OCSP Expiry      │ 1h                                          
+ OCSP Profile     │ ocsp                                        
+ Allowed Profiles │ ocsp                                        
+ Created          │ 2026-01-01T00:00:00Z                        
+ Updated          │ 2026-01-02T00:00:00Z                        
+
+-----BEGIN CERTIFICATE REQUEST-----
+MIIBcsr
+-----END CERTIFICATE REQUEST-----
+
+
+- TestRpc/Test_IssuerImportCmd/json:
+{
+	"ID": "10",
+	"OrgID": "5",
+	"Label": "issuing",
+	"Type": 3,
+	"Status": 2,
+	"ParentID": "1",
+	"SKID": "0a1b2c",
+	"IKID": "l1l1l1",
+	"SerialNumber": "1234567890",
+	"Subject": "CN=Corp Issuing CA",
+	"Issuer": "CN=Test Trusty Level 1 CA",
+	"Sha256": "ab12cd34",
+	"NotBefore": "2026-01-01T00:00:00Z",
+	"NotAfter": "2031-01-01T00:00:00Z",
+	"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"KeyProvider": "inmem",
+	"Config": {
+		"AiaURL": "http://localhost:8880/v1/cert/${ISSUER_ID}",
+		"OcspURL": "http://localhost:8880/v1/ocspi/${ISSUER_ID}",
+		"CrlURL": "http://localhost:8880/v1/crl/${ISSUER_ID}",
+		"CrlExpiry": "48h",
+		"OcspExpiry": "1h",
+		"DelegatedOcspProfile": "ocsp",
+		"AllowedProfiles": [
+			"ocsp"
+		]
+	},
+	"CrlNumber": "3",
+	"CreatedAt": "2026-01-01T00:00:00Z",
+	"UpdatedAt": "2026-01-02T00:00:00Z"
+}
+
+- TestRpc/Test_IssuerImportCmd/txt:
+ ID               │ 10                                          
+ Org ID           │ 5                                           
+ Project ID       │                                             
+ Label            │ issuing                                     
+ Type             │ Issuing                                     
+ Status           │ Active                                      
+ Parent ID        │ 1                                           
+ SKID             │ 0a1b2c                                      
+ IKID             │ l1l1l1                                      
+ Serial           │ 1234567890                                  
+ Subject          │ CN=Corp Issuing CA                          
+ Issuer           │ CN=Test Trusty Level 1 CA                   
+ SHA-256          │ ab12cd34                                    
+ Not Before       │ 2026-01-01T00:00:00Z                        
+ Not After        │ 2031-01-01T00:00:00Z                        
+ Key Provider     │ inmem                                       
+ CRL Number       │ 3                                           
+ AIA URL          │ http://localhost:8880/v1/cert/${ISSUER_ID}  
+ CRL URL          │ http://localhost:8880/v1/crl/${ISSUER_ID}   
+ OCSP URL         │ http://localhost:8880/v1/ocspi/${ISSUER_ID} 
+ CRL Expiry       │ 48h                                         
+ CRL Renewal      │                                             
+ OCSP Expiry      │ 1h                                          
+ OCSP Profile     │ ocsp                                        
+ Allowed Profiles │ ocsp                                        
+ Created          │ 2026-01-01T00:00:00Z                        
+ Updated          │ 2026-01-02T00:00:00Z                        
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_IssuerListCmd/json:
+{
+	"Issuers": [
+		{
+			"ID": "10",
+			"OrgID": "5",
+			"Label": "issuing",
+			"Type": 3,
+			"Status": 2,
+			"ParentID": "1",
+			"SKID": "0a1b2c",
+			"IKID": "l1l1l1",
+			"SerialNumber": "1234567890",
+			"Subject": "CN=Corp Issuing CA",
+			"Issuer": "CN=Test Trusty Level 1 CA",
+			"Sha256": "ab12cd34",
+			"NotBefore": "2026-01-01T00:00:00Z",
+			"NotAfter": "2031-01-01T00:00:00Z",
+			"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+			"KeyProvider": "inmem",
+			"Config": {
+				"AiaURL": "http://localhost:8880/v1/cert/${ISSUER_ID}",
+				"OcspURL": "http://localhost:8880/v1/ocspi/${ISSUER_ID}",
+				"CrlURL": "http://localhost:8880/v1/crl/${ISSUER_ID}",
+				"CrlExpiry": "48h",
+				"OcspExpiry": "1h",
+				"DelegatedOcspProfile": "ocsp",
+				"AllowedProfiles": [
+					"ocsp"
+				]
+			},
+			"CrlNumber": "3",
+			"CreatedAt": "2026-01-01T00:00:00Z",
+			"UpdatedAt": "2026-01-02T00:00:00Z"
+		},
+		{
+			"ID": "1",
+			"Label": "trusty.l1",
+			"Type": 2,
+			"Status": 2,
+			"SKID": "l1l1l1",
+			"Subject": "CN=Test Trusty Level 1 CA",
+			"NotAfter": "2031-01-01T00:00:00Z",
+			"Config": {
+				"AllowedProfiles": [
+					"ocsp",
+					"tenant_ca"
+				]
+			}
+		}
+	],
+	"NextPage": {
+		"Cursor": "next-cursor"
+	}
+}
+
+- TestRpc/Test_IssuerListCmd/txt:
+┌────┬────────┬────────────┬───────────┬──────────────┬────────┬────────┬───────────────────────────┬──────────────────────┐
+│ ID │ ORG ID │ PROJECT ID │   LABEL   │     TYPE     │ STATUS │  SKID  │          SUBJECT          │      NOT AFTER       │
+├────┼────────┼────────────┼───────────┼──────────────┼────────┼────────┼───────────────────────────┼──────────────────────┤
+│ 10 │ 5      │            │ issuing   │ Issuing      │ Active │ 0a1b2c │ CN=Corp Issuing CA        │ 2031-01-01T00:00:00Z │
+│ 1  │        │            │ trusty.l1 │ Intermediate │ Active │ l1l1l1 │ CN=Test Trusty Level 1 CA │ 2031-01-01T00:00:00Z │
+└────┴────────┴────────────┴───────────┴──────────────┴────────┴────────┴───────────────────────────┴──────────────────────┘
+
+Next page: --cursor next-cursor
+
+
+- TestRpc/Test_IssuerRegisterCmd/json:
+{
+	"ID": "10",
+	"OrgID": "5",
+	"Label": "issuing",
+	"Type": 3,
+	"Status": 2,
+	"ParentID": "1",
+	"SKID": "0a1b2c",
+	"IKID": "l1l1l1",
+	"SerialNumber": "1234567890",
+	"Subject": "CN=Corp Issuing CA",
+	"Issuer": "CN=Test Trusty Level 1 CA",
+	"Sha256": "ab12cd34",
+	"NotBefore": "2026-01-01T00:00:00Z",
+	"NotAfter": "2031-01-01T00:00:00Z",
+	"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"KeyProvider": "inmem",
+	"Config": {
+		"AiaURL": "http://localhost:8880/v1/cert/${ISSUER_ID}",
+		"OcspURL": "http://localhost:8880/v1/ocspi/${ISSUER_ID}",
+		"CrlURL": "http://localhost:8880/v1/crl/${ISSUER_ID}",
+		"CrlExpiry": "48h",
+		"OcspExpiry": "1h",
+		"DelegatedOcspProfile": "ocsp",
+		"AllowedProfiles": [
+			"ocsp"
+		]
+	},
+	"CrlNumber": "3",
+	"CreatedAt": "2026-01-01T00:00:00Z",
+	"UpdatedAt": "2026-01-02T00:00:00Z"
+}
+
+- TestRpc/Test_IssuerRegisterCmd/txt:
+ ID               │ 10                                          
+ Org ID           │ 5                                           
+ Project ID       │                                             
+ Label            │ issuing                                     
+ Type             │ Issuing                                     
+ Status           │ Active                                      
+ Parent ID        │ 1                                           
+ SKID             │ 0a1b2c                                      
+ IKID             │ l1l1l1                                      
+ Serial           │ 1234567890                                  
+ Subject          │ CN=Corp Issuing CA                          
+ Issuer           │ CN=Test Trusty Level 1 CA                   
+ SHA-256          │ ab12cd34                                    
+ Not Before       │ 2026-01-01T00:00:00Z                        
+ Not After        │ 2031-01-01T00:00:00Z                        
+ Key Provider     │ inmem                                       
+ CRL Number       │ 3                                           
+ AIA URL          │ http://localhost:8880/v1/cert/${ISSUER_ID}  
+ CRL URL          │ http://localhost:8880/v1/crl/${ISSUER_ID}   
+ OCSP URL         │ http://localhost:8880/v1/ocspi/${ISSUER_ID} 
+ CRL Expiry       │ 48h                                         
+ CRL Renewal      │                                             
+ OCSP Expiry      │ 1h                                          
+ OCSP Profile     │ ocsp                                        
+ Allowed Profiles │ ocsp                                        
+ Created          │ 2026-01-01T00:00:00Z                        
+ Updated          │ 2026-01-02T00:00:00Z                        
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_OrgBootstrapCmd/txt:
+ ID               │ 10                                          
+ Org ID           │ 5                                           
+ Project ID       │                                             
+ Label            │ issuing                                     
+ Type             │ Issuing                                     
+ Status           │ Active                                      
+ Parent ID        │ 1                                           
+ SKID             │ 0a1b2c                                      
+ IKID             │ l1l1l1                                      
+ Serial           │ 1234567890                                  
+ Subject          │ CN=Corp Issuing CA                          
+ Issuer           │ CN=Test Trusty Level 1 CA                   
+ SHA-256          │ ab12cd34                                    
+ Not Before       │ 2026-01-01T00:00:00Z                        
+ Not After        │ 2031-01-01T00:00:00Z                        
+ Key Provider     │ inmem                                       
+ CRL Number       │ 3                                           
+ AIA URL          │ http://localhost:8880/v1/cert/${ISSUER_ID}  
+ CRL URL          │ http://localhost:8880/v1/crl/${ISSUER_ID}   
+ OCSP URL         │ http://localhost:8880/v1/ocspi/${ISSUER_ID} 
+ CRL Expiry       │ 48h                                         
+ CRL Renewal      │                                             
+ OCSP Expiry      │ 1h                                          
+ OCSP Profile     │ ocsp                                        
+ Allowed Profiles │ ocsp                                        
+ Created          │ 2026-01-01T00:00:00Z                        
+ Updated          │ 2026-01-02T00:00:00Z                        
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+4 profiles registered
+┌────┬────────┬────────────┬────────┬─────────┬────────┬──────────────────────────────────────┬────────┐
+│ ID │ ORG ID │ PROJECT ID │ LABEL  │ ISSUER  │ EXPIRY │                USAGES                │ STATUS │
+├────┼────────┼────────────┼────────┼─────────┼────────┼──────────────────────────────────────┼────────┤
+│ 20 │ 5      │            │ client │ issuing │ 2160h  │ signing,key encipherment,server auth │ Active │
+│ 20 │ 5      │            │ ocsp   │ *       │ 2160h  │ signing,key encipherment,server auth │ Active │
+│ 20 │ 5      │            │ peer   │ issuing │ 2160h  │ signing,key encipherment,server auth │ Active │
+│ 20 │ 5      │            │ server │ issuing │ 2160h  │ signing,key encipherment,server auth │ Active │
+└────┴────────┴────────────┴────────┴─────────┴────────┴──────────────────────────────────────┴────────┘
+
+
+- TestRpc/Test_ProfileGetCmd/json:
+{
+	"ID": "20",
+	"OrgID": "5",
+	"Label": "server",
+	"IssuerLabel": "issuing",
+	"Description": "TLS server certificate",
+	"Usages": [
+		"signing",
+		"key encipherment",
+		"server auth"
+	],
+	"Expiry": "2160h",
+	"Backdate": "30m",
+	"AllowedExtensions": [
+		"2.5.29.17"
+	],
+	"Status": 2,
+	"CreatedAt": "2026-01-01T00:00:00Z"
+}
+
+- TestRpc/Test_ProfileGetCmd/txt:
+ ID                 │ 20                                   
+ Org ID             │ 5                                    
+ Project ID         │                                      
+ Label              │ server                               
+ Issuer             │ issuing                              
+ Description        │ TLS server certificate               
+ Usages             │ signing,key encipherment,server auth 
+ Expiry             │ 2160h                                
+ Backdate           │ 30m                                  
+ Allowed Extensions │ 2.5.29.17                            
+ Allowed Names      │                                      
+ Allowed DNS        │                                      
+ Allowed Email      │                                      
+ Allowed URI        │                                      
+ Status             │ Active                               
+ Created            │ 2026-01-01T00:00:00Z                 
+ Updated            │                                      
+
+
+- TestRpc/Test_ProfileListCmd/json:
+{
+	"Profiles": [
+		{
+			"ID": "20",
+			"OrgID": "5",
+			"Label": "server",
+			"IssuerLabel": "issuing",
+			"Description": "TLS server certificate",
+			"Usages": [
+				"signing",
+				"key encipherment",
+				"server auth"
+			],
+			"Expiry": "2160h",
+			"Backdate": "30m",
+			"AllowedExtensions": [
+				"2.5.29.17"
+			],
+			"Status": 2,
+			"CreatedAt": "2026-01-01T00:00:00Z"
+		},
+		{
+			"ID": "20",
+			"OrgID": "5",
+			"Label": "ocsp",
+			"IssuerLabel": "*",
+			"Description": "TLS server certificate",
+			"Usages": [
+				"signing",
+				"key encipherment",
+				"server auth"
+			],
+			"Expiry": "2160h",
+			"Backdate": "30m",
+			"AllowedExtensions": [
+				"2.5.29.17"
+			],
+			"Status": 2,
+			"CreatedAt": "2026-01-01T00:00:00Z"
+		}
+	],
+	"NextPage": {
+		"Offset": 2
+	}
+}
+
+- TestRpc/Test_ProfileListCmd/txt:
+┌────┬────────┬────────────┬────────┬─────────┬────────┬──────────────────────────────────────┬────────┐
+│ ID │ ORG ID │ PROJECT ID │ LABEL  │ ISSUER  │ EXPIRY │                USAGES                │ STATUS │
+├────┼────────┼────────────┼────────┼─────────┼────────┼──────────────────────────────────────┼────────┤
+│ 20 │ 5      │            │ server │ issuing │ 2160h  │ signing,key encipherment,server auth │ Active │
+│ 20 │ 5      │            │ ocsp   │ *       │ 2160h  │ signing,key encipherment,server auth │ Active │
+└────┴────────┴────────────┴────────┴─────────┴────────┴──────────────────────────────────────┴────────┘
+
+Next page: --offset 2
+
+
+- TestRpc/Test_ProfileRegisterCmd/json:
+{
+	"ID": "20",
+	"OrgID": "5",
+	"Label": "server",
+	"IssuerLabel": "issuing",
+	"Description": "TLS server certificate",
+	"Usages": [
+		"signing",
+		"key encipherment",
+		"server auth"
+	],
+	"Expiry": "2160h",
+	"Backdate": "30m",
+	"AllowedExtensions": [
+		"2.5.29.17"
+	],
+	"Status": 2,
+	"CreatedAt": "2026-01-01T00:00:00Z"
+}
+
+- TestRpc/Test_ProfileRegisterCmd/txt:
+ ID                 │ 20                                   
+ Org ID             │ 5                                    
+ Project ID         │                                      
+ Label              │ server                               
+ Issuer             │ issuing                              
+ Description        │ TLS server certificate               
+ Usages             │ signing,key encipherment,server auth 
+ Expiry             │ 2160h                                
+ Backdate           │ 30m                                  
+ Allowed Extensions │ 2.5.29.17                            
+ Allowed Names      │                                      
+ Allowed DNS        │                                      
+ Allowed Email      │                                      
+ Allowed URI        │                                      
+ Status             │ Active                               
+ Created            │ 2026-01-01T00:00:00Z                 
+ Updated            │                                      
+
+
+- TestRpc/Test_RootCmds/json:
+{
+	"Roots": [
+		{
+			"ID": "50",
+			"SKID": "r00t",
+			"NotBefore": "2020-01-01T00:00:00Z",
+			"NotAfter": "2040-01-01T00:00:00Z",
+			"Subject": "CN=Test Trusty Root CA",
+			"Sha256": "beef",
+			"Trust": 2,
+			"Pem": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+			"CreatedAt": "2026-01-01T00:00:00Z"
+		}
+	]
+}
+
+- TestRpc/Test_RootCmds/json#2:
+{
+	"ID": "50",
+	"SKID": "r00t",
+	"NotBefore": "2020-01-01T00:00:00Z",
+	"NotAfter": "2040-01-01T00:00:00Z",
+	"Subject": "CN=Test Trusty Root CA",
+	"Sha256": "beef",
+	"Trust": 2,
+	"Pem": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"CreatedAt": "2026-01-01T00:00:00Z"
+}
+
+- TestRpc/Test_RootCmds/txt:
+┌────┬────────┬──────┬────────────────────────┬─────────┬──────────────────────┐
+│ ID │ ORG ID │ SKID │        SUBJECT         │  TRUST  │      NOT AFTER       │
+├────┼────────┼──────┼────────────────────────┼─────────┼──────────────────────┤
+│ 50 │        │ r00t │ CN=Test Trusty Root CA │ Private │ 2040-01-01T00:00:00Z │
+└────┴────────┴──────┴────────────────────────┴─────────┴──────────────────────┘
+
+
+- TestRpc/Test_RootCmds/txt#2:
+{
+	"Roots": [
+		{
+			"ID": "50",
+			"SKID": "r00t",
+			"NotBefore": "2020-01-01T00:00:00Z",
+			"NotAfter": "2040-01-01T00:00:00Z",
+			"Subject": "CN=Test Trusty Root CA",
+			"Sha256": "beef",
+			"Trust": 2,
+			"Pem": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+			"CreatedAt": "2026-01-01T00:00:00Z"
+		}
+	]
+}
+ ID         │ 50                     
+ Org ID     │                        
+ SKID       │ r00t                   
+ Subject    │ CN=Test Trusty Root CA 
+ SHA-256    │ beef                   
+ Trust      │ Private                
+ Not Before │ 2020-01-01T00:00:00Z   
+ Not After  │ 2040-01-01T00:00:00Z   
+ Created    │ 2026-01-01T00:00:00Z   
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+

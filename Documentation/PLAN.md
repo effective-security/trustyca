@@ -446,18 +446,81 @@ Follow-ups:
    in-memory cache of the CRLs, like the OCSP one, is open.
 4. No rate limit on the public routes beyond the listener's.
 
-## Phase 6: operator tooling
+## Phase 6: operator tooling (done)
 
-1. `internal/ctl/admin`: `ca issuer list|get|register|import|activate|archive`,
-   `ca profile list|register --file profile.yaml|delete`, `ca crl publish`,
-   `ca cert list|get|revoke`, `ca root register|list`; `privpb/protos/admin.proto`
-   gains cross-org `ListIssuers` and `ListCertificates` for support staff.
-2. `trustyca` CLI: read-only `project` and `cert` commands for org users where useful.
-3. Onboarding command: `ca org bootstrap --org <id> --templates <dir>` copies
-   template profiles into an org and registers its first issuing CA under the
-   platform intermediate.
-4. Docs: `Documentation/cli/*.md` regenerated with `make docs`; README section on
-   CA and CIS configuration.
+1. `internal/ctl/admin` (done): the `ca` tree of `trustycactl`, over the
+   backend listener with the `trustyca-admin` client certificate
+   (`make gen_test_certs` generates `trustyca_admin` with the
+   `spiffe://trustyca/admin` identity; `--cert` makes the auth token
+   optional). `ca issuer list|get|register|import|activate|archive|destroy`,
+   `ca profile list|get|register --file profile.yaml|delete`,
+   `ca root list|register`, `ca cert list|get|revoke`,
+   `ca crl get|publish`. Every CA request names its org (`--org`, with
+   `--project` for the rows of a project); a PEM argument is a file; a
+   profile file is one profile in the YAML shape of a ca-config file,
+   labelled after the file (`internal/ca/pbconv`, the API conversions moved
+   out of `internal/ca` into a leaf package so the CLI links no DB driver).
+   `privpb/protos/admin.proto` gained `ListIssuers` and `ListCertificates`
+   (an org and its project, the platform, or every org and the platform;
+   `query.ListIssuersRequest.Label` filters by label), served by
+   `server/service/admin` over `db.CaReadonlyDb`: `ca issuer list` and
+   `ca cert list` are these support views. `api/pb/print.go` prints the CA
+   and CIS objects as tables with their PEM.
+2. `trustyca` CLI (done): the `project` commands existed; `cert get|status`,
+   `issuer get`, `crl get` and `root list` read the public CIS through
+   `Cli.CISClient` without a token, over gRPC or HTTP (`-H`). The CA is not
+   served by the wfe listener (the RA is its caller), so the user CLI has no
+   `cert list`.
+3. Onboarding (done): `ca org bootstrap --org <id> --parent <platform
+   issuer label or ID> --templates <dir>` registers the issuing CA of the
+   org under the platform intermediate with the CA profile the parent
+   allows (`--profile`, default `tenant_ca`), then copies the template
+   profiles: a template without `issuer_label` is bound to the new issuer,
+   one bound to `*` (the `ocsp` responder) is listed in its allowed
+   profiles. `etc/dev/ca-config.local.yaml` registers the dev L1 CA as
+   `trusty.l1` (path length 1, `allowed_profiles: ocsp, tenant_ca`) with the
+   `tenant_ca` profile, since the L2 `trusty.svc` has path length zero and
+   signs no CA; `etc/dev/profiles` holds the dev templates (server, client,
+   peer, ocsp). The issuer is registered before the profiles: a failed
+   profile leaves the issuer in place and names the profile.
+4. Docs (done): `Documentation/cli/*.md` and `Documentation/api/*.md`
+   regenerated; README sections on the CA, the operator commands and the
+   onboarding; `TestHelp` of both binaries parses the whole command tree
+   (kong expands `${...}` in help text: a placeholder is written `$${...}`).
+5. Tests (done): `internal/ctl/admin/ca_test.go` runs every command over the
+   gRPC mocks with the dev templates and records the table and JSON output
+   in a golden file; `e2e_test.go` runs the CA and Admin services of the app
+   container behind a gRPC server with the `trustyca-admin` identity and
+   drives them with the commands (onboarding under `trusty.l1`, a
+   certificate of the copied `server` profile, revocation, OCSP through the
+   delegated responder of the `ocsp` template, the CRL, archive and
+   destroy); `server/service/admin` asserts the query requests of the
+   support lists; the CLI commands run over `MockCIS`. Verified against the
+   dev server with `bin/trustycactl` and the admin certificate, and
+   `bin/trustyca` over gRPC and HTTP.
+
+6. Fix (done): the bootstrap raced on a fresh DB. Several processes
+   bootstrap one DB at once (the service instances; the test packages of
+   `make test` after `make drop-sql start-sql`): each missed the lookup of
+   a platform issuer and the second insert failed the start with a unique
+   violation of the label. `Registry.Bootstrap` now continues with the row
+   another instance registered when the key matches
+   (`db.IsUniqueViolation`, shared with the CA service's conflict mapping);
+   `TestBootstrap_LostRace` and `TestBootstrap_ConcurrentStart` cover it.
+
+Follow-ups:
+
+1. `UpdateIssuer` and `DeleteProfile` carry no `ProjectID` (ROADMAP.md
+   RM-004), so `ca issuer archive|destroy` and `ca profile delete` name the
+   org only.
+2. No `ca issuer update` of the runtime settings (URLs, timings, allowed
+   profiles) after registration, though `UpdateIssuer` supports it.
+3. `ca org bootstrap` has no default URL templates: the operator passes
+   `--crl-url`, `--ocsp-url` and `--aia-url`, or the certificates carry none.
+4. The CA and Admin clients of the CTL are gRPC only; the CIS commands are
+   the only ones with an HTTP transport.
+5. The dev wfe listener serves no CA to users; a user who may sign
+   (`certs:issue`) has no CLI command for it until an RA exists.
 
 ## Phase 7: hardening
 

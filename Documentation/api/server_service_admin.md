@@ -14,6 +14,8 @@ import "github.com/effective-security/trustyca/server/service/admin"
   - [func \(s \*Service\) AdminHTTPHandler\(\) restserver.Handle](<#Service.AdminHTTPHandler>)
   - [func \(s \*Service\) Close\(\)](<#Service.Close>)
   - [func \(s \*Service\) IsReady\(\) bool](<#Service.IsReady>)
+  - [func \(s \*Service\) ListCertificates\(ctx context.Context, req \*privpb.ListCertificatesRequest\) \(\*pb.CertificatesResponse, error\)](<#Service.ListCertificates>)
+  - [func \(s \*Service\) ListIssuers\(ctx context.Context, req \*privpb.ListIssuersRequest\) \(\*pb.IssuersResponse, error\)](<#Service.ListIssuers>)
   - [func \(s \*Service\) ListOrgs\(ctx context.Context, req \*privpb.ListOrgsRequest\) \(\*pb.OrgsResponse, error\)](<#Service.ListOrgs>)
   - [func \(s \*Service\) ListProjects\(ctx context.Context, req \*privpb.ListProjectsRequest\) \(\*pb.ProjectsResponse, error\)](<#Service.ListProjects>)
   - [func \(s \*Service\) Name\(\) string](<#Service.Name>)
@@ -30,7 +32,7 @@ const ServiceName = "admin"
 ```
 
 <a name="Factory"></a>
-## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L27>)
+## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L29>)
 
 ```go
 func Factory(server gserver.GServer) any
@@ -39,9 +41,9 @@ func Factory(server gserver.GServer) any
 Factory returns a factory of the service
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L20-L24>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L21-L26>)
 
-Service defines the Admin service
+Service defines the Admin service: the support views across orgs. It reads the CA tables through db.CaReadonlyDb and holds no issuer keys.
 
 ```go
 type Service struct {
@@ -50,7 +52,7 @@ type Service struct {
 ```
 
 <a name="Service.AdminHTTPHandler"></a>
-### func \(\*Service\) [AdminHTTPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L63>)
+### func \(\*Service\) [AdminHTTPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L66>)
 
 ```go
 func (s *Service) AdminHTTPHandler() restserver.Handle
@@ -59,7 +61,7 @@ func (s *Service) AdminHTTPHandler() restserver.Handle
 
 
 <a name="Service.Close"></a>
-### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L54>)
+### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L57>)
 
 ```go
 func (s *Service) Close()
@@ -68,13 +70,31 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.IsReady"></a>
-### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L49>)
+### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L52>)
 
 ```go
 func (s *Service) IsReady() bool
 ```
 
 IsReady indicates that the service is ready to serve its end\-points
+
+<a name="Service.ListCertificates"></a>
+### func \(\*Service\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/certificates.go#L16>)
+
+```go
+func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error)
+```
+
+ListCertificates lists the certificates of the org the request names, of the platform, or of every org and the platform, newest first, for support staff
+
+<a name="Service.ListIssuers"></a>
+### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/issuers.go#L17>)
+
+```go
+func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error)
+```
+
+ListIssuers lists the issuers of the org the request names, of the platform, or of every org and the platform, newest first, for support staff. Private key material is never part of the rows' API view.
 
 <a name="Service.ListOrgs"></a>
 ### func \(\*Service\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/orgs.go#L12>)
@@ -95,7 +115,7 @@ func (s *Service) ListProjects(ctx context.Context, req *privpb.ListProjectsRequ
 
 
 <a name="Service.Name"></a>
-### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L44>)
+### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L47>)
 
 ```go
 func (s *Service) Name() string
@@ -104,7 +124,7 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.RegisterGRPC"></a>
-### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L59>)
+### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L62>)
 
 ```go
 func (s *Service) RegisterGRPC(r *grpc.Server)
@@ -113,7 +133,7 @@ func (s *Service) RegisterGRPC(r *grpc.Server)
 RegisterGRPC registers gRPC handler
 
 <a name="Service.RegisterRoute"></a>
-### func \(\*Service\) [RegisterRoute](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L68>)
+### func \(\*Service\) [RegisterRoute](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L71>)
 
 ```go
 func (s *Service) RegisterRoute(r restserver.Router)

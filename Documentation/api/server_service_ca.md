@@ -67,7 +67,7 @@ type Service struct {
 ```
 
 <a name="Service.ActivateIssuer"></a>
-### func \(\*Service\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L231>)
+### func \(\*Service\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L233>)
 
 ```go
 func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequest) (*pb.Issuer, error)
@@ -112,7 +112,7 @@ func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateRequ
 GetCertificate returns a certificate of the org by its ID, its Subject Key Identifier \(the newest one of the key\), its SHA\-256 thumbprint, or the key identifier of its issuer and its serial number. A certificate of another org, or of a project the caller cannot read, is not found.
 
 <a name="Service.GetIssuer"></a>
-### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L366>)
+### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L368>)
 
 ```go
 func (s *Service) GetIssuer(ctx context.Context, req *pb.GetIssuerRequest) (*pb.Issuer, error)
@@ -130,7 +130,7 @@ func (s *Service) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*p
 GetProfile returns a profile of the org by ID, or by label resolved in the project then in the org
 
 <a name="Service.ImportIssuer"></a>
-### func \(\*Service\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L158>)
+### func \(\*Service\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L160>)
 
 ```go
 func (s *Service) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest) (*pb.Issuer, error)
@@ -157,7 +157,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificates
 ListCertificates returns the certificates of the org, newest first: of the project of the request, or of the org\-wide scope and every project the caller may read \(DESIGN.md section 3.3\)
 
 <a name="Service.ListIssuers"></a>
-### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L406>)
+### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L408>)
 
 ```go
 func (s *Service) ListIssuers(ctx context.Context, req *pb.ListIssuersRequest) (*pb.IssuersResponse, error)
@@ -220,7 +220,7 @@ func (s *Service) RegisterGRPC(r *grpc.Server)
 RegisterGRPC registers gRPC handler
 
 <a name="Service.RegisterIssuer"></a>
-### func \(\*Service\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L38>)
+### func \(\*Service\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L40>)
 
 ```go
 func (s *Service) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequest) (*pb.Issuer, error)
@@ -256,7 +256,7 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 RevokeCertificate revokes a certificate of the org, named by its ID, its Subject Key Identifier or its issuer and serial number: the revocation and the status of the certificate are written in one transaction \(db.RevokeCertificate\), then the CertificateRevoked event is recorded. A revoked certificate is refused with a precondition failure, and the reason RemoveFromCRL, which releases a certificate from hold \(RFC 5280 section 5.3.1\), is refused since hold removal is not implemented. The request names the project of the certificate when the caller's role is granted there only; a certificate of another project is then not found.
 
 <a name="Service.SignCertificate"></a>
-### func \(\*Service\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L51>)
+### func \(\*Service\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L49>)
 
 ```go
 func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest) (*pb.CertificateResponse, error)
@@ -265,7 +265,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 SignCertificate signs a certificate request with the issuer of the profile, resolved in the scope of the request \(DESIGN.md section 6\), and records the certificate with its issue event in one transaction.
 
 <a name="Service.SignOCSP"></a>
-### func \(\*Service\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L160>)
+### func \(\*Service\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L158>)
 
 ```go
 func (s *Service) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error)
@@ -283,7 +283,7 @@ func (s *Service) UpdateCertificateLabel(ctx context.Context, req *pb.UpdateCert
 UpdateCertificateLabel replaces the label a client gave a certificate, and its client metadata when the request carries any. The request names the project of the certificate when the caller's role is granted there only \(the interceptor authorizes that scope\); a certificate of another project is then not found. There is no event type for the change: it is logged, not recorded in the audit trail.
 
 <a name="Service.UpdateIssuer"></a>
-### func \(\*Service\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L287>)
+### func \(\*Service\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L289>)
 
 ```go
 func (s *Service) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest) (*pb.Issuer, error)
