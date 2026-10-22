@@ -1,100 +1,133 @@
 package cis
 
 import (
+	"context"
 	"encoding/base64"
+	"encoding/pem"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
+	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/restserver"
 	"github.com/effective-security/porto/xhttp/header"
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/porto/xhttp/marshal"
+	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/metricskey"
+	"github.com/effective-security/xdb"
+	"github.com/effective-security/xlog"
 	"golang.org/x/crypto/ocsp"
 )
 
+// The media types of the binary routes (RFC 2585, RFC 6960)
+const (
+	contentTypeCert         = "application/pkix-cert"
+	contentTypeCRL          = "application/pkix-crl"
+	contentTypeOCSPResponse = "application/ocsp-response"
+)
+
+// The headers of the cacheable responses that porto does not name
+const (
+	headerETag         = "ETag"
+	headerExpires      = "Expires"
+	headerIfNoneMatch  = "If-None-Match"
+	headerLastModified = "Last-Modified"
+	headerPragma       = "Pragma"
+)
+
+// The Cache-Control of the responses: an issuer certificate never changes
+// for its key identifier (certMaxAge), a CRL and an OCSP response are
+// valid until their NextUpdate, and an error is not cached
+const (
+	cacheControlPublic  = "public, no-transform, must-revalidate, max-age="
+	cacheControlNoStore = "no-store"
+	pragmaNoCache       = "no-cache"
+	certMaxAge          = 24 * time.Hour
+)
+
+// The route parameters of the binary routes
+const (
+	paramIKID = "ikid"
+	paramBody = "body"
+)
+
+// cacheMetricOCSP is the type tag of the cache metrics of OCSP responses
+const cacheMetricOCSP = "ocsp"
+
+// maxOCSPRequestSize bounds the body of an OCSP POST (RFC 6960 A.1): a
+// request is a few hundred bytes, one with a nonce or several certificates
+// a few kilobytes, and the responder is public
+const maxOCSPRequestSize = 8 * 1024
+
+// caCallTimeout bounds the forwarding of an OCSP request to the CA
+const caCallTimeout = 15 * time.Second
+
+// IssuerHandler serves the certificate of the issuer with the key
+// identifier in DER, the AIA caIssuers URL of the certificates it issued
 func (s *Service) IssuerHandler() restserver.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p restserver.Params) {
-		// TODO
-		/*
-			ikid := p.ByName("issuer_id")
-
-				// if strings.HasSuffix(ikid, ".crl") {
-				// 	ikid = ikid[0 : len(ikid)-4]
-				// }
-
-			logger.KV(xlog.TRACE, "ikid", ikid)
-
-			ctx := r.Context()
-			m, err := s.db.GetCrl(ctx, ikid)
-			if err != nil {
-				if xdb.IsNotFoundError(err) {
-					// metrics for Not Found
-					metricskey.AIADownloadFailCrl.IncrCounter(1)
-					marshal.WriteJSON(w, r, httperror.NotFound("unable to locate CRL"))
-
-				} else {
-					marshal.WriteJSON(w, r, httperror.Unexpected("unable to locate CRL").WithCause(err))
-				}
-				return
-			}
-
-			block, _ := pem.Decode([]byte(m.Pem))
-
-			metricskey.AIADownloadSuccessCrl.IncrCounter(1)
-
-			wh := w.Header()
-			wh.Set(header.ContentType, "application/pkix-crl")
-			wh.Set("Cache-Control", "no-store")
-			wh.Set("Pragma", "no-cache")
-			_, _ = w.Write(block.Bytes)
-		*/
+		ikid := p.ByName(paramIKID)
+		row, err := s.issuedIssuer(r.Context(), ikid)
+		if err != nil {
+			metricskey.AIADownloadFailCert.IncrCounter(1)
+			marshal.WriteJSON(w, r, err)
+			return
+		}
+		der, err := derOf(row.Pem)
+		if err != nil {
+			metricskey.AIADownloadFailCert.IncrCounter(1)
+			logger.ContextKV(r.Context(), xlog.ERROR,
+				"reason", "invalid_issuer_pem",
+				"ikid", ikid,
+				"err", err.Error())
+			marshal.WriteJSON(w, r, httperror.Unexpected("unable to decode certificate"))
+			return
+		}
+		metricskey.AIADownloadSuccessCert.IncrCounter(1)
+		now := time.Now()
+		writeCacheable(w, r, contentTypeCert, der, row.NotBefore.UTC(), now.Add(certMaxAge))
 	}
 }
 
+// CRLHandler serves the current CRL of the issuer with the key identifier
+// in DER, the CRL Distribution Point of the certificates it issued
 func (s *Service) CRLHandler() restserver.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p restserver.Params) {
-		// TODO
-		/*
-			skid := p.ByName("subject_id")
-
-				// if strings.HasSuffix(skid, ".crt") {
-				// 	skid = skid[0 : len(skid)-4]
-				// }
-
-			logger.KV(xlog.TRACE, "skid", skid)
-
-			ctx := r.Context()
-			list, err := s.db.GetCertificatesBySKID(ctx, skid)
-			if err != nil {
-				if xdb.IsNotFoundError(err) {
-					// metrics for Not Found
-					metricskey.AIADownloadFailCert.IncrCounter(1)
-					marshal.WriteJSON(w, r, httperror.NotFound("unable to locate certificate"))
-
-				} else {
-					marshal.WriteJSON(w, r, httperror.Unexpected("unable to locate certificate").WithCause(err))
-				}
-				return
-			} else if len(list) == 0 {
-				marshal.WriteJSON(w, r, httperror.NotFound("unable to locate certificate"))
+		ikid := p.ByName(paramIKID)
+		row, err := s.db.GetCrl(r.Context(), ikid)
+		if err != nil {
+			metricskey.AIADownloadFailCrl.IncrCounter(1)
+			if xdb.IsNotFoundError(err) {
+				marshal.WriteJSON(w, r, httperror.NotFound("CRL not found"))
 				return
 			}
-
-			block, _ := pem.Decode([]byte(list[0].Pem))
-			metricskey.AIADownloadSuccessCert.IncrCounter(1)
-
-			w.Header().Set(header.ContentType, "application/pkix-cert")
-			_, _ = w.Write(block.Bytes)
-		*/
+			marshal.WriteJSON(w, r, httperror.Unexpected("unable to find CRL").WithCause(err))
+			return
+		}
+		der, err := derOf(row.Pem)
+		if err != nil {
+			metricskey.AIADownloadFailCrl.IncrCounter(1)
+			logger.ContextKV(r.Context(), xlog.ERROR,
+				"reason", "invalid_crl_pem",
+				"ikid", ikid,
+				"err", err.Error())
+			marshal.WriteJSON(w, r, httperror.Unexpected("unable to decode CRL"))
+			return
+		}
+		metricskey.AIADownloadSuccessCrl.IncrCounter(1)
+		writeCacheable(w, r, contentTypeCRL, der, row.ThisUpdate.UTC(), row.NextUpdate.UTC())
 	}
 }
 
-// GetOcspHandler returns OCSP via GET
+// GetOcspHandler answers an OCSP request sent as the URL-encoded base64 of
+// its DER encoding in the path (RFC 6960 A.1); the issuer segment of the
+// route by issuer is not needed to answer, the request carries the issuer
 func (s *Service) GetOcspHandler() restserver.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p restserver.Params) {
-		query := p.ByName("body")
+		query := p.ByName(paramBody)
 		base64Request, err := url.QueryUnescape(query)
 		if err != nil {
 			marshal.WriteJSON(w, r, httperror.InvalidRequest("unable to parse query"))
@@ -127,11 +160,6 @@ func (s *Service) GetOcspHandler() restserver.Handle {
 	}
 }
 
-// maxOCSPRequestSize bounds the body of an OCSP POST (RFC 6960 A.1): a
-// request is a few hundred bytes, one with a nonce or several certificates
-// a few kilobytes, and the responder is public
-const maxOCSPRequestSize = 8 * 1024
-
 // OCSPHandler answers an OCSP request posted as the body, which is read up
 // to maxOCSPRequestSize whatever the request declares
 func (s *Service) OCSPHandler() restserver.Handle {
@@ -151,65 +179,137 @@ func (s *Service) OCSPHandler() restserver.Handle {
 	}
 }
 
-/* TODO
-var (
-	malformedRequestErrorResponse = []byte{0x30, 0x03, 0x0A, 0x01, 0x01}
-	internalErrorErrorResponse    = []byte{0x30, 0x03, 0x0A, 0x01, 0x02}
-	//tryLaterErrorResponse         = []byte{0x30, 0x03, 0x0A, 0x01, 0x03}
-	//sigRequredErrorResponse       = []byte{0x30, 0x03, 0x0A, 0x01, 0x05}
-	unauthorizedErrorResponse = []byte{0x30, 0x03, 0x0A, 0x01, 0x06}
-)
-*/
-
-// OCSPResponder represents the logical source of OCSP responses, i.e.,
-// the logic that actually chooses a response based on a request.
-// In order to create an actual responder, wrap one of these in a Responder
-// object and pass it to http.Handle.
-// By default the Responder will set the headers:
-//
-// Cache-Control to "max-age=(response.NextUpdate-now), public, no-transform, must-revalidate",
-// Last-Modified to response.ThisUpdate,
-// Expires to response.NextUpdate,
-// ETag to the SHA256 hash of the response,
-// Content-Type to application/ocsp-response.
-//
-// To override these headers, or set extra headers,
-// OCSPResponder should return a http.Header with the headers to override,
-// or nil otherwise.
-type OCSPResponder interface {
-	Response(*ocsp.Request) ([]byte, http.Header, error)
-}
-
+// ocspResponse answers a DER OCSP request: from the cache while the cached
+// response is before its NextUpdate, else with the response the CA signs,
+// which is cached. Every answer is an OCSP response (RFC 6960 section
+// 4.2.1): a request that does not parse is malformedRequest with 400, an
+// issuer the CA does not serve is unauthorized with 404, a CA that cannot
+// be reached is tryLater with 503, and any other failure is internalError
+// with 500; the error responses are not cached.
 func (s *Service) ocspResponse(w http.ResponseWriter, r *http.Request, requestBody []byte) {
-	// All responses after this point will be OCSP.
-	// We could check for the content type of the request, but that
-	// seems unnecessariliy restrictive.
+	ctx := r.Context()
 	wh := w.Header()
-	wh.Set(header.ContentType, "application/ocsp-response")
-	wh.Set("Cache-Control", "no-store")
-	wh.Set("Pragma", "no-cache")
+	wh.Set(header.ContentType, contentTypeOCSPResponse)
 
-	/* TODO
-	res, err := s.ca.SignOCSP(r.Context(), &pb.OCSPRequest{Der: requestBody})
-	if err != nil {
-		logger.ContextKV(r.Context(), xlog.WARNING, "err", err.Error())
+	ocspReq, err := ocsp.ParseRequest(requestBody)
+	if err != nil || ocspReq.SerialNumber == nil {
 		metricskey.AIADownloadFailOCSP.IncrCounter(1)
-
-		switch httperror.Status(err) {
-		case http.StatusBadRequest:
-			_, _ = w.Write(malformedRequestErrorResponse)
-			return
-		case http.StatusNotFound:
-			_, _ = w.Write(unauthorizedErrorResponse)
-			return
-		}
-
-		_, _ = w.Write(internalErrorErrorResponse)
+		writeOCSPError(w, http.StatusBadRequest, ocsp.MalformedRequestErrorResponse)
 		return
 	}
+	serial := ocspReq.SerialNumber.String()
 
+	now := time.Now()
+	key := keyOf(requestBody)
+	if e, ok := s.cache.get(key, now); ok {
+		metricskey.CISCacheHit.IncrCounter(1, cacheMetricOCSP)
+		metricskey.AIADownloadSuccessOCSP.IncrCounter(1)
+		writeCacheable(w, r, contentTypeOCSPResponse, e.der, e.thisUpdate, e.nextUpdate)
+		return
+	}
+	metricskey.CISCacheMiss.IncrCounter(1, cacheMetricOCSP)
+
+	ca, err := s.caClient()
+	if err != nil {
+		metricskey.AIADownloadFailOCSP.IncrCounter(1)
+		logger.ContextKV(ctx, xlog.ERROR,
+			"reason", "ca_client",
+			"serial", serial,
+			"err", err.Error())
+		writeOCSPError(w, http.StatusServiceUnavailable, ocsp.TryLaterErrorResponse)
+		return
+	}
+	cctx, cancel := context.WithTimeout(ctx, caCallTimeout)
+	defer cancel()
+	res, err := ca.SignOCSP(cctx, &pb.OCSPRequest{Der: requestBody})
+	if err != nil {
+		metricskey.AIADownloadFailOCSP.IncrCounter(1)
+		status := httperror.Status(err)
+		logger.ContextKV(ctx, xlog.WARNING,
+			"reason", "sign_ocsp",
+			"serial", serial,
+			"status", status,
+			"err", err.Error())
+		switch status {
+		case http.StatusBadRequest:
+			writeOCSPError(w, http.StatusBadRequest, ocsp.MalformedRequestErrorResponse)
+		case http.StatusNotFound:
+			writeOCSPError(w, http.StatusNotFound, ocsp.UnauthorizedErrorResponse)
+		case http.StatusServiceUnavailable, http.StatusRequestTimeout, http.StatusGatewayTimeout, http.StatusTooManyRequests:
+			writeOCSPError(w, http.StatusServiceUnavailable, ocsp.TryLaterErrorResponse)
+		default:
+			writeOCSPError(w, http.StatusInternalServerError, ocsp.InternalErrorErrorResponse)
+		}
+		return
+	}
 	metricskey.AIADownloadSuccessOCSP.IncrCounter(1)
 
-	_, _ = w.Write(res.Der)
-	*/
+	// the validity of the response decides the caching; the signature is
+	// the CA's and is not verified here
+	parsed, err := ocsp.ParseResponse(res.Der, nil)
+	if err != nil {
+		logger.ContextKV(ctx, xlog.ERROR,
+			"reason", "invalid_ocsp_response",
+			"serial", serial,
+			"err", err.Error())
+		wh.Set(header.CacheControl, cacheControlNoStore)
+		wh.Set(headerPragma, pragmaNoCache)
+		_, _ = w.Write(res.Der)
+		return
+	}
+	e := &ocspEntry{
+		der:        res.Der,
+		thisUpdate: parsed.ThisUpdate,
+		nextUpdate: parsed.NextUpdate,
+		etag:       etagOf(res.Der),
+	}
+	if now.Before(e.nextUpdate) {
+		s.cache.add(key, e)
+	}
+	writeCacheable(w, r, contentTypeOCSPResponse, e.der, e.thisUpdate, e.nextUpdate)
+}
+
+// writeOCSPError writes an OCSP error response with the HTTP status; it is
+// never cached
+func writeOCSPError(w http.ResponseWriter, status int, response []byte) {
+	wh := w.Header()
+	wh.Set(header.ContentType, contentTypeOCSPResponse)
+	wh.Set(header.CacheControl, cacheControlNoStore)
+	wh.Set(headerPragma, pragmaNoCache)
+	w.WriteHeader(status)
+	_, _ = w.Write(response)
+}
+
+// writeCacheable writes a body that is valid from lastModified until
+// expires: Cache-Control allows public caches to keep it until then (or
+// forbids caching when it has expired), Last-Modified and Expires carry the
+// two times, and ETag is the hash of the body, which a conditional request
+// gets Not Modified for
+func writeCacheable(w http.ResponseWriter, r *http.Request, contentType string, body []byte, lastModified, expires time.Time) {
+	etag := etagOf(body)
+	wh := w.Header()
+	wh.Set(header.ContentType, contentType)
+	wh.Set(headerETag, etag)
+	wh.Set(headerLastModified, lastModified.UTC().Format(http.TimeFormat))
+	wh.Set(headerExpires, expires.UTC().Format(http.TimeFormat))
+	if maxAge := time.Until(expires); maxAge > 0 {
+		wh.Set(header.CacheControl, cacheControlPublic+strconv.FormatInt(int64(maxAge/time.Second), 10))
+	} else {
+		wh.Set(header.CacheControl, cacheControlNoStore)
+		wh.Set(headerPragma, pragmaNoCache)
+	}
+	if r.Header.Get(headerIfNoneMatch) == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+	_, _ = w.Write(body)
+}
+
+// derOf returns the DER encoding of the first block of a PEM encoding
+func derOf(pemText string) ([]byte, error) {
+	block, _ := pem.Decode([]byte(pemText))
+	if block == nil {
+		return nil, errors.New("no PEM block")
+	}
+	return block.Bytes, nil
 }

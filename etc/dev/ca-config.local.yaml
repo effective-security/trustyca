@@ -20,7 +20,7 @@ authority:
       aia:
         issuer_url: http://localhost:8880/v1/cert/:ISSUER_ID
         crl_url: http://localhost:8880/v1/crl/:ISSUER_ID
-        ocsp_url: http://localhost:8880/v1/ocspca/:ISSUER_ID
+        ocsp_url: http://localhost:8880/v1/ocspi/:ISSUER_ID
         crl_expiry: 48h
         crl_renewal: 12h
         ocsp_expiry: 1h

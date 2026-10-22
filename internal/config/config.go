@@ -57,6 +57,9 @@ type Configuration struct {
 
 	// CA specifies the Certification Authority configuration
 	CA CA `json:"ca" yaml:"ca"`
+
+	// CIS specifies the Certificate Information Service configuration
+	CIS CIS `json:"cis" yaml:"cis"`
 }
 
 // Service specifies the basic service info
@@ -163,6 +166,24 @@ type CA struct {
 	// Retention specifies how long expired certificates are kept; the
 	// cert_status task applies it.
 	Retention Retention `json:"retention" yaml:"retention"`
+}
+
+// CIS specifies the Certificate Information Service configuration: the
+// public, read-only service that serves issuer certificates, CRLs and OCSP
+// responses. It holds no keys: OCSP requests are forwarded to the CA over
+// the backend gRPC client (`client.server_url.backend`).
+type CIS struct {
+	// ClientTLS specifies the TLS certificate the CIS presents to the CA
+	// backend, mapped to the `trustyca-cis` role by the backend listener
+	// (`spiffe://trustyca/cis`). Empty uses the `client.client_tls`
+	// certificate.
+	ClientTLS gserver.TLSInfo `json:"client_tls,omitempty" yaml:"client_tls,omitempty"`
+
+	// OcspCacheSize is the number of OCSP responses kept in memory, keyed by
+	// the hash of the request and served until the NextUpdate of the
+	// response; the least recently used response is evicted first. The
+	// default is 10000.
+	OcspCacheSize int `json:"ocsp_cache_size" yaml:"ocsp_cache_size"`
 }
 
 // Retention specifies the retention of expired certificates

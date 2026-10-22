@@ -19,6 +19,8 @@ set -e
 #   --client                - specifies if client certificate and key should be generated
 #   --jobs                  - specifies if jobs certificate and key should be generated
 #   --peer                  - specifies if peer certificate and key should be generated
+#   --ra                    - specifies if the RA service certificate (spiffe://trustyca/ra) should be generated
+#   --cis                   - specifies if the CIS service certificate (spiffe://trustyca/cis) should be generated
 #   --bundle                - specifies if Int CA Bundle should be created
 #   --san                   - specifies SAN for server and peer certs
 #   --force                 - specifies to force issuing the cert even if it exists
@@ -111,6 +113,14 @@ case $key in
     ;;
     --peers|--peer)
     PEERS=YES
+    shift # past argument
+    ;;
+    --ra)
+    RA=YES
+    shift # past argument
+    ;;
+    --cis)
+    CIS=YES
     shift # past argument
     ;;
     --force)
@@ -300,6 +310,43 @@ if [[ "$PEERS" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}pe
         --output ${OUT_DIR}/${OUT_PREFIX}peer
 
     cat ${CABUNDLE} >> ${OUT_DIR}/${OUT_PREFIX}peer.pem
+fi
+
+# the service identities of the CA API (DESIGN.md section 10): the backend
+# listener maps spiffe://trustyca/ra and spiffe://trustyca/cis to the
+# trustyca-ra and trustyca-cis roles
+if [[ "$RA" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}ra.key) ]]; then
+    echo "*** generating ra cert: ${OUT_DIR}/${OUT_PREFIX}ra.pem"
+    hsm-tool ${FLAGS} \
+        --cfg ${HSM_CONFIG}  ${CRYPTO_PROV} \
+        csr gen-cert --plain-key \
+        --ca-config ${CA_CONFIG} \
+        --profile client \
+        --ca-cert ${OUT_DIR}/${OUT_PREFIX}l2_ca.pem \
+        --ca-key ${OUT_DIR}/${OUT_PREFIX}l2_ca.key \
+        --csr-profile ${CSR_DIR}/${CSR_PREFIX}ra.yaml \
+        --san spiffe://trustyca/ra \
+        --key-label "${KEY_LABEL}${OUT_PREFIX}ra*" \
+        --output ${OUT_DIR}/${OUT_PREFIX}ra
+
+    cat ${CABUNDLE} >> ${OUT_DIR}/${OUT_PREFIX}ra.pem
+fi
+
+if [[ "$CIS" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}cis.key) ]]; then
+    echo "*** generating cis cert: ${OUT_DIR}/${OUT_PREFIX}cis.pem"
+    hsm-tool ${FLAGS} \
+        --cfg ${HSM_CONFIG}  ${CRYPTO_PROV} \
+        csr gen-cert --plain-key \
+        --ca-config ${CA_CONFIG} \
+        --profile client \
+        --ca-cert ${OUT_DIR}/${OUT_PREFIX}l2_ca.pem \
+        --ca-key ${OUT_DIR}/${OUT_PREFIX}l2_ca.key \
+        --csr-profile ${CSR_DIR}/${CSR_PREFIX}cis.yaml \
+        --san spiffe://trustyca/cis \
+        --key-label "${KEY_LABEL}${OUT_PREFIX}cis*" \
+        --output ${OUT_DIR}/${OUT_PREFIX}cis
+
+    cat ${CABUNDLE} >> ${OUT_DIR}/${OUT_PREFIX}cis.pem
 fi
 
 chmod 400 ${OUT_DIR}/*.key

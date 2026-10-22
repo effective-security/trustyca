@@ -2,6 +2,7 @@ package ca
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/xpki/authority"
@@ -66,4 +67,21 @@ func IssuerConfigToPb(c *authority.IssuerConfig) *pb.IssuerConfig {
 		res.DelegatedOcspProfile = c.AIA.DelegatedOCSPProfile
 	}
 	return res
+}
+
+// The placeholders of the issuer in the AIA, CRL and OCSP URL templates of
+// an issuer configuration: `${ISSUER_ID}` of the API and `:ISSUER_ID`, which
+// the config loader does not expand as an environment variable. Both are
+// replaced with the Subject Key Identifier of the issuer.
+const (
+	IssuerIDVariable    = "${ISSUER_ID}"
+	IssuerIDPlaceholder = ":ISSUER_ID"
+)
+
+// ExpandIssuerURL returns the URL of an AIA, CRL or OCSP template of an
+// issuer with its Subject Key Identifier in place of the placeholders, as
+// the authority puts it in the certificates it issues
+func ExpandIssuerURL(template, skid string) string {
+	res := strings.ReplaceAll(template, IssuerIDVariable, skid)
+	return strings.ReplaceAll(res, IssuerIDPlaceholder, skid)
 }

@@ -2154,7 +2154,7 @@ const (
 )
 ```
 
-<a name="PathForCert"></a>CIS service API In addition to the JSON API below, CIS registers binary endpoints that are referenced from issued certificates \(AIA and CDP extensions\):
+<a name="PathForCIS"></a>CIS service API In addition to the JSON API below, CIS registers binary endpoints that are referenced from issued certificates \(AIA and CDP extensions\):
 
 ```
 GET  /v1/cert/{ikid}           application/pkix-cert   issuer certificate
@@ -2169,6 +2169,11 @@ The issuer and CRL paths are the AIA and CDP templates of the issuers \(\`issuer
 
 ```go
 const (
+    // PathForCIS provides the base path of the JSON API of the CIS service
+    //
+    // Verbs: POST
+    PathForCIS = "/pb.CIS/:action"
+
     // PathForCert provides the issuer certificate by IKID
     //
     // Verbs: GET

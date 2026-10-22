@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"os"
 	"testing"
 
@@ -42,6 +43,30 @@ func TestFactory(t *testing.T) {
 	assert.EqualError(t, err, "service invalid not found")
 
 	assert.Nil(t, f.(*factory).dops.callerIdentity)
+}
+
+// TestFactory_WithTLS checks that the TLS configuration of the WithTLS
+// option is the one the client dials with: the client TLS files, which do
+// not exist here, are not read
+func TestFactory_WithTLS(t *testing.T) {
+	f := NewFactory(Config{
+		ServerURL: map[string]string{
+			"local": "https://localhost:8880",
+		},
+		ClientTLS: gserver.TLSInfo{
+			CertFile:      "/nope/client.pem",
+			KeyFile:       "/nope/client.key",
+			TrustedCAFile: "/nope/root.pem",
+		},
+	})
+	_, _, err := f.CAClient("local")
+	require.Error(t, err, "the client TLS files do not exist")
+	assert.Contains(t, err.Error(), "unable to build TLS configuration")
+
+	c, err := f.(*factory).NewClient("local", WithTLS(&tls.Config{MinVersion: tls.VersionTLS12}))
+	require.NoError(t, err)
+	defer c.Close()
+	assert.NotNil(t, c.Conn())
 }
 
 func TestFactoryCNA(t *testing.T) {

@@ -14,6 +14,7 @@ import "github.com/effective-security/trustyca/internal/config"
 - [func LoadWithOverride\(configFile, configOverride string, config any, sc configloader.SecretProvider\) error](<#LoadWithOverride>)
 - [type Auth](<#Auth>)
 - [type CA](<#CA>)
+- [type CIS](<#CIS>)
 - [type Cache](<#Cache>)
 - [type Configuration](<#Configuration>)
   - [func Load\(configFile string\) \(\*Configuration, error\)](<#Load>)
@@ -75,7 +76,7 @@ func LoadWithOverride(configFile, configOverride string, config any, sc configlo
 LoadWithOverride will load the configuration from the named config and optional override file
 
 <a name="Auth"></a>
-## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L78-L98>)
+## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L81-L101>)
 
 Auth specifies the authentication configuration
 
@@ -104,7 +105,7 @@ type Auth struct {
 ```
 
 <a name="CA"></a>
-## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L148-L166>)
+## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L151-L169>)
 
 CA specifies the Certification Authority configuration
 
@@ -130,8 +131,29 @@ type CA struct {
 }
 ```
 
+<a name="CIS"></a>
+## type [CIS](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L175-L187>)
+
+CIS specifies the Certificate Information Service configuration: the public, read\-only service that serves issuer certificates, CRLs and OCSP responses. It holds no keys: OCSP requests are forwarded to the CA over the backend gRPC client \(\`client.server\_url.backend\`\).
+
+```go
+type CIS struct {
+    // ClientTLS specifies the TLS certificate the CIS presents to the CA
+    // backend, mapped to the `trustyca-cis` role by the backend listener
+    // (`spiffe://trustyca/cis`). Empty uses the `client.client_tls`
+    // certificate.
+    ClientTLS gserver.TLSInfo `json:"client_tls,omitempty" yaml:"client_tls,omitempty"`
+
+    // OcspCacheSize is the number of OCSP responses kept in memory, keyed by
+    // the hash of the request and served until the NextUpdate of the
+    // response; the least recently used response is evicted first. The
+    // default is 10000.
+    OcspCacheSize int `json:"ocsp_cache_size" yaml:"ocsp_cache_size"`
+}
+```
+
 <a name="Cache"></a>
-## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L101-L111>)
+## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L104-L114>)
 
 Cache specifies configuration of the cache.
 
@@ -150,7 +172,7 @@ type Cache struct {
 ```
 
 <a name="Configuration"></a>
-## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L21-L60>)
+## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L21-L63>)
 
 Configuration contains the user configurable data for the service
 
@@ -191,6 +213,9 @@ type Configuration struct {
 
     // CA specifies the Certification Authority configuration
     CA  CA  `json:"ca" yaml:"ca"`
+
+    // CIS specifies the Certificate Information Service configuration
+    CIS CIS `json:"cis" yaml:"cis"`
 }
 ```
 
@@ -204,7 +229,7 @@ func Load(configFile string) (*Configuration, error)
 Load will load the configuration from the named config file, apply any overrides, and resolve relative directory locations.
 
 <a name="CryptoProv"></a>
-## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L136-L145>)
+## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L139-L148>)
 
 CryptoProv specifies the configuration for crypto providers
 
@@ -222,7 +247,7 @@ type CryptoProv struct {
 ```
 
 <a name="Orgs"></a>
-## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L126-L133>)
+## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L129-L136>)
 
 Orgs specifies the Orgs configuration
 
@@ -238,7 +263,7 @@ type Orgs struct {
 ```
 
 <a name="Retention"></a>
-## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L169-L174>)
+## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L190-L195>)
 
 Retention specifies the retention of expired certificates
 
@@ -277,7 +302,7 @@ type SQL struct {
 ```
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L63-L75>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L66-L78>)
 
 Service specifies the basic service info
 
@@ -298,7 +323,7 @@ type Service struct {
 ```
 
 <a name="Task"></a>
-## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L114-L123>)
+## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L117-L126>)
 
 Task specifies configuration of a single task.
 

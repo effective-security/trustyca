@@ -278,9 +278,9 @@ reads serve in-memory rows (`service_test.go`).
 Follow-ups:
 
 1. `UpdateCertificateLabel` has no event type: the change is logged only.
-2. `.project/gen_certs.sh` generates no certificates for
-   `spiffe://trustyca/ra` and `spiffe://trustyca/cis`; add them when the CIS
-   (phase 5) or an RA deployment needs the roles.
+2. Done in phase 5: `.project/gen_certs.sh --ra --cis` generates the
+   certificates of `spiffe://trustyca/ra` and `spiffe://trustyca/cis`
+   (`make gen_test_certs`).
 3. An empty metadata map cannot be sent over gRPC (an empty map is not
    serialized), so clearing the metadata of a certificate works through
    JSON only.
@@ -288,8 +288,9 @@ Follow-ups:
    `/v1/crl/:ikid`, the AIA and CDP templates of the issuers; OCSP by
    issuer moved under `/v1/ocspi`, so that the GET with the request in the
    path (`/v1/ocsp/*body`) does not conflict with it; the request of both
-   GET routes is a catch-all, since its base64 has '/' in it. The `ocsp_url` templates of `etc/dev/ca-config*.yaml`
-   must point at `/v1/ocspi/:ISSUER_ID` (phase 5).
+   GET routes is a catch-all, since its base64 has '/' in it. The `ocsp_url`
+   template of `etc/dev/ca-config.local.yaml` points at
+   `/v1/ocspi/:ISSUER_ID` (phase 5).
 
 ## Phase 4: revocation pipeline (done)
 
@@ -378,18 +379,72 @@ Follow-ups:
 4. CRL `locations` stay empty until CRLs are published to object storage
    (phase 7).
 
-## Phase 5: CIS service
+## Phase 5: CIS service (done)
 
-1. `server/service/cis`: implement `pb.CISServer` (JSON) using `db.CaReadonlyDb`;
-   register binary routes `/v1/cert/{ikid}`, `/v1/crl/{ikid}`, `/v1/ocsp...`.
-2. OCSP handler: GET (base64 path) and POST, forward to `CA.SignOCSP` through the
-   backend client, LRU cache keyed by request hash with expiry at `NextUpdate`,
-   `Cache-Control` headers.
-3. Config: add `cis` to the `wfe` listener (or a dedicated `cis` listener),
-   `allow_any` and `skip_auth` entries; update `etc/dev/ca-config.dev.yaml` AIA
-   templates to `/v1/cert`, `/v1/crl`, `/v1/ocspi`.
-4. Tests: HTTP tests for each media type, OCSP round trip via `golang.org/x/crypto/ocsp`,
-   `openssl verify -crl_check` in the docker CI test.
+1. `server/service/cis` (done): `pb.CISServer` over `db.CaReadonlyDb`, with
+   no access check since the data is public (DESIGN.md section 9.3).
+   `GetRoots` lists the platform anchors, or those of the org the request
+   names; `GetIssuer` returns the chain, status and the AIA, CRL and OCSP
+   URLs of an issued issuer with the SKID in place of the placeholder
+   (`internal/ca.ExpandIssuerURL`; a Pending issuer is not found);
+   `GetCertificate` and `GetCertificateStatus` resolve the certificate of
+   any org by ID, issuer and serial, thumbprint or SKID (the newest of the
+   key), the status reporting an expired Active row as Expired and a
+   revoked one with its reason and time; `GetCRL` by IKID. The public
+   views carry no tenancy and no client-owned fields (org, project,
+   profile, label, metadata). The binary routes `/v1/cert/{ikid}` and
+   `/v1/crl/{ikid}` serve DER with `Cache-Control`, `Expires`,
+   `Last-Modified` and `ETag` (304 to `If-None-Match`): the certificate for
+   a day, the CRL until its `NextUpdate`.
+2. OCSP (done): GET with the request in the path (`/v1/ocsp/*body`,
+   `/v1/ocspi/:ikid/*body`) and POST (`/v1/ocsp`, `/v1/ocspi/:ikid`, bounded
+   to 8 KiB), parsed before anything is forwarded to `CA.SignOCSP` over the
+   backend gRPC client, which the service creates on the first request with
+   the certificate of `cis.client_tls` (the client blocks until the backend
+   is reachable, so it is never created at startup). The signed responses
+   are cached in an LRU (`cis.ocsp_cache_size`, default 10000) keyed by the
+   SHA-256 of the request until the `NextUpdate` the CA signed, and served
+   with the cache headers of the binary routes; the errors of the CA are
+   OCSP error responses with the HTTP status (400 malformedRequest, 404
+   unauthorized, 503 tryLater, 500 internalError) and are not cached.
+   Metrics: `cis_cache_hit`/`cis_cache_miss` by type, the `aia_download_*`
+   counters.
+3. Config (done): `cis` was already a service of the `wfe` listener;
+   `/pb.CIS` joins `authz.allow_any` (`/v1` covers the binary routes), the
+   fixed CIS paths `identity_map.skip_auth`, and `client.server_url` names
+   the listeners with their https URLs, and the backend listener enables
+   its TLS identity mapping (`identity_map.tls.enabled`, off by default in
+   porto, so every mTLS caller was a guest and `/pb.CA` refused it). The
+   `cis` section carries `client_tls` and `ocsp_cache_size`. The `ocsp_url` template of
+   `etc/dev/ca-config.local.yaml` points at `/v1/ocspi/:ISSUER_ID`.
+   `.project/gen_certs.sh --ra --cis` (in `make gen_test_certs`) generates
+   `trustyca_ra` and `trustyca_cis` with the CSR profiles of
+   `etc/dev/certs/csr_profile/`. `client.Factory` ignored the TLS
+   configuration of its `WithTLS` option and dialed the https backend in
+   plaintext; fixed (`TestFactory_WithTLS`), and the OCSP forwarding was
+   verified against the dev server with the `trustyca_cis` identity.
+4. Tests (done): `server/service/cis` over a mock `CaReadonlyDb` and a fake
+   CA that signs OCSP with a test key (the JSON methods, every route and
+   media type, the cache headers and conditional requests, the OCSP matrix
+   and error mapping with `golang.org/x/crypto/ocsp`, the lazy client);
+   `e2e_test.go` runs the CA and the CIS of the app container over the
+   configured database, registers a root whose URL templates point at the
+   CIS listener, and follows the AIA, CDP and OCSP URLs of the
+   certificates it signs, then runs `openssl verify -crl_check` on the CRL
+   the CIS served when openssl is installed. The container integration
+   test (`make docker-citest`) has no script, so the openssl check lives in
+   the Go test.
+
+Follow-ups:
+
+1. `OCSPRequest.IKID` from the `/v1/ocspi/{ikid}` routes (ROADMAP.md
+   RM-003): the issuer segment is not used yet.
+2. A cached `good` response is served until its `NextUpdate` after a
+   revocation; a shorter `ocsp_expiry`, or invalidating the cache of a
+   serial on `RevokeCertificate`, is a product choice.
+3. The certificate and CRL routes read the DB on every request; an
+   in-memory cache of the CRLs, like the OCSP one, is open.
+4. No rate limit on the public routes beyond the listener's.
 
 ## Phase 6: operator tooling
 
