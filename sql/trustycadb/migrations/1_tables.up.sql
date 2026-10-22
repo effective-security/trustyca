@@ -495,7 +495,14 @@ CREATE TABLE IF NOT EXISTS trustyca.certificate
 ALTER TABLE trustyca.certificate
     OWNER TO trustyca;
 
--- listing newest first with keyset pagination on id
+-- listing newest first with keyset pagination on id: the org-wide list of
+-- a tenant, and the list of one project. Without the org index the planner
+-- walks the primary key backwards for the rows of an org, which reads the
+-- whole table for a small tenant.
+CREATE INDEX IF NOT EXISTS idx_certificate_org_id_desc
+    ON trustyca.certificate USING btree
+    (org_id, id DESC);
+
 CREATE INDEX IF NOT EXISTS idx_certificate_org_project_id_desc
     ON trustyca.certificate USING btree
     (org_id, project_id, id DESC);
@@ -505,10 +512,12 @@ CREATE INDEX IF NOT EXISTS idx_certificate_org_project_notafter
     ON trustyca.certificate USING btree
     (org_id, project_id, not_after);
 
--- listing per issuer
-CREATE INDEX IF NOT EXISTS idx_certificate_ikid_id_desc
+-- listing per issuer within the org: an issuer belongs to one org, so the
+-- org leads and a foreign key identifier finds nothing without a scan; the
+-- support list across orgs resolves the org of the issuer first
+CREATE INDEX IF NOT EXISTS idx_certificate_org_ikid_id_desc
     ON trustyca.certificate USING btree
-    (ikid COLLATE pg_catalog."default", id DESC);
+    (org_id, ikid COLLATE pg_catalog."default", id DESC);
 
 CREATE INDEX IF NOT EXISTS idx_certificate_skid
     ON trustyca.certificate USING btree

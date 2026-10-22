@@ -522,15 +522,64 @@ Follow-ups:
 5. The dev wfe listener serves no CA to users; a user who may sign
    (`certs:issue`) has no CLI command for it until an RA exists.
 
-## Phase 7: hardening
+## Phase 7: hardening (done)
 
-1. Metrics from DESIGN.md section 13 in `internal/metricskey`.
-2. Load test `SignCertificate` and `ListCertificates` with 10M synthetic rows;
-   confirm index usage with `EXPLAIN (ANALYZE, BUFFERS)`; decide on partitioning.
-3. Security review: key material never logged, `key_protected` only for `inmem`
-   in non-prod, mTLS role tests for every `/pb.CA` method.
-4. Optional: CRL and certificate publishing to S3/GCS, idempotency keys,
-   certificate hold removal.
+1. Metrics (done): `internal/metricskey` carries the metrics of DESIGN.md
+   section 11 under the names the services emit: `ca_cert_issued` and
+   `ca_fail_sign_cert` gained the `org` tag, `ca_sign_latency{ca,profile}`
+   samples SignCertificate from the signature to the registered certificate
+   and its event; `ca_cert_revoked`, `ca_crl_published`,
+   `ca_fail_publish_crl`, `ca_ocsp_signed`, `cis_cache_hit`,
+   `cis_cache_miss` and the `aia_download_*` counters were in place. The
+   design text names the real metrics now.
+2. Load test (done): `tests/load` fills a disposable database
+   (`trustycadb_load`) with synthetic certificates and revocations, runs
+   every query of the CA through the provider and through
+   `EXPLAIN (ANALYZE, BUFFERS)`, and registers certificates as
+   SignCertificate does. The 10M-row run and the decisions it led to are in
+   [perf/load-certificates.md](perf/load-certificates.md): the lookups,
+   the lists of a project or by issuer and the CRL entries were index
+   scans bounded by the tenant, but the org-wide list of a small tenant
+   walked the primary key backwards through the whole table (3.9 s for a
+   tenant with ten rows) and the list by issuer mis-planned into a 64 ms
+   bitmap scan. Two indexes fixed both: `(org_id, id DESC)`, and
+   `(org_id, ikid, id DESC)` in place of `(ikid, id DESC)`, which also makes
+   a list by another org's issuer return nothing without a scan; the
+   support list by issuer resolves the org of the issuer first. Inserting
+   a certificate with its event costs 0.85 ms at 10M rows; the expiry
+   batches of the status task cost 93 ms per 1,000 rows (a fillfactor of 90
+   gained a fifth and was not adopted). Partitioning is not needed and
+   stays an open item beyond roughly 100M rows per tenant. The dev
+   database is recreated to pick the indexes up.
+3. Security review (done): no log statement carries key material, tokens
+   or request bodies (`server/service/ca` TestService_KeyMaterialNeverLogged
+   imports and generates issuers at TRACE and checks the log for the PEM
+   and the wrapped key); software keys (`key_protected`: the `inmem`
+   provider, PEM imports, bootstrap key files) are admitted by
+   `ca.allow_software_keys` only, on in the dev config, refused by
+   `Keys.DisableSoftwareKeys` otherwise and refused at the start of a
+   `service.environment: prod` instance (provideCA); every `/pb.CA` method
+   declares its roles and scopes and passes the access check for the RA,
+   CIS and admin identities (TestService_EveryMethod_Access), and
+   `server/app` Test_Authz_CAMethods evaluates the authz rules of the dev
+   configuration with porto's interceptor for every CA and Admin method
+   and every backend identity. The review found that `allow_any: /` opened
+   every path without a rule on both listeners: the backend now denies by
+   default (`/v1/status` and the status routes are its public paths), the
+   wfe keeps `/` for the UI index page (ROADMAP.md RM-005).
+4. Optional items (not done): CRL and certificate publishing to S3/GCS,
+   idempotency keys on SignCertificate and certificate hold removal stay
+   open items of DESIGN.md section 12.
+
+Follow-ups:
+
+1. RM-005: deny by default on the wfe listener once the UI pages move
+   under a listed prefix.
+2. The `inmem` platform issuers of the dev configuration are software keys;
+   a stage or prod ca-config references provider keys (`key:` with a key
+   URI), and `allow_software_keys` stays off there.
+3. The load tool measures the DB half of SignCertificate; the signing half
+   is `server/service/ca` bench_test.go.
 
 ## Verification checklist per phase
 

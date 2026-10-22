@@ -89,11 +89,22 @@ var (
 
 ```go
 var (
-    // CACertIssued is counter metric for issued certs
+    // CACertIssued is counter metric for issued certs, by issuer, profile
+    // and org
     CACertIssued = metrics.Describe{
         Type:         metrics.TypeCounter,
         Name:         "ca_cert_issued",
         Help:         "provides the counter of issued certs",
+        RequiredTags: []string{"ca", "profile", "org"},
+    }
+
+    // CASignLatency is the sample metric of the time SignCertificate takes
+    // from the resolved issuer to the registered certificate: the signing
+    // and the insert of the certificate and its event
+    CASignLatency = metrics.Describe{
+        Type:         metrics.TypeSample,
+        Name:         "ca_sign_latency",
+        Help:         "provides the sample metrics of certificate signing",
         RequiredTags: []string{"ca", "profile"},
     }
 
@@ -121,12 +132,13 @@ var (
         RequiredTags: []string{"ikid", "status"},
     }
 
-    // CAFailSignCert is counter metric
+    // CAFailSignCert is counter metric of the signing failures, by issuer,
+    // profile and org
     CAFailSignCert = metrics.Describe{
         Type:         metrics.TypeCounter,
         Name:         "ca_fail_sign_cert",
         Help:         "provides the counter of failures to sign cert",
-        RequiredTags: []string{"ca", "profile"},
+        RequiredTags: []string{"ca", "profile", "org"},
     }
 
     // CAFailPublishCert is counter metric
@@ -276,6 +288,7 @@ var Metrics = []*metrics.Describe{
     &CAFailPublishCrl,
     &CAFailSignCert,
     &CAOcspSigned,
+    &CASignLatency,
     &CertExpiryDays,
     &CertExpiryHours,
     &CISCacheHit,

@@ -265,7 +265,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 SignCertificate signs a certificate request with the issuer of the profile, resolved in the scope of the request \(DESIGN.md section 6\), and records the certificate with its issue event in one transaction.
 
 <a name="Service.SignOCSP"></a>
-### func \(\*Service\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L158>)
+### func \(\*Service\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L160>)
 
 ```go
 func (s *Service) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error)

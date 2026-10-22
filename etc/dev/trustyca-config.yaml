@@ -103,6 +103,11 @@ ca:
   # 0 keeps them forever
   retention:
     expired_after: 0
+  # allows issuer keys that no crypto provider holds (the inmem provider,
+  # PEM keys of imports and bootstrap key files), stored wrapped by the data
+  # protection provider: the dev platform issuers are such keys. Off in
+  # stage and prod, where every issuer key lives in KMS or an HSM.
+  allow_software_keys: true
 
 # configuration for the Certificate Information Service: the public,
 # read-only side of the CA served by the wfe listener (service `cis`)
@@ -288,10 +293,12 @@ servers:
     authz:
       # allow any non-authenticated request access to this path and its children
       # /v1/* is allowed
+      # the backend denies by default: no root path here, so that a service
+      # without a rule is refused to every identity; the status routes are
+      # the only public ones
       allow_any:
-        - /
         - /favicon.ico
-        - /v1
+        - /v1/status
         - /metrics
         - /healthz
         - /pb.Status

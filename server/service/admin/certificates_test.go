@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -98,6 +99,45 @@ func TestService_ListCertificates(t *testing.T) {
 	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{Platform: true})
 	require.NoError(t, err)
 	assert.Empty(t, res.Certificates)
+
+	// by issuer without an org: the org of the issuer leads the index
+	caDb.EXPECT().GetIssuerBySKID(ctx, "ikid-1").Return(&model.Issuer{ID: xdb.NewID(10), OrgID: xdb.NewID(100)}, nil)
+	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {
+		assert.Equal(t, &query.ListCertificatesRequest{OrgID: 100, IKID: "ikid-1", Limit: 10}, req)
+		return &model.CertificateResult{Rows: rows.Rows[:1]}, nil
+	})
+	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{IKID: "ikid-1", Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, res.Certificates, 1)
+	// a platform issuer
+	caDb.EXPECT().GetIssuerBySKID(ctx, "ikid-0").Return(&model.Issuer{ID: xdb.NewID(1)}, nil)
+	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {
+		assert.Equal(t, &query.ListCertificatesRequest{Platform: true, IKID: "ikid-0", Limit: 10}, req)
+		return &model.CertificateResult{Rows: rows.Rows[1:]}, nil
+	})
+	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{IKID: "ikid-0", Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, res.Certificates, 1)
+	// no registered issuer has the key identifier: the certificates of a
+	// deleted issuer are listed across orgs
+	caDb.EXPECT().GetIssuerBySKID(ctx, "deleted").Return(nil, xdb.CheckNotFoundError(sql.ErrNoRows, "issuer", "deleted"))
+	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {
+		assert.Equal(t, &query.ListCertificatesRequest{AllOrgs: true, IKID: "deleted"}, req)
+		return &model.CertificateResult{Rows: rows.Rows[:1]}, nil
+	})
+	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{IKID: "deleted"})
+	require.NoError(t, err)
+	require.Len(t, res.Certificates, 1)
+	caDb.EXPECT().GetIssuerBySKID(ctx, "ikid-1").Return(nil, errors.New("db down"))
+	_, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{IKID: "ikid-1"})
+	assert.EqualError(t, err, "unexpected: unable to find issuer")
+	// with an org the issuer is not resolved
+	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {
+		assert.Equal(t, &query.ListCertificatesRequest{OrgID: 100, IKID: "ikid-9"}, req)
+		return &model.CertificateResult{}, nil
+	})
+	_, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{OrgID: "100", IKID: "ikid-9"})
+	require.NoError(t, err)
 
 	// the requests the service refuses
 	for _, tc := range []struct {

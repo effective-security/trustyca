@@ -79,7 +79,7 @@ func (s *Service) IsReady() bool
 IsReady indicates that the service is ready to serve its end\-points
 
 <a name="Service.ListCertificates"></a>
-### func \(\*Service\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/certificates.go#L16>)
+### func \(\*Service\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/certificates.go#L17>)
 
 ```go
 func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error)

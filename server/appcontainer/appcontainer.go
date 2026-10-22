@@ -351,7 +351,13 @@ func provideCrypto(cfg *config.Configuration) (*cryptoprov.Crypto, error) {
 // key does not load or whose delegated OCSP profile does not bind fails the
 // start.
 func provideCA(cfg *config.Configuration, crypto *cryptoprov.Crypto, dp dataprotection.Provider, caDb db.CaDb) (*ca.Registry, error) {
+	if cfg.CA.AllowSoftwareKeys && cfg.Service.Environment == config.EnvironmentProd {
+		return nil, errors.New("ca.allow_software_keys is not allowed in the prod environment: issuer keys must live in a crypto provider")
+	}
 	keys := ca.NewKeys(crypto, dp)
+	if !cfg.CA.AllowSoftwareKeys {
+		keys.DisableSoftwareKeys()
+	}
 	registry := ca.NewRegistry(caDb, keys, ca.Options{
 		TTL:  cfg.CA.IssuerCacheTTL,
 		Size: cfg.CA.IssuerCacheSize,

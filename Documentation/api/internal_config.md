@@ -36,6 +36,16 @@ const (
     WFEServerName     = "wfe"
     BackendServerName = "backend"
     RouterServerName  = "router"
+
+    // EnvironmentProd is the service.environment of a production instance: it
+    // refuses the settings of development, such as software issuer keys
+    EnvironmentProd = "prod"
+    // EnvironmentDev is the service.environment of a development instance it
+    // refuses the settings of development, such as software issuer keys
+    EnvironmentDev = "dev"
+    // EnvironmentLocal is the service.environment of a local instance: it
+    // allows software issuer keys
+    EnvironmentLocal = "local"
 )
 ```
 
@@ -76,7 +86,7 @@ func LoadWithOverride(configFile, configOverride string, config any, sc configlo
 LoadWithOverride will load the configuration from the named config and optional override file
 
 <a name="Auth"></a>
-## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L81-L101>)
+## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L91-L111>)
 
 Auth specifies the authentication configuration
 
@@ -105,7 +115,7 @@ type Auth struct {
 ```
 
 <a name="CA"></a>
-## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L151-L169>)
+## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L161-L188>)
 
 CA specifies the Certification Authority configuration
 
@@ -128,11 +138,20 @@ type CA struct {
     // Retention specifies how long expired certificates are kept; the
     // cert_status task applies it.
     Retention Retention `json:"retention" yaml:"retention"`
+
+    // AllowSoftwareKeys allows issuer keys that no crypto provider holds:
+    // the keys the inmem provider generates, the PEM keys of ImportIssuer
+    // and the key files of the bootstrap config, which are stored wrapped
+    // by the data protection provider (key_protected). Off by default, so
+    // that every issuer key lives in a crypto provider (KMS, HSM); on in
+    // development. A prod environment (service.environment) refuses to
+    // start with it on.
+    AllowSoftwareKeys bool `json:"allow_software_keys" yaml:"allow_software_keys"`
 }
 ```
 
 <a name="CIS"></a>
-## type [CIS](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L175-L187>)
+## type [CIS](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L194-L206>)
 
 CIS specifies the Certificate Information Service configuration: the public, read\-only service that serves issuer certificates, CRLs and OCSP responses. It holds no keys: OCSP requests are forwarded to the CA over the backend gRPC client \(\`client.server\_url.backend\`\).
 
@@ -153,7 +172,7 @@ type CIS struct {
 ```
 
 <a name="Cache"></a>
-## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L104-L114>)
+## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L114-L124>)
 
 Cache specifies configuration of the cache.
 
@@ -172,7 +191,7 @@ type Cache struct {
 ```
 
 <a name="Configuration"></a>
-## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L21-L63>)
+## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L31-L73>)
 
 Configuration contains the user configurable data for the service
 
@@ -229,7 +248,7 @@ func Load(configFile string) (*Configuration, error)
 Load will load the configuration from the named config file, apply any overrides, and resolve relative directory locations.
 
 <a name="CryptoProv"></a>
-## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L139-L148>)
+## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L149-L158>)
 
 CryptoProv specifies the configuration for crypto providers
 
@@ -247,7 +266,7 @@ type CryptoProv struct {
 ```
 
 <a name="Orgs"></a>
-## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L129-L136>)
+## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L139-L146>)
 
 Orgs specifies the Orgs configuration
 
@@ -263,7 +282,7 @@ type Orgs struct {
 ```
 
 <a name="Retention"></a>
-## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L190-L195>)
+## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L209-L214>)
 
 Retention specifies the retention of expired certificates
 
@@ -302,7 +321,7 @@ type SQL struct {
 ```
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L66-L78>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L76-L88>)
 
 Service specifies the basic service info
 
@@ -323,7 +342,7 @@ type Service struct {
 ```
 
 <a name="Task"></a>
-## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L117-L126>)
+## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L127-L136>)
 
 Task specifies configuration of a single task.
 
