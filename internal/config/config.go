@@ -15,6 +15,16 @@ const (
 	WFEServerName     = "wfe"
 	BackendServerName = "backend"
 	RouterServerName  = "router"
+
+	// EnvironmentProd is the service.environment of a production instance: it
+	// refuses the settings of development, such as software issuer keys
+	EnvironmentProd = "prod"
+	// EnvironmentDev is the service.environment of a development instance it
+	// refuses the settings of development, such as software issuer keys
+	EnvironmentDev = "dev"
+	// EnvironmentLocal is the service.environment of a local instance: it
+	// allows software issuer keys
+	EnvironmentLocal = "local"
 )
 
 // Configuration contains the user configurable data for the service
@@ -166,6 +176,15 @@ type CA struct {
 	// Retention specifies how long expired certificates are kept; the
 	// cert_status task applies it.
 	Retention Retention `json:"retention" yaml:"retention"`
+
+	// AllowSoftwareKeys allows issuer keys that no crypto provider holds:
+	// the keys the inmem provider generates, the PEM keys of ImportIssuer
+	// and the key files of the bootstrap config, which are stored wrapped
+	// by the data protection provider (key_protected). Off by default, so
+	// that every issuer key lives in a crypto provider (KMS, HSM); on in
+	// development. A prod environment (service.environment) refuses to
+	// start with it on.
+	AllowSoftwareKeys bool `json:"allow_software_keys" yaml:"allow_software_keys"`
 }
 
 // CIS specifies the Certificate Information Service configuration: the

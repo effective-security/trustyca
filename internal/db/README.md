@@ -61,8 +61,9 @@ Indexes:
 │                 NAME                 │ PRIMARY │ UNIQUE │            COLUMNS            │
 ├──────────────────────────────────────┼─────────┼────────┼───────────────────────────────┤
 │ certificate_pkey                     │ YES     │ YES    │ id                            │
-│ idx_certificate_ikid_id_desc         │         │        │ id, ikid                      │
 │ idx_certificate_notafter             │         │        │ not_after                     │
+│ idx_certificate_org_id_desc          │         │        │ org_id, id                    │
+│ idx_certificate_org_ikid_id_desc     │         │        │ org_id, ikid, id              │
 │ idx_certificate_org_project_id_desc  │         │        │ org_id, project_id, id        │
 │ idx_certificate_org_project_notafter │         │        │ not_after, org_id, project_id │
 │ idx_certificate_skid                 │         │        │ skid                          │

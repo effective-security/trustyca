@@ -99,6 +99,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 		return nil, err
 	}
 
+	signStart := time.Now()
 	crt, crtPEM, err := issuer.Sign(cr)
 	if err != nil {
 		logger.ContextKV(ctx, xlog.WARNING,
@@ -107,14 +108,14 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 			"issuer", issuer.Label(),
 			"profile", req.Profile,
 			"err", err.Error())
-		metricskey.CAFailSignCert.IncrCounter(1, issuer.Label(), req.Profile)
+		metricskey.CAFailSignCert.IncrCounter(1, issuer.Label(), req.Profile, orgID.String())
 
 		if isSignRequestError(err) {
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "failed to sign certificate: %s", err.Error())
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to sign certificate")
 	}
-	metricskey.CACertIssued.IncrCounter(1, issuer.Label(), req.Profile)
+	metricskey.CACertIssued.IncrCounter(1, issuer.Label(), req.Profile, orgID.String())
 
 	mcert := model.NewCertificate(crt, orgID, projectID, req.Profile, string(crtPEM), issuer.PEM(), req.Label, nil, req.Metadata)
 	evt := events.New(ctx, ServiceName, pb.EventType_CertificateIssued, "Certificate issued").
@@ -135,6 +136,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to register certificate")
 	}
+	metricskey.CASignLatency.MeasureSince(signStart, issuer.Label(), req.Profile)
 
 	logger.ContextKV(ctx, xlog.NOTICE,
 		"status", "signed",

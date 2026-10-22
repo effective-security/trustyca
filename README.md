@@ -133,6 +133,23 @@ without `issuer_label` binds to the issuing CA the onboarding registers.
 `trustycactl --help` lists the commands; the reference is
 [Documentation/cli/trustycactl.md](Documentation/cli/trustycactl.md).
 
+Issuer keys live in the crypto providers of `crypto_provider`. The dev
+configuration sets `ca.allow_software_keys: true` for the platform key files
+and the `inmem` provider, whose keys are stored wrapped by the data
+protection provider; a `service.environment: prod` instance refuses to
+start with it.
+
+### Load test
+
+`tests/load` fills a disposable database with synthetic certificates and
+reports the plans and timings of the CA queries at that volume:
+
+    go run ./tests/load -rows 10000000 -load -explain -sign 2000 -out load.md
+    go run ./tests/load -drop
+
+The last run is in
+[Documentation/perf/load-certificates.md](Documentation/perf/load-certificates.md).
+
 ## Debug
 
 Add the launch configuration to .vscode/launch.json:

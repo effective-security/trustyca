@@ -15,6 +15,7 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/db/model"
+	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/cryptoprov"
@@ -271,4 +272,43 @@ func TestPublicKeysEqual(t *testing.T) {
 	assert.False(t, ca.PublicKeysEqual(&key.PublicKey, "x"))
 	_ = context.Background()
 	_ = certutil.GetSubjectKeyID
+}
+
+func TestKeys_SoftwareKeysDisabled(t *testing.T) {
+	t.Parallel()
+	f := newFixture(t)
+	dp, err := dataprotection.NewSymmetric([]byte(testDPSecret))
+	require.NoError(t, err)
+	keys := ca.NewKeys(f.keys.Crypto(), dp)
+	keys.DisableSoftwareKeys()
+	keyLabel := ca.KeyLabel(xdbID(1), xdbID(0), "NOSOFT")
+
+	// the inmem provider exports key material: refused
+	_, _, _, err = keys.Generate(f.ctx, f.prov, keyLabel, nil, &csr.CertificateRequest{CommonName: "x"})
+	require.ErrorIs(t, err, ca.ErrSoftwareKeysDisabled)
+
+	// a PEM key: refused before it is parsed
+	root := testutils.NewTestCA(t, "No Software Root", nil)
+	_, _, err = keys.ImportKey(f.ctx, "", []byte(keyPEM(t, root.Key)), keyLabel, root.Cert.PublicKey)
+	require.ErrorIs(t, err, ca.ErrSoftwareKeysDisabled)
+	_, _, err = keys.ImportKey(f.ctx, "", []byte("not a key"), keyLabel, root.Cert.PublicKey)
+	require.ErrorIs(t, err, ca.ErrSoftwareKeysDisabled)
+
+	// a bootstrap key file is a PEM key
+	registry := ca.NewRegistry(f.db, keys, ca.Options{})
+	l1 := testutils.NewTestCA(t, "No Software L1", root)
+	l2 := testutils.NewTestCA(t, "No Software L2", l1)
+	_, err = registry.Bootstrap(f.ctx, f.db, bootstrapConfig(t, t.TempDir(), root, l1, l2))
+	require.ErrorIs(t, err, ca.ErrSoftwareKeysDisabled)
+	assert.ErrorContains(t, err, `issuer "L1": software keys are not allowed`)
+
+	// the wrapped key of a registered row still loads
+	row := f.root(xdbID(1), xdbID(0), "SOFT_ROOT", nil)
+	signer, err := keys.Signer(f.ctx, row)
+	require.NoError(t, err)
+	assert.NotNil(t, signer)
+
+	// allowed by default
+	_, _, _, err = f.keys.Generate(f.ctx, f.prov, keyLabel, nil, &csr.CertificateRequest{CommonName: "x"})
+	require.NoError(t, err)
 }

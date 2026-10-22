@@ -27,4 +27,9 @@ var (
 	// ErrIssuerExpired is returned when the certificate of the issuer is no
 	// longer valid, so it signs no CRL
 	ErrIssuerExpired = errors.New("issuer certificate has expired")
+	// ErrSoftwareKeysDisabled is returned by Keys when a key that no crypto
+	// provider holds (a key the inmem provider generates, a PEM key of an
+	// import or of a bootstrap key file) is refused: the configuration
+	// allows keys of the crypto providers only (ca.allow_software_keys)
+	ErrSoftwareKeysDisabled = errors.New("software keys are not allowed: use a key of a crypto provider")
 )

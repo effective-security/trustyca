@@ -117,16 +117,31 @@ func (r *KeyRef) Apply(m *model.Issuer) {
 type Keys struct {
 	crypto *cryptoprov.Crypto
 	dp     dataprotection.Provider
+	// softwareKeys allows keys that no crypto provider holds, which are
+	// stored wrapped; off in production
+	softwareKeys bool
 }
 
 // NewKeys returns the key management over the crypto providers and the data
 // protection provider; either may be nil when the deployment has none, and
-// the operations that need it fail
+// the operations that need it fail. Software keys are allowed until
+// DisableSoftwareKeys.
 func NewKeys(crypto *cryptoprov.Crypto, dp dataprotection.Provider) *Keys {
 	return &Keys{
-		crypto: crypto,
-		dp:     dp,
+		crypto:       crypto,
+		dp:           dp,
+		softwareKeys: true,
 	}
+}
+
+// DisableSoftwareKeys refuses, with ErrSoftwareKeysDisabled, every key that
+// no crypto provider holds: a key the inmem provider generates, the PEM key
+// of an import and the key file of a bootstrap issuer, which would be
+// stored wrapped in key_protected. A production configuration disables
+// them (ca.allow_software_keys), so that every issuer key lives in a KMS or
+// an HSM; the wrapped keys of existing rows still load.
+func (k *Keys) DisableSoftwareKeys() {
+	k.softwareKeys = false
 }
 
 // Crypto returns the crypto providers
@@ -204,6 +219,9 @@ func (k *Keys) KeyRefFromExport(ctx context.Context, prov cryptoprov.Provider, k
 			Provider: prov.Manufacturer(),
 			KeyID:    key,
 		}, nil
+	}
+	if !k.softwareKeys {
+		return nil, errors.WithStack(ErrSoftwareKeysDisabled)
 	}
 	protected, err := k.ProtectKey(ctx, []byte(key))
 	if err != nil {
@@ -291,6 +309,9 @@ func (k *Keys) ImportKey(ctx context.Context, keyURI string, keyPEM []byte, keyL
 			KeyID:    keyURI,
 		}
 	case len(keyPEM) > 0:
+		if !k.softwareKeys {
+			return nil, nil, errors.WithStack(ErrSoftwareKeysDisabled)
+		}
 		var err error
 		signer, err = signerFromPEM(keyPEM)
 		if err != nil {

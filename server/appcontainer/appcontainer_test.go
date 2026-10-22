@@ -230,3 +230,29 @@ func (m *missedLookup) RegisterIssuer(ctx context.Context, row *model.Issuer) (*
 	m.inserts++
 	return m.CaDb.RegisterIssuer(ctx, row)
 }
+
+// TestProvideCA_SoftwareKeys covers the production guard of the issuer
+// keys: a prod environment refuses to start with software keys allowed
+func TestProvideCA_SoftwareKeys(t *testing.T) {
+	cfg := &config.Configuration{
+		Service: config.Service{Environment: config.EnvironmentProd},
+		CA:      config.CA{AllowSoftwareKeys: true},
+	}
+	_, err := provideCA(cfg, nil, nil, nil)
+	require.EqualError(t, err, "ca.allow_software_keys is not allowed in the prod environment: issuer keys must live in a crypto provider")
+
+	// without a bootstrap, the registry is built with the keys disabled
+	cfg.CA.AllowSoftwareKeys = false
+	registry, err := provideCA(cfg, nil, nil, nil)
+	require.NoError(t, err)
+	_, _, err = registry.Keys().ImportKey(context.Background(), "", []byte("key"), "label", nil)
+	assert.ErrorIs(t, err, ca.ErrSoftwareKeysDisabled)
+
+	// a development environment allows them
+	cfg.Service.Environment = "dev"
+	cfg.CA.AllowSoftwareKeys = true
+	registry, err = provideCA(cfg, nil, nil, nil)
+	require.NoError(t, err)
+	_, _, err = registry.Keys().ImportKey(context.Background(), "", []byte("key"), "label", nil)
+	assert.NotErrorIs(t, err, ca.ErrSoftwareKeysDisabled, "refused for another reason: %v", err)
+}

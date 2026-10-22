@@ -918,3 +918,33 @@ func TestService_ListIssuers(t *testing.T) {
 	_, err = svc.ListIssuers(ctx, &pb.ListIssuersRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list issuers")
 }
+
+func TestService_Issuers_SoftwareKeysDisabled(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	tca := newTestCA(t, ctrl)
+	tca.keys.DisableSoftwareKeys()
+	svc := tca.service()
+	ctx := testCtx("42", "1")
+
+	// the inmem provider generates software keys: a new root is refused
+	// before anything is stored
+	_, err := svc.RegisterIssuer(ctx, &pb.RegisterIssuerRequest{
+		Label:   "NOSOFT",
+		Type:    pb.AuthorityType_Root,
+		Subject: &pb.X509Subject{CommonName: "No Software Root"},
+		Profile: testCAProfile,
+	})
+	assert.EqualError(t, err, "bad_request: failed to create issuer: software keys are not allowed: use a key of a crypto provider")
+
+	// a PEM key is a software key
+	root := testutils.NewTestCA(t, "Import Root", nil)
+	_, err = svc.ImportIssuer(ctx, &pb.ImportIssuerRequest{
+		Label:       "BYO",
+		Type:        pb.AuthorityType_Root,
+		Certificate: testutils.CertPEM(root.Cert),
+		KeyPem:      keyPEM(t, root.Key),
+	})
+	assert.EqualError(t, err, "bad_request: failed to import issuer: software keys are not allowed: use a key of a crypto provider")
+}

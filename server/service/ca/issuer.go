@@ -517,7 +517,7 @@ func (s *Service) caProfile(ctx context.Context, orgID, projectID xdb.ID, label 
 // issuerError maps a failure to create an issuer: a signing error the
 // request causes is the client's, any other is the server's
 func (s *Service) issuerError(ctx context.Context, err error) error {
-	if isSignRequestError(err) {
+	if isSignRequestError(err) || errors.Is(err, core.ErrSoftwareKeysDisabled) {
 		return httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "failed to create issuer: %s", err.Error())
 	}
 	logger.ContextKV(ctx, xlog.ERROR,

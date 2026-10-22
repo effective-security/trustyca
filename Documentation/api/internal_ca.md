@@ -56,6 +56,7 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
   - [func \(k \*Keys\) ActivatedIssuer\(ctx context.Context, row \*model.Issuer, certPEM, intermediates, rootPEM string\) \(\*model.Issuer, error\)](<#Keys.ActivatedIssuer>)
   - [func \(k \*Keys\) Crypto\(\) \*cryptoprov.Crypto](<#Keys.Crypto>)
   - [func \(k \*Keys\) Destroy\(\_ context.Context, m \*model.Issuer\) error](<#Keys.Destroy>)
+  - [func \(k \*Keys\) DisableSoftwareKeys\(\)](<#Keys.DisableSoftwareKeys>)
   - [func \(k \*Keys\) Generate\(ctx context.Context, prov cryptoprov.Provider, keyLabel string, spec \*pb.KeySpec, req \*csr.CertificateRequest\) \(\[\]byte, crypto.Signer, \*KeyRef, error\)](<#Keys.Generate>)
   - [func \(k \*Keys\) ImportIssuer\(ctx context.Context, req \*ImportRequest\) \(\*model.Issuer, error\)](<#Keys.ImportIssuer>)
   - [func \(k \*Keys\) ImportKey\(ctx context.Context, keyURI string, keyPEM \[\]byte, keyLabel string, pub crypto.PublicKey\) \(crypto.Signer, \*KeyRef, error\)](<#Keys.ImportKey>)
@@ -160,6 +161,11 @@ var (
     // ErrIssuerExpired is returned when the certificate of the issuer is no
     // longer valid, so it signs no CRL
     ErrIssuerExpired = errors.New("issuer certificate has expired")
+    // ErrSoftwareKeysDisabled is returned by Keys when a key that no crypto
+    // provider holds (a key the inmem provider generates, a PEM key of an
+    // import or of a bootstrap key file) is refused: the configuration
+    // allows keys of the crypto providers only (ca.allow_software_keys)
+    ErrSoftwareKeysDisabled = errors.New("software keys are not allowed: use a key of a crypto provider")
 )
 ```
 
@@ -218,7 +224,7 @@ func KeySpec(spec *pb.KeySpec) (string, int, error)
 KeySpec returns the algorithm and size of the key to generate for a request; a nil or empty specification takes the defaults, and a size the algorithm does not accept is an error
 
 <a name="PublicKeysEqual"></a>
-## func [PublicKeysEqual](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L347>)
+## func [PublicKeysEqual](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L368>)
 
 ```go
 func PublicKeysEqual(a, b crypto.PublicKey) bool
@@ -227,7 +233,7 @@ func PublicKeysEqual(a, b crypto.PublicKey) bool
 PublicKeysEqual reports whether the two public keys are the same key
 
 <a name="SubjectKeyID"></a>
-## func [SubjectKeyID](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L373>)
+## func [SubjectKeyID](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L394>)
 
 ```go
 func SubjectKeyID(pub crypto.PublicKey) (string, error)
@@ -385,7 +391,7 @@ func (r *KeyRef) Apply(m *model.Issuer)
 Apply sets the key columns of the issuer row
 
 <a name="Keys"></a>
-## type [Keys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L117-L120>)
+## type [Keys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L117-L123>)
 
 Keys generates, loads and protects the private keys of the issuers. A key generated in a KMS or HSM provider is referenced by its URI and never leaves the provider; a software key is wrapped by the data protection provider before it is stored.
 
@@ -396,13 +402,13 @@ type Keys struct {
 ```
 
 <a name="NewKeys"></a>
-### func [NewKeys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L125>)
+### func [NewKeys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L129>)
 
 ```go
 func NewKeys(crypto *cryptoprov.Crypto, dp dataprotection.Provider) *Keys
 ```
 
-NewKeys returns the key management over the crypto providers and the data protection provider; either may be nil when the deployment has none, and the operations that need it fail
+NewKeys returns the key management over the crypto providers and the data protection provider; either may be nil when the deployment has none, and the operations that need it fail. Software keys are allowed until DisableSoftwareKeys.
 
 <a name="Keys.ActivatedIssuer"></a>
 ### func \(\*Keys\) [ActivatedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L369>)
@@ -414,7 +420,7 @@ func (k *Keys) ActivatedIssuer(ctx context.Context, row *model.Issuer, certPEM, 
 ActivatedIssuer returns the copy of a Pending row with the certificate signed outside the CA, after verifying that the certificate is for the key of the issuer and that its chain verifies; the DB activates the row
 
 <a name="Keys.Crypto"></a>
-### func \(\*Keys\) [Crypto](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L133>)
+### func \(\*Keys\) [Crypto](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L148>)
 
 ```go
 func (k *Keys) Crypto() *cryptoprov.Crypto
@@ -423,7 +429,7 @@ func (k *Keys) Crypto() *cryptoprov.Crypto
 Crypto returns the crypto providers
 
 <a name="Keys.Destroy"></a>
-### func \(\*Keys\) [Destroy](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L320>)
+### func \(\*Keys\) [Destroy](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L341>)
 
 ```go
 func (k *Keys) Destroy(_ context.Context, m *model.Issuer) error
@@ -431,8 +437,17 @@ func (k *Keys) Destroy(_ context.Context, m *model.Issuer) error
 
 Destroy removes the key of an issuer from its crypto provider, when the provider manages keys. A software key has no provider copy: it is destroyed when the row clears key\_protected.
 
+<a name="Keys.DisableSoftwareKeys"></a>
+### func \(\*Keys\) [DisableSoftwareKeys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L143>)
+
+```go
+func (k *Keys) DisableSoftwareKeys()
+```
+
+DisableSoftwareKeys refuses, with ErrSoftwareKeysDisabled, every key that no crypto provider holds: a key the inmem provider generates, the PEM key of an import and the key file of a bootstrap issuer, which would be stored wrapped in key\_protected. A production configuration disables them \(ca.allow\_software\_keys\), so that every issuer key lives in a KMS or an HSM; the wrapped keys of existing rows still load.
+
 <a name="Keys.Generate"></a>
-### func \(\*Keys\) [Generate](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L164>)
+### func \(\*Keys\) [Generate](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L179>)
 
 ```go
 func (k *Keys) Generate(ctx context.Context, prov cryptoprov.Provider, keyLabel string, spec *pb.KeySpec, req *csr.CertificateRequest) ([]byte, crypto.Signer, *KeyRef, error)
@@ -450,7 +465,7 @@ func (k *Keys) ImportIssuer(ctx context.Context, req *ImportRequest) (*model.Iss
 ImportIssuer verifies the certificate chain and the key of an imported issuer and returns its Active row; the chain and root columns hold the verified chain
 
 <a name="Keys.ImportKey"></a>
-### func \(\*Keys\) [ImportKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L269>)
+### func \(\*Keys\) [ImportKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L287>)
 
 ```go
 func (k *Keys) ImportKey(ctx context.Context, keyURI string, keyPEM []byte, keyLabel string, pub crypto.PublicKey) (crypto.Signer, *KeyRef, error)
@@ -459,7 +474,7 @@ func (k *Keys) ImportKey(ctx context.Context, keyURI string, keyPEM []byte, keyL
 ImportKey returns the signer and the reference of an existing key: by its URI in a crypto provider, or as PEM, which is wrapped. The key must be the private key of the public key.
 
 <a name="Keys.KeyRefFromExport"></a>
-### func \(\*Keys\) [KeyRefFromExport](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L197>)
+### func \(\*Keys\) [KeyRefFromExport](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L212>)
 
 ```go
 func (k *Keys) KeyRefFromExport(ctx context.Context, prov cryptoprov.Provider, keyLabel string, exported []byte) (*KeyRef, error)
@@ -495,7 +510,7 @@ func (k *Keys) NewSignedIssuer(ctx context.Context, req *IssuerRequest, parent *
 NewSignedIssuer generates the key of an issuer in the provider and has the parent sign its certificate with the CA profile the parent resolved. The row is Active, with the parent as its parent, the parent and its chain as its chain and the parent's root as its root. A Root is refused: it is self\-signed by NewRootIssuer. The chain of the parent must allow a subordinate CA with the path length of the profile \(checkPathLength\), or the certificates the subordinate issues would never verify.
 
 <a name="Keys.ProtectKey"></a>
-### func \(\*Keys\) [ProtectKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L221>)
+### func \(\*Keys\) [ProtectKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L239>)
 
 ```go
 func (k *Keys) ProtectKey(ctx context.Context, keyPEM []byte) (string, error)
@@ -504,7 +519,7 @@ func (k *Keys) ProtectKey(ctx context.Context, keyPEM []byte) (string, error)
 ProtectKey wraps the PEM of a software key with the data protection provider; the result is what key\_protected stores
 
 <a name="Keys.Provider"></a>
-### func \(\*Keys\) [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L139>)
+### func \(\*Keys\) [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L154>)
 
 ```go
 func (k *Keys) Provider(name string) (cryptoprov.Provider, error)
@@ -513,7 +528,7 @@ func (k *Keys) Provider(name string) (cryptoprov.Provider, error)
 Provider returns the crypto provider with the name, \`manufacturer\` or \`manufacturer/model\`; an empty name is the default provider
 
 <a name="Keys.Signer"></a>
-### func \(\*Keys\) [Signer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L234>)
+### func \(\*Keys\) [Signer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L252>)
 
 ```go
 func (k *Keys) Signer(ctx context.Context, m *model.Issuer) (crypto.Signer, error)
