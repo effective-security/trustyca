@@ -23,6 +23,30 @@ import (
 
 var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca", "testutils")
 
+// DataProtectionSeedEnv is the environment variable of the data protection
+// seed every process that uses the dev database must share
+const DataProtectionSeedEnv = "TRUSTYCA_DP_SEED"
+
+// DefaultDataProtectionSeed is the seed of the Makefile, used when the
+// environment sets none (CI)
+const DefaultDataProtectionSeed = "testseed"
+
+// SetDataProtectionSeed pins the data protection seed of a test that builds
+// the app container against the dev database: the environment's seed when
+// it sets one, so that the test agrees with a server started from the same
+// shell or IDE, else DefaultDataProtectionSeed. It uses t.Setenv, so the
+// test must not be parallel. The platform issuer bootstrapped into the dev
+// database is wrapped under the seed of the first process that registered
+// it; a process with another seed fails the start.
+func SetDataProtectionSeed(t testing.TB) {
+	t.Helper()
+	seed := os.Getenv(DataProtectionSeedEnv)
+	if seed == "" {
+		seed = DefaultDataProtectionSeed
+	}
+	t.Setenv(DataProtectionSeedEnv, seed)
+}
+
 // LoadConfig returns Configuration
 func LoadConfig(hostname string) (*config.Configuration, error) {
 	if hostname != "" {

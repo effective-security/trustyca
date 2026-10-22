@@ -79,7 +79,9 @@ Add the launch configuration to .vscode/launch.json:
       "mode": "debug",
       "host": "127.0.0.1",
       "program": "${workspaceRoot}/cmd/trustycasvc",
-      "env": {},
+      "env": {
+        "TRUSTYCA_DP_SEED": "testseed"
+      },
       "args": [
         "--log-pretty",
         "--cfg",
@@ -92,6 +94,25 @@ Add the launch configuration to .vscode/launch.json:
 ```
 
 ## Troubleshooting
+
+### Data protection seed
+
+Every process that uses the dev database (the server, `make test`, the
+container tests) must share one `TRUSTYCA_DP_SEED`: the platform issuer the
+start bootstraps from `ca.bootstrap_config` keeps its software key wrapped
+under the seed of the process that registered it. The Makefile exports
+`testseed` unless the environment sets a seed, and the tests use the
+environment's seed in the same way, so a seed exported by your shell profile
+is used by `make`, by the tests and by a server started from that shell or
+the IDE. A start that fails with
+
+    failed to bootstrap CA: issuer "trusty.svc": unable to unprotect key of issuer ...: check that the data protection seed (TRUSTYCA_DP_SEED) is the one the key was wrapped under
+
+ran with a different seed than the process that registered the platform
+issuer: start with that seed, or recreate the disposable dev database with
+`make drop-sql start-sql` so that the next start registers the platform
+issuer again from the configuration. Never delete a tenant or imported
+issuer for this error: the wrapped key in its row is the only copy.
 
 If your build fails with the error `fatal: could not read Username for 'https://github.com': terminal prompts disabled` you likely need to adjust your gitconfig.  
 This error occurs when the repo has been cloned via SSH but `go get` clones repositories over HTTPS by default.

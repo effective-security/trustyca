@@ -94,22 +94,22 @@ func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileReques
 DeleteProfile deletes a profile of the org
 
 <a name="Service.GetCRL"></a>
-### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L9>)
+### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L19>)
 
 ```go
 func (s *Service) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (*pb.CrlResponse, error)
 ```
 
-
+GetCRL returns the current CRL of the issuer with the key identifier. A tenant reads the CRLs of its org: the CRL of another org, of the platform or of a project the caller cannot read is not found. A trusted service caller that names no org \(CIS\) reads the CRL of any issuer, since CRLs are public.
 
 <a name="Service.GetCertificate"></a>
-### func \(\*Service\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L9>)
+### func \(\*Service\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L36>)
 
 ```go
 func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateRequest) (*pb.CertificateResponse, error)
 ```
 
-
+GetCertificate returns a certificate of the org by its ID, its Subject Key Identifier \(the newest one of the key\), its SHA\-256 thumbprint, or the key identifier of its issuer and its serial number. A certificate of another org, or of a project the caller cannot read, is not found.
 
 <a name="Service.GetIssuer"></a>
 ### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L366>)
@@ -148,13 +148,13 @@ func (s *Service) IsReady() bool
 IsReady indicates that the service is ready to serve its end\-points
 
 <a name="Service.ListCertificates"></a>
-### func \(\*Service\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L14>)
+### func \(\*Service\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L61>)
 
 ```go
 func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificatesRequest) (*pb.CertificatesResponse, error)
 ```
 
-
+ListCertificates returns the certificates of the org, newest first: of the project of the request, or of the org\-wide scope and every project the caller may read \(DESIGN.md section 3.3\)
 
 <a name="Service.ListIssuers"></a>
 ### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L406>)
@@ -175,13 +175,13 @@ func (s *Service) ListProfiles(ctx context.Context, req *pb.ListProfilesRequest)
 ListProfiles returns the profiles of the org, newest first; a project limits the result to its own profiles. Without a project, a member with project grants only lists the org\-wide profiles and those of its projects.
 
 <a name="Service.ListRevokedCertificates"></a>
-### func \(\*Service\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L29>)
+### func \(\*Service\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L254>)
 
 ```go
 func (s *Service) ListRevokedCertificates(ctx context.Context, req *pb.ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error)
 ```
 
-
+ListRevokedCertificates returns the revoked certificates of the org with their revocation, newest revocation first, in the scope of the request as ListCertificates does
 
 <a name="Service.ListRoots"></a>
 ### func \(\*Service\) [ListRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/root.go#L65>)
@@ -202,13 +202,13 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.PublishCrls"></a>
-### func \(\*Service\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L14>)
+### func \(\*Service\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L60>)
 
 ```go
 func (s *Service) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error)
 ```
 
-
+PublishCrls is the revocation pipeline of PLAN.md phase 4: it is not implemented yet and answers Unimplemented, so that a caller never gets an empty success
 
 <a name="Service.RegisterGRPC"></a>
 ### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L72>)
@@ -247,13 +247,13 @@ func (s *Service) RegisterRoot(ctx context.Context, req *pb.RegisterRootRequest)
 RegisterRoot registers a self\-signed CA certificate as a trust anchor of the org; registering it again updates its trust
 
 <a name="Service.RevokeCertificate"></a>
-### func \(\*Service\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L24>)
+### func \(\*Service\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L174>)
 
 ```go
 func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error)
 ```
 
-
+RevokeCertificate revokes a certificate of the org, named by its ID, its Subject Key Identifier or its issuer and serial number: the revocation and the status of the certificate are written in one transaction \(db.RevokeCertificate\), then the CertificateRevoked event is recorded. A revoked certificate is refused with a precondition failure, and the reason RemoveFromCRL, which releases a certificate from hold \(RFC 5280 section 5.3.1\), is refused since hold removal is not implemented. The request names the project of the certificate when the caller's role is granted there only; a certificate of another project is then not found.
 
 <a name="Service.SignCertificate"></a>
 ### func \(\*Service\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L51>)
@@ -274,13 +274,13 @@ func (s *Service) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPRe
 SignOCSP signs an OCSP response for the certificate of the request: good for a registered certificate, revoked with the reason and time of its revocation, and unknown for a serial the issuer never registered.
 
 <a name="Service.UpdateCertificateLabel"></a>
-### func \(\*Service\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L19>)
+### func \(\*Service\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L113>)
 
 ```go
 func (s *Service) UpdateCertificateLabel(ctx context.Context, req *pb.UpdateCertificateLabelRequest) (*pb.CertificateResponse, error)
 ```
 
-
+UpdateCertificateLabel replaces the label a client gave a certificate, and its client metadata when the request carries any. The request names the project of the certificate when the caller's role is granted there only \(the interceptor authorizes that scope\); a certificate of another project is then not found. There is no event type for the change: it is logged, not recorded in the audit trail.
 
 <a name="Service.UpdateIssuer"></a>
 ### func \(\*Service\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L287>)

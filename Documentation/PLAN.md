@@ -208,7 +208,7 @@ Follow-ups:
    `ProjectID`, so a project Admin cannot manage the rows of its project
    through them (ROADMAP.md).
 
-## Phase 3: CA gRPC service
+## Phase 3: CA gRPC service (done)
 
 The issuer, profile, root and signing methods are done in phase 2a
 (`server/service/ca/issuer.go`, `profile.go`, `root.go`, `signer.go`,
@@ -220,23 +220,76 @@ is verified with the authorizer; the certificate and its
 CA through `internal/ca` with the `inmem` provider over a mock DB whose
 reads serve in-memory rows (`service_test.go`).
 
-1. `server/service/ca`: implement the remaining `pb.CAServer` methods on top
-   of `internal/ca` and `db.CaDb`: `GetCertificate`, `ListCertificates`,
-   `UpdateCertificateLabel`, `RevokeCertificate`, `ListRevokedCertificates`
-   (`cert.go`), `GetCRL` and `PublishCrls` (`crl.go`, with phase 4).
+1. `server/service/ca/cert.go` (done): `GetCertificate` by ID, by issuer
+   and serial number, by SHA-256 thumbprint, or by SKID (the newest
+   certificate of the key among the org-wide rows and the projects the
+   caller may read, since a renewed key keeps its SKID); `ListCertificates`
+   and `ListRevokedCertificates` with every filter of the request and the
+   `ProjectIDs` of a member with project grants only
+   (`query.ListCertificatesRequest.ProjectIDs` and
+   `ListRevokedCertificatesRequest.ProjectIDs` were added for it);
+   `UpdateCertificateLabel` replaces the label and, when the request carries
+   a map, the metadata; `RevokeCertificate` by ID, SKID or issuer and
+   serial writes the revocation and the status in the one transaction of
+   `db.RevokeCertificate`, records `CertificateRevoked` after it, refuses
+   a revoked certificate with a precondition failure (HTTP 409) and the
+   reason `RemoveFromCRL` (hold removal is not a revocation). Both
+   mutations take an optional `ProjectID`, the scope the interceptor
+   authorizes for a member whose role is granted in the project only; the
+   certificate must belong to it. Every row is authorized against its own
+   project with `rowAccess`, where an API key restricted to a project reads
+   an org-wide row but may not change it. `crl.go`:
+   `GetCRL` serves a tenant the CRLs of its org and a service caller that
+   names no org (CIS) any CRL; `PublishCrls` answers Unimplemented until
+   phase 4, instead of the empty success of the stub.
 2. `authctx.CheckAccess` already enforces `allowed_roles` for user tokens and
    the `ca:*`/`certs:*` scopes for API keys, and passes `trustyca-*` service
    roles through; `tenantOrg` and `tenantProject` verify that an explicit
    `OrgID` from a service caller is an active org and that `ProjectID`
    belongs to it (done).
-3. Config: the `ca` section (`bootstrap_config`, `issuer_cache_ttl`,
-   `issuer_cache_size`) and the `backend` listener with `ca` are done; add
-   the `trustyca-ra` and `trustyca-cis` TLS roles and
-   `authz.allow: /pb.CA:trustyca-ra,trustyca-admin`.
-4. Client: `api/client` factory method for `pb.CAClient`; `api/pb/pb.go` already has
-   mockgen directives for `ca` and `cis`.
-5. Tests: gRPC end-to-end sign, get, list, revoke, CRL with the bootstrap
-   `trusty.svc` issuer through `tests/mockappcontainer`.
+3. Config (done): the backend listener of `etc/dev/trustyca-config.yaml`
+   maps `spiffe://trustyca/ra` and `spiffe://trustyca/cis` to the
+   `trustyca-ra` and `trustyca-cis` TLS roles and allows
+   `/pb.CA:trustyca-ra,trustyca-admin`; `SignOCSP`, `GetCRL` and
+   `ListRoots` list `trustyca-cis` too (porto authz takes the roles of the
+   deepest matching path, so they repeat the other two). The backend
+   interceptor builds the caller context from the identity the listener
+   authenticated when the WFE forwarded none, so these roles reach the
+   service as `trustyca-*` callers.
+4. Client (done): `client.Factory.CAClient` returns `pb.CAServer` over the
+   gRPC connection; `make generate` regenerates `mocks/mockclient`.
+5. Tests (done): `cert_test.go` (an in-memory `certStore` behind the mock
+   DB, row access per project and API key, events, DB failures) and
+   `crl_test.go`; `e2e_test.go` runs the CA service of the app container
+   over the configured database with the bootstrap `trusty.svc` issuer and
+   calls it over gRPC (bufconn, identity `trustyca-ra`): the bootstrap
+   issuer signs OCSP for the dev client certificate it issued outside the
+   service (unknown), and a new org registers a CA profile and a root, signs
+   a certificate, reads it by every selector, lists, relabels and revokes
+   it, lists the revocation, checks OCSP before (good) and after (revoked,
+   key compromise), and gets not found for its CRL and Unimplemented for
+   `PublishCrls`. The bootstrap L2 issuer has path length 0, so the tenant
+   CA is a root of the org, with a key in the default provider (the KMS
+   emulator of the local stack) that the test destroys through
+   `UpdateIssuer`; the test uses the data protection seed of the
+   environment (`testutils.SetDataProtectionSeed`), as the container test
+   does.
+
+Follow-ups:
+
+1. `UpdateCertificateLabel` has no event type: the change is logged only.
+2. `.project/gen_certs.sh` generates no certificates for
+   `spiffe://trustyca/ra` and `spiffe://trustyca/cis`; add them when the CIS
+   (phase 5) or an RA deployment needs the roles.
+3. An empty metadata map cannot be sent over gRPC (an empty map is not
+   serialized), so clearing the metadata of a certificate works through
+   JSON only.
+4. The CIS routes: the issuer and CRL paths stay `/v1/cert/:ikid` and
+   `/v1/crl/:ikid`, the AIA and CDP templates of the issuers; OCSP by
+   issuer moved under `/v1/ocspi`, so that the GET with the request in the
+   path (`/v1/ocsp/*body`) does not conflict with it; the request of both
+   GET routes is a catch-all, since its base64 has '/' in it. The `ocsp_url` templates of `etc/dev/ca-config*.yaml`
+   must point at `/v1/ocspi/:ISSUER_ID` (phase 5).
 
 ## Phase 4: revocation pipeline
 
@@ -261,7 +314,7 @@ not_after < ?` paged by id, and a bulk delete; the DB layer has neither.
    `Cache-Control` headers.
 3. Config: add `cis` to the `wfe` listener (or a dedicated `cis` listener),
    `allow_any` and `skip_auth` entries; update `etc/dev/ca-config.dev.yaml` AIA
-   templates to `/v1/cert`, `/v1/crl`, `/v1/ocsp`.
+   templates to `/v1/cert`, `/v1/crl`, `/v1/ocspi`.
 4. Tests: HTTP tests for each media type, OCSP round trip via `golang.org/x/crypto/ocsp`,
    `openssl verify -crl_check` in the docker CI test.
 

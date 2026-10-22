@@ -13,6 +13,7 @@ import (
 	"github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/internal/db"
+	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/x/guid"
 	"github.com/effective-security/xpki/jwt"
 	"github.com/effective-security/xpki/jwt/oauth2client"
@@ -62,7 +63,9 @@ func TestNewContainerFactory(t *testing.T) {
 }
 
 func TestAppContainer(t *testing.T) {
-	t.Setenv("TRUSTYCA_DP_SEED", "testseed")
+	// the seed the platform issuer in the dev DB is wrapped under must be
+	// the one of every process that uses that DB
+	testutils.SetDataProtectionSeed(t)
 	t.Setenv("TRUSTYCA_GITHUB_CLIENT_ID", "testclientid")
 	t.Setenv("TRUSTYCA_GITHUB_CLIENT_SECRET", "testclientsecret")
 	cfgPath, err := filepath.Abs(projFolder + "etc/dev/" + config.ConfigFileName)

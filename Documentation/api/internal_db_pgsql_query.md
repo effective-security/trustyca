@@ -445,7 +445,7 @@ func ListAllColumns(args ...any) (string, string)
 ListAllColumns returns SQL query to list all columns
 
 <a name="ListCertificates"></a>
-## func [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L216>)
+## func [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L222>)
 
 ```go
 func ListCertificates(args ...any) (string, string)
@@ -526,7 +526,7 @@ func ListRevoked(args ...any) (string, string)
 ListRevoked returns SQL query to list revocations
 
 <a name="ListRevokedCertificates"></a>
-## func [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L214>)
+## func [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L220>)
 
 ```go
 func ListRevokedCertificates(args ...any) (string, string)
@@ -969,7 +969,7 @@ func (r *ListAPIKeysRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListCertificatesRequest"></a>
-## type [ListCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L153-L184>)
+## type [ListCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L153-L189>)
 
 ListCertificatesRequest defines request to list certificates, newest first. The request names its org scope: OrgID, Platform or AllOrgs; without ProjectID and Scope the certificates of every scope of the org are returned.
 
@@ -988,6 +988,11 @@ type ListCertificatesRequest struct {
     // Scope limits the result to Org scope (project_id IS NULL) or
     // Project scope (project_id IS NOT NULL) certificates
     Scope pb.Scope_Enum
+    // ProjectIDs limits the result to the org-wide rows and the rows of the
+    // projects, for a caller with grants in some projects only; nil applies
+    // no project filter and an empty list keeps the org-wide rows. ProjectID
+    // and Scope take precedence.
+    ProjectIDs []uint64
     // IKID limits the result to the certificates of the issuer
     IKID string
     // SKID limits the result to the certificates of the subject key
@@ -1009,7 +1014,7 @@ type ListCertificatesRequest struct {
 ```
 
 <a name="ListCertificatesRequest.QueryParams"></a>
-### func \(\*ListCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L192>)
+### func \(\*ListCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L197>)
 
 ```go
 func (r *ListCertificatesRequest) QueryParams() xdb.QueryParams
@@ -1018,7 +1023,7 @@ func (r *ListCertificatesRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListCertificatesRequest.Validate"></a>
-### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L187>)
+### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L192>)
 
 ```go
 func (r *ListCertificatesRequest) Validate() error
@@ -1317,7 +1322,7 @@ func (r *ListProjectsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListRevokedCertificatesRequest"></a>
-## type [ListRevokedCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L171-L193>)
+## type [ListRevokedCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L171-L198>)
 
 ListRevokedCertificatesRequest defines request to list revoked certificates with their certificate columns, newest revocation first. The request names its org scope: OrgID, Platform or AllOrgs.
 
@@ -1336,6 +1341,11 @@ type ListRevokedCertificatesRequest struct {
     // Scope limits the result to Org scope (project_id IS NULL) or
     // Project scope (project_id IS NOT NULL) rows
     Scope pb.Scope_Enum
+    // ProjectIDs limits the result to the org-wide rows and the rows of the
+    // projects, for a caller with grants in some projects only; nil applies
+    // no project filter and an empty list keeps the org-wide rows. ProjectID
+    // and Scope take precedence.
+    ProjectIDs []uint64
     // IKID limits the result to the certificates of the issuer
     IKID string
     // Limit specifies maximum number of records to return
@@ -1348,7 +1358,7 @@ type ListRevokedCertificatesRequest struct {
 ```
 
 <a name="ListRevokedCertificatesRequest.QueryParams"></a>
-### func \(\*ListRevokedCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L201>)
+### func \(\*ListRevokedCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L206>)
 
 ```go
 func (r *ListRevokedCertificatesRequest) QueryParams() xdb.QueryParams
@@ -1357,7 +1367,7 @@ func (r *ListRevokedCertificatesRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListRevokedCertificatesRequest.Validate"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L196>)
+### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L201>)
 
 ```go
 func (r *ListRevokedCertificatesRequest) Validate() error

@@ -63,7 +63,7 @@ type Config struct {
 ```
 
 <a name="Factory"></a>
-## type [Factory](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L50-L56>)
+## type [Factory](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L50-L59>)
 
 Factory specifies interface to create Client
 
@@ -74,11 +74,14 @@ type Factory interface {
 
     // OrgsClient returns Orgs client
     OrgsClient(svc string, ops ...Option) (pb.OrgsServer, io.Closer, error)
+
+    // CAClient returns CA client
+    CAClient(svc string, ops ...Option) (pb.CAServer, io.Closer, error)
 }
 ```
 
 <a name="NewFactory"></a>
-### func [NewFactory](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L106>)
+### func [NewFactory](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L109>)
 
 ```go
 func NewFactory(cfg Config, ops ...Option) Factory
@@ -134,7 +137,7 @@ func (c *HTTPStatusClient) Version(ctx context.Context) (*pb.ServerVersion, erro
 Version returns ServerVersion
 
 <a name="Option"></a>
-## type [Option](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L59-L61>)
+## type [Option](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L62-L64>)
 
 Option configures how we set up the client
 
@@ -145,7 +148,7 @@ type Option struct {
 ```
 
 <a name="WithAgent"></a>
-### func [WithAgent](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L94>)
+### func [WithAgent](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L97>)
 
 ```go
 func WithAgent(agent string) Option
@@ -154,7 +157,7 @@ func WithAgent(agent string) Option
 WithAgent option to provide client Agent
 
 <a name="WithCallerIdentity"></a>
-### func [WithCallerIdentity](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L87>)
+### func [WithCallerIdentity](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L90>)
 
 ```go
 func WithCallerIdentity(callerIdentity credentials.CallerIdentity) Option
@@ -163,7 +166,7 @@ func WithCallerIdentity(callerIdentity credentials.CallerIdentity) Option
 WithCallerIdentity option to provide CallerIdentity
 
 <a name="WithTLS"></a>
-### func [WithTLS](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L80>)
+### func [WithTLS](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L83>)
 
 ```go
 func WithTLS(tlsCfg *tls.Config) Option

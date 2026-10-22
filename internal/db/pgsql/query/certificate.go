@@ -164,6 +164,11 @@ type ListCertificatesRequest struct {
 	// Scope limits the result to Org scope (project_id IS NULL) or
 	// Project scope (project_id IS NOT NULL) certificates
 	Scope pb.Scope_Enum
+	// ProjectIDs limits the result to the org-wide rows and the rows of the
+	// projects, for a caller with grants in some projects only; nil applies
+	// no project filter and an empty list keeps the org-wide rows. ProjectID
+	// and Scope take precedence.
+	ProjectIDs []uint64
 	// IKID limits the result to the certificates of the issuer
 	IKID string
 	// SKID limits the result to the certificates of the subject key
@@ -193,6 +198,7 @@ func (r *ListCertificatesRequest) QueryParams() xdb.QueryParams {
 	b := xdb.NewQueryParams("ListCertificates")
 	setOrgScope(b, schema.Certificate.OrgID.Position, r.OrgID, r.Platform)
 	setProjectScope(b, schema.Certificate.ProjectID.Position, r.ProjectID, r.Scope)
+	setVisibleProjects(b, schema.Certificate.ProjectID.Position, r.ProjectIDs)
 	if r.IKID != "" {
 		b.Set(schema.Certificate.Ikid.Position, r.IKID)
 	}

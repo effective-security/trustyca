@@ -35,6 +35,12 @@ func TestFactory(t *testing.T) {
 	require.NoError(t, err)
 	defer closer.Close()
 
+	_, closer, err = f.CAClient("local")
+	require.NoError(t, err)
+	defer closer.Close()
+	_, _, err = f.CAClient("invalid")
+	assert.EqualError(t, err, "service invalid not found")
+
 	assert.Nil(t, f.(*factory).dops.callerIdentity)
 }
 

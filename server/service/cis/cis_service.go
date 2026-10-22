@@ -73,8 +73,11 @@ func (s *Service) CisHTTPHandler() restserver.Handle {
 func (s *Service) RegisterRoute(r restserver.Router) {
 	r.GET(pb.PathForCert, s.IssuerHandler())
 	r.GET(pb.PathForCRL, s.CRLHandler())
-	r.GET(pb.PathForGetOCSP, s.OCSPHandler())
+	r.GET(pb.PathForGetOCSP, s.GetOcspHandler())
+
 	r.POST(pb.PathForOCSPByIssuerID, s.OCSPHandler())
+
+	r.GET(pb.PathForGetOCSPByBody, s.GetOcspHandler())
 	r.POST(pb.PathForOCSP, s.OCSPHandler())
 }
 

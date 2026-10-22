@@ -309,13 +309,13 @@ func IsProjectRole(role pb.Role_Enum) bool
 IsProjectRole returns true if the role can be granted in a project
 
 <a name="NewAuthUnaryBackendInterceptor"></a>
-## func [NewAuthUnaryBackendInterceptor](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L259>)
+## func [NewAuthUnaryBackendInterceptor](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L266>)
 
 ```go
 func NewAuthUnaryBackendInterceptor() grpc.UnaryServerInterceptor
 ```
 
-NewAuthUnaryBackendInterceptor returns grpc.UnaryServerInterceptor that retrieves Trusty context from the incoming context
+NewAuthUnaryBackendInterceptor returns grpc.UnaryServerInterceptor that sets the TrustyCtx of a backend call: the context forwarded by the WFE in the x\-trustyca\-context metadata when there is one \(the WFE authenticated the end user\), otherwise the identity the backend listener authenticated itself, so that a service caller over mTLS \(RA, CIS, jobs\) acts under its own role. A forwarded context that does not parse sets no identity, so the call fails closed downstream instead of acting as the peer. The backend runs no CheckAccess: the server authz config restricts its methods to service roles.
 
 <a name="NewAuthUnaryInterceptor"></a>
 ## func [NewAuthUnaryInterceptor](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/authz.go#L43>)
