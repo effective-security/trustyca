@@ -242,7 +242,11 @@ func (k *Keys) Signer(ctx context.Context, m *model.Issuer) (crypto.Signer, erro
 		}
 		keyPEM, err := k.dp.Unprotect(ctx, raw)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "unable to unprotect key of issuer %s", idString(m.ID))
+			// the key is bound to the seed of the data protection provider,
+			// but the data may also be malformed: the cause is kept, and
+			// nothing is advised about the row, since a tenant or imported
+			// issuer holds the only copy of its key here
+			return nil, errors.WithMessagef(err, "unable to unprotect key of issuer %s: check that the data protection seed (TRUSTYCA_DP_SEED) is the one the key was wrapped under", idString(m.ID))
 		}
 		return signerFromPEM(keyPEM)
 	}

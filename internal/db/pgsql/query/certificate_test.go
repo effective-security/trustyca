@@ -95,5 +95,25 @@ ORDER BY id DESC
 LIMIT $2 
 OFFSET $3`,
 		},
+		{
+			// the org-wide rows and the rows of the caller's projects
+			query.ListCertificates, []any{&query.ListCertificatesRequest{OrgID: 1, ProjectIDs: []uint64{2, 3}, Status: pb.CertificateStatus_Active, Limit: 10}},
+			`SELECT ` + schema.CertificateTableInfo.AllColumns() + ` 
+FROM trustyca.certificate 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) AND status = $3 
+ORDER BY id DESC 
+LIMIT $4 
+OFFSET $5`,
+		},
+		{
+			// an exact project takes precedence over the visible projects
+			query.ListCertificates, []any{&query.ListCertificatesRequest{OrgID: 1, ProjectID: 2, ProjectIDs: []uint64{3}, Limit: 10}},
+			`SELECT ` + schema.CertificateTableInfo.AllColumns() + ` 
+FROM trustyca.certificate 
+WHERE org_id = $1 AND project_id = $2 
+ORDER BY id DESC 
+LIMIT $3 
+OFFSET $4`,
+		},
 	})
 }

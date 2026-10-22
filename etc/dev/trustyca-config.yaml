@@ -266,6 +266,13 @@ servers:
       # allow the specified roles access to this path and its children, in format: ${path}:${role},${role}
       allow:
         - /privpb.Admin:trustyca-admin,trustyca-peer
+        # the CA API: the RA signs and reads for its tenants, the admin operates it;
+        # the CIS reads the public revocation data and forwards OCSP requests only.
+        # A deeper path replaces the roles of /pb.CA, so each CIS method lists all three.
+        - /pb.CA:trustyca-ra,trustyca-admin
+        - /pb.CA/SignOCSP:trustyca-cis,trustyca-ra,trustyca-admin
+        - /pb.CA/GetCRL:trustyca-cis,trustyca-ra,trustyca-admin
+        - /pb.CA/ListRoots:trustyca-cis,trustyca-ra,trustyca-admin
       # specifies to log allowed access to Any role
       log_allowed_any: true
       # specifies to log allowed access
@@ -285,6 +292,12 @@ servers:
             - spiffe://trustyca/client
           trustyca-admin:
             - spiffe://trustyca/admin
+          # the service identities of the CA API (DESIGN.md section 10): the
+          # Registration Authority and the Certificate Information Service
+          trustyca-ra:
+            - spiffe://trustyca/ra
+          trustyca-cis:
+            - spiffe://trustyca/cis
 
 client:
   client_tls:

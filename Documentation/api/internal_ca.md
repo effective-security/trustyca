@@ -250,7 +250,7 @@ func ProfileToPb(label string, p *authority.CertProfile) *pb.CertProfile
 ProfileToPb converts an authority profile, such as one loaded from a ca\-config file, to the profile definition stored for the label
 
 <a name="PublicKeysEqual"></a>
-## func [PublicKeysEqual](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L343>)
+## func [PublicKeysEqual](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L347>)
 
 ```go
 func PublicKeysEqual(a, b crypto.PublicKey) bool
@@ -259,7 +259,7 @@ func PublicKeysEqual(a, b crypto.PublicKey) bool
 PublicKeysEqual reports whether the two public keys are the same key
 
 <a name="SubjectKeyID"></a>
-## func [SubjectKeyID](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L369>)
+## func [SubjectKeyID](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L373>)
 
 ```go
 func SubjectKeyID(pub crypto.PublicKey) (string, error)
@@ -415,7 +415,7 @@ func (k *Keys) Crypto() *cryptoprov.Crypto
 Crypto returns the crypto providers
 
 <a name="Keys.Destroy"></a>
-### func \(\*Keys\) [Destroy](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L316>)
+### func \(\*Keys\) [Destroy](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L320>)
 
 ```go
 func (k *Keys) Destroy(_ context.Context, m *model.Issuer) error
@@ -442,7 +442,7 @@ func (k *Keys) ImportIssuer(ctx context.Context, req *ImportRequest) (*model.Iss
 ImportIssuer verifies the certificate chain and the key of an imported issuer and returns its Active row; the chain and root columns hold the verified chain
 
 <a name="Keys.ImportKey"></a>
-### func \(\*Keys\) [ImportKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L265>)
+### func \(\*Keys\) [ImportKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L269>)
 
 ```go
 func (k *Keys) ImportKey(ctx context.Context, keyURI string, keyPEM []byte, keyLabel string, pub crypto.PublicKey) (crypto.Signer, *KeyRef, error)

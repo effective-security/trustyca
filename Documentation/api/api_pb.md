@@ -1372,6 +1372,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*RevokeCertificateRequest\) GetID\(\) string](<#RevokeCertificateRequest.GetID>)
   - [func \(x \*RevokeCertificateRequest\) GetIssuerSerial\(\) \*IssuerSerial](<#RevokeCertificateRequest.GetIssuerSerial>)
   - [func \(x \*RevokeCertificateRequest\) GetOrgID\(\) string](<#RevokeCertificateRequest.GetOrgID>)
+  - [func \(x \*RevokeCertificateRequest\) GetProjectID\(\) string](<#RevokeCertificateRequest.GetProjectID>)
   - [func \(x \*RevokeCertificateRequest\) GetReason\(\) ReasonCode\_Enum](<#RevokeCertificateRequest.GetReason>)
   - [func \(x \*RevokeCertificateRequest\) GetReasonText\(\) string](<#RevokeCertificateRequest.GetReasonText>)
   - [func \(x \*RevokeCertificateRequest\) GetSKID\(\) string](<#RevokeCertificateRequest.GetSKID>)
@@ -1748,6 +1749,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*UpdateCertificateLabelRequest\) GetLabel\(\) string](<#UpdateCertificateLabelRequest.GetLabel>)
   - [func \(x \*UpdateCertificateLabelRequest\) GetMetadata\(\) map\[string\]string](<#UpdateCertificateLabelRequest.GetMetadata>)
   - [func \(x \*UpdateCertificateLabelRequest\) GetOrgID\(\) string](<#UpdateCertificateLabelRequest.GetOrgID>)
+  - [func \(x \*UpdateCertificateLabelRequest\) GetProjectID\(\) string](<#UpdateCertificateLabelRequest.GetProjectID>)
   - [func \(msg \*UpdateCertificateLabelRequest\) MarshalJSON\(\) \(\[\]byte, error\)](<#UpdateCertificateLabelRequest.MarshalJSON>)
   - [func \(\*UpdateCertificateLabelRequest\) ProtoMessage\(\)](<#UpdateCertificateLabelRequest.ProtoMessage>)
   - [func \(x \*UpdateCertificateLabelRequest\) ProtoReflect\(\) protoreflect.Message](<#UpdateCertificateLabelRequest.ProtoReflect>)
@@ -2154,12 +2156,15 @@ const (
 <a name="PathForCert"></a>CIS service API In addition to the JSON API below, CIS registers binary endpoints that are referenced from issued certificates \(AIA and CDP extensions\):
 
 ```
-GET  /v1/cert/{ikid}          application/pkix-cert   issuer certificate
-GET  /v1/crl/{ikid}           application/pkix-crl    current CRL (DER)
-GET  /v1/ocsp/{ikid}/{req}    application/ocsp-response
-POST /v1/ocsp/{ikid}          application/ocsp-response
-POST /v1/ocsp                 application/ocsp-response (issuer by KID)
+GET  /v1/cert/{ikid}           application/pkix-cert   issuer certificate
+GET  /v1/crl/{ikid}            application/pkix-crl    current CRL (DER)
+GET  /v1/ocspi/{ikid}/{req}    application/ocsp-response (request in the path)
+POST /v1/ocspi/{ikid}          application/ocsp-response (issuer by KID)
+POST /v1/ocsp                  application/ocsp-response
+GET  /v1/ocsp/{req}            application/ocsp-response (request body in GET)
 ```
+
+The issuer and CRL paths are the AIA and CDP templates of the issuers \(\`issuer\_url\`, \`crl\_url\`\): a renamed path leaves the URLs embedded in the issued certificates without a route.
 
 ```go
 const (
@@ -2175,24 +2180,38 @@ const (
     // Content-Type: application/pkix-crl
     // Response: CrlResponse
     PathForCRL = "/v1/crl/:ikid"
-    // PathForGetOCSP provides the OCSP response by IKID and request
-    //
-    // Verbs: GET
-    // Content-Type: application/ocsp-response
-    // Response: OCSPResponse
-    PathForGetOCSP = "/v1/ocsp/:ikid/:req"
-    // PathForOCSPByIssuerID provides the OCSP response by IKID
-    //
-    // Verbs: POST
-    // Content-Type: application/ocsp-response
-    // Response: OCSPResponse
-    PathForOCSPByIssuerID = "/v1/ocsp/:ikid"
+
     // PathForOCSP provides the OCSP response by issuer KID
     //
     // Verbs: POST
     // Content-Type: application/ocsp-response
     // Response: OCSPResponse
     PathForOCSP = "/v1/ocsp"
+
+    // PathForGetOCSPByBody provides the OCSP response by the request body in
+    // GET (RFC 6960 A.1): the URL-encoded base64 of the DER request, which
+    // contains '/' and '+'. Go decodes the path before routing, so the body
+    // is a catch-all segment, with a leading slash the handler strips.
+    //
+    // Verbs: GET
+    // Content-Type: application/ocsp-response
+    // Response: OCSPResponse
+    PathForGetOCSPByBody = "/v1/ocsp/*body"
+
+    // PathForGetOCSP provides the OCSP response by IKID and request: the
+    // URL-encoded base64 of the DER request is a catch-all segment, as in
+    // PathForGetOCSPByBody
+    //
+    // Verbs: GET
+    // Content-Type: application/ocsp-response
+    // Response: OCSPResponse
+    PathForGetOCSP = "/v1/ocspi/:ikid/*body"
+    // PathForOCSPByIssuerID provides the OCSP response by IKID
+    //
+    // Verbs: POST
+    // Content-Type: application/ocsp-response
+    // Response: OCSPResponse
+    PathForOCSPByIssuerID = "/v1/ocspi/:ikid"
 )
 ```
 
@@ -8403,7 +8422,8 @@ var RevokeCertificateRequest_MessageDescription = &api.MessageDescription{
             SearchType:      "integer",
             SearchOptions:   api.SearchOption_Sortable,
             EnumDescription: ReasonCode_Enum_EnumDescription,
-            Documentation:   `Reason for revocation`,
+            Documentation: `Reason for revocation; RemoveFromCRL is refused, since it releases a
+certificate from hold instead of revoking it`,
         },
         {
             Name:          "ReasonText",
@@ -8414,6 +8434,17 @@ var RevokeCertificateRequest_MessageDescription = &api.MessageDescription{
             SearchOptions: api.SearchOption_Sortable,
             Max:           260,
             Documentation: `ReasonText provides optional free-form revocation note`,
+        },
+        {
+            Name:          "ProjectID",
+            FullName:      "pb.RevokeCertificateRequest.ProjectID",
+            Display:       "Project ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ProjectID of the certificate's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the certificate must belong to it.`,
         },
     },
 }
@@ -9568,6 +9599,17 @@ var UpdateCertificateLabelRequest_MessageDescription = &api.MessageDescription{
             SearchType:    "flat_object",
             Documentation: `Metadata replaces the client metadata when provided`,
         },
+        {
+            Name:          "ProjectID",
+            FullName:      "pb.UpdateCertificateLabelRequest.ProjectID",
+            Display:       "Project ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ProjectID of the certificate's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the certificate must belong to it.`,
+        },
     },
 }
 ```
@@ -10039,7 +10081,7 @@ var X509Subject_MessageDescription = &api.MessageDescription{
 ```
 
 <a name="CreateMessage"></a>
-## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5396>)
+## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5419>)
 
 ```go
 func CreateMessage(fullname string) any
@@ -10057,7 +10099,7 @@ func FindKVPair(list []*KVPair, key string) string
 
 
 <a name="GetMessageDescription"></a>
-## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5404>)
+## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5427>)
 
 ```go
 func GetMessageDescription(fullname string) *api.MessageDescription
@@ -10066,7 +10108,7 @@ func GetMessageDescription(fullname string) *api.MessageDescription
 
 
 <a name="GetMessageDescriptions"></a>
-## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5380>)
+## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5403>)
 
 ```go
 func GetMessageDescriptions() map[string]*api.MessageDescription
@@ -10288,7 +10330,7 @@ func (x *APIKey) GetLabel() string
 
 
 <a name="APIKey.GetMessageDescription"></a>
-### func \(\*APIKey\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5277>)
+### func \(\*APIKey\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5300>)
 
 ```go
 func (m *APIKey) GetMessageDescription() *api.MessageDescription
@@ -10529,7 +10571,7 @@ func (msg *APIKeyRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="APIKeyRequest.Validate"></a>
-### func \(\*APIKeyRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5154>)
+### func \(\*APIKeyRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5177>)
 
 ```go
 func (m *APIKeyRequest) Validate(ctx context.Context) error
@@ -10571,7 +10613,7 @@ func (x *APIKeysResponse) GetAPIKeys() []*APIKey
 
 
 <a name="APIKeysResponse.GetMessageDescription"></a>
-### func \(\*APIKeysResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5280>)
+### func \(\*APIKeysResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5303>)
 
 ```go
 func (m *APIKeysResponse) GetMessageDescription() *api.MessageDescription
@@ -10782,7 +10824,7 @@ func (msg *ActivateIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ActivateIssuerRequest.Validate"></a>
-### func \(\*ActivateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5157>)
+### func \(\*ActivateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5180>)
 
 ```go
 func (m *ActivateIssuerRequest) Validate(ctx context.Context) error
@@ -10901,7 +10943,7 @@ func (msg *AddMemberRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="AddMemberRequest.Validate"></a>
-### func \(\*AddMemberRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5160>)
+### func \(\*AddMemberRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5183>)
 
 ```go
 func (m *AddMemberRequest) Validate(ctx context.Context) error
@@ -10950,7 +10992,7 @@ func (x *AddMemberResponse) GetMembership() *Membership
 
 
 <a name="AddMemberResponse.GetMessageDescription"></a>
-### func \(\*AddMemberResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5283>)
+### func \(\*AddMemberResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5306>)
 
 ```go
 func (m *AddMemberResponse) GetMessageDescription() *api.MessageDescription
@@ -11256,7 +11298,7 @@ func (msg *AuthProvidersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="AuthProvidersRequest.Validate"></a>
-### func \(\*AuthProvidersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5163>)
+### func \(\*AuthProvidersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5186>)
 
 ```go
 func (m *AuthProvidersRequest) Validate(ctx context.Context) error
@@ -11303,7 +11345,7 @@ func (x *AuthProvidersResponse) GetAuthURL() string
 
 
 <a name="AuthProvidersResponse.GetMessageDescription"></a>
-### func \(\*AuthProvidersResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5286>)
+### func \(\*AuthProvidersResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5309>)
 
 ```go
 func (m *AuthProvidersResponse) GetMessageDescription() *api.MessageDescription
@@ -12222,7 +12264,7 @@ func (x *CallerScope) GetIsAPIKey() bool
 
 
 <a name="CallerScope.GetMessageDescription"></a>
-### func \(\*CallerScope\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5289>)
+### func \(\*CallerScope\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5312>)
 
 ```go
 func (m *CallerScope) GetMessageDescription() *api.MessageDescription
@@ -12394,7 +12436,7 @@ func (x *CallerStatusResponse) GetClaims() []*KVPair
 
 
 <a name="CallerStatusResponse.GetMessageDescription"></a>
-### func \(\*CallerStatusResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5292>)
+### func \(\*CallerStatusResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5315>)
 
 ```go
 func (m *CallerStatusResponse) GetMessageDescription() *api.MessageDescription
@@ -12721,7 +12763,7 @@ func (x *CertProfile) GetLabel() string
 
 
 <a name="CertProfile.GetMessageDescription"></a>
-### func \(\*CertProfile\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5295>)
+### func \(\*CertProfile\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5318>)
 
 ```go
 func (m *CertProfile) GetMessageDescription() *api.MessageDescription
@@ -13330,7 +13372,7 @@ func (msg *CertificatePolicyQualifier) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="CertificateResponse"></a>
-## type [CertificateResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1854-L1859>)
+## type [CertificateResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1877-L1882>)
 
 CertificateResponse returns Certificate
 
@@ -13342,7 +13384,7 @@ type CertificateResponse struct {
 ```
 
 <a name="CertificateResponse.Descriptor"></a>
-### func \(\*CertificateResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1887>)
+### func \(\*CertificateResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1910>)
 
 ```go
 func (*CertificateResponse) Descriptor() ([]byte, []int)
@@ -13351,7 +13393,7 @@ func (*CertificateResponse) Descriptor() ([]byte, []int)
 Deprecated: Use CertificateResponse.ProtoReflect.Descriptor instead.
 
 <a name="CertificateResponse.GetCertificate"></a>
-### func \(\*CertificateResponse\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1891>)
+### func \(\*CertificateResponse\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1914>)
 
 ```go
 func (x *CertificateResponse) GetCertificate() *Certificate
@@ -13360,7 +13402,7 @@ func (x *CertificateResponse) GetCertificate() *Certificate
 
 
 <a name="CertificateResponse.GetMessageDescription"></a>
-### func \(\*CertificateResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5298>)
+### func \(\*CertificateResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5321>)
 
 ```go
 func (m *CertificateResponse) GetMessageDescription() *api.MessageDescription
@@ -13378,7 +13420,7 @@ func (msg *CertificateResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CertificateResponse.ProtoMessage"></a>
-### func \(\*CertificateResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1872>)
+### func \(\*CertificateResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1895>)
 
 ```go
 func (*CertificateResponse) ProtoMessage()
@@ -13387,7 +13429,7 @@ func (*CertificateResponse) ProtoMessage()
 
 
 <a name="CertificateResponse.ProtoReflect"></a>
-### func \(\*CertificateResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1874>)
+### func \(\*CertificateResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1897>)
 
 ```go
 func (x *CertificateResponse) ProtoReflect() protoreflect.Message
@@ -13396,7 +13438,7 @@ func (x *CertificateResponse) ProtoReflect() protoreflect.Message
 
 
 <a name="CertificateResponse.Reset"></a>
-### func \(\*CertificateResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1861>)
+### func \(\*CertificateResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1884>)
 
 ```go
 func (x *CertificateResponse) Reset()
@@ -13405,7 +13447,7 @@ func (x *CertificateResponse) Reset()
 
 
 <a name="CertificateResponse.String"></a>
-### func \(\*CertificateResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1868>)
+### func \(\*CertificateResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1891>)
 
 ```go
 func (x *CertificateResponse) String() string
@@ -13539,7 +13581,7 @@ func (x *CertificateStatusResponse) GetIKID() string
 
 
 <a name="CertificateStatusResponse.GetMessageDescription"></a>
-### func \(\*CertificateStatusResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5301>)
+### func \(\*CertificateStatusResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5324>)
 
 ```go
 func (m *CertificateStatusResponse) GetMessageDescription() *api.MessageDescription
@@ -13878,7 +13920,7 @@ type CertificateStatus_EnumSlice []CertificateStatus_Enum
 ```
 
 <a name="CertificatesResponse"></a>
-## type [CertificatesResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1899-L1907>)
+## type [CertificatesResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1922-L1930>)
 
 CertificatesResponse returns Certificates list
 
@@ -13893,7 +13935,7 @@ type CertificatesResponse struct {
 ```
 
 <a name="CertificatesResponse.Descriptor"></a>
-### func \(\*CertificatesResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1935>)
+### func \(\*CertificatesResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1958>)
 
 ```go
 func (*CertificatesResponse) Descriptor() ([]byte, []int)
@@ -13902,7 +13944,7 @@ func (*CertificatesResponse) Descriptor() ([]byte, []int)
 Deprecated: Use CertificatesResponse.ProtoReflect.Descriptor instead.
 
 <a name="CertificatesResponse.GetCertificates"></a>
-### func \(\*CertificatesResponse\) [GetCertificates](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1939>)
+### func \(\*CertificatesResponse\) [GetCertificates](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1962>)
 
 ```go
 func (x *CertificatesResponse) GetCertificates() []*Certificate
@@ -13911,7 +13953,7 @@ func (x *CertificatesResponse) GetCertificates() []*Certificate
 
 
 <a name="CertificatesResponse.GetMessageDescription"></a>
-### func \(\*CertificatesResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5304>)
+### func \(\*CertificatesResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5327>)
 
 ```go
 func (m *CertificatesResponse) GetMessageDescription() *api.MessageDescription
@@ -13920,7 +13962,7 @@ func (m *CertificatesResponse) GetMessageDescription() *api.MessageDescription
 
 
 <a name="CertificatesResponse.GetNextPage"></a>
-### func \(\*CertificatesResponse\) [GetNextPage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1946>)
+### func \(\*CertificatesResponse\) [GetNextPage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1969>)
 
 ```go
 func (x *CertificatesResponse) GetNextPage() *NextPage
@@ -13938,7 +13980,7 @@ func (msg *CertificatesResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CertificatesResponse.ProtoMessage"></a>
-### func \(\*CertificatesResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1920>)
+### func \(\*CertificatesResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1943>)
 
 ```go
 func (*CertificatesResponse) ProtoMessage()
@@ -13947,7 +13989,7 @@ func (*CertificatesResponse) ProtoMessage()
 
 
 <a name="CertificatesResponse.ProtoReflect"></a>
-### func \(\*CertificatesResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1922>)
+### func \(\*CertificatesResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1945>)
 
 ```go
 func (x *CertificatesResponse) ProtoReflect() protoreflect.Message
@@ -13956,7 +13998,7 @@ func (x *CertificatesResponse) ProtoReflect() protoreflect.Message
 
 
 <a name="CertificatesResponse.Reset"></a>
-### func \(\*CertificatesResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1909>)
+### func \(\*CertificatesResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1932>)
 
 ```go
 func (x *CertificatesResponse) Reset()
@@ -13965,7 +14007,7 @@ func (x *CertificatesResponse) Reset()
 
 
 <a name="CertificatesResponse.String"></a>
-### func \(\*CertificatesResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1916>)
+### func \(\*CertificatesResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1939>)
 
 ```go
 func (x *CertificatesResponse) String() string
@@ -14102,7 +14144,7 @@ func (msg *ChangeMemberRoleRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ChangeMemberRoleRequest.Validate"></a>
-### func \(\*ChangeMemberRoleRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5166>)
+### func \(\*ChangeMemberRoleRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5189>)
 
 ```go
 func (m *ChangeMemberRoleRequest) Validate(ctx context.Context) error
@@ -14237,7 +14279,7 @@ func (msg *CreateAPIKeyRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="CreateAPIKeyRequest.Validate"></a>
-### func \(\*CreateAPIKeyRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5169>)
+### func \(\*CreateAPIKeyRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5192>)
 
 ```go
 func (m *CreateAPIKeyRequest) Validate(ctx context.Context) error
@@ -14431,7 +14473,7 @@ func (msg *Crl) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="CrlResponse"></a>
-## type [CrlResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2218-L2223>)
+## type [CrlResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2241-L2246>)
 
 CrlResponse returns CRL
 
@@ -14443,7 +14485,7 @@ type CrlResponse struct {
 ```
 
 <a name="CrlResponse.Descriptor"></a>
-### func \(\*CrlResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2251>)
+### func \(\*CrlResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2274>)
 
 ```go
 func (*CrlResponse) Descriptor() ([]byte, []int)
@@ -14452,7 +14494,7 @@ func (*CrlResponse) Descriptor() ([]byte, []int)
 Deprecated: Use CrlResponse.ProtoReflect.Descriptor instead.
 
 <a name="CrlResponse.GetCrl"></a>
-### func \(\*CrlResponse\) [GetCrl](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2255>)
+### func \(\*CrlResponse\) [GetCrl](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2278>)
 
 ```go
 func (x *CrlResponse) GetCrl() *Crl
@@ -14461,7 +14503,7 @@ func (x *CrlResponse) GetCrl() *Crl
 
 
 <a name="CrlResponse.GetMessageDescription"></a>
-### func \(\*CrlResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5307>)
+### func \(\*CrlResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5330>)
 
 ```go
 func (m *CrlResponse) GetMessageDescription() *api.MessageDescription
@@ -14479,7 +14521,7 @@ func (msg *CrlResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CrlResponse.ProtoMessage"></a>
-### func \(\*CrlResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2236>)
+### func \(\*CrlResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2259>)
 
 ```go
 func (*CrlResponse) ProtoMessage()
@@ -14488,7 +14530,7 @@ func (*CrlResponse) ProtoMessage()
 
 
 <a name="CrlResponse.ProtoReflect"></a>
-### func \(\*CrlResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2238>)
+### func \(\*CrlResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2261>)
 
 ```go
 func (x *CrlResponse) ProtoReflect() protoreflect.Message
@@ -14497,7 +14539,7 @@ func (x *CrlResponse) ProtoReflect() protoreflect.Message
 
 
 <a name="CrlResponse.Reset"></a>
-### func \(\*CrlResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2225>)
+### func \(\*CrlResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2248>)
 
 ```go
 func (x *CrlResponse) Reset()
@@ -14506,7 +14548,7 @@ func (x *CrlResponse) Reset()
 
 
 <a name="CrlResponse.String"></a>
-### func \(\*CrlResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2232>)
+### func \(\*CrlResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2255>)
 
 ```go
 func (x *CrlResponse) String() string
@@ -14524,7 +14566,7 @@ func (msg *CrlResponse) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="CrlsResponse"></a>
-## type [CrlsResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2173-L2178>)
+## type [CrlsResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2196-L2201>)
 
 CrlsResponse returns published CRLs
 
@@ -14536,7 +14578,7 @@ type CrlsResponse struct {
 ```
 
 <a name="CrlsResponse.Descriptor"></a>
-### func \(\*CrlsResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2206>)
+### func \(\*CrlsResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2229>)
 
 ```go
 func (*CrlsResponse) Descriptor() ([]byte, []int)
@@ -14545,7 +14587,7 @@ func (*CrlsResponse) Descriptor() ([]byte, []int)
 Deprecated: Use CrlsResponse.ProtoReflect.Descriptor instead.
 
 <a name="CrlsResponse.GetCrls"></a>
-### func \(\*CrlsResponse\) [GetCrls](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2210>)
+### func \(\*CrlsResponse\) [GetCrls](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2233>)
 
 ```go
 func (x *CrlsResponse) GetCrls() []*Crl
@@ -14554,7 +14596,7 @@ func (x *CrlsResponse) GetCrls() []*Crl
 
 
 <a name="CrlsResponse.GetMessageDescription"></a>
-### func \(\*CrlsResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5310>)
+### func \(\*CrlsResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5333>)
 
 ```go
 func (m *CrlsResponse) GetMessageDescription() *api.MessageDescription
@@ -14572,7 +14614,7 @@ func (msg *CrlsResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CrlsResponse.ProtoMessage"></a>
-### func \(\*CrlsResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2191>)
+### func \(\*CrlsResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2214>)
 
 ```go
 func (*CrlsResponse) ProtoMessage()
@@ -14581,7 +14623,7 @@ func (*CrlsResponse) ProtoMessage()
 
 
 <a name="CrlsResponse.ProtoReflect"></a>
-### func \(\*CrlsResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2193>)
+### func \(\*CrlsResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2216>)
 
 ```go
 func (x *CrlsResponse) ProtoReflect() protoreflect.Message
@@ -14590,7 +14632,7 @@ func (x *CrlsResponse) ProtoReflect() protoreflect.Message
 
 
 <a name="CrlsResponse.Reset"></a>
-### func \(\*CrlsResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2180>)
+### func \(\*CrlsResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2203>)
 
 ```go
 func (x *CrlsResponse) Reset()
@@ -14599,7 +14641,7 @@ func (x *CrlsResponse) Reset()
 
 
 <a name="CrlsResponse.String"></a>
-### func \(\*CrlsResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2187>)
+### func \(\*CrlsResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2210>)
 
 ```go
 func (x *CrlsResponse) String() string
@@ -14713,7 +14755,7 @@ func (msg *DeleteInviteRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="DeleteInviteRequest.Validate"></a>
-### func \(\*DeleteInviteRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5172>)
+### func \(\*DeleteInviteRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5195>)
 
 ```go
 func (m *DeleteInviteRequest) Validate(ctx context.Context) error
@@ -14818,7 +14860,7 @@ func (msg *DeleteMemberRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="DeleteMemberRequest.Validate"></a>
-### func \(\*DeleteMemberRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5175>)
+### func \(\*DeleteMemberRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5198>)
 
 ```go
 func (m *DeleteMemberRequest) Validate(ctx context.Context) error
@@ -14924,7 +14966,7 @@ func (msg *DeleteProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="DeleteProfileRequest.Validate"></a>
-### func \(\*DeleteProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5178>)
+### func \(\*DeleteProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5201>)
 
 ```go
 func (m *DeleteProfileRequest) Validate(ctx context.Context) error
@@ -15017,7 +15059,7 @@ func (msg *DeleteProjectRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="DeleteProjectRequest.Validate"></a>
-### func \(\*DeleteProjectRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5181>)
+### func \(\*DeleteProjectRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5204>)
 
 ```go
 func (m *DeleteProjectRequest) Validate(ctx context.Context) error
@@ -16100,7 +16142,7 @@ func (msg *ExchangeCodeRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ExchangeCodeRequest.Validate"></a>
-### func \(\*ExchangeCodeRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5184>)
+### func \(\*ExchangeCodeRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5207>)
 
 ```go
 func (m *ExchangeCodeRequest) Validate(ctx context.Context) error
@@ -16228,7 +16270,7 @@ func (msg *GetCertificateInfoRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCertificateInfoRequest.Validate"></a>
-### func \(\*GetCertificateInfoRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5187>)
+### func \(\*GetCertificateInfoRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5210>)
 
 ```go
 func (m *GetCertificateInfoRequest) Validate(ctx context.Context) error
@@ -16237,7 +16279,7 @@ func (m *GetCertificateInfoRequest) Validate(ctx context.Context) error
 
 
 <a name="GetCertificateRequest"></a>
-## type [GetCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1466-L1480>)
+## type [GetCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1477-L1491>)
 
 GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer and serial number
 
@@ -16259,7 +16301,7 @@ type GetCertificateRequest struct {
 ```
 
 <a name="GetCertificateRequest.Descriptor"></a>
-### func \(\*GetCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1508>)
+### func \(\*GetCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1519>)
 
 ```go
 func (*GetCertificateRequest) Descriptor() ([]byte, []int)
@@ -16268,7 +16310,7 @@ func (*GetCertificateRequest) Descriptor() ([]byte, []int)
 Deprecated: Use GetCertificateRequest.ProtoReflect.Descriptor instead.
 
 <a name="GetCertificateRequest.GetID"></a>
-### func \(\*GetCertificateRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1519>)
+### func \(\*GetCertificateRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1530>)
 
 ```go
 func (x *GetCertificateRequest) GetID() string
@@ -16277,7 +16319,7 @@ func (x *GetCertificateRequest) GetID() string
 
 
 <a name="GetCertificateRequest.GetIssuerSerial"></a>
-### func \(\*GetCertificateRequest\) [GetIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1540>)
+### func \(\*GetCertificateRequest\) [GetIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1551>)
 
 ```go
 func (x *GetCertificateRequest) GetIssuerSerial() *IssuerSerial
@@ -16286,7 +16328,7 @@ func (x *GetCertificateRequest) GetIssuerSerial() *IssuerSerial
 
 
 <a name="GetCertificateRequest.GetOrgID"></a>
-### func \(\*GetCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1512>)
+### func \(\*GetCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1523>)
 
 ```go
 func (x *GetCertificateRequest) GetOrgID() string
@@ -16295,7 +16337,7 @@ func (x *GetCertificateRequest) GetOrgID() string
 
 
 <a name="GetCertificateRequest.GetSKID"></a>
-### func \(\*GetCertificateRequest\) [GetSKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1526>)
+### func \(\*GetCertificateRequest\) [GetSKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1537>)
 
 ```go
 func (x *GetCertificateRequest) GetSKID() string
@@ -16304,7 +16346,7 @@ func (x *GetCertificateRequest) GetSKID() string
 
 
 <a name="GetCertificateRequest.GetSha256"></a>
-### func \(\*GetCertificateRequest\) [GetSha256](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1533>)
+### func \(\*GetCertificateRequest\) [GetSha256](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1544>)
 
 ```go
 func (x *GetCertificateRequest) GetSha256() string
@@ -16322,7 +16364,7 @@ func (msg *GetCertificateRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="GetCertificateRequest.ProtoMessage"></a>
-### func \(\*GetCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1493>)
+### func \(\*GetCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1504>)
 
 ```go
 func (*GetCertificateRequest) ProtoMessage()
@@ -16331,7 +16373,7 @@ func (*GetCertificateRequest) ProtoMessage()
 
 
 <a name="GetCertificateRequest.ProtoReflect"></a>
-### func \(\*GetCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1495>)
+### func \(\*GetCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1506>)
 
 ```go
 func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message
@@ -16340,7 +16382,7 @@ func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="GetCertificateRequest.Reset"></a>
-### func \(\*GetCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1482>)
+### func \(\*GetCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1493>)
 
 ```go
 func (x *GetCertificateRequest) Reset()
@@ -16349,7 +16391,7 @@ func (x *GetCertificateRequest) Reset()
 
 
 <a name="GetCertificateRequest.String"></a>
-### func \(\*GetCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1489>)
+### func \(\*GetCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1500>)
 
 ```go
 func (x *GetCertificateRequest) String() string
@@ -16367,7 +16409,7 @@ func (msg *GetCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCertificateRequest.Validate"></a>
-### func \(\*GetCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5190>)
+### func \(\*GetCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5213>)
 
 ```go
 func (m *GetCertificateRequest) Validate(ctx context.Context) error
@@ -16376,7 +16418,7 @@ func (m *GetCertificateRequest) Validate(ctx context.Context) error
 
 
 <a name="GetCrlRequest"></a>
-## type [GetCrlRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2054-L2062>)
+## type [GetCrlRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2077-L2085>)
 
 GetCrlRequest specifies CRL request by IKID
 
@@ -16392,7 +16434,7 @@ type GetCrlRequest struct {
 ```
 
 <a name="GetCrlRequest.Descriptor"></a>
-### func \(\*GetCrlRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2090>)
+### func \(\*GetCrlRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2113>)
 
 ```go
 func (*GetCrlRequest) Descriptor() ([]byte, []int)
@@ -16401,7 +16443,7 @@ func (*GetCrlRequest) Descriptor() ([]byte, []int)
 Deprecated: Use GetCrlRequest.ProtoReflect.Descriptor instead.
 
 <a name="GetCrlRequest.GetIKID"></a>
-### func \(\*GetCrlRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2101>)
+### func \(\*GetCrlRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2124>)
 
 ```go
 func (x *GetCrlRequest) GetIKID() string
@@ -16410,7 +16452,7 @@ func (x *GetCrlRequest) GetIKID() string
 
 
 <a name="GetCrlRequest.GetOrgID"></a>
-### func \(\*GetCrlRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2094>)
+### func \(\*GetCrlRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2117>)
 
 ```go
 func (x *GetCrlRequest) GetOrgID() string
@@ -16428,7 +16470,7 @@ func (msg *GetCrlRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="GetCrlRequest.ProtoMessage"></a>
-### func \(\*GetCrlRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2075>)
+### func \(\*GetCrlRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2098>)
 
 ```go
 func (*GetCrlRequest) ProtoMessage()
@@ -16437,7 +16479,7 @@ func (*GetCrlRequest) ProtoMessage()
 
 
 <a name="GetCrlRequest.ProtoReflect"></a>
-### func \(\*GetCrlRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2077>)
+### func \(\*GetCrlRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2100>)
 
 ```go
 func (x *GetCrlRequest) ProtoReflect() protoreflect.Message
@@ -16446,7 +16488,7 @@ func (x *GetCrlRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="GetCrlRequest.Reset"></a>
-### func \(\*GetCrlRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2064>)
+### func \(\*GetCrlRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2087>)
 
 ```go
 func (x *GetCrlRequest) Reset()
@@ -16455,7 +16497,7 @@ func (x *GetCrlRequest) Reset()
 
 
 <a name="GetCrlRequest.String"></a>
-### func \(\*GetCrlRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2071>)
+### func \(\*GetCrlRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2094>)
 
 ```go
 func (x *GetCrlRequest) String() string
@@ -16473,7 +16515,7 @@ func (msg *GetCrlRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCrlRequest.Validate"></a>
-### func \(\*GetCrlRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5193>)
+### func \(\*GetCrlRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5216>)
 
 ```go
 func (m *GetCrlRequest) Validate(ctx context.Context) error
@@ -16568,7 +16610,7 @@ func (msg *GetIssuerInfoRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetIssuerInfoRequest.Validate"></a>
-### func \(\*GetIssuerInfoRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5196>)
+### func \(\*GetIssuerInfoRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5219>)
 
 ```go
 func (m *GetIssuerInfoRequest) Validate(ctx context.Context) error
@@ -16707,7 +16749,7 @@ func (msg *GetIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetIssuerRequest.Validate"></a>
-### func \(\*GetIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5199>)
+### func \(\*GetIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5222>)
 
 ```go
 func (m *GetIssuerRequest) Validate(ctx context.Context) error
@@ -16813,7 +16855,7 @@ func (msg *GetMembersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetMembersRequest.Validate"></a>
-### func \(\*GetMembersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5202>)
+### func \(\*GetMembersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5225>)
 
 ```go
 func (m *GetMembersRequest) Validate(ctx context.Context) error
@@ -16941,7 +16983,7 @@ func (msg *GetProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetProfileRequest.Validate"></a>
-### func \(\*GetProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5205>)
+### func \(\*GetProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5228>)
 
 ```go
 func (m *GetProfileRequest) Validate(ctx context.Context) error
@@ -17044,7 +17086,7 @@ func (msg *GetProjectRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetProjectRequest.Validate"></a>
-### func \(\*GetProjectRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5208>)
+### func \(\*GetProjectRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5231>)
 
 ```go
 func (m *GetProjectRequest) Validate(ctx context.Context) error
@@ -17565,7 +17607,7 @@ func (msg *ImportIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ImportIssuerRequest.Validate"></a>
-### func \(\*ImportIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5211>)
+### func \(\*ImportIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5234>)
 
 ```go
 func (m *ImportIssuerRequest) Validate(ctx context.Context) error
@@ -17921,7 +17963,7 @@ func (x *Issuer) GetLabel() string
 
 
 <a name="Issuer.GetMessageDescription"></a>
-### func \(\*Issuer\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5313>)
+### func \(\*Issuer\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5336>)
 
 ```go
 func (m *Issuer) GetMessageDescription() *api.MessageDescription
@@ -18380,7 +18422,7 @@ func (x *IssuerInfo) GetLabel() string
 
 
 <a name="IssuerInfo.GetMessageDescription"></a>
-### func \(\*IssuerInfo\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5316>)
+### func \(\*IssuerInfo\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5339>)
 
 ```go
 func (m *IssuerInfo) GetMessageDescription() *api.MessageDescription
@@ -18955,7 +18997,7 @@ func (x *IssuersResponse) GetIssuers() []*Issuer
 
 
 <a name="IssuersResponse.GetMessageDescription"></a>
-### func \(\*IssuersResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5319>)
+### func \(\*IssuersResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5342>)
 
 ```go
 func (m *IssuersResponse) GetMessageDescription() *api.MessageDescription
@@ -19739,7 +19781,7 @@ func (msg *ListAPIKeysRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListAPIKeysRequest.Validate"></a>
-### func \(\*ListAPIKeysRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5214>)
+### func \(\*ListAPIKeysRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5237>)
 
 ```go
 func (m *ListAPIKeysRequest) Validate(ctx context.Context) error
@@ -19748,7 +19790,7 @@ func (m *ListAPIKeysRequest) Validate(ctx context.Context) error
 
 
 <a name="ListCertificatesRequest"></a>
-## type [ListCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1549-L1575>)
+## type [ListCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1560-L1586>)
 
 ListCertificatesRequest specifies a paginated list of certificates, sorted by ID descending \(newest first\)
 
@@ -19782,7 +19824,7 @@ type ListCertificatesRequest struct {
 ```
 
 <a name="ListCertificatesRequest.Descriptor"></a>
-### func \(\*ListCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1603>)
+### func \(\*ListCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1614>)
 
 ```go
 func (*ListCertificatesRequest) Descriptor() ([]byte, []int)
@@ -19791,7 +19833,7 @@ func (*ListCertificatesRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListCertificatesRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListCertificatesRequest.GetCursor"></a>
-### func \(\*ListCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1663>)
+### func \(\*ListCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1674>)
 
 ```go
 func (x *ListCertificatesRequest) GetCursor() string
@@ -19800,7 +19842,7 @@ func (x *ListCertificatesRequest) GetCursor() string
 
 
 <a name="ListCertificatesRequest.GetExpiringBefore"></a>
-### func \(\*ListCertificatesRequest\) [GetExpiringBefore](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1642>)
+### func \(\*ListCertificatesRequest\) [GetExpiringBefore](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1653>)
 
 ```go
 func (x *ListCertificatesRequest) GetExpiringBefore() string
@@ -19809,7 +19851,7 @@ func (x *ListCertificatesRequest) GetExpiringBefore() string
 
 
 <a name="ListCertificatesRequest.GetIKID"></a>
-### func \(\*ListCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1621>)
+### func \(\*ListCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1632>)
 
 ```go
 func (x *ListCertificatesRequest) GetIKID() string
@@ -19818,7 +19860,7 @@ func (x *ListCertificatesRequest) GetIKID() string
 
 
 <a name="ListCertificatesRequest.GetLimit"></a>
-### func \(\*ListCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1649>)
+### func \(\*ListCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1660>)
 
 ```go
 func (x *ListCertificatesRequest) GetLimit() uint32
@@ -19827,7 +19869,7 @@ func (x *ListCertificatesRequest) GetLimit() uint32
 
 
 <a name="ListCertificatesRequest.GetOffset"></a>
-### func \(\*ListCertificatesRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1656>)
+### func \(\*ListCertificatesRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1667>)
 
 ```go
 func (x *ListCertificatesRequest) GetOffset() uint32
@@ -19836,7 +19878,7 @@ func (x *ListCertificatesRequest) GetOffset() uint32
 
 
 <a name="ListCertificatesRequest.GetOrgID"></a>
-### func \(\*ListCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1607>)
+### func \(\*ListCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1618>)
 
 ```go
 func (x *ListCertificatesRequest) GetOrgID() string
@@ -19845,7 +19887,7 @@ func (x *ListCertificatesRequest) GetOrgID() string
 
 
 <a name="ListCertificatesRequest.GetProfile"></a>
-### func \(\*ListCertificatesRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1628>)
+### func \(\*ListCertificatesRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1639>)
 
 ```go
 func (x *ListCertificatesRequest) GetProfile() string
@@ -19854,7 +19896,7 @@ func (x *ListCertificatesRequest) GetProfile() string
 
 
 <a name="ListCertificatesRequest.GetProjectID"></a>
-### func \(\*ListCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1614>)
+### func \(\*ListCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1625>)
 
 ```go
 func (x *ListCertificatesRequest) GetProjectID() string
@@ -19863,7 +19905,7 @@ func (x *ListCertificatesRequest) GetProjectID() string
 
 
 <a name="ListCertificatesRequest.GetStatus"></a>
-### func \(\*ListCertificatesRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1635>)
+### func \(\*ListCertificatesRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1646>)
 
 ```go
 func (x *ListCertificatesRequest) GetStatus() CertificateStatus_Enum
@@ -19881,7 +19923,7 @@ func (msg *ListCertificatesRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListCertificatesRequest.ProtoMessage"></a>
-### func \(\*ListCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1588>)
+### func \(\*ListCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1599>)
 
 ```go
 func (*ListCertificatesRequest) ProtoMessage()
@@ -19890,7 +19932,7 @@ func (*ListCertificatesRequest) ProtoMessage()
 
 
 <a name="ListCertificatesRequest.ProtoReflect"></a>
-### func \(\*ListCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1590>)
+### func \(\*ListCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1601>)
 
 ```go
 func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message
@@ -19899,7 +19941,7 @@ func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListCertificatesRequest.Reset"></a>
-### func \(\*ListCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1577>)
+### func \(\*ListCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1588>)
 
 ```go
 func (x *ListCertificatesRequest) Reset()
@@ -19908,7 +19950,7 @@ func (x *ListCertificatesRequest) Reset()
 
 
 <a name="ListCertificatesRequest.String"></a>
-### func \(\*ListCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1584>)
+### func \(\*ListCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1595>)
 
 ```go
 func (x *ListCertificatesRequest) String() string
@@ -19926,7 +19968,7 @@ func (msg *ListCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListCertificatesRequest.Validate"></a>
-### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5217>)
+### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5240>)
 
 ```go
 func (m *ListCertificatesRequest) Validate(ctx context.Context) error
@@ -20090,7 +20132,7 @@ func (msg *ListIssuersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5220>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5243>)
 
 ```go
 func (m *ListIssuersRequest) Validate(ctx context.Context) error
@@ -20241,7 +20283,7 @@ func (msg *ListProfilesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProfilesRequest.Validate"></a>
-### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5223>)
+### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5246>)
 
 ```go
 func (m *ListProfilesRequest) Validate(ctx context.Context) error
@@ -20369,7 +20411,7 @@ func (msg *ListProjectsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProjectsRequest.Validate"></a>
-### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5226>)
+### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5249>)
 
 ```go
 func (m *ListProjectsRequest) Validate(ctx context.Context) error
@@ -20378,7 +20420,7 @@ func (m *ListProjectsRequest) Validate(ctx context.Context) error
 
 
 <a name="ListRevokedCertificatesRequest"></a>
-## type [ListRevokedCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1672-L1688>)
+## type [ListRevokedCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1683-L1699>)
 
 ListRevokedCertificatesRequest specifies a paginated list of revoked certificates, sorted by revocation ID descending
 
@@ -20402,7 +20444,7 @@ type ListRevokedCertificatesRequest struct {
 ```
 
 <a name="ListRevokedCertificatesRequest.Descriptor"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1716>)
+### func \(\*ListRevokedCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1727>)
 
 ```go
 func (*ListRevokedCertificatesRequest) Descriptor() ([]byte, []int)
@@ -20411,7 +20453,7 @@ func (*ListRevokedCertificatesRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListRevokedCertificatesRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListRevokedCertificatesRequest.GetCursor"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1755>)
+### func \(\*ListRevokedCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1766>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetCursor() string
@@ -20420,7 +20462,7 @@ func (x *ListRevokedCertificatesRequest) GetCursor() string
 
 
 <a name="ListRevokedCertificatesRequest.GetIKID"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1734>)
+### func \(\*ListRevokedCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1745>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetIKID() string
@@ -20429,7 +20471,7 @@ func (x *ListRevokedCertificatesRequest) GetIKID() string
 
 
 <a name="ListRevokedCertificatesRequest.GetLimit"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1741>)
+### func \(\*ListRevokedCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1752>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetLimit() uint32
@@ -20438,7 +20480,7 @@ func (x *ListRevokedCertificatesRequest) GetLimit() uint32
 
 
 <a name="ListRevokedCertificatesRequest.GetOffset"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1748>)
+### func \(\*ListRevokedCertificatesRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1759>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetOffset() uint32
@@ -20447,7 +20489,7 @@ func (x *ListRevokedCertificatesRequest) GetOffset() uint32
 
 
 <a name="ListRevokedCertificatesRequest.GetOrgID"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1720>)
+### func \(\*ListRevokedCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1731>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetOrgID() string
@@ -20456,7 +20498,7 @@ func (x *ListRevokedCertificatesRequest) GetOrgID() string
 
 
 <a name="ListRevokedCertificatesRequest.GetProjectID"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1727>)
+### func \(\*ListRevokedCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1738>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetProjectID() string
@@ -20474,7 +20516,7 @@ func (msg *ListRevokedCertificatesRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListRevokedCertificatesRequest.ProtoMessage"></a>
-### func \(\*ListRevokedCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1701>)
+### func \(\*ListRevokedCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1712>)
 
 ```go
 func (*ListRevokedCertificatesRequest) ProtoMessage()
@@ -20483,7 +20525,7 @@ func (*ListRevokedCertificatesRequest) ProtoMessage()
 
 
 <a name="ListRevokedCertificatesRequest.ProtoReflect"></a>
-### func \(\*ListRevokedCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1703>)
+### func \(\*ListRevokedCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1714>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) ProtoReflect() protoreflect.Message
@@ -20492,7 +20534,7 @@ func (x *ListRevokedCertificatesRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListRevokedCertificatesRequest.Reset"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1690>)
+### func \(\*ListRevokedCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1701>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) Reset()
@@ -20501,7 +20543,7 @@ func (x *ListRevokedCertificatesRequest) Reset()
 
 
 <a name="ListRevokedCertificatesRequest.String"></a>
-### func \(\*ListRevokedCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1697>)
+### func \(\*ListRevokedCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1708>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) String() string
@@ -20519,7 +20561,7 @@ func (msg *ListRevokedCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListRevokedCertificatesRequest.Validate"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5229>)
+### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5252>)
 
 ```go
 func (m *ListRevokedCertificatesRequest) Validate(ctx context.Context) error
@@ -20647,7 +20689,7 @@ func (msg *ListRootsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListRootsRequest.Validate"></a>
-### func \(\*ListRootsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5232>)
+### func \(\*ListRootsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5255>)
 
 ```go
 func (m *ListRootsRequest) Validate(ctx context.Context) error
@@ -20850,7 +20892,7 @@ func (x *MembersResponse) GetMemberships() []*Membership
 
 
 <a name="MembersResponse.GetMessageDescription"></a>
-### func \(\*MembersResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5322>)
+### func \(\*MembersResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5345>)
 
 ```go
 func (m *MembersResponse) GetMessageDescription() *api.MessageDescription
@@ -20984,7 +21026,7 @@ func (x *Membership) GetID() string
 
 
 <a name="Membership.GetMessageDescription"></a>
-### func \(\*Membership\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5325>)
+### func \(\*Membership\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5348>)
 
 ```go
 func (m *Membership) GetMessageDescription() *api.MessageDescription
@@ -21146,7 +21188,7 @@ func (msg *Membership) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="MessageAllocator"></a>
-## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L4935>)
+## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L4958>)
 
 MessageAllocator defines constructor to allocate Protobuf message
 
@@ -21411,7 +21453,7 @@ func (msg *NextPage) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="OCSPRequest"></a>
-## type [OCSPRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2263-L2269>)
+## type [OCSPRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2286-L2292>)
 
 OCSPRequest provides DER encoded OCSP request
 
@@ -21425,7 +21467,7 @@ type OCSPRequest struct {
 ```
 
 <a name="OCSPRequest.Descriptor"></a>
-### func \(\*OCSPRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2297>)
+### func \(\*OCSPRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2320>)
 
 ```go
 func (*OCSPRequest) Descriptor() ([]byte, []int)
@@ -21434,7 +21476,7 @@ func (*OCSPRequest) Descriptor() ([]byte, []int)
 Deprecated: Use OCSPRequest.ProtoReflect.Descriptor instead.
 
 <a name="OCSPRequest.GetDer"></a>
-### func \(\*OCSPRequest\) [GetDer](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2301>)
+### func \(\*OCSPRequest\) [GetDer](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2324>)
 
 ```go
 func (x *OCSPRequest) GetDer() []byte
@@ -21452,7 +21494,7 @@ func (msg *OCSPRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="OCSPRequest.ProtoMessage"></a>
-### func \(\*OCSPRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2282>)
+### func \(\*OCSPRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2305>)
 
 ```go
 func (*OCSPRequest) ProtoMessage()
@@ -21461,7 +21503,7 @@ func (*OCSPRequest) ProtoMessage()
 
 
 <a name="OCSPRequest.ProtoReflect"></a>
-### func \(\*OCSPRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2284>)
+### func \(\*OCSPRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2307>)
 
 ```go
 func (x *OCSPRequest) ProtoReflect() protoreflect.Message
@@ -21470,7 +21512,7 @@ func (x *OCSPRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="OCSPRequest.Reset"></a>
-### func \(\*OCSPRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2271>)
+### func \(\*OCSPRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2294>)
 
 ```go
 func (x *OCSPRequest) Reset()
@@ -21479,7 +21521,7 @@ func (x *OCSPRequest) Reset()
 
 
 <a name="OCSPRequest.String"></a>
-### func \(\*OCSPRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2278>)
+### func \(\*OCSPRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2301>)
 
 ```go
 func (x *OCSPRequest) String() string
@@ -21497,7 +21539,7 @@ func (msg *OCSPRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="OCSPRequest.Validate"></a>
-### func \(\*OCSPRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5235>)
+### func \(\*OCSPRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5258>)
 
 ```go
 func (m *OCSPRequest) Validate(ctx context.Context) error
@@ -21506,7 +21548,7 @@ func (m *OCSPRequest) Validate(ctx context.Context) error
 
 
 <a name="OCSPResponse"></a>
-## type [OCSPResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2309-L2315>)
+## type [OCSPResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2332-L2338>)
 
 OCSPResponse returns DER encoded OCSP response
 
@@ -21520,7 +21562,7 @@ type OCSPResponse struct {
 ```
 
 <a name="OCSPResponse.Descriptor"></a>
-### func \(\*OCSPResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2343>)
+### func \(\*OCSPResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2366>)
 
 ```go
 func (*OCSPResponse) Descriptor() ([]byte, []int)
@@ -21529,7 +21571,7 @@ func (*OCSPResponse) Descriptor() ([]byte, []int)
 Deprecated: Use OCSPResponse.ProtoReflect.Descriptor instead.
 
 <a name="OCSPResponse.GetDer"></a>
-### func \(\*OCSPResponse\) [GetDer](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2347>)
+### func \(\*OCSPResponse\) [GetDer](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2370>)
 
 ```go
 func (x *OCSPResponse) GetDer() []byte
@@ -21538,7 +21580,7 @@ func (x *OCSPResponse) GetDer() []byte
 
 
 <a name="OCSPResponse.GetMessageDescription"></a>
-### func \(\*OCSPResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5328>)
+### func \(\*OCSPResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5351>)
 
 ```go
 func (m *OCSPResponse) GetMessageDescription() *api.MessageDescription
@@ -21556,7 +21598,7 @@ func (msg *OCSPResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="OCSPResponse.ProtoMessage"></a>
-### func \(\*OCSPResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2328>)
+### func \(\*OCSPResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2351>)
 
 ```go
 func (*OCSPResponse) ProtoMessage()
@@ -21565,7 +21607,7 @@ func (*OCSPResponse) ProtoMessage()
 
 
 <a name="OCSPResponse.ProtoReflect"></a>
-### func \(\*OCSPResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2330>)
+### func \(\*OCSPResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2353>)
 
 ```go
 func (x *OCSPResponse) ProtoReflect() protoreflect.Message
@@ -21574,7 +21616,7 @@ func (x *OCSPResponse) ProtoReflect() protoreflect.Message
 
 
 <a name="OCSPResponse.Reset"></a>
-### func \(\*OCSPResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2317>)
+### func \(\*OCSPResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2340>)
 
 ```go
 func (x *OCSPResponse) Reset()
@@ -21583,7 +21625,7 @@ func (x *OCSPResponse) Reset()
 
 
 <a name="OCSPResponse.String"></a>
-### func \(\*OCSPResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2324>)
+### func \(\*OCSPResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2347>)
 
 ```go
 func (x *OCSPResponse) String() string
@@ -21663,7 +21705,7 @@ func (x *Org) GetID() string
 
 
 <a name="Org.GetMessageDescription"></a>
-### func \(\*Org\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5331>)
+### func \(\*Org\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5354>)
 
 ```go
 func (m *Org) GetMessageDescription() *api.MessageDescription
@@ -22153,7 +22195,7 @@ func (*ProfilesResponse) Descriptor() ([]byte, []int)
 Deprecated: Use ProfilesResponse.ProtoReflect.Descriptor instead.
 
 <a name="ProfilesResponse.GetMessageDescription"></a>
-### func \(\*ProfilesResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5334>)
+### func \(\*ProfilesResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5357>)
 
 ```go
 func (m *ProfilesResponse) GetMessageDescription() *api.MessageDescription
@@ -22300,7 +22342,7 @@ func (x *Project) GetID() string
 
 
 <a name="Project.GetMessageDescription"></a>
-### func \(\*Project\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5337>)
+### func \(\*Project\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5360>)
 
 ```go
 func (m *Project) GetMessageDescription() *api.MessageDescription
@@ -22432,7 +22474,7 @@ func (*ProjectsResponse) Descriptor() ([]byte, []int)
 Deprecated: Use ProjectsResponse.ProtoReflect.Descriptor instead.
 
 <a name="ProjectsResponse.GetMessageDescription"></a>
-### func \(\*ProjectsResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5340>)
+### func \(\*ProjectsResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5363>)
 
 ```go
 func (m *ProjectsResponse) GetMessageDescription() *api.MessageDescription
@@ -22522,7 +22564,7 @@ func (msg *ProjectsResponse) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="PublishCrlsRequest"></a>
-## type [PublishCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2109-L2119>)
+## type [PublishCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2132-L2142>)
 
 PublishCrlsRequest allows to publish CRLs on demand
 
@@ -22540,7 +22582,7 @@ type PublishCrlsRequest struct {
 ```
 
 <a name="PublishCrlsRequest.Descriptor"></a>
-### func \(\*PublishCrlsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2147>)
+### func \(\*PublishCrlsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2170>)
 
 ```go
 func (*PublishCrlsRequest) Descriptor() ([]byte, []int)
@@ -22549,7 +22591,7 @@ func (*PublishCrlsRequest) Descriptor() ([]byte, []int)
 Deprecated: Use PublishCrlsRequest.ProtoReflect.Descriptor instead.
 
 <a name="PublishCrlsRequest.GetForce"></a>
-### func \(\*PublishCrlsRequest\) [GetForce](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2165>)
+### func \(\*PublishCrlsRequest\) [GetForce](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2188>)
 
 ```go
 func (x *PublishCrlsRequest) GetForce() bool
@@ -22558,7 +22600,7 @@ func (x *PublishCrlsRequest) GetForce() bool
 
 
 <a name="PublishCrlsRequest.GetIKID"></a>
-### func \(\*PublishCrlsRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2158>)
+### func \(\*PublishCrlsRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2181>)
 
 ```go
 func (x *PublishCrlsRequest) GetIKID() string
@@ -22567,7 +22609,7 @@ func (x *PublishCrlsRequest) GetIKID() string
 
 
 <a name="PublishCrlsRequest.GetOrgID"></a>
-### func \(\*PublishCrlsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2151>)
+### func \(\*PublishCrlsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2174>)
 
 ```go
 func (x *PublishCrlsRequest) GetOrgID() string
@@ -22585,7 +22627,7 @@ func (msg *PublishCrlsRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="PublishCrlsRequest.ProtoMessage"></a>
-### func \(\*PublishCrlsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2132>)
+### func \(\*PublishCrlsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2155>)
 
 ```go
 func (*PublishCrlsRequest) ProtoMessage()
@@ -22594,7 +22636,7 @@ func (*PublishCrlsRequest) ProtoMessage()
 
 
 <a name="PublishCrlsRequest.ProtoReflect"></a>
-### func \(\*PublishCrlsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2134>)
+### func \(\*PublishCrlsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2157>)
 
 ```go
 func (x *PublishCrlsRequest) ProtoReflect() protoreflect.Message
@@ -22603,7 +22645,7 @@ func (x *PublishCrlsRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="PublishCrlsRequest.Reset"></a>
-### func \(\*PublishCrlsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2121>)
+### func \(\*PublishCrlsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2144>)
 
 ```go
 func (x *PublishCrlsRequest) Reset()
@@ -22612,7 +22654,7 @@ func (x *PublishCrlsRequest) Reset()
 
 
 <a name="PublishCrlsRequest.String"></a>
-### func \(\*PublishCrlsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2128>)
+### func \(\*PublishCrlsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2151>)
 
 ```go
 func (x *PublishCrlsRequest) String() string
@@ -22630,7 +22672,7 @@ func (msg *PublishCrlsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="PublishCrlsRequest.Validate"></a>
-### func \(\*PublishCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5238>)
+### func \(\*PublishCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5261>)
 
 ```go
 func (m *PublishCrlsRequest) Validate(ctx context.Context) error
@@ -23014,7 +23056,7 @@ func (x *RecordsResult) GetDeleted() int64
 
 
 <a name="RecordsResult.GetMessageDescription"></a>
-### func \(\*RecordsResult\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5343>)
+### func \(\*RecordsResult\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5366>)
 
 ```go
 func (m *RecordsResult) GetMessageDescription() *api.MessageDescription
@@ -23296,7 +23338,7 @@ func (msg *RegisterIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterIssuerRequest.Validate"></a>
-### func \(\*RegisterIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5241>)
+### func \(\*RegisterIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5264>)
 
 ```go
 func (m *RegisterIssuerRequest) Validate(ctx context.Context) error
@@ -23399,7 +23441,7 @@ func (msg *RegisterOrgRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterOrgRequest.Validate"></a>
-### func \(\*RegisterOrgRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5244>)
+### func \(\*RegisterOrgRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5267>)
 
 ```go
 func (m *RegisterOrgRequest) Validate(ctx context.Context) error
@@ -23517,7 +23559,7 @@ func (msg *RegisterProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterProfileRequest.Validate"></a>
-### func \(\*RegisterProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5247>)
+### func \(\*RegisterProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5270>)
 
 ```go
 func (m *RegisterProfileRequest) Validate(ctx context.Context) error
@@ -23632,7 +23674,7 @@ func (msg *RegisterProjectRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterProjectRequest.Validate"></a>
-### func \(\*RegisterProjectRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5250>)
+### func \(\*RegisterProjectRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5273>)
 
 ```go
 func (m *RegisterProjectRequest) Validate(ctx context.Context) error
@@ -23749,7 +23791,7 @@ func (msg *RegisterRootRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterRootRequest.Validate"></a>
-### func \(\*RegisterRootRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5253>)
+### func \(\*RegisterRootRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5276>)
 
 ```go
 func (m *RegisterRootRequest) Validate(ctx context.Context) error
@@ -23767,7 +23809,7 @@ type RequestAllocator func() any
 ```
 
 <a name="RevokeCertificateRequest"></a>
-## type [RevokeCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1763-L1779>)
+## type [RevokeCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1774-L1795>)
 
 RevokeCertificateRequest specifies revocation request
 
@@ -23782,16 +23824,21 @@ type RevokeCertificateRequest struct {
     SKID string `protobuf:"bytes,3,opt,name=SKID,proto3" json:"SKID,omitempty"`
     // IssuerSerial specifies Issuer Key ID and certificate serial number
     IssuerSerial *IssuerSerial `protobuf:"bytes,4,opt,name=IssuerSerial,proto3" json:"IssuerSerial,omitempty"`
-    // Reason for revocation
+    // Reason for revocation; RemoveFromCRL is refused, since it releases a
+    // certificate from hold instead of revoking it
     Reason ReasonCode_Enum `protobuf:"varint,5,opt,name=Reason,proto3,enum=pb.ReasonCode_Enum" json:"Reason,omitempty"`
     // ReasonText provides optional free-form revocation note
     ReasonText string `protobuf:"bytes,6,opt,name=ReasonText,proto3" json:"ReasonText,omitempty"`
+    // ProjectID of the certificate's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the certificate must belong to it.
+    ProjectID string `protobuf:"bytes,7,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
     // contains filtered or unexported fields
 }
 ```
 
 <a name="RevokeCertificateRequest.Descriptor"></a>
-### func \(\*RevokeCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1807>)
+### func \(\*RevokeCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1823>)
 
 ```go
 func (*RevokeCertificateRequest) Descriptor() ([]byte, []int)
@@ -23800,7 +23847,7 @@ func (*RevokeCertificateRequest) Descriptor() ([]byte, []int)
 Deprecated: Use RevokeCertificateRequest.ProtoReflect.Descriptor instead.
 
 <a name="RevokeCertificateRequest.GetID"></a>
-### func \(\*RevokeCertificateRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1818>)
+### func \(\*RevokeCertificateRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1834>)
 
 ```go
 func (x *RevokeCertificateRequest) GetID() string
@@ -23809,7 +23856,7 @@ func (x *RevokeCertificateRequest) GetID() string
 
 
 <a name="RevokeCertificateRequest.GetIssuerSerial"></a>
-### func \(\*RevokeCertificateRequest\) [GetIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1832>)
+### func \(\*RevokeCertificateRequest\) [GetIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1848>)
 
 ```go
 func (x *RevokeCertificateRequest) GetIssuerSerial() *IssuerSerial
@@ -23818,7 +23865,7 @@ func (x *RevokeCertificateRequest) GetIssuerSerial() *IssuerSerial
 
 
 <a name="RevokeCertificateRequest.GetOrgID"></a>
-### func \(\*RevokeCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1811>)
+### func \(\*RevokeCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1827>)
 
 ```go
 func (x *RevokeCertificateRequest) GetOrgID() string
@@ -23826,8 +23873,17 @@ func (x *RevokeCertificateRequest) GetOrgID() string
 
 
 
+<a name="RevokeCertificateRequest.GetProjectID"></a>
+### func \(\*RevokeCertificateRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1869>)
+
+```go
+func (x *RevokeCertificateRequest) GetProjectID() string
+```
+
+
+
 <a name="RevokeCertificateRequest.GetReason"></a>
-### func \(\*RevokeCertificateRequest\) [GetReason](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1839>)
+### func \(\*RevokeCertificateRequest\) [GetReason](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1855>)
 
 ```go
 func (x *RevokeCertificateRequest) GetReason() ReasonCode_Enum
@@ -23836,7 +23892,7 @@ func (x *RevokeCertificateRequest) GetReason() ReasonCode_Enum
 
 
 <a name="RevokeCertificateRequest.GetReasonText"></a>
-### func \(\*RevokeCertificateRequest\) [GetReasonText](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1846>)
+### func \(\*RevokeCertificateRequest\) [GetReasonText](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1862>)
 
 ```go
 func (x *RevokeCertificateRequest) GetReasonText() string
@@ -23845,7 +23901,7 @@ func (x *RevokeCertificateRequest) GetReasonText() string
 
 
 <a name="RevokeCertificateRequest.GetSKID"></a>
-### func \(\*RevokeCertificateRequest\) [GetSKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1825>)
+### func \(\*RevokeCertificateRequest\) [GetSKID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1841>)
 
 ```go
 func (x *RevokeCertificateRequest) GetSKID() string
@@ -23863,7 +23919,7 @@ func (msg *RevokeCertificateRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RevokeCertificateRequest.ProtoMessage"></a>
-### func \(\*RevokeCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1792>)
+### func \(\*RevokeCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1808>)
 
 ```go
 func (*RevokeCertificateRequest) ProtoMessage()
@@ -23872,7 +23928,7 @@ func (*RevokeCertificateRequest) ProtoMessage()
 
 
 <a name="RevokeCertificateRequest.ProtoReflect"></a>
-### func \(\*RevokeCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1794>)
+### func \(\*RevokeCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1810>)
 
 ```go
 func (x *RevokeCertificateRequest) ProtoReflect() protoreflect.Message
@@ -23881,7 +23937,7 @@ func (x *RevokeCertificateRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="RevokeCertificateRequest.Reset"></a>
-### func \(\*RevokeCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1781>)
+### func \(\*RevokeCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1797>)
 
 ```go
 func (x *RevokeCertificateRequest) Reset()
@@ -23890,7 +23946,7 @@ func (x *RevokeCertificateRequest) Reset()
 
 
 <a name="RevokeCertificateRequest.String"></a>
-### func \(\*RevokeCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1788>)
+### func \(\*RevokeCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1804>)
 
 ```go
 func (x *RevokeCertificateRequest) String() string
@@ -23908,7 +23964,7 @@ func (msg *RevokeCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RevokeCertificateRequest.Validate"></a>
-### func \(\*RevokeCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5256>)
+### func \(\*RevokeCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5279>)
 
 ```go
 func (m *RevokeCertificateRequest) Validate(ctx context.Context) error
@@ -24036,7 +24092,7 @@ func (msg *RevokedCertificate) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RevokedCertificateResponse"></a>
-## type [RevokedCertificateResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1954-L1959>)
+## type [RevokedCertificateResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1977-L1982>)
 
 RevokedCertificateResponse returns Revoked Certificate
 
@@ -24048,7 +24104,7 @@ type RevokedCertificateResponse struct {
 ```
 
 <a name="RevokedCertificateResponse.Descriptor"></a>
-### func \(\*RevokedCertificateResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1987>)
+### func \(\*RevokedCertificateResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2010>)
 
 ```go
 func (*RevokedCertificateResponse) Descriptor() ([]byte, []int)
@@ -24057,7 +24113,7 @@ func (*RevokedCertificateResponse) Descriptor() ([]byte, []int)
 Deprecated: Use RevokedCertificateResponse.ProtoReflect.Descriptor instead.
 
 <a name="RevokedCertificateResponse.GetMessageDescription"></a>
-### func \(\*RevokedCertificateResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5346>)
+### func \(\*RevokedCertificateResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5369>)
 
 ```go
 func (m *RevokedCertificateResponse) GetMessageDescription() *api.MessageDescription
@@ -24066,7 +24122,7 @@ func (m *RevokedCertificateResponse) GetMessageDescription() *api.MessageDescrip
 
 
 <a name="RevokedCertificateResponse.GetRevoked"></a>
-### func \(\*RevokedCertificateResponse\) [GetRevoked](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1991>)
+### func \(\*RevokedCertificateResponse\) [GetRevoked](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2014>)
 
 ```go
 func (x *RevokedCertificateResponse) GetRevoked() *RevokedCertificate
@@ -24084,7 +24140,7 @@ func (msg *RevokedCertificateResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RevokedCertificateResponse.ProtoMessage"></a>
-### func \(\*RevokedCertificateResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1972>)
+### func \(\*RevokedCertificateResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1995>)
 
 ```go
 func (*RevokedCertificateResponse) ProtoMessage()
@@ -24093,7 +24149,7 @@ func (*RevokedCertificateResponse) ProtoMessage()
 
 
 <a name="RevokedCertificateResponse.ProtoReflect"></a>
-### func \(\*RevokedCertificateResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1974>)
+### func \(\*RevokedCertificateResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1997>)
 
 ```go
 func (x *RevokedCertificateResponse) ProtoReflect() protoreflect.Message
@@ -24102,7 +24158,7 @@ func (x *RevokedCertificateResponse) ProtoReflect() protoreflect.Message
 
 
 <a name="RevokedCertificateResponse.Reset"></a>
-### func \(\*RevokedCertificateResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1961>)
+### func \(\*RevokedCertificateResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1984>)
 
 ```go
 func (x *RevokedCertificateResponse) Reset()
@@ -24111,7 +24167,7 @@ func (x *RevokedCertificateResponse) Reset()
 
 
 <a name="RevokedCertificateResponse.String"></a>
-### func \(\*RevokedCertificateResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1968>)
+### func \(\*RevokedCertificateResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1991>)
 
 ```go
 func (x *RevokedCertificateResponse) String() string
@@ -24129,7 +24185,7 @@ func (msg *RevokedCertificateResponse) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RevokedCertificatesResponse"></a>
-## type [RevokedCertificatesResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1999-L2007>)
+## type [RevokedCertificatesResponse](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2022-L2030>)
 
 RevokedCertificatesResponse returns Revoked Certificates list
 
@@ -24144,7 +24200,7 @@ type RevokedCertificatesResponse struct {
 ```
 
 <a name="RevokedCertificatesResponse.Descriptor"></a>
-### func \(\*RevokedCertificatesResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2035>)
+### func \(\*RevokedCertificatesResponse\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2058>)
 
 ```go
 func (*RevokedCertificatesResponse) Descriptor() ([]byte, []int)
@@ -24153,7 +24209,7 @@ func (*RevokedCertificatesResponse) Descriptor() ([]byte, []int)
 Deprecated: Use RevokedCertificatesResponse.ProtoReflect.Descriptor instead.
 
 <a name="RevokedCertificatesResponse.GetMessageDescription"></a>
-### func \(\*RevokedCertificatesResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5349>)
+### func \(\*RevokedCertificatesResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5372>)
 
 ```go
 func (m *RevokedCertificatesResponse) GetMessageDescription() *api.MessageDescription
@@ -24162,7 +24218,7 @@ func (m *RevokedCertificatesResponse) GetMessageDescription() *api.MessageDescri
 
 
 <a name="RevokedCertificatesResponse.GetNextPage"></a>
-### func \(\*RevokedCertificatesResponse\) [GetNextPage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2046>)
+### func \(\*RevokedCertificatesResponse\) [GetNextPage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2069>)
 
 ```go
 func (x *RevokedCertificatesResponse) GetNextPage() *NextPage
@@ -24171,7 +24227,7 @@ func (x *RevokedCertificatesResponse) GetNextPage() *NextPage
 
 
 <a name="RevokedCertificatesResponse.GetRevokedCertificates"></a>
-### func \(\*RevokedCertificatesResponse\) [GetRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2039>)
+### func \(\*RevokedCertificatesResponse\) [GetRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2062>)
 
 ```go
 func (x *RevokedCertificatesResponse) GetRevokedCertificates() []*RevokedCertificate
@@ -24189,7 +24245,7 @@ func (msg *RevokedCertificatesResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RevokedCertificatesResponse.ProtoMessage"></a>
-### func \(\*RevokedCertificatesResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2020>)
+### func \(\*RevokedCertificatesResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2043>)
 
 ```go
 func (*RevokedCertificatesResponse) ProtoMessage()
@@ -24198,7 +24254,7 @@ func (*RevokedCertificatesResponse) ProtoMessage()
 
 
 <a name="RevokedCertificatesResponse.ProtoReflect"></a>
-### func \(\*RevokedCertificatesResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2022>)
+### func \(\*RevokedCertificatesResponse\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2045>)
 
 ```go
 func (x *RevokedCertificatesResponse) ProtoReflect() protoreflect.Message
@@ -24207,7 +24263,7 @@ func (x *RevokedCertificatesResponse) ProtoReflect() protoreflect.Message
 
 
 <a name="RevokedCertificatesResponse.Reset"></a>
-### func \(\*RevokedCertificatesResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2009>)
+### func \(\*RevokedCertificatesResponse\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2032>)
 
 ```go
 func (x *RevokedCertificatesResponse) Reset()
@@ -24216,7 +24272,7 @@ func (x *RevokedCertificatesResponse) Reset()
 
 
 <a name="RevokedCertificatesResponse.String"></a>
-### func \(\*RevokedCertificatesResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2016>)
+### func \(\*RevokedCertificatesResponse\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2039>)
 
 ```go
 func (x *RevokedCertificatesResponse) String() string
@@ -24911,7 +24967,7 @@ func (x *RootCertificate) GetID() string
 
 
 <a name="RootCertificate.GetMessageDescription"></a>
-### func \(\*RootCertificate\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5352>)
+### func \(\*RootCertificate\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5375>)
 
 ```go
 func (m *RootCertificate) GetMessageDescription() *api.MessageDescription
@@ -25070,7 +25126,7 @@ func (*RootsResponse) Descriptor() ([]byte, []int)
 Deprecated: Use RootsResponse.ProtoReflect.Descriptor instead.
 
 <a name="RootsResponse.GetMessageDescription"></a>
-### func \(\*RootsResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5355>)
+### func \(\*RootsResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5378>)
 
 ```go
 func (m *RootsResponse) GetMessageDescription() *api.MessageDescription
@@ -25552,7 +25608,7 @@ func (msg *SelectOrgRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="SelectOrgRequest.Validate"></a>
-### func \(\*SelectOrgRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5259>)
+### func \(\*SelectOrgRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5282>)
 
 ```go
 func (m *SelectOrgRequest) Validate(ctx context.Context) error
@@ -25718,7 +25774,7 @@ func (*ServerStatusResponse) Descriptor() ([]byte, []int)
 Deprecated: Use ServerStatusResponse.ProtoReflect.Descriptor instead.
 
 <a name="ServerStatusResponse.GetMessageDescription"></a>
-### func \(\*ServerStatusResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5358>)
+### func \(\*ServerStatusResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5381>)
 
 ```go
 func (m *ServerStatusResponse) GetMessageDescription() *api.MessageDescription
@@ -25851,7 +25907,7 @@ func (x *ServerVersion) GetBuild() string
 
 
 <a name="ServerVersion.GetMessageDescription"></a>
-### func \(\*ServerVersion\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5361>)
+### func \(\*ServerVersion\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5384>)
 
 ```go
 func (m *ServerVersion) GetMessageDescription() *api.MessageDescription
@@ -25962,7 +26018,7 @@ func (x *ServiceAccessInfo) GetAllowed() []*AllowedMethods
 
 
 <a name="ServiceAccessInfo.GetMessageDescription"></a>
-### func \(\*ServiceAccessInfo\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5364>)
+### func \(\*ServiceAccessInfo\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5387>)
 
 ```go
 func (m *ServiceAccessInfo) GetMessageDescription() *api.MessageDescription
@@ -26248,7 +26304,7 @@ func (msg *SignCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="SignCertificateRequest.Validate"></a>
-### func \(\*SignCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5262>)
+### func \(\*SignCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5285>)
 
 ```go
 func (m *SignCertificateRequest) Validate(ctx context.Context) error
@@ -26390,7 +26446,7 @@ func (x *Token) GetJkt() string
 
 
 <a name="Token.GetMessageDescription"></a>
-### func \(\*Token\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5367>)
+### func \(\*Token\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5390>)
 
 ```go
 func (m *Token) GetMessageDescription() *api.MessageDescription
@@ -27397,7 +27453,7 @@ type UnsafeStatusServer interface {
 ```
 
 <a name="UpdateCertificateLabelRequest"></a>
-## type [UpdateCertificateLabelRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1392-L1404>)
+## type [UpdateCertificateLabelRequest](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1392-L1408>)
 
 UpdateCertificateLabelRequest specifies certificate label update request
 
@@ -27412,12 +27468,16 @@ type UpdateCertificateLabelRequest struct {
     Label string `protobuf:"bytes,3,opt,name=Label,proto3" json:"Label,omitempty"`
     // Metadata replaces the client metadata when provided
     Metadata map[string]string `protobuf:"bytes,4,rep,name=Metadata,proto3" json:"Metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+    // ProjectID of the certificate's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the certificate must belong to it.
+    ProjectID string `protobuf:"bytes,5,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
     // contains filtered or unexported fields
 }
 ```
 
 <a name="UpdateCertificateLabelRequest.Descriptor"></a>
-### func \(\*UpdateCertificateLabelRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1432>)
+### func \(\*UpdateCertificateLabelRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1436>)
 
 ```go
 func (*UpdateCertificateLabelRequest) Descriptor() ([]byte, []int)
@@ -27426,7 +27486,7 @@ func (*UpdateCertificateLabelRequest) Descriptor() ([]byte, []int)
 Deprecated: Use UpdateCertificateLabelRequest.ProtoReflect.Descriptor instead.
 
 <a name="UpdateCertificateLabelRequest.GetID"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1443>)
+### func \(\*UpdateCertificateLabelRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1447>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetID() string
@@ -27435,7 +27495,7 @@ func (x *UpdateCertificateLabelRequest) GetID() string
 
 
 <a name="UpdateCertificateLabelRequest.GetLabel"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1450>)
+### func \(\*UpdateCertificateLabelRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1454>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetLabel() string
@@ -27444,7 +27504,7 @@ func (x *UpdateCertificateLabelRequest) GetLabel() string
 
 
 <a name="UpdateCertificateLabelRequest.GetMetadata"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetMetadata](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1457>)
+### func \(\*UpdateCertificateLabelRequest\) [GetMetadata](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1461>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetMetadata() map[string]string
@@ -27453,10 +27513,19 @@ func (x *UpdateCertificateLabelRequest) GetMetadata() map[string]string
 
 
 <a name="UpdateCertificateLabelRequest.GetOrgID"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1436>)
+### func \(\*UpdateCertificateLabelRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1440>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetOrgID() string
+```
+
+
+
+<a name="UpdateCertificateLabelRequest.GetProjectID"></a>
+### func \(\*UpdateCertificateLabelRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1468>)
+
+```go
+func (x *UpdateCertificateLabelRequest) GetProjectID() string
 ```
 
 
@@ -27471,7 +27540,7 @@ func (msg *UpdateCertificateLabelRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="UpdateCertificateLabelRequest.ProtoMessage"></a>
-### func \(\*UpdateCertificateLabelRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1417>)
+### func \(\*UpdateCertificateLabelRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1421>)
 
 ```go
 func (*UpdateCertificateLabelRequest) ProtoMessage()
@@ -27480,7 +27549,7 @@ func (*UpdateCertificateLabelRequest) ProtoMessage()
 
 
 <a name="UpdateCertificateLabelRequest.ProtoReflect"></a>
-### func \(\*UpdateCertificateLabelRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1419>)
+### func \(\*UpdateCertificateLabelRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1423>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) ProtoReflect() protoreflect.Message
@@ -27489,7 +27558,7 @@ func (x *UpdateCertificateLabelRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="UpdateCertificateLabelRequest.Reset"></a>
-### func \(\*UpdateCertificateLabelRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1406>)
+### func \(\*UpdateCertificateLabelRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1410>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) Reset()
@@ -27498,7 +27567,7 @@ func (x *UpdateCertificateLabelRequest) Reset()
 
 
 <a name="UpdateCertificateLabelRequest.String"></a>
-### func \(\*UpdateCertificateLabelRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1413>)
+### func \(\*UpdateCertificateLabelRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1417>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) String() string
@@ -27516,7 +27585,7 @@ func (msg *UpdateCertificateLabelRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateCertificateLabelRequest.Validate"></a>
-### func \(\*UpdateCertificateLabelRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5265>)
+### func \(\*UpdateCertificateLabelRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5288>)
 
 ```go
 func (m *UpdateCertificateLabelRequest) Validate(ctx context.Context) error
@@ -27644,7 +27713,7 @@ func (msg *UpdateIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateIssuerRequest.Validate"></a>
-### func \(\*UpdateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5268>)
+### func \(\*UpdateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5291>)
 
 ```go
 func (m *UpdateIssuerRequest) Validate(ctx context.Context) error
@@ -27747,7 +27816,7 @@ func (msg *UpdateOrgRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateOrgRequest.Validate"></a>
-### func \(\*UpdateOrgRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5271>)
+### func \(\*UpdateOrgRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5294>)
 
 ```go
 func (m *UpdateOrgRequest) Validate(ctx context.Context) error
@@ -27860,7 +27929,7 @@ func (msg *UpdateProjectRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateProjectRequest.Validate"></a>
-### func \(\*UpdateProjectRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5274>)
+### func \(\*UpdateProjectRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5297>)
 
 ```go
 func (m *UpdateProjectRequest) Validate(ctx context.Context) error
@@ -28085,7 +28154,7 @@ func (x *UserMemberships) GetMemberships() []*Membership
 
 
 <a name="UserMemberships.GetMessageDescription"></a>
-### func \(\*UserMemberships\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5370>)
+### func \(\*UserMemberships\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5393>)
 
 ```go
 func (m *UserMemberships) GetMessageDescription() *api.MessageDescription
@@ -28187,7 +28256,7 @@ func (*UserOrgsResponse) Descriptor() ([]byte, []int)
 Deprecated: Use UserOrgsResponse.ProtoReflect.Descriptor instead.
 
 <a name="UserOrgsResponse.GetMessageDescription"></a>
-### func \(\*UserOrgsResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5373>)
+### func \(\*UserOrgsResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5396>)
 
 ```go
 func (m *UserOrgsResponse) GetMessageDescription() *api.MessageDescription
@@ -28290,7 +28359,7 @@ func (*UserTokenResponse) Descriptor() ([]byte, []int)
 Deprecated: Use UserTokenResponse.ProtoReflect.Descriptor instead.
 
 <a name="UserTokenResponse.GetMessageDescription"></a>
-### func \(\*UserTokenResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5376>)
+### func \(\*UserTokenResponse\) [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/api/pb/messages.pb.go#L5399>)
 
 ```go
 func (m *UserTokenResponse) GetMessageDescription() *api.MessageDescription

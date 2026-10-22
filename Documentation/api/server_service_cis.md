@@ -10,6 +10,7 @@ import "github.com/effective-security/trustyca/server/service/cis"
 
 - [Constants](<#constants>)
 - [func Factory\(server gserver.GServer\) any](<#Factory>)
+- [type OCSPResponder](<#OCSPResponder>)
 - [type Service](<#Service>)
   - [func \(s \*Service\) CRLHandler\(\) restserver.Handle](<#Service.CRLHandler>)
   - [func \(s \*Service\) CisHTTPHandler\(\) restserver.Handle](<#Service.CisHTTPHandler>)
@@ -18,6 +19,7 @@ import "github.com/effective-security/trustyca/server/service/cis"
   - [func \(s \*Service\) GetCertificate\(ctx context.Context, req \*pb.GetCertificateInfoRequest\) \(\*pb.CertificateResponse, error\)](<#Service.GetCertificate>)
   - [func \(s \*Service\) GetCertificateStatus\(ctx context.Context, req \*pb.GetCertificateInfoRequest\) \(\*pb.CertificateStatusResponse, error\)](<#Service.GetCertificateStatus>)
   - [func \(s \*Service\) GetIssuer\(ctx context.Context, req \*pb.GetIssuerInfoRequest\) \(\*pb.IssuerInfo, error\)](<#Service.GetIssuer>)
+  - [func \(s \*Service\) GetOcspHandler\(\) restserver.Handle](<#Service.GetOcspHandler>)
   - [func \(s \*Service\) GetRoots\(ctx context.Context, req \*pb.ListRootsRequest\) \(\*pb.RootsResponse, error\)](<#Service.GetRoots>)
   - [func \(s \*Service\) IsReady\(\) bool](<#Service.IsReady>)
   - [func \(s \*Service\) IssuerHandler\(\) restserver.Handle](<#Service.IssuerHandler>)
@@ -44,6 +46,21 @@ func Factory(server gserver.GServer) any
 
 Factory returns a factory of the service
 
+<a name="OCSPResponder"></a>
+## type [OCSPResponder](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L179-L181>)
+
+OCSPResponder represents the logical source of OCSP responses, i.e., the logic that actually chooses a response based on a request. In order to create an actual responder, wrap one of these in a Responder object and pass it to http.Handle. By default the Responder will set the headers:
+
+Cache\-Control to "max\-age=\(response.NextUpdate\-now\), public, no\-transform, must\-revalidate", Last\-Modified to response.ThisUpdate, Expires to response.NextUpdate, ETag to the SHA256 hash of the response, Content\-Type to application/ocsp\-response.
+
+To override these headers, or set extra headers, OCSPResponder should return a http.Header with the headers to override, or nil otherwise.
+
+```go
+type OCSPResponder interface {
+    Response(*ocsp.Request) ([]byte, http.Header, error)
+}
+```
+
 <a name="Service"></a>
 ## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L22-L28>)
 
@@ -56,7 +73,7 @@ type Service struct {
 ```
 
 <a name="Service.CRLHandler"></a>
-### func \(\*Service\) [CRLHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L15>)
+### func \(\*Service\) [CRLHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L56>)
 
 ```go
 func (s *Service) CRLHandler() restserver.Handle
@@ -118,6 +135,15 @@ func (s *Service) GetIssuer(ctx context.Context, req *pb.GetIssuerInfoRequest) (
 
 
 
+<a name="Service.GetOcspHandler"></a>
+### func \(\*Service\) [GetOcspHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L95>)
+
+```go
+func (s *Service) GetOcspHandler() restserver.Handle
+```
+
+GetOcspHandler returns OCSP via GET
+
 <a name="Service.GetRoots"></a>
 ### func \(\*Service\) [GetRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L9>)
 
@@ -137,7 +163,7 @@ func (s *Service) IsReady() bool
 IsReady indicates that the service is ready to serve its end\-points
 
 <a name="Service.IssuerHandler"></a>
-### func \(\*Service\) [IssuerHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L9>)
+### func \(\*Service\) [IssuerHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L17>)
 
 ```go
 func (s *Service) IssuerHandler() restserver.Handle
@@ -155,16 +181,16 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.OCSPHandler"></a>
-### func \(\*Service\) [OCSPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L21>)
+### func \(\*Service\) [OCSPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/rest.go#L137>)
 
 ```go
 func (s *Service) OCSPHandler() restserver.Handle
 ```
 
-
+OCSPHandler answers an OCSP request posted as the body, which is read up to maxOCSPRequestSize whatever the request declares
 
 <a name="Service.RegisterGRPC"></a>
-### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L82>)
+### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis_service.go#L85>)
 
 ```go
 func (s *Service) RegisterGRPC(r *grpc.Server)

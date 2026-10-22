@@ -3836,7 +3836,8 @@ var RevokeCertificateRequest_MessageDescription = &api.MessageDescription{
 			SearchType:      "integer",
 			SearchOptions:   api.SearchOption_Sortable,
 			EnumDescription: ReasonCode_Enum_EnumDescription,
-			Documentation:   `Reason for revocation`,
+			Documentation: `Reason for revocation; RemoveFromCRL is refused, since it releases a
+certificate from hold instead of revoking it`,
 		},
 		{
 			Name:          "ReasonText",
@@ -3847,6 +3848,17 @@ var RevokeCertificateRequest_MessageDescription = &api.MessageDescription{
 			SearchOptions: api.SearchOption_Sortable,
 			Max:           260,
 			Documentation: `ReasonText provides optional free-form revocation note`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "pb.RevokeCertificateRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the certificate's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the certificate must belong to it.`,
 		},
 	},
 }
@@ -4509,6 +4521,17 @@ var UpdateCertificateLabelRequest_MessageDescription = &api.MessageDescription{
 			StructName:    "pb.UpdateCertificateLabelRequest.MetadataEntry",
 			SearchType:    "flat_object",
 			Documentation: `Metadata replaces the client metadata when provided`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "pb.UpdateCertificateLabelRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the certificate's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the certificate must belong to it.`,
 		},
 	},
 }

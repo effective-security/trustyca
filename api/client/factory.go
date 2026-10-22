@@ -53,6 +53,9 @@ type Factory interface {
 
 	// OrgsClient returns Orgs client
 	OrgsClient(svc string, ops ...Option) (pb.OrgsServer, io.Closer, error)
+
+	// CAClient returns CA client
+	CAClient(svc string, ops ...Option) (pb.CAServer, io.Closer, error)
 }
 
 // Option configures how we set up the client
@@ -179,4 +182,13 @@ func (f *factory) OrgsClient(svc string, ops ...Option) (pb.OrgsServer, io.Close
 		return nil, nil, err
 	}
 	return proxypb.NewOrgsClient(c.Conn(), c.Opts()), c, nil
+}
+
+// CAClient returns CA client from connection
+func (f *factory) CAClient(svc string, ops ...Option) (pb.CAServer, io.Closer, error) {
+	c, err := f.NewClient(svc, ops...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return proxypb.NewCAClient(c.Conn(), c.Opts()), c, nil
 }

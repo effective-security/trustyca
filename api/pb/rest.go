@@ -84,11 +84,16 @@ const (
 // In addition to the JSON API below, CIS registers binary endpoints that
 // are referenced from issued certificates (AIA and CDP extensions):
 //
-//	GET  /v1/cert/{ikid}          application/pkix-cert   issuer certificate
-//	GET  /v1/crl/{ikid}           application/pkix-crl    current CRL (DER)
-//	GET  /v1/ocsp/{ikid}/{req}    application/ocsp-response
-//	POST /v1/ocsp/{ikid}          application/ocsp-response
-//	POST /v1/ocsp                 application/ocsp-response (issuer by KID)
+//	GET  /v1/cert/{ikid}           application/pkix-cert   issuer certificate
+//	GET  /v1/crl/{ikid}            application/pkix-crl    current CRL (DER)
+//	GET  /v1/ocspi/{ikid}/{req}    application/ocsp-response (request in the path)
+//	POST /v1/ocspi/{ikid}          application/ocsp-response (issuer by KID)
+//	POST /v1/ocsp                  application/ocsp-response
+//	GET  /v1/ocsp/{req}            application/ocsp-response (request body in GET)
+//
+// The issuer and CRL paths are the AIA and CDP templates of the issuers
+// (`issuer_url`, `crl_url`): a renamed path leaves the URLs embedded in the
+// issued certificates without a route.
 const (
 	// PathForCert provides the issuer certificate by IKID
 	//
@@ -102,24 +107,38 @@ const (
 	// Content-Type: application/pkix-crl
 	// Response: CrlResponse
 	PathForCRL = "/v1/crl/:ikid"
-	// PathForGetOCSP provides the OCSP response by IKID and request
-	//
-	// Verbs: GET
-	// Content-Type: application/ocsp-response
-	// Response: OCSPResponse
-	PathForGetOCSP = "/v1/ocsp/:ikid/:req"
-	// PathForOCSPByIssuerID provides the OCSP response by IKID
-	//
-	// Verbs: POST
-	// Content-Type: application/ocsp-response
-	// Response: OCSPResponse
-	PathForOCSPByIssuerID = "/v1/ocsp/:ikid"
+
 	// PathForOCSP provides the OCSP response by issuer KID
 	//
 	// Verbs: POST
 	// Content-Type: application/ocsp-response
 	// Response: OCSPResponse
 	PathForOCSP = "/v1/ocsp"
+
+	// PathForGetOCSPByBody provides the OCSP response by the request body in
+	// GET (RFC 6960 A.1): the URL-encoded base64 of the DER request, which
+	// contains '/' and '+'. Go decodes the path before routing, so the body
+	// is a catch-all segment, with a leading slash the handler strips.
+	//
+	// Verbs: GET
+	// Content-Type: application/ocsp-response
+	// Response: OCSPResponse
+	PathForGetOCSPByBody = "/v1/ocsp/*body"
+
+	// PathForGetOCSP provides the OCSP response by IKID and request: the
+	// URL-encoded base64 of the DER request is a catch-all segment, as in
+	// PathForGetOCSPByBody
+	//
+	// Verbs: GET
+	// Content-Type: application/ocsp-response
+	// Response: OCSPResponse
+	PathForGetOCSP = "/v1/ocspi/:ikid/*body"
+	// PathForOCSPByIssuerID provides the OCSP response by IKID
+	//
+	// Verbs: POST
+	// Content-Type: application/ocsp-response
+	// Response: OCSPResponse
+	PathForOCSPByIssuerID = "/v1/ocspi/:ikid"
 )
 
 // Webhooks

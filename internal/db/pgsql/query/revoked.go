@@ -182,6 +182,11 @@ type ListRevokedCertificatesRequest struct {
 	// Scope limits the result to Org scope (project_id IS NULL) or
 	// Project scope (project_id IS NOT NULL) rows
 	Scope pb.Scope_Enum
+	// ProjectIDs limits the result to the org-wide rows and the rows of the
+	// projects, for a caller with grants in some projects only; nil applies
+	// no project filter and an empty list keeps the org-wide rows. ProjectID
+	// and Scope take precedence.
+	ProjectIDs []uint64
 	// IKID limits the result to the certificates of the issuer
 	IKID string
 	// Limit specifies maximum number of records to return
@@ -202,6 +207,7 @@ func (r *ListRevokedCertificatesRequest) QueryParams() xdb.QueryParams {
 	b := xdb.NewQueryParams("ListRevokedCertificates")
 	setOrgScope(b, schema.RevokedCertificate.OrgID.Position, r.OrgID, r.Platform)
 	setProjectScope(b, schema.RevokedCertificate.ProjectID.Position, r.ProjectID, r.Scope)
+	setVisibleProjects(b, schema.RevokedCertificate.ProjectID.Position, r.ProjectIDs)
 	if r.IKID != "" {
 		b.Set(schema.RevokedCertificate.Ikid.Position, r.IKID)
 	}

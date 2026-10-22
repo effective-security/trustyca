@@ -255,37 +255,50 @@ func NewTrustyCtx(ctx context.Context, idnCtx identity.Context) context.Context 
 const trustycaContextGRPCHeaderName = "x-trustyca-context"
 
 // NewAuthUnaryBackendInterceptor returns grpc.UnaryServerInterceptor that
-// retrieves Trusty context from the incoming context
+// sets the TrustyCtx of a backend call: the context forwarded by the WFE in
+// the x-trustyca-context metadata when there is one (the WFE authenticated
+// the end user), otherwise the identity the backend listener authenticated
+// itself, so that a service caller over mTLS (RA, CIS, jobs) acts under its
+// own role. A forwarded context that does not parse sets no identity, so the
+// call fails closed downstream instead of acting as the peer. The backend
+// runs no CheckAccess: the server authz config restricts its methods to
+// service roles.
 func NewAuthUnaryBackendInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		md, ok := metadata.FromIncomingContext(ctx)
-		if ok && md != nil && len(md[trustycaContextGRPCHeaderName]) > 0 {
-			var ss trustycaCtxState
-			err := json.Unmarshal([]byte(md[trustycaContextGRPCHeaderName][0]), &ss)
-			if err == nil {
-				rctx := &trustycactx{
-					appRole:    ss.AppRole,
-					orgID:      ss.OrgID,
-					orgRole:    ss.OrgRole,
-					projectID:  ss.ProjectID,
-					scopes:     ss.Scopes,
-					userID:     ss.UserID,
-					userName:   ss.Name,
-					userEmail:  ss.Email,
-					target:     ss.Target,
-					userAgent:  ss.UserAgent,
-					authMethod: ss.AuthMethod,
-				}
-				ctx = context.WithValue(ctx, keyContext, rctx)
-
-				// Override the log context with Trusty context from WFE
-				ctx = xlog.ContextWithKV(ctx,
-					"user", ss.UserID.String(),
-					"email", ss.Email,
-					"role", ss.AppRole,
-				)
-			}
+		if !ok || len(md[trustycaContextGRPCHeaderName]) == 0 {
+			return handler(NewTrustyCtx(ctx, identity.FromContext(ctx)), req)
 		}
+		var ss trustycaCtxState
+		err := json.Unmarshal([]byte(md[trustycaContextGRPCHeaderName][0]), &ss)
+		if err != nil {
+			logger.ContextKV(ctx, xlog.WARNING,
+				"reason", "forwarded_context",
+				"action", info.FullMethod,
+				"err", err.Error())
+			return handler(ctx, req)
+		}
+		rctx := &trustycactx{
+			appRole:    ss.AppRole,
+			orgID:      ss.OrgID,
+			orgRole:    ss.OrgRole,
+			projectID:  ss.ProjectID,
+			scopes:     ss.Scopes,
+			userID:     ss.UserID,
+			userName:   ss.Name,
+			userEmail:  ss.Email,
+			target:     ss.Target,
+			userAgent:  ss.UserAgent,
+			authMethod: ss.AuthMethod,
+		}
+		ctx = context.WithValue(ctx, keyContext, rctx)
+
+		// Override the log context with Trusty context from WFE
+		ctx = xlog.ContextWithKV(ctx,
+			"user", ss.UserID.String(),
+			"email", ss.Email,
+			"role", ss.AppRole,
+		)
 		return handler(ctx, req)
 	}
 }

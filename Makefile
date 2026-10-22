@@ -2,7 +2,14 @@ include .project/gomod-project.mk
 
 SHA := $(shell git rev-parse HEAD)
 
-export TRUSTYCA_DP_SEED=testseed
+# the data protection seed of every process that uses the dev database: the
+# environment's seed when it sets one (the server started from a shell or the
+# IDE inherits it), testseed otherwise (CI). A platform issuer key wrapped
+# under another seed fails the start: see README.md, Troubleshooting.
+ifeq ($(strip $(TRUSTYCA_DP_SEED)),)
+TRUSTYCA_DP_SEED := testseed
+endif
+export TRUSTYCA_DP_SEED
 export TRUSTYCA_GITHUB_CLIENT_ID=testclientid
 export TRUSTYCA_GITHUB_CLIENT_SECRET=testclientsecret
 export TRUSTYCA_GOOGLE_CLIENT_ID=testclientid
@@ -207,7 +214,7 @@ proto-pub:
 		-v $(PROJ_ROOT)/api/pb:/dirs \
 		-v $(PROJ_ROOT)/api/pb/third_party:/third_party \
 		--name protoc-gen-go \
-		effectivesecurity/protoc-gen-go:sha-3d7439c \
+		effectivesecurity/protoc-gen-go:sha-c3004f6 \
 		--i "-I /third_party" \
 		--dirs /dirs/protos \
 		--golang ./.. \
@@ -232,7 +239,7 @@ proto-priv:
 		-v $(PROJ_ROOT)/api/pb/protos:/trustyca \
 		-v $(PROJ_ROOT)/api/pb/third_party:/third_party \
 		--name protoc-gen-go \
-		effectivesecurity/protoc-gen-go:sha-3d7439c \
+		effectivesecurity/protoc-gen-go:sha-c3004f6 \
 		--i "-I /trustyca -I /third_party" \
 		--dirs /dirs/protos \
 		--golang ./.. \

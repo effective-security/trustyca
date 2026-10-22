@@ -441,6 +441,10 @@ message UpdateCertificateLabelRequest {
     string Label = 3 [json_name = "Label", (es.api.max) = 260];
     // Metadata replaces the client metadata when provided
     map<string, string> Metadata = 4 [json_name = "Metadata"];
+    // ProjectID of the certificate's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the certificate must belong to it.
+    string ProjectID = 5 [json_name = "ProjectID"];
 }
 
 // GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer
@@ -519,10 +523,15 @@ message RevokeCertificateRequest {
     // IssuerSerial specifies Issuer Key ID and certificate serial number
     IssuerSerial IssuerSerial = 4
         [json_name = "IssuerSerial", (es.api.required_or) = "ID,SKID"];
-    // Reason for revocation
+    // Reason for revocation; RemoveFromCRL is refused, since it releases a
+    // certificate from hold instead of revoking it
     ReasonCode.Enum Reason = 5 [json_name = "Reason"];
     // ReasonText provides optional free-form revocation note
     string ReasonText = 6 [json_name = "ReasonText", (es.api.max) = 260];
+    // ProjectID of the certificate's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the certificate must belong to it.
+    string ProjectID = 7 [json_name = "ProjectID"];
 }
 
 // CertificateResponse returns Certificate

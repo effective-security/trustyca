@@ -81,6 +81,18 @@ func (s *Service) tenantProject(ctx context.Context, orgID xdb.ID, reqProjectID 
 	return projectID, nil
 }
 
+// requestProject returns the project a mutation names explicitly, verified
+// as tenantProject does, or a zero ID when the request names none: unlike
+// tenantProject it does not default to the project of a restricted API key,
+// since the row's own project is authorized by rowAccess, where the key
+// reads an org-wide row but may not change it
+func (s *Service) requestProject(ctx context.Context, orgID xdb.ID, reqProjectID string) (xdb.ID, error) {
+	if reqProjectID == "" {
+		return xdb.ID(0), nil
+	}
+	return s.tenantProject(ctx, orgID, reqProjectID)
+}
+
 // preconditionFailed returns the error of a request that the current state
 // of the org refuses, and that the caller can make pass by changing that
 // state: HTTP 409 Conflict with code "conflict", and gRPC FailedPrecondition.
@@ -146,9 +158,11 @@ func violates(err error, constraint string) bool {
 // project of the org, after the interceptor authorized the scope of the
 // request: a row named by its ID can belong to a project the request did
 // not name. A trusted service caller passes. An API key passes when it is
-// org-wide, or restricted to that project. A user needs one of the roles the
-// method allows at the project, where an org-wide role is inherited, and at
-// the org for an org-wide row (zero project), which a member with project
+// org-wide, or restricted to that project; a key restricted to a project
+// reads an org-wide row (zero project) as the derived org Viewer and may not
+// change it, so it passes only a method that allows Viewer. A user needs one
+// of the roles the method allows at the project, where an org-wide role is
+// inherited, and at the org for an org-wide row, which a member with project
 // grants only holds as Viewer (DESIGN.md section 3.3). A project the caller
 // cannot read, an inactive project and a project of another org are
 // reported as not found, so that project existence does not leak; a project
@@ -158,11 +172,17 @@ func (s *Service) rowAccess(ctx context.Context, orgID, projectID xdb.ID, method
 	if strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
 		return nil
 	}
+	var allowed []string
+	if rule := pb.GetMethodInfo(method); rule != nil {
+		allowed = rule.AllowedRoles
+	}
 	if tctx.IsAPIKey() {
-		if keyProjectID := tctx.ProjectID(); !keyProjectID.IsZero() && !projectID.IsZero() && keyProjectID.UInt64() != projectID.UInt64() {
-			return httperror.NewGrpcFromCtx(ctx, codes.NotFound, "%s not found", what)
-		}
-		if !projectID.IsZero() {
+		keyProjectID := tctx.ProjectID()
+		switch {
+		case !projectID.IsZero():
+			if !keyProjectID.IsZero() && keyProjectID.UInt64() != projectID.UInt64() {
+				return httperror.NewGrpcFromCtx(ctx, codes.NotFound, "%s not found", what)
+			}
 			_, err := s.authorizer.Project(ctx, orgID, projectID)
 			if err != nil {
 				if errors.Is(err, authctx.ErrAccessDenied) {
@@ -170,6 +190,8 @@ func (s *Service) rowAccess(ctx context.Context, orgID, projectID xdb.ID, method
 				}
 				return httperror.WrapWithCtx(ctx, err, "unable to find project")
 			}
+		case !keyProjectID.IsZero() && !authctx.AllowsRole(allowed, pb.Role_Viewer):
+			return httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "access denied")
 		}
 		return nil
 	}
@@ -179,10 +201,6 @@ func (s *Service) rowAccess(ctx context.Context, orgID, projectID xdb.ID, method
 			return httperror.NewGrpcFromCtx(ctx, codes.NotFound, "%s not found", what)
 		}
 		return httperror.WrapWithCtx(ctx, err, "unable to resolve access")
-	}
-	var allowed []string
-	if rule := pb.GetMethodInfo(method); rule != nil {
-		allowed = rule.AllowedRoles
 	}
 	if grants.HighestRole(projectID.UInt64(), allowed) == pb.Role_None {
 		return httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "access denied")

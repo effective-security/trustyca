@@ -119,6 +119,8 @@ func Test_Certificate(t *testing.T) {
 	assert.Equal(t, []uint64{c2.ID.UInt64()}, ids(&query.ListCertificatesRequest{OrgID: orgID, ExpiringBefore: &in2h}))
 	assert.Equal(t, []uint64{c2.ID.UInt64(), c1.ID.UInt64()}, ids(&query.ListCertificatesRequest{OrgID: orgID, ExpiringBefore: &in30h}))
 	assert.NotContains(t, ids(&query.ListCertificatesRequest{Platform: true}), c1.ID.UInt64(), "tenant rows are not platform rows")
+	assert.Equal(t, []uint64{c3.ID.UInt64(), c2.ID.UInt64(), c1.ID.UInt64()}, ids(&query.ListCertificatesRequest{OrgID: orgID, ProjectIDs: []uint64{project.ID.UInt64()}}), "the org-wide rows and those of the visible projects")
+	assert.Equal(t, []uint64{c2.ID.UInt64()}, ids(&query.ListCertificatesRequest{OrgID: orgID, ProjectIDs: []uint64{}}), "the org-wide rows only")
 
 	// cursor pagination
 	list, err = provider.ListCertificates(ctx, &query.ListCertificatesRequest{OrgID: orgID, Limit: 2, Cursor: query.NewCursor(0)})
@@ -279,6 +281,13 @@ func Test_Certificate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, rcs.Rows, 1)
 	assert.Equal(t, c1.ID.UInt64(), rcs.Rows[0].CertificateID.UInt64())
+	rcs, err = provider.ListRevokedCertificates(ctx, &query.ListRevokedCertificatesRequest{OrgID: orgID, ProjectIDs: []uint64{}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, rcs.Rows, 1, "the org-wide rows only")
+	assert.Equal(t, c2.ID.UInt64(), rcs.Rows[0].CertificateID.UInt64())
+	rcs, err = provider.ListRevokedCertificates(ctx, &query.ListRevokedCertificatesRequest{OrgID: orgID, ProjectIDs: []uint64{project.ID.UInt64()}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, rcs.Rows, 2, "the org-wide rows and those of the visible projects")
 
 	rcs, err = provider.ListRevokedCertificates(ctx, &query.ListRevokedCertificatesRequest{OrgID: orgID, Limit: 1, Cursor: query.NewCursor(0)})
 	require.NoError(t, err)

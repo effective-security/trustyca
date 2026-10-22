@@ -81,5 +81,15 @@ WHERE org_id = $1 AND project_id = $2 AND id < $3
 ORDER BY id DESC 
 LIMIT $4`,
 		},
+		{
+			// the org-wide rows and the rows of the caller's projects, none here
+			query.ListRevokedCertificates, []any{&query.ListRevokedCertificatesRequest{OrgID: 1, ProjectIDs: []uint64{}, IKID: "i", Limit: 10}},
+			`SELECT ` + schema.RevokedCertificateTableInfo.AllColumns() + ` 
+FROM trustyca.vw_revoked_certificate 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) AND ikid = $3 
+ORDER BY id DESC 
+LIMIT $4 
+OFFSET $5`,
+		},
 	})
 }
