@@ -79,11 +79,140 @@
 └─────┴────────┴────────────┴───────┴─────────┴────────────┴─────────┴────────────┴─────────┘
 
 
+- TestRpc/Test_CertGetCmd/json:
+{
+	"Certificate": {
+		"ID": "30",
+		"SKID": "ee00ee",
+		"IKID": "0a1b2c",
+		"SerialNumber": "98765",
+		"NotBefore": "2026-01-01T00:00:00Z",
+		"NotAfter": "2026-04-01T00:00:00Z",
+		"Subject": "CN=edge.example.com",
+		"Issuer": "CN=Corp Issuing CA",
+		"Sha256": "cafe01",
+		"Pem": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+		"Status": 1,
+		"CreatedAt": "2026-01-01T00:00:00Z"
+	}
+}
+
+- TestRpc/Test_CertGetCmd/txt:
+ ID         │ 30                   
+ Org ID     │                      
+ Project ID │                      
+ Status     │ Active               
+ Profile    │                      
+ Label      │                      
+ Subject    │ CN=edge.example.com  
+ Issuer     │ CN=Corp Issuing CA   
+ Serial     │ 98765                
+ SKID       │ ee00ee               
+ IKID       │ 0a1b2c               
+ SHA-256    │ cafe01               
+ Not Before │ 2026-01-01T00:00:00Z 
+ Not After  │ 2026-04-01T00:00:00Z 
+ Locations  │                      
+ Created    │ 2026-01-01T00:00:00Z 
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
+
+- TestRpc/Test_CertStatusCmd/json:
+{
+	"IKID": "0a1b2c",
+	"SerialNumber": "98765",
+	"Status": 3,
+	"NotAfter": "2026-04-01T00:00:00Z",
+	"RevokedAt": "2026-02-01T00:00:00Z",
+	"Reason": 1
+}
+
+- TestRpc/Test_CertStatusCmd/txt:
+ IKID       │ 0a1b2c               
+ Serial     │ 98765                
+ Status     │ Revoked              
+ Not After  │ 2026-04-01T00:00:00Z 
+ Revoked At │ 2026-02-01T00:00:00Z 
+ Reason     │ Key Compromise       
+
+
+- TestRpc/Test_CertStatusCmd/txt#2:
+ IKID      │ 0a1b2c               
+ Serial    │ 98765                
+ Status    │ Active               
+ Not After │ 2026-04-01T00:00:00Z 
+
+
+- TestRpc/Test_CrlGetCmd/json:
+{
+	"Crl": {
+		"ID": "40",
+		"IssuerID": "10",
+		"IKID": "0a1b2c",
+		"Number": "4",
+		"ThisUpdate": "2026-01-02T00:00:00Z",
+		"NextUpdate": "2026-01-04T00:00:00Z",
+		"Issuer": "CN=Corp Issuing CA",
+		"Pem": "-----BEGIN X509 CRL-----\nMIIBcrl\n-----END X509 CRL-----\n"
+	}
+}
+
+- TestRpc/Test_CrlGetCmd/txt:
+ ID          │ 40                   
+ Org ID      │                      
+ Issuer ID   │ 10                   
+ IKID        │ 0a1b2c               
+ Number      │ 4                    
+ Issuer      │ CN=Corp Issuing CA   
+ This Update │ 2026-01-02T00:00:00Z 
+ Next Update │ 2026-01-04T00:00:00Z 
+ Locations   │                      
+
+-----BEGIN X509 CRL-----
+MIIBcrl
+-----END X509 CRL-----
+
+
 - TestRpc/Test_InviteDeleteCmd/json:
 {}
 
 - TestRpc/Test_InviteDeleteCmd/txt:
 {}
+
+- TestRpc/Test_IssuerGetCmd/json:
+{
+	"Label": "issuing",
+	"Type": 3,
+	"Status": 2,
+	"SKID": "0a1b2c",
+	"Subject": "CN=Corp Issuing CA",
+	"NotBefore": "2026-01-01T00:00:00Z",
+	"NotAfter": "2031-01-01T00:00:00Z",
+	"Certificate": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+	"CrlURL": "http://localhost:8880/v1/crl/0a1b2c",
+	"OcspURL": "http://localhost:8880/v1/ocspi/0a1b2c",
+	"AiaURL": "http://localhost:8880/v1/cert/0a1b2c"
+}
+
+- TestRpc/Test_IssuerGetCmd/txt:
+ Label      │ issuing                               
+ Type       │ Issuing                               
+ Status     │ Active                                
+ SKID       │ 0a1b2c                                
+ Subject    │ CN=Corp Issuing CA                    
+ Not Before │ 2026-01-01T00:00:00Z                  
+ Not After  │ 2031-01-01T00:00:00Z                  
+ AIA URL    │ http://localhost:8880/v1/cert/0a1b2c  
+ CRL URL    │ http://localhost:8880/v1/crl/0a1b2c   
+ OCSP URL   │ http://localhost:8880/v1/ocspi/0a1b2c 
+
+-----BEGIN CERTIFICATE-----
+MIIBtest
+-----END CERTIFICATE-----
+
 
 - TestRpc/Test_MemberAddCmd/json:
 {
@@ -473,6 +602,31 @@ Invites:
  Name    │ Test   
  Status  │ Active 
  Created │        
+
+
+- TestRpc/Test_RootListCmd/json:
+{
+	"Roots": [
+		{
+			"ID": "50",
+			"SKID": "r00t",
+			"NotBefore": "2020-01-01T00:00:00Z",
+			"NotAfter": "2040-01-01T00:00:00Z",
+			"Subject": "CN=Test Trusty Root CA",
+			"Sha256": "beef",
+			"Trust": 2,
+			"Pem": "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n",
+			"CreatedAt": "2026-01-01T00:00:00Z"
+		}
+	]
+}
+
+- TestRpc/Test_RootListCmd/txt:
+┌────┬────────┬──────┬────────────────────────┬─────────┬──────────────────────┐
+│ ID │ ORG ID │ SKID │        SUBJECT         │  TRUST  │      NOT AFTER       │
+├────┼────────┼──────┼────────────────────────┼─────────┼──────────────────────┤
+│ 50 │        │ r00t │ CN=Test Trusty Root CA │ Private │ 2040-01-01T00:00:00Z │
+└────┴────────┴──────┴────────────────────────┴─────────┴──────────────────────┘
 
 
 - TestRpc/Test_ScopeCmd/json:

@@ -18,6 +18,7 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/authctx"
 	core "github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
 	"github.com/effective-security/xdb"
@@ -562,7 +563,7 @@ func (tca *testCA) addProfile(orgID, projectID xdb.ID, def *pb.CertProfile) *mod
 // newRoot creates and stores a self-signed root of the scope
 func (tca *testCA) newRoot(t testing.TB, orgID, projectID xdb.ID, label string) *model.Issuer {
 	t.Helper()
-	profile, err := core.ProfileFromPb(rootProfileDef(testRootProfile))
+	profile, err := pbconv.ProfileFromPb(rootProfileDef(testRootProfile))
 	require.NoError(t, err)
 	m, err := tca.keys.NewRootIssuer(tca.ctx, &core.IssuerRequest{
 		OrgID:     orgID,

@@ -10,6 +10,8 @@ import (
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
 	core "github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
+	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/events"
@@ -62,10 +64,10 @@ func (s *Service) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequ
 	if _, _, err := core.KeySpec(req.KeySpec); err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
-	if _, err := core.IssuerConfigFromPb(label, req.Config); err != nil {
+	if _, err := pbconv.IssuerConfigFromPb(label, req.Config); err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
 	}
-	extensions, err := core.ExtensionsFromPb(req.Extensions)
+	extensions, err := pbconv.ExtensionsFromPb(req.Extensions)
 	if err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
@@ -259,7 +261,7 @@ func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequ
 		switch {
 		case xdb.IsNotFoundError(err):
 			return nil, preconditionFailed(ctx, "issuer is not pending")
-		case violates(err, uniqueIssuerSkidConstraint):
+		case db.IsUniqueViolation(err, db.UniqueIssuerSkid):
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "issuer key is already registered")
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to activate issuer")
@@ -314,7 +316,7 @@ func (s *Service) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest)
 		update.Status = req.Status
 	}
 	if req.Config != nil {
-		_, err := core.IssuerConfigFromPb(row.Label, req.Config)
+		_, err := pbconv.IssuerConfigFromPb(row.Label, req.Config)
 		if err != nil {
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
 		}
@@ -531,9 +533,9 @@ func (s *Service) registerIssuer(ctx context.Context, row *model.Issuer) (*model
 	registered, err := s.db.RegisterIssuer(ctx, row)
 	if err != nil {
 		switch {
-		case violates(err, uniqueIssuerLabelConstraint):
+		case db.IsUniqueViolation(err, db.UniqueIssuerLabel):
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "issuer label is already registered: %s", row.Label)
-		case violates(err, uniqueIssuerSkidConstraint):
+		case db.IsUniqueViolation(err, db.UniqueIssuerSkid):
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "issuer key is already registered")
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to register issuer")

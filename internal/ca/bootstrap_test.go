@@ -283,6 +283,60 @@ func TestBootstrap(t *testing.T) {
 	assert.Equal(t, &ca.BootstrapResult{Profiles: 3}, res)
 }
 
+// TestBootstrap_LostRace covers the start of several instances against one
+// fresh DB: the issuer insert of one of them loses to another's, and the
+// bootstrap continues with the row the other registered
+func TestBootstrap_LostRace(t *testing.T) {
+	t.Parallel()
+	root := testutils.NewTestCA(t, "Race Root", nil)
+	l1 := testutils.NewTestCA(t, "Race L1", root)
+	l2 := testutils.NewTestCA(t, "Race L2", l1)
+
+	// the same issuer: the row of the other instance is this one
+	f := newFixture(t)
+	cfg := bootstrapConfig(t, t.TempDir(), root, l1, l2)
+	f.db.Race = true
+	res, err := f.registry.Bootstrap(f.ctx, f.db, cfg)
+	require.NoError(t, err)
+	assert.Equal(t, &ca.BootstrapResult{Issuers: 1, Updated: 0, Roots: 1, Profiles: 3}, res, "L1 was registered by the other instance, L2 by this one")
+	assert.False(t, f.db.Race, "the race happened")
+	list, err := f.db.ListIssuers(f.ctx, &query.ListIssuersRequest{Platform: true, Limit: 10})
+	require.NoError(t, err)
+	assert.Len(t, list.Rows, 2, "each issuer once")
+	assert.Equal(t, 2, f.registry.Len(), "both issuers load")
+	row2, err := f.db.FindIssuer(f.ctx, 0, 0, "L2")
+	require.NoError(t, err)
+	row1, err := f.db.FindIssuer(f.ctx, 0, 0, "L1")
+	require.NoError(t, err)
+	assert.Equal(t, row1.ID.UInt64(), row2.ParentID.UInt64(), "the parent is the row of the other instance")
+
+	// the other instance registered the label with another key: the
+	// renewal rule applies, as for a lookup that finds it
+	f = newFixture(t)
+	cfg = bootstrapConfig(t, t.TempDir(), root, l1, l2)
+	f.db.Race = true
+	f.db.RaceEdit = func(m *model.Issuer) { m.Skid = "other-key" }
+	_, err = f.registry.Bootstrap(f.ctx, f.db, cfg)
+	require.ErrorContains(t, err, `issuer "L1": the certificate is for key `+certutil.GetSubjectKeyID(l1.Cert)+" and the registered issuer has key other-key")
+
+	// the other instance registered the key under another label: the
+	// conflict is reported
+	f = newFixture(t)
+	cfg = bootstrapConfig(t, t.TempDir(), root, l1, l2)
+	f.db.Race = true
+	f.db.RaceEdit = func(m *model.Issuer) { m.Label = "L1-copy" }
+	_, err = f.registry.Bootstrap(f.ctx, f.db, cfg)
+	require.ErrorContains(t, err, `issuer "L1": unable to register issuer: pq: duplicate key value violates unique constraint "unique_issuer_skid"`)
+
+	// a failure to read the row after the lost race
+	f = newFixture(t)
+	cfg = bootstrapConfig(t, t.TempDir(), root, l1, l2)
+	f.db.Race = true
+	f.db.RaceEdit = func(*model.Issuer) { f.db.ErrOn = "FindIssuer" }
+	_, err = f.registry.Bootstrap(f.ctx, f.db, cfg)
+	require.ErrorContains(t, err, `issuer "L1": unable to find issuer: FindIssuer failed`)
+}
+
 func TestBootstrap_ProviderKey(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)

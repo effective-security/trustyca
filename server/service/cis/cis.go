@@ -8,7 +8,7 @@ import (
 
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
-	core "github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/xdb"
@@ -86,9 +86,9 @@ func (s *Service) GetIssuer(ctx context.Context, req *pb.GetIssuerInfoRequest) (
 		Certificate:   row.Pem,
 		Intermediates: row.ChainPem,
 		Root:          row.RootPem,
-		CrlURL:        core.ExpandIssuerURL(cfg.CrlURL, row.Skid),
-		OcspURL:       core.ExpandIssuerURL(cfg.OcspURL, row.Skid),
-		AiaURL:        core.ExpandIssuerURL(cfg.AiaURL, row.Skid),
+		CrlURL:        pbconv.ExpandIssuerURL(cfg.CrlURL, row.Skid),
+		OcspURL:       pbconv.ExpandIssuerURL(cfg.OcspURL, row.Skid),
+		AiaURL:        pbconv.ExpandIssuerURL(cfg.AiaURL, row.Skid),
 	}, nil
 }
 

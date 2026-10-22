@@ -12,6 +12,7 @@ import (
 
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/cryptoprov"
@@ -139,7 +140,7 @@ func (f *fixture) profile(orgID, projectID xdb.ID, def *pb.CertProfile) *model.C
 // root creates and registers a self-signed root of the scope
 func (f *fixture) root(orgID, projectID xdb.ID, label string, cfg *pb.IssuerConfig) *model.Issuer {
 	f.t.Helper()
-	profile, err := ca.ProfileFromPb(rootProfileDef(rootProfile))
+	profile, err := pbconv.ProfileFromPb(rootProfileDef(rootProfile))
 	require.NoError(f.t, err)
 	m, err := f.keys.NewRootIssuer(f.ctx, &ca.IssuerRequest{
 		OrgID:     orgID,

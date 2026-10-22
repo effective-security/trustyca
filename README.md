@@ -87,6 +87,52 @@ a ca-config file, `Config` of `RegisterIssuer`) name the CIS routes with
 `:ISSUER_ID` or `${ISSUER_ID}` for the key identifier, as in
 `etc/dev/ca-config.local.yaml`.
 
+The `trustyca` CLI reads the same service without a login:
+
+    bin/trustyca -s https://localhost:8880 issuer get $IKID
+    bin/trustyca -s https://localhost:8880 cert status --ikid $IKID --serial $SERIAL
+    bin/trustyca -s https://localhost:8880 root list
+
+## Certification Authority
+
+The `ca` service of the `backend` listener is the CA: the issuers,
+profiles, trust anchors, certificates, revocations and CRLs of every org.
+It is not exposed to the internet: the Registration Authority calls it with
+the `trustyca-ra` identity and the operator with `trustyca-admin`, both TLS
+client certificates mapped by `identity_map.tls` of the listener
+(`make gen_test_certs` creates `trustyca_ra` and `trustyca_admin`). The `ca`
+section of the configuration names the ca-config of the platform issuers
+(`bootstrap_config`), mirrored into the CA tables at startup: in
+`etc/dev/ca-config.local.yaml` the L1 CA `trusty.l1` signs the issuing CAs
+of the orgs with the `tenant_ca` profile, and the L2 CA `trusty.svc` the
+platform's own certificates.
+
+`trustycactl ca ...` operates the CA with the admin certificate; every
+request names the org:
+
+    alias trustycactl='bin/trustycactl -s https://localhost:8881 -c ~/.trustyca/certs/trustyca_admin.pem -k ~/.trustyca/certs/trustyca_admin.key -r ~/.trustyca/certs/trustyca_root.pem'
+    # the platform issuers and anchors, the certificates of every org
+    trustycactl ca issuer list --platform
+    trustycactl ca root list
+    trustycactl ca cert list --limit 20
+    # onboard an org: its issuing CA under the platform intermediate, and the template profiles
+    trustycactl ca org bootstrap --org $ORG --parent trusty.l1 --templates etc/dev/profiles \
+        --cn "Example Issuing CA" --ocsp-profile ocsp \
+        --crl-url 'http://localhost:8880/v1/crl/${ISSUER_ID}' \
+        --ocsp-url 'http://localhost:8880/v1/ocspi/${ISSUER_ID}' \
+        --aia-url 'http://localhost:8880/v1/cert/${ISSUER_ID}'
+    # the CA of the org
+    trustycactl ca issuer list --org $ORG
+    trustycactl ca profile register --org $ORG --file etc/dev/profiles/server.yaml --issuer issuing
+    trustycactl ca cert revoke --org $ORG $CERT_ID --reason KeyCompromise
+    trustycactl ca crl publish --org $ORG --force
+
+A profile file has the shape of a `profiles` entry of a ca-config file, one
+profile per file named after its label (`etc/dev/profiles`); a template
+without `issuer_label` binds to the issuing CA the onboarding registers.
+`trustycactl --help` lists the commands; the reference is
+[Documentation/cli/trustycactl.md](Documentation/cli/trustycactl.md).
+
 ## Debug
 
 Add the launch configuration to .vscode/launch.json:

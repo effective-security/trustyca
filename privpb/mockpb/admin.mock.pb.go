@@ -101,3 +101,25 @@ func (m *MockAdminServer) ListProjects(ctx context.Context, req *privpb.ListProj
 	}
 	return m.next().(*pb.ProjectsResponse), nil
 }
+
+// ListIssuers lists the issuers of every org and of the platform, newest
+// first, for support staff; the tenant view of an org is CA.ListIssuers.
+// Private key material is never returned.
+
+func (m *MockAdminServer) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.IssuersResponse), nil
+}
+
+// ListCertificates lists the certificates of every org and of the
+// platform, newest first, for support staff; the tenant view of an org
+// is CA.ListCertificates
+
+func (m *MockAdminServer) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.CertificatesResponse), nil
+}

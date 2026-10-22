@@ -1,0 +1,13 @@
+---
+# TLS peer certificate for mutual authentication, bound to the issuing CA
+# of the org at onboarding
+description: TLS peer certificate
+expiry: 2160h
+backdate: 30m
+usages:
+  - signing
+  - key encipherment
+  - server auth
+  - client auth
+allowed_extensions:
+  - 2.5.29.17 # SAN

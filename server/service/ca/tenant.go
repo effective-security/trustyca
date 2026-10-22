@@ -107,13 +107,6 @@ func preconditionFailed(ctx context.Context, msgFormat string, vals ...any) *htt
 // defaultListLimit is used when a list request does not specify a limit
 const defaultListLimit = 100
 
-// Unique constraints of the CA tables, as PostgreSQL names them in a
-// violation
-const (
-	uniqueIssuerLabelConstraint = "unique_issuer_org_project_label"
-	uniqueIssuerSkidConstraint  = "unique_issuer_skid"
-)
-
 // requireCA returns Unavailable when the service has no issuer registry
 func (s *Service) requireCA(ctx context.Context) error {
 	if s.registry == nil {
@@ -146,12 +139,6 @@ func listCursor(ctx context.Context, cursor string) (query.Cursor, error) {
 // listLimit returns the page size of a list request
 func listLimit(limit uint32) uint32 {
 	return cmp.Or(limit, defaultListLimit)
-}
-
-// violates returns true when the error is a violation of the unique
-// constraint
-func violates(err error, constraint string) bool {
-	return err != nil && strings.Contains(err.Error(), constraint)
 }
 
 // rowAccess checks that the caller may call the method on a row of the

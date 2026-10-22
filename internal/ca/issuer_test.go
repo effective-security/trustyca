@@ -17,6 +17,7 @@ import (
 
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
@@ -51,7 +52,7 @@ func TestKeys_NewRootIssuer(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
 	org := xdbID(1)
-	profile, err := ca.ProfileFromPb(rootProfileDef(rootProfile))
+	profile, err := pbconv.ProfileFromPb(rootProfileDef(rootProfile))
 	require.NoError(t, err)
 	req := func() *ca.IssuerRequest {
 		return &ca.IssuerRequest{
@@ -112,7 +113,7 @@ func TestKeys_NewRootIssuer(t *testing.T) {
 	r.Type = pb.AuthorityType_Issuing
 	_, err = f.keys.NewRootIssuer(f.ctx, r, rootProfile, profile)
 	assert.EqualError(t, err, "a self-signed issuer is of Root type, not Issuing")
-	peer, err := ca.ProfileFromPb(peerProfileDef("peer", "*", "1h"))
+	peer, err := pbconv.ProfileFromPb(peerProfileDef("peer", "*", "1h"))
 	require.NoError(t, err)
 	_, err = f.keys.NewRootIssuer(f.ctx, req(), "peer", peer)
 	assert.EqualError(t, err, `profile "peer" is not a CA profile`)

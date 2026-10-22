@@ -26,4 +26,5 @@ type App interface {
 	StatusClient() (pb.StatusServer, error)
 	OrgsClient() (pb.OrgsServer, error)
 	AdminClient() (privpb.AdminServer, error)
+	CAClient() (pb.CAServer, error)
 }

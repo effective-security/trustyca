@@ -1,0 +1,11 @@
+---
+# TLS client certificate, bound to the issuing CA of the org at onboarding
+description: TLS client certificate
+expiry: 2160h
+backdate: 30m
+usages:
+  - signing
+  - key encipherment
+  - client auth
+allowed_extensions:
+  - 2.5.29.17 # SAN

@@ -10,6 +10,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/authority"
@@ -412,7 +413,7 @@ func setVerifiedCertificate(m *model.Issuer, cfg *pb.IssuerConfig, crt *x509.Cer
 	if err != nil {
 		return errors.WithMessage(err, "unable to encode certificate")
 	}
-	acfg, err := IssuerConfigFromPb(m.Label, cfg)
+	acfg, err := pbconv.IssuerConfigFromPb(m.Label, cfg)
 	if err != nil {
 		return err
 	}

@@ -138,6 +138,7 @@ tasks:
   - name: cert_status
     schedule: "every 1 hour"
 
+# TODO: add AIA endpoint for pain HTTP ( Issuer URL, CRL URL, OCSP URL)
 servers:
   wfe:
     description: Web Front End service

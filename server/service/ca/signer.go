@@ -10,6 +10,8 @@ import (
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
 	core "github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
+	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/events"
@@ -24,10 +26,6 @@ import (
 
 // csrPEMType is the PEM block type of a PKCS#10 request
 const csrPEMType = "CERTIFICATE REQUEST"
-
-// uniqueCertificateConstraint is the prefix of the unique constraints of
-// the certificate table; a violation means the certificate is registered
-const uniqueCertificateConstraint = "unique_certificate"
 
 // signRequestErrorMarkers are the fragments of the signing errors that a
 // client can fix by changing its request; any other signing error is the
@@ -88,7 +86,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 		SAN:     req.SAN,
 		Subject: subjectOf(req.Subject),
 	}
-	cr.Extensions, err = core.ExtensionsFromPb(req.Extensions)
+	cr.Extensions, err = pbconv.ExtensionsFromPb(req.Extensions)
 	if err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
@@ -132,7 +130,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 			"issuer", issuer.Label(),
 			"sha256", mcert.Sha256,
 			"err", err.Error())
-		if violates(err, uniqueCertificateConstraint) {
+		if db.IsUniqueViolation(err, db.UniqueCertificatePrefix) {
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "certificate is already registered")
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to register certificate")

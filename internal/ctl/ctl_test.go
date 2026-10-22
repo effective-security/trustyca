@@ -169,10 +169,18 @@ func TestClients(t *testing.T) {
 
 	_, err = cl.Cli.RPCClient(true)
 	assert.NoError(t, err)
+	_, err = cl.Cli.AdminClient()
+	assert.NoError(t, err)
+	_, err = cl.Cli.CAClient()
+	assert.NoError(t, err)
 
 	cl.Cli.HTTP = true
 	_, err = cl.Cli.HTTPClient(true)
 	assert.NoError(t, err)
+	_, err = cl.Cli.AdminClient()
+	assert.EqualError(t, err, "admin endpoint is allowed only over gRPC")
+	_, err = cl.Cli.CAClient()
+	assert.EqualError(t, err, "CA endpoint is allowed only over gRPC")
 }
 
 func mustNew(t *testing.T, cli any, options ...kong.Option) *kong.Kong {

@@ -22,3 +22,19 @@ func TestMain(t *testing.T) {
 	assert.Equal(t, 80, rc)
 	assert.NotEmpty(t, errout.String())
 }
+
+// TestHelp parses the whole command tree: a flag or help text kong refuses
+// panics at startup, not in a test of a command
+func TestHelp(t *testing.T) {
+	var out, errout bytes.Buffer
+	// kong calls exit after the help; the function records the first code
+	// and returns, so the parser then reports the missing command
+	exitCode := -1
+	realMain([]string{"trustyca", "--help"}, &out, &errout, func(code int) {
+		if exitCode == -1 {
+			exitCode = code
+		}
+	})
+	assert.Equal(t, 0, exitCode)
+	assert.Contains(t, out.String(), "cert status")
+}

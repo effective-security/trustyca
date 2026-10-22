@@ -422,3 +422,334 @@ func PrintMethodAccesses(w io.Writer, val any) {
 	_ = table.Render()
 	fmt.Fprintln(w)
 }
+
+// pemOf writes a PEM block of an object after its table, on its own lines
+func pemOf(w io.Writer, pem string) {
+	if pem != "" {
+		fmt.Fprintln(w, strings.TrimSpace(pem))
+		fmt.Fprintln(w)
+	}
+}
+
+func (r *Issuer) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"ID", r.ID})
+	_ = table.Append([]string{"Org ID", r.OrgID})
+	_ = table.Append([]string{"Project ID", r.ProjectID})
+	_ = table.Append([]string{"Label", r.Label})
+	_ = table.Append([]string{"Type", r.Type.DisplayName()})
+	_ = table.Append([]string{"Status", r.Status.DisplayName()})
+	_ = table.Append([]string{"Parent ID", r.ParentID})
+	_ = table.Append([]string{"SKID", r.SKID})
+	_ = table.Append([]string{"IKID", r.IKID})
+	_ = table.Append([]string{"Serial", r.SerialNumber})
+	_ = table.Append([]string{"Subject", r.Subject})
+	_ = table.Append([]string{"Issuer", r.Issuer})
+	_ = table.Append([]string{"SHA-256", r.Sha256})
+	_ = table.Append([]string{"Not Before", format.Time(r.NotBefore)})
+	_ = table.Append([]string{"Not After", format.Time(r.NotAfter)})
+	_ = table.Append([]string{"Key Provider", r.KeyProvider})
+	_ = table.Append([]string{"CRL Number", r.CrlNumber})
+	if c := r.Config; c != nil {
+		_ = table.Append([]string{"AIA URL", c.AiaURL})
+		_ = table.Append([]string{"CRL URL", c.CrlURL})
+		_ = table.Append([]string{"OCSP URL", c.OcspURL})
+		_ = table.Append([]string{"CRL Expiry", c.CrlExpiry})
+		_ = table.Append([]string{"CRL Renewal", c.CrlRenewal})
+		_ = table.Append([]string{"OCSP Expiry", c.OcspExpiry})
+		_ = table.Append([]string{"OCSP Profile", c.DelegatedOcspProfile})
+		_ = table.Append([]string{"Allowed Profiles", strings.Join(c.AllowedProfiles, ",")})
+	}
+	_ = table.Append([]string{"Created", format.Time(r.CreatedAt)})
+	_ = table.Append([]string{"Updated", format.Time(r.UpdatedAt)})
+	_ = table.Render()
+	fmt.Fprintln(w)
+	// the CSR of a pending issuer is what the operator takes to the signer
+	if r.Status == IssuerStatus_Pending {
+		pemOf(w, r.Csr)
+	} else {
+		pemOf(w, r.Certificate)
+	}
+}
+
+func (r *IssuersResponse) Print(w io.Writer) {
+	table := createTable(w)
+	table.Header([]string{"ID", "Org ID", "Project ID", "Label", "Type", "Status", "SKID", "Subject", "Not After"})
+	for _, issuer := range r.Issuers {
+		_ = table.Append([]string{
+			issuer.ID,
+			issuer.OrgID,
+			issuer.ProjectID,
+			issuer.Label,
+			issuer.Type.DisplayName(),
+			issuer.Status.DisplayName(),
+			issuer.SKID,
+			issuer.Subject,
+			format.Time(issuer.NotAfter),
+		})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
+}
+
+func (r *CertProfile) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"ID", r.ID})
+	_ = table.Append([]string{"Org ID", r.OrgID})
+	_ = table.Append([]string{"Project ID", r.ProjectID})
+	_ = table.Append([]string{"Label", r.Label})
+	_ = table.Append([]string{"Issuer", r.IssuerLabel})
+	_ = table.Append([]string{"Description", r.Description})
+	_ = table.Append([]string{"Usages", strings.Join(r.Usages, ",")})
+	if c := r.CAConstraint; c != nil && c.IsCA {
+		_ = table.Append([]string{"CA", fmt.Sprintf("path length %d", c.MaxPathLen)})
+	}
+	_ = table.Append([]string{"Expiry", r.Expiry})
+	_ = table.Append([]string{"Backdate", r.Backdate})
+	_ = table.Append([]string{"Allowed Extensions", strings.Join(r.AllowedExtensions, ",")})
+	_ = table.Append([]string{"Allowed Names", r.AllowedNames})
+	_ = table.Append([]string{"Allowed DNS", r.AllowedDns})
+	_ = table.Append([]string{"Allowed Email", r.AllowedEmail})
+	_ = table.Append([]string{"Allowed URI", r.AllowedUri})
+	_ = table.Append([]string{"Status", r.Status.DisplayName()})
+	_ = table.Append([]string{"Created", format.Time(r.CreatedAt)})
+	_ = table.Append([]string{"Updated", format.Time(r.UpdatedAt)})
+	_ = table.Render()
+	fmt.Fprintln(w)
+}
+
+func (r *ProfilesResponse) Print(w io.Writer) {
+	table := createTable(w)
+	table.Header([]string{"ID", "Org ID", "Project ID", "Label", "Issuer", "Expiry", "Usages", "Status"})
+	for _, p := range r.Profiles {
+		_ = table.Append([]string{
+			p.ID,
+			p.OrgID,
+			p.ProjectID,
+			p.Label,
+			p.IssuerLabel,
+			p.Expiry,
+			strings.Join(p.Usages, ","),
+			p.Status.DisplayName(),
+		})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
+}
+
+func (r *RootCertificate) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"ID", r.ID})
+	_ = table.Append([]string{"Org ID", r.OrgID})
+	_ = table.Append([]string{"SKID", r.SKID})
+	_ = table.Append([]string{"Subject", r.Subject})
+	_ = table.Append([]string{"SHA-256", r.Sha256})
+	_ = table.Append([]string{"Trust", r.Trust.DisplayName()})
+	_ = table.Append([]string{"Not Before", format.Time(r.NotBefore)})
+	_ = table.Append([]string{"Not After", format.Time(r.NotAfter)})
+	_ = table.Append([]string{"Created", format.Time(r.CreatedAt)})
+	_ = table.Render()
+	fmt.Fprintln(w)
+	pemOf(w, r.Pem)
+}
+
+func (r *RootsResponse) Print(w io.Writer) {
+	table := createTable(w)
+	table.Header([]string{"ID", "Org ID", "SKID", "Subject", "Trust", "Not After"})
+	for _, root := range r.Roots {
+		_ = table.Append([]string{
+			root.ID,
+			root.OrgID,
+			root.SKID,
+			root.Subject,
+			root.Trust.DisplayName(),
+			format.Time(root.NotAfter),
+		})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
+}
+
+func (r *Certificate) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"ID", r.ID})
+	_ = table.Append([]string{"Org ID", r.OrgID})
+	_ = table.Append([]string{"Project ID", r.ProjectID})
+	_ = table.Append([]string{"Status", r.Status.DisplayName()})
+	_ = table.Append([]string{"Profile", r.Profile})
+	_ = table.Append([]string{"Label", r.Label})
+	_ = table.Append([]string{"Subject", r.Subject})
+	_ = table.Append([]string{"Issuer", r.Issuer})
+	_ = table.Append([]string{"Serial", r.SerialNumber})
+	_ = table.Append([]string{"SKID", r.SKID})
+	_ = table.Append([]string{"IKID", r.IKID})
+	_ = table.Append([]string{"SHA-256", r.Sha256})
+	_ = table.Append([]string{"Not Before", format.Time(r.NotBefore)})
+	_ = table.Append([]string{"Not After", format.Time(r.NotAfter)})
+	_ = table.Append([]string{"Locations", strings.Join(r.Locations, ",")})
+	_ = table.Append([]string{"Created", format.Time(r.CreatedAt)})
+	_ = table.Render()
+	fmt.Fprintln(w)
+	if len(r.Metadata) > 0 {
+		print.Map(w, []string{"Metadata", "Value"}, r.Metadata)
+	}
+	pemOf(w, r.Pem)
+}
+
+func (r *CertificateResponse) Print(w io.Writer) {
+	if r.Certificate != nil {
+		r.Certificate.Print(w)
+	}
+}
+
+func (r *CertificatesResponse) Print(w io.Writer) {
+	table := createTable(w)
+	table.Header([]string{"ID", "Org ID", "Project ID", "Status", "Profile", "Subject", "Serial", "IKID", "Not After", "Label"})
+	for _, c := range r.Certificates {
+		_ = table.Append([]string{
+			c.ID,
+			c.OrgID,
+			c.ProjectID,
+			c.Status.DisplayName(),
+			c.Profile,
+			c.Subject,
+			c.SerialNumber,
+			c.IKID,
+			format.Time(c.NotAfter),
+			c.Label,
+		})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
+}
+
+func (r *RevokedCertificate) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"Revoked At", format.Time(r.RevokedAt)})
+	_ = table.Append([]string{"Reason", r.Reason.DisplayName()})
+	_ = table.Append([]string{"Reason Text", r.ReasonText})
+	_ = table.Render()
+	fmt.Fprintln(w)
+	if r.Certificate != nil {
+		r.Certificate.Print(w)
+	}
+}
+
+func (r *RevokedCertificateResponse) Print(w io.Writer) {
+	if r.Revoked != nil {
+		r.Revoked.Print(w)
+	}
+}
+
+func (r *RevokedCertificatesResponse) Print(w io.Writer) {
+	table := createTable(w)
+	table.Header([]string{"ID", "Org ID", "Project ID", "Subject", "Serial", "IKID", "Revoked At", "Reason"})
+	for _, rc := range r.RevokedCertificates {
+		c := rc.Certificate
+		if c == nil {
+			c = &Certificate{}
+		}
+		_ = table.Append([]string{
+			c.ID,
+			c.OrgID,
+			c.ProjectID,
+			c.Subject,
+			c.SerialNumber,
+			c.IKID,
+			format.Time(rc.RevokedAt),
+			rc.Reason.DisplayName(),
+		})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
+}
+
+func (r *Crl) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"ID", r.ID})
+	_ = table.Append([]string{"Org ID", r.OrgID})
+	_ = table.Append([]string{"Issuer ID", r.IssuerID})
+	_ = table.Append([]string{"IKID", r.IKID})
+	_ = table.Append([]string{"Number", r.Number})
+	_ = table.Append([]string{"Issuer", r.Issuer})
+	_ = table.Append([]string{"This Update", format.Time(r.ThisUpdate)})
+	_ = table.Append([]string{"Next Update", format.Time(r.NextUpdate)})
+	_ = table.Append([]string{"Locations", strings.Join(r.Locations, ",")})
+	_ = table.Render()
+	fmt.Fprintln(w)
+	pemOf(w, r.Pem)
+}
+
+func (r *CrlResponse) Print(w io.Writer) {
+	if r.Crl != nil {
+		r.Crl.Print(w)
+	}
+}
+
+func (r *CrlsResponse) Print(w io.Writer) {
+	table := createTable(w)
+	table.Header([]string{"ID", "Org ID", "Issuer ID", "IKID", "Number", "Issuer", "This Update", "Next Update"})
+	for _, crl := range r.Crls {
+		_ = table.Append([]string{
+			crl.ID,
+			crl.OrgID,
+			crl.IssuerID,
+			crl.IKID,
+			crl.Number,
+			crl.Issuer,
+			format.Time(crl.ThisUpdate),
+			format.Time(crl.NextUpdate),
+		})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+}
+
+func (r *IssuerInfo) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"Label", r.Label})
+	_ = table.Append([]string{"Type", r.Type.DisplayName()})
+	_ = table.Append([]string{"Status", r.Status.DisplayName()})
+	_ = table.Append([]string{"SKID", r.SKID})
+	_ = table.Append([]string{"Subject", r.Subject})
+	_ = table.Append([]string{"Not Before", format.Time(r.NotBefore)})
+	_ = table.Append([]string{"Not After", format.Time(r.NotAfter)})
+	_ = table.Append([]string{"AIA URL", r.AiaURL})
+	_ = table.Append([]string{"CRL URL", r.CrlURL})
+	_ = table.Append([]string{"OCSP URL", r.OcspURL})
+	_ = table.Render()
+	fmt.Fprintln(w)
+	pemOf(w, r.Certificate)
+}
+
+func (r *CertificateStatusResponse) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"IKID", r.IKID})
+	_ = table.Append([]string{"Serial", r.SerialNumber})
+	_ = table.Append([]string{"Status", r.Status.DisplayName()})
+	_ = table.Append([]string{"Not After", format.Time(r.NotAfter)})
+	if r.Status == CertificateStatus_Revoked {
+		_ = table.Append([]string{"Revoked At", format.Time(r.RevokedAt)})
+		_ = table.Append([]string{"Reason", r.Reason.DisplayName()})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+}
+
+// printNextPage prints the cursor of the next page of a list, when there is
+// one
+func printNextPage(w io.Writer, next *NextPage) {
+	if next == nil {
+		return
+	}
+	if next.Cursor != "" {
+		fmt.Fprintf(w, "Next page: --cursor %s\n\n", next.Cursor)
+		return
+	}
+	fmt.Fprintf(w, "Next page: --offset %d\n\n", next.Offset)
+}

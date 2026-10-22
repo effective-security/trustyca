@@ -1,0 +1,12 @@
+---
+# TLS server certificate. The profile binds to the issuing CA of the org
+# when `trustycactl ca org bootstrap` copies it (issuer_label is empty).
+description: TLS server certificate
+expiry: 2160h
+backdate: 30m
+usages:
+  - signing
+  - key encipherment
+  - server auth
+allowed_extensions:
+  - 2.5.29.17 # SAN

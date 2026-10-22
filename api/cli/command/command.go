@@ -28,4 +28,5 @@ type App interface {
 	AuthClient(skipAuth bool) (pb.AuthServer, error)
 	StatusClient() (pb.StatusServer, error)
 	OrgsClient() (pb.OrgsServer, error)
+	CISClient() (pb.CISServer, error)
 }

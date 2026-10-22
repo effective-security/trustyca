@@ -54,8 +54,12 @@ func Test_Issuer(t *testing.T) {
 	// the label is unique in its scope, the SKID across the table
 	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "L1", testutils.NewTestCA(t, "Other L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID))
 	assert.ErrorContains(t, err, "unique_issuer_org_project_label")
+	assert.True(t, db.IsUniqueViolation(err, db.UniqueIssuerLabel), "the driver's error names the constraint")
+	assert.False(t, db.IsUniqueViolation(err, db.UniqueIssuerSkid))
 	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "L1-copy", l1, pb.AuthorityType_Intermediate, rootIssuer.ID))
 	assert.ErrorContains(t, err, "unique_issuer_skid")
+	assert.True(t, db.IsUniqueViolation(err, db.UniqueIssuerSkid))
+	assert.True(t, db.IsUniqueViolation(err, ""))
 	// the same label in another scope is another issuer
 	otherScope := registerIssuer(t, newTestIssuer(org.ID, project.ID, "L1", testutils.NewTestCA(t, "Project L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID))
 	assert.NotEqual(t, orgIssuer.ID.UInt64(), otherScope.ID.UInt64())
@@ -128,6 +132,15 @@ func Test_Issuer(t *testing.T) {
 	assert.Equal(t, prjIssuer.ID.UInt64(), list.Rows[0].ID.UInt64())
 
 	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Status: pb.IssuerStatus_Archived, Limit: 10})
+	require.NoError(t, err)
+	assert.Empty(t, list.Rows)
+
+	// by label, in every scope of the org
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Label: prjIssuer.Label, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, list.Rows, 1)
+	assert.Equal(t, prjIssuer.ID.UInt64(), list.Rows[0].ID.UInt64())
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Label: "nope", Limit: 10})
 	require.NoError(t, err)
 	assert.Empty(t, list.Rows)
 

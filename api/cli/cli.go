@@ -393,6 +393,23 @@ func (c *Cli) OrgsClient() (pb.OrgsServer, error) {
 	return proxypb.NewOrgsClient(r.Conn(), r.Opts()), nil
 }
 
+// CISClient returns the client of the Certificate Information Service,
+// the public, read-only side of the CA: it needs no token
+func (c *Cli) CISClient() (pb.CISServer, error) {
+	if c.HTTP {
+		h, err := c.HTTPClient(true)
+		if err != nil {
+			return nil, err
+		}
+		return proxypb.NewHTTPCISClient(h), nil
+	}
+	r, err := c.RPCClient(true)
+	if err != nil {
+		return nil, err
+	}
+	return proxypb.NewCISClient(r.Conn(), r.Opts()), nil
+}
+
 // AuthClient returns AuthClient client from connection
 func (c *Cli) AuthClient(skipAuth bool) (pb.AuthServer, error) {
 	if c.HTTP {

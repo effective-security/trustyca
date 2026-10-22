@@ -10,6 +10,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
@@ -290,7 +291,7 @@ func crlRenewal(row *model.Issuer) (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
-	acfg, err := IssuerConfigFromPb(row.Label, cfg)
+	acfg, err := pbconv.IssuerConfigFromPb(row.Label, cfg)
 	if err != nil {
 		return 0, errors.WithMessagef(err, "invalid config of issuer %s", idString(row.ID))
 	}

@@ -271,6 +271,22 @@ type CaDb interface {
 	DeleteCrl(ctx context.Context, orgID uint64, ikid string) (int64, error)
 }
 
+// The unique constraints of the CA tables, as PostgreSQL names them in a
+// violation: the label of an issuer in its scope, the key identifier of an
+// issuer, and the prefix of the certificate constraints
+const (
+	UniqueIssuerLabel       = pgsql.UniqueIssuerLabel
+	UniqueIssuerSkid        = pgsql.UniqueIssuerSkid
+	UniqueCertificatePrefix = pgsql.UniqueCertificatePrefix
+)
+
+// IsUniqueViolation reports whether the error is a unique constraint
+// violation of a constraint whose name starts with the prefix (empty for
+// any), so that a caller maps a conflict without parsing the message
+func IsUniqueViolation(err error, prefix string) bool {
+	return pgsql.IsUniqueViolation(err, prefix)
+}
+
 // Errors of the CA mutations that the caller resolves from the current state
 var (
 	// ErrAlreadyRevoked is returned by RevokeCertificate for a certificate

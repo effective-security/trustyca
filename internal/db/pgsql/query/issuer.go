@@ -212,6 +212,9 @@ type ListIssuersRequest struct {
 	ProjectIDs []uint64
 	// ParentID limits the result to the issuers signed by the parent
 	ParentID uint64
+	// Label limits the result to the issuers with the label, in every scope
+	// the request covers
+	Label string
 	// Status limits the result to the lifecycle status
 	Status pb.IssuerStatus_Enum
 	// Type limits the result to the authority type
@@ -238,6 +241,9 @@ func (r *ListIssuersRequest) QueryParams() xdb.QueryParams {
 	if r.ParentID != 0 {
 		b.Set(schema.Issuer.ParentID.Position, r.ParentID)
 	}
+	if r.Label != "" {
+		b.Set(schema.Issuer.Label.Position, r.Label)
+	}
 	if r.Status != pb.IssuerStatus_Unknown {
 		b.Set(schema.Issuer.Status.Position, r.Status)
 	}
@@ -257,6 +263,9 @@ func ListIssuers(args ...any) (string, string) {
 		whereTenancy(q, p, schema.Issuer.OrgID.Position, schema.Issuer.ProjectID.Position)
 		if p.IsSet(schema.Issuer.ParentID.Position) {
 			q.Where(schema.Issuer.ParentID.Name+" = ?", nil)
+		}
+		if p.IsSet(schema.Issuer.Label.Position) {
+			q.Where(schema.Issuer.Label.Name+" = ?", nil)
 		}
 		if p.IsSet(schema.Issuer.Status.Position) {
 			q.Where(schema.Issuer.Status.Name+" = ?", nil)

@@ -1,5 +1,7 @@
 ---
 common_name: trustyca-admin
+san:
+  - spiffe://trustyca/admin
 names:
   - C: US
     L: WA

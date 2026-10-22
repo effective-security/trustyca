@@ -11,6 +11,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
@@ -45,7 +46,9 @@ type BootstrapResult struct {
 //
 // It is idempotent: a registered issuer with the same key only has its
 // runtime settings refreshed, roots are registered by thumbprint and
-// profiles are replaced by label. The key of an issuer is a key URI, stored
+// profiles are replaced by label. It is also safe when several instances
+// start against one fresh DB at once: an issuer insert that loses the race
+// to another instance continues with the row that instance registered. The key of an issuer is a key URI, stored
 // as the reference, or key material, stored wrapped; both are checked
 // against the certificate. An issuer whose certificate is for a new key is
 // an error: renewal keeps the label unique, so the old issuer must be
@@ -110,7 +113,7 @@ func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.C
 		if err != nil {
 			return nil, errors.WithMessagef(err, "profile %q", label)
 		}
-		def := ProfileToPb(label, profile)
+		def := pbconv.ProfileToPb(label, profile)
 		if def.IssuerLabel == "" {
 			// a self-signing profile of a ca-config without issuers
 			def.IssuerLabel = model.AnyIssuerLabel
@@ -241,7 +244,7 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 		return out, errors.WithMessage(err, "invalid certificate")
 	}
 	skid := certutil.GetSubjectKeyID(crt)
-	cfg := IssuerConfigToPb(isscfg)
+	cfg := pbconv.IssuerConfigToPb(isscfg)
 
 	existing, err := caDb.FindIssuer(ctx, 0, 0, label)
 	switch {
@@ -312,7 +315,30 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 	}
 	row, err := caDb.RegisterIssuer(ctx, m)
 	if err != nil {
-		return out, errors.WithMessage(err, "unable to register issuer")
+		if !db.IsUniqueViolation(err, "") {
+			return out, errors.WithMessage(err, "unable to register issuer")
+		}
+		// another instance registered the issuer between the lookup and
+		// the insert: several processes bootstrap one fresh DB at once
+		// (the service instances, the test packages). Continue with its
+		// row when it is the issuer of this configuration; a row with
+		// another key is the renewal error of the lookup, and a key
+		// registered under another label is the conflict itself.
+		existing, ferr := caDb.FindIssuer(ctx, 0, 0, label)
+		switch {
+		case ferr != nil && xdb.IsNotFoundError(ferr):
+			return out, errors.WithMessage(err, "unable to register issuer")
+		case ferr != nil:
+			return out, errors.WithMessage(ferr, "unable to find issuer")
+		case existing.Skid != skid:
+			return out, errors.Errorf("the certificate is for key %s and the registered issuer has key %s: archive the registered issuer under another label before renewing it", skid, existing.Skid)
+		}
+		logger.KV(xlog.INFO,
+			"status", "issuer_registered_elsewhere",
+			"issuer_id", idString(existing.ID),
+			"issuer", label,
+			"skid", skid)
+		return r.refreshIssuer(ctx, caDb, existing, cfg)
 	}
 	r.InvalidateIssuer(row)
 	out.registered = true

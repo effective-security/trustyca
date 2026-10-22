@@ -269,6 +269,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*CertProfile\) GetUpdatedAt\(\) string](<#CertProfile.GetUpdatedAt>)
   - [func \(x \*CertProfile\) GetUsages\(\) \[\]string](<#CertProfile.GetUsages>)
   - [func \(msg \*CertProfile\) MarshalJSON\(\) \(\[\]byte, error\)](<#CertProfile.MarshalJSON>)
+  - [func \(r \*CertProfile\) Print\(w io.Writer\)](<#CertProfile.Print>)
   - [func \(\*CertProfile\) ProtoMessage\(\)](<#CertProfile.ProtoMessage>)
   - [func \(x \*CertProfile\) ProtoReflect\(\) protoreflect.Message](<#CertProfile.ProtoReflect>)
   - [func \(x \*CertProfile\) Reset\(\)](<#CertProfile.Reset>)
@@ -296,6 +297,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*Certificate\) GetStatus\(\) CertificateStatus\_Enum](<#Certificate.GetStatus>)
   - [func \(x \*Certificate\) GetSubject\(\) string](<#Certificate.GetSubject>)
   - [func \(msg \*Certificate\) MarshalJSON\(\) \(\[\]byte, error\)](<#Certificate.MarshalJSON>)
+  - [func \(r \*Certificate\) Print\(w io.Writer\)](<#Certificate.Print>)
   - [func \(\*Certificate\) ProtoMessage\(\)](<#Certificate.ProtoMessage>)
   - [func \(x \*Certificate\) ProtoReflect\(\) protoreflect.Message](<#Certificate.ProtoReflect>)
   - [func \(x \*Certificate\) Reset\(\)](<#Certificate.Reset>)
@@ -326,6 +328,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*CertificateResponse\) GetCertificate\(\) \*Certificate](<#CertificateResponse.GetCertificate>)
   - [func \(m \*CertificateResponse\) GetMessageDescription\(\) \*api.MessageDescription](<#CertificateResponse.GetMessageDescription>)
   - [func \(msg \*CertificateResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#CertificateResponse.MarshalJSON>)
+  - [func \(r \*CertificateResponse\) Print\(w io.Writer\)](<#CertificateResponse.Print>)
   - [func \(\*CertificateResponse\) ProtoMessage\(\)](<#CertificateResponse.ProtoMessage>)
   - [func \(x \*CertificateResponse\) ProtoReflect\(\) protoreflect.Message](<#CertificateResponse.ProtoReflect>)
   - [func \(x \*CertificateResponse\) Reset\(\)](<#CertificateResponse.Reset>)
@@ -349,6 +352,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*CertificateStatusResponse\) GetSerialNumber\(\) string](<#CertificateStatusResponse.GetSerialNumber>)
   - [func \(x \*CertificateStatusResponse\) GetStatus\(\) CertificateStatus\_Enum](<#CertificateStatusResponse.GetStatus>)
   - [func \(msg \*CertificateStatusResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#CertificateStatusResponse.MarshalJSON>)
+  - [func \(r \*CertificateStatusResponse\) Print\(w io.Writer\)](<#CertificateStatusResponse.Print>)
   - [func \(\*CertificateStatusResponse\) ProtoMessage\(\)](<#CertificateStatusResponse.ProtoMessage>)
   - [func \(x \*CertificateStatusResponse\) ProtoReflect\(\) protoreflect.Message](<#CertificateStatusResponse.ProtoReflect>)
   - [func \(x \*CertificateStatusResponse\) Reset\(\)](<#CertificateStatusResponse.Reset>)
@@ -384,6 +388,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(m \*CertificatesResponse\) GetMessageDescription\(\) \*api.MessageDescription](<#CertificatesResponse.GetMessageDescription>)
   - [func \(x \*CertificatesResponse\) GetNextPage\(\) \*NextPage](<#CertificatesResponse.GetNextPage>)
   - [func \(msg \*CertificatesResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#CertificatesResponse.MarshalJSON>)
+  - [func \(r \*CertificatesResponse\) Print\(w io.Writer\)](<#CertificatesResponse.Print>)
   - [func \(\*CertificatesResponse\) ProtoMessage\(\)](<#CertificatesResponse.ProtoMessage>)
   - [func \(x \*CertificatesResponse\) ProtoReflect\(\) protoreflect.Message](<#CertificatesResponse.ProtoReflect>)
   - [func \(x \*CertificatesResponse\) Reset\(\)](<#CertificatesResponse.Reset>)
@@ -429,6 +434,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*Crl\) GetPem\(\) string](<#Crl.GetPem>)
   - [func \(x \*Crl\) GetThisUpdate\(\) string](<#Crl.GetThisUpdate>)
   - [func \(msg \*Crl\) MarshalJSON\(\) \(\[\]byte, error\)](<#Crl.MarshalJSON>)
+  - [func \(r \*Crl\) Print\(w io.Writer\)](<#Crl.Print>)
   - [func \(\*Crl\) ProtoMessage\(\)](<#Crl.ProtoMessage>)
   - [func \(x \*Crl\) ProtoReflect\(\) protoreflect.Message](<#Crl.ProtoReflect>)
   - [func \(x \*Crl\) Reset\(\)](<#Crl.Reset>)
@@ -439,6 +445,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*CrlResponse\) GetCrl\(\) \*Crl](<#CrlResponse.GetCrl>)
   - [func \(m \*CrlResponse\) GetMessageDescription\(\) \*api.MessageDescription](<#CrlResponse.GetMessageDescription>)
   - [func \(msg \*CrlResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#CrlResponse.MarshalJSON>)
+  - [func \(r \*CrlResponse\) Print\(w io.Writer\)](<#CrlResponse.Print>)
   - [func \(\*CrlResponse\) ProtoMessage\(\)](<#CrlResponse.ProtoMessage>)
   - [func \(x \*CrlResponse\) ProtoReflect\(\) protoreflect.Message](<#CrlResponse.ProtoReflect>)
   - [func \(x \*CrlResponse\) Reset\(\)](<#CrlResponse.Reset>)
@@ -449,6 +456,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*CrlsResponse\) GetCrls\(\) \[\]\*Crl](<#CrlsResponse.GetCrls>)
   - [func \(m \*CrlsResponse\) GetMessageDescription\(\) \*api.MessageDescription](<#CrlsResponse.GetMessageDescription>)
   - [func \(msg \*CrlsResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#CrlsResponse.MarshalJSON>)
+  - [func \(r \*CrlsResponse\) Print\(w io.Writer\)](<#CrlsResponse.Print>)
   - [func \(\*CrlsResponse\) ProtoMessage\(\)](<#CrlsResponse.ProtoMessage>)
   - [func \(x \*CrlsResponse\) ProtoReflect\(\) protoreflect.Message](<#CrlsResponse.ProtoReflect>)
   - [func \(x \*CrlsResponse\) Reset\(\)](<#CrlsResponse.Reset>)
@@ -798,6 +806,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*Issuer\) GetType\(\) AuthorityType\_Enum](<#Issuer.GetType>)
   - [func \(x \*Issuer\) GetUpdatedAt\(\) string](<#Issuer.GetUpdatedAt>)
   - [func \(msg \*Issuer\) MarshalJSON\(\) \(\[\]byte, error\)](<#Issuer.MarshalJSON>)
+  - [func \(r \*Issuer\) Print\(w io.Writer\)](<#Issuer.Print>)
   - [func \(\*Issuer\) ProtoMessage\(\)](<#Issuer.ProtoMessage>)
   - [func \(x \*Issuer\) ProtoReflect\(\) protoreflect.Message](<#Issuer.ProtoReflect>)
   - [func \(x \*Issuer\) Reset\(\)](<#Issuer.Reset>)
@@ -837,6 +846,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*IssuerInfo\) GetSubject\(\) string](<#IssuerInfo.GetSubject>)
   - [func \(x \*IssuerInfo\) GetType\(\) AuthorityType\_Enum](<#IssuerInfo.GetType>)
   - [func \(msg \*IssuerInfo\) MarshalJSON\(\) \(\[\]byte, error\)](<#IssuerInfo.MarshalJSON>)
+  - [func \(r \*IssuerInfo\) Print\(w io.Writer\)](<#IssuerInfo.Print>)
   - [func \(\*IssuerInfo\) ProtoMessage\(\)](<#IssuerInfo.ProtoMessage>)
   - [func \(x \*IssuerInfo\) ProtoReflect\(\) protoreflect.Message](<#IssuerInfo.ProtoReflect>)
   - [func \(x \*IssuerInfo\) Reset\(\)](<#IssuerInfo.Reset>)
@@ -890,6 +900,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(m \*IssuersResponse\) GetMessageDescription\(\) \*api.MessageDescription](<#IssuersResponse.GetMessageDescription>)
   - [func \(x \*IssuersResponse\) GetNextPage\(\) \*NextPage](<#IssuersResponse.GetNextPage>)
   - [func \(msg \*IssuersResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#IssuersResponse.MarshalJSON>)
+  - [func \(r \*IssuersResponse\) Print\(w io.Writer\)](<#IssuersResponse.Print>)
   - [func \(\*IssuersResponse\) ProtoMessage\(\)](<#IssuersResponse.ProtoMessage>)
   - [func \(x \*IssuersResponse\) ProtoReflect\(\) protoreflect.Message](<#IssuersResponse.ProtoReflect>)
   - [func \(x \*IssuersResponse\) Reset\(\)](<#IssuersResponse.Reset>)
@@ -1207,6 +1218,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*ProfilesResponse\) GetNextPage\(\) \*NextPage](<#ProfilesResponse.GetNextPage>)
   - [func \(x \*ProfilesResponse\) GetProfiles\(\) \[\]\*CertProfile](<#ProfilesResponse.GetProfiles>)
   - [func \(msg \*ProfilesResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#ProfilesResponse.MarshalJSON>)
+  - [func \(r \*ProfilesResponse\) Print\(w io.Writer\)](<#ProfilesResponse.Print>)
   - [func \(\*ProfilesResponse\) ProtoMessage\(\)](<#ProfilesResponse.ProtoMessage>)
   - [func \(x \*ProfilesResponse\) ProtoReflect\(\) protoreflect.Message](<#ProfilesResponse.ProtoReflect>)
   - [func \(x \*ProfilesResponse\) Reset\(\)](<#ProfilesResponse.Reset>)
@@ -1391,6 +1403,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*RevokedCertificate\) GetReasonText\(\) string](<#RevokedCertificate.GetReasonText>)
   - [func \(x \*RevokedCertificate\) GetRevokedAt\(\) string](<#RevokedCertificate.GetRevokedAt>)
   - [func \(msg \*RevokedCertificate\) MarshalJSON\(\) \(\[\]byte, error\)](<#RevokedCertificate.MarshalJSON>)
+  - [func \(r \*RevokedCertificate\) Print\(w io.Writer\)](<#RevokedCertificate.Print>)
   - [func \(\*RevokedCertificate\) ProtoMessage\(\)](<#RevokedCertificate.ProtoMessage>)
   - [func \(x \*RevokedCertificate\) ProtoReflect\(\) protoreflect.Message](<#RevokedCertificate.ProtoReflect>)
   - [func \(x \*RevokedCertificate\) Reset\(\)](<#RevokedCertificate.Reset>)
@@ -1401,6 +1414,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(m \*RevokedCertificateResponse\) GetMessageDescription\(\) \*api.MessageDescription](<#RevokedCertificateResponse.GetMessageDescription>)
   - [func \(x \*RevokedCertificateResponse\) GetRevoked\(\) \*RevokedCertificate](<#RevokedCertificateResponse.GetRevoked>)
   - [func \(msg \*RevokedCertificateResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#RevokedCertificateResponse.MarshalJSON>)
+  - [func \(r \*RevokedCertificateResponse\) Print\(w io.Writer\)](<#RevokedCertificateResponse.Print>)
   - [func \(\*RevokedCertificateResponse\) ProtoMessage\(\)](<#RevokedCertificateResponse.ProtoMessage>)
   - [func \(x \*RevokedCertificateResponse\) ProtoReflect\(\) protoreflect.Message](<#RevokedCertificateResponse.ProtoReflect>)
   - [func \(x \*RevokedCertificateResponse\) Reset\(\)](<#RevokedCertificateResponse.Reset>)
@@ -1412,6 +1426,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*RevokedCertificatesResponse\) GetNextPage\(\) \*NextPage](<#RevokedCertificatesResponse.GetNextPage>)
   - [func \(x \*RevokedCertificatesResponse\) GetRevokedCertificates\(\) \[\]\*RevokedCertificate](<#RevokedCertificatesResponse.GetRevokedCertificates>)
   - [func \(msg \*RevokedCertificatesResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#RevokedCertificatesResponse.MarshalJSON>)
+  - [func \(r \*RevokedCertificatesResponse\) Print\(w io.Writer\)](<#RevokedCertificatesResponse.Print>)
   - [func \(\*RevokedCertificatesResponse\) ProtoMessage\(\)](<#RevokedCertificatesResponse.ProtoMessage>)
   - [func \(x \*RevokedCertificatesResponse\) ProtoReflect\(\) protoreflect.Message](<#RevokedCertificatesResponse.ProtoReflect>)
   - [func \(x \*RevokedCertificatesResponse\) Reset\(\)](<#RevokedCertificatesResponse.Reset>)
@@ -1495,6 +1510,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*RootCertificate\) GetSubject\(\) string](<#RootCertificate.GetSubject>)
   - [func \(x \*RootCertificate\) GetTrust\(\) Trust\_Enum](<#RootCertificate.GetTrust>)
   - [func \(msg \*RootCertificate\) MarshalJSON\(\) \(\[\]byte, error\)](<#RootCertificate.MarshalJSON>)
+  - [func \(r \*RootCertificate\) Print\(w io.Writer\)](<#RootCertificate.Print>)
   - [func \(\*RootCertificate\) ProtoMessage\(\)](<#RootCertificate.ProtoMessage>)
   - [func \(x \*RootCertificate\) ProtoReflect\(\) protoreflect.Message](<#RootCertificate.ProtoReflect>)
   - [func \(x \*RootCertificate\) Reset\(\)](<#RootCertificate.Reset>)
@@ -1506,6 +1522,7 @@ import "github.com/effective-security/trustyca/api/pb"
   - [func \(x \*RootsResponse\) GetNextPage\(\) \*NextPage](<#RootsResponse.GetNextPage>)
   - [func \(x \*RootsResponse\) GetRoots\(\) \[\]\*RootCertificate](<#RootsResponse.GetRoots>)
   - [func \(msg \*RootsResponse\) MarshalJSON\(\) \(\[\]byte, error\)](<#RootsResponse.MarshalJSON>)
+  - [func \(r \*RootsResponse\) Print\(w io.Writer\)](<#RootsResponse.Print>)
   - [func \(\*RootsResponse\) ProtoMessage\(\)](<#RootsResponse.ProtoMessage>)
   - [func \(x \*RootsResponse\) ProtoReflect\(\) protoreflect.Message](<#RootsResponse.ProtoReflect>)
   - [func \(x \*RootsResponse\) Reset\(\)](<#RootsResponse.Reset>)
@@ -12877,6 +12894,15 @@ func (msg *CertProfile) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="CertProfile.Print"></a>
+### func \(\*CertProfile\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L496>)
+
+```go
+func (r *CertProfile) Print(w io.Writer)
+```
+
+
+
 <a name="CertProfile.ProtoMessage"></a>
 ### func \(\*CertProfile\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/pkix.pb.go#L1698>)
 
@@ -13161,6 +13187,15 @@ func (msg *Certificate) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="Certificate.Print"></a>
+### func \(\*Certificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L576>)
+
+```go
+func (r *Certificate) Print(w io.Writer)
+```
+
+
+
 <a name="Certificate.ProtoMessage"></a>
 ### func \(\*Certificate\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/pkix.pb.go#L814>)
 
@@ -13444,6 +13479,15 @@ func (msg *CertificateResponse) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="CertificateResponse.Print"></a>
+### func \(\*CertificateResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L602>)
+
+```go
+func (r *CertificateResponse) Print(w io.Writer)
+```
+
+
+
 <a name="CertificateResponse.ProtoMessage"></a>
 ### func \(\*CertificateResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1895>)
 
@@ -13667,6 +13711,15 @@ func (msg *CertificateStatusResponse) MarshalJSON() ([]byte, error)
 ```
 
 MarshalJSON implements json.Marshaler
+
+<a name="CertificateStatusResponse.Print"></a>
+### func \(\*CertificateStatusResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L730>)
+
+```go
+func (r *CertificateStatusResponse) Print(w io.Writer)
+```
+
+
 
 <a name="CertificateStatusResponse.ProtoMessage"></a>
 ### func \(\*CertificateStatusResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis.pb.go#L331>)
@@ -14003,6 +14056,15 @@ func (msg *CertificatesResponse) MarshalJSON() ([]byte, error)
 ```
 
 MarshalJSON implements json.Marshaler
+
+<a name="CertificatesResponse.Print"></a>
+### func \(\*CertificatesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L608>)
+
+```go
+func (r *CertificatesResponse) Print(w io.Writer)
+```
+
+
 
 <a name="CertificatesResponse.ProtoMessage"></a>
 ### func \(\*CertificatesResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1943>)
@@ -14452,6 +14514,15 @@ func (msg *Crl) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="Crl.Print"></a>
+### func \(\*Crl\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L672>)
+
+```go
+func (r *Crl) Print(w io.Writer)
+```
+
+
+
 <a name="Crl.ProtoMessage"></a>
 ### func \(\*Crl\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/pkix.pb.go#L1077>)
 
@@ -14545,6 +14616,15 @@ func (msg *CrlResponse) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="CrlResponse.Print"></a>
+### func \(\*CrlResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L688>)
+
+```go
+func (r *CrlResponse) Print(w io.Writer)
+```
+
+
+
 <a name="CrlResponse.ProtoMessage"></a>
 ### func \(\*CrlResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2272>)
 
@@ -14637,6 +14717,15 @@ func (msg *CrlsResponse) MarshalJSON() ([]byte, error)
 ```
 
 MarshalJSON implements json.Marshaler
+
+<a name="CrlsResponse.Print"></a>
+### func \(\*CrlsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L694>)
+
+```go
+func (r *CrlsResponse) Print(w io.Writer)
+```
+
+
 
 <a name="CrlsResponse.ProtoMessage"></a>
 ### func \(\*CrlsResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2227>)
@@ -18131,6 +18220,15 @@ func (msg *Issuer) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="Issuer.Print"></a>
+### func \(\*Issuer\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L434>)
+
+```go
+func (r *Issuer) Print(w io.Writer)
+```
+
+
+
 <a name="Issuer.ProtoMessage"></a>
 ### func \(\*Issuer\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/pkix.pb.go#L2195>)
 
@@ -18535,6 +18633,15 @@ func (msg *IssuerInfo) MarshalJSON() ([]byte, error)
 ```
 
 MarshalJSON implements json.Marshaler
+
+<a name="IssuerInfo.Print"></a>
+### func \(\*IssuerInfo\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L713>)
+
+```go
+func (r *IssuerInfo) Print(w io.Writer)
+```
+
+
 
 <a name="IssuerInfo.ProtoMessage"></a>
 ### func \(\*IssuerInfo\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/cis.pb.go#L117>)
@@ -19047,6 +19154,15 @@ func (msg *IssuersResponse) MarshalJSON() ([]byte, error)
 ```
 
 MarshalJSON implements json.Marshaler
+
+<a name="IssuersResponse.Print"></a>
+### func \(\*IssuersResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L475>)
+
+```go
+func (r *IssuersResponse) Print(w io.Writer)
+```
+
+
 
 <a name="IssuersResponse.ProtoMessage"></a>
 ### func \(\*IssuersResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L594>)
@@ -22255,6 +22371,15 @@ func (msg *ProfilesResponse) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="ProfilesResponse.Print"></a>
+### func \(\*ProfilesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L522>)
+
+```go
+func (r *ProfilesResponse) Print(w io.Writer)
+```
+
+
+
 <a name="ProfilesResponse.ProtoMessage"></a>
 ### func \(\*ProfilesResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1144>)
 
@@ -24086,6 +24211,15 @@ func (msg *RevokedCertificate) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="RevokedCertificate.Print"></a>
+### func \(\*RevokedCertificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L630>)
+
+```go
+func (r *RevokedCertificate) Print(w io.Writer)
+```
+
+
+
 <a name="RevokedCertificate.ProtoMessage"></a>
 ### func \(\*RevokedCertificate\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/pkix.pb.go#L992>)
 
@@ -24178,6 +24312,15 @@ func (msg *RevokedCertificateResponse) MarshalJSON() ([]byte, error)
 ```
 
 MarshalJSON implements json.Marshaler
+
+<a name="RevokedCertificateResponse.Print"></a>
+### func \(\*RevokedCertificateResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L642>)
+
+```go
+func (r *RevokedCertificateResponse) Print(w io.Writer)
+```
+
+
 
 <a name="RevokedCertificateResponse.ProtoMessage"></a>
 ### func \(\*RevokedCertificateResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L1995>)
@@ -24283,6 +24426,15 @@ func (msg *RevokedCertificatesResponse) MarshalJSON() ([]byte, error)
 ```
 
 MarshalJSON implements json.Marshaler
+
+<a name="RevokedCertificatesResponse.Print"></a>
+### func \(\*RevokedCertificatesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L648>)
+
+```go
+func (r *RevokedCertificatesResponse) Print(w io.Writer)
+```
+
+
 
 <a name="RevokedCertificatesResponse.ProtoMessage"></a>
 ### func \(\*RevokedCertificatesResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L2043>)
@@ -25096,6 +25248,15 @@ func (msg *RootCertificate) MarshalJSON() ([]byte, error)
 
 MarshalJSON implements json.Marshaler
 
+<a name="RootCertificate.Print"></a>
+### func \(\*RootCertificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L542>)
+
+```go
+func (r *RootCertificate) Print(w io.Writer)
+```
+
+
+
 <a name="RootCertificate.ProtoMessage"></a>
 ### func \(\*RootCertificate\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/pkix.pb.go#L669>)
 
@@ -25200,6 +25361,15 @@ func (msg *RootsResponse) MarshalJSON() ([]byte, error)
 ```
 
 MarshalJSON implements json.Marshaler
+
+<a name="RootsResponse.Print"></a>
+### func \(\*RootsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L558>)
+
+```go
+func (r *RootsResponse) Print(w io.Writer)
+```
+
+
 
 <a name="RootsResponse.ProtoMessage"></a>
 ### func \(\*RootsResponse\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/api/pb/ca.pb.go#L859>)

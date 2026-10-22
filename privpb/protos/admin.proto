@@ -8,6 +8,8 @@ import "google/protobuf/empty.proto";
 import "es/api/annotations.proto";
 import "types.proto";
 import "orgs.proto";
+import "pkix.proto";
+import "ca.proto";
 
 service Admin {
     // ListOrgs lists orgs
@@ -64,6 +66,29 @@ service Admin {
         };
         option (es.api.cli_cmd) = "project list";
     }
+
+    // ListIssuers lists the issuers of every org and of the platform, newest
+    // first, for support staff; the tenant view of an org is CA.ListIssuers.
+    // Private key material is never returned.
+    rpc ListIssuers(ListIssuersRequest) returns (pb.IssuersResponse) {
+        option (google.api.http) = {
+            post: "/privpb.Admin/ListIssuers",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "ca issuer list";
+    }
+
+    // ListCertificates lists the certificates of every org and of the
+    // platform, newest first, for support staff; the tenant view of an org
+    // is CA.ListCertificates
+    rpc ListCertificates(ListCertificatesRequest)
+        returns (pb.CertificatesResponse) {
+        option (google.api.http) = {
+            post: "/privpb.Admin/ListCertificates",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "ca cert list";
+    }
 }
 
 // ListOrgsRequest specifies list orgs request
@@ -102,4 +127,61 @@ message ListProjectsRequest {
     pb.ItemStatus.Enum Status = 4 [json_name = "Status"];
     // OrgID specifies optional org ID to filter by.
     string OrgID = 5 [json_name = "OrgID"];
+}
+
+// ListIssuersRequest specifies a paginated list of issuers across orgs
+message ListIssuersRequest {
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 1 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 2 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    string Cursor = 3 [json_name = "Cursor"];
+    // OrgID limits the result to the org. Empty lists the issuers of every
+    // org and of the platform, or of the platform only with Platform.
+    string OrgID = 4 [json_name = "OrgID"];
+    // Platform limits the result to the platform issuers (no org) when
+    // OrgID is empty
+    bool Platform = 5 [json_name = "Platform"];
+    // ProjectID limits the result to the project; used with OrgID
+    string ProjectID = 6 [json_name = "ProjectID"];
+    // Label limits the result to the issuers with the label, in every scope
+    // the list covers
+    string Label = 7 [json_name = "Label"];
+    // Status filters by lifecycle status; Unknown returns all
+    pb.IssuerStatus.Enum Status = 8 [json_name = "Status"];
+    // Type filters by authority type; Unknown returns all
+    pb.AuthorityType.Enum Type = 9 [json_name = "Type"];
+}
+
+// ListCertificatesRequest specifies a paginated list of certificates across
+// orgs, newest first
+message ListCertificatesRequest {
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 1 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 2 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    string Cursor = 3 [json_name = "Cursor"];
+    // OrgID limits the result to the org. Empty lists the certificates of
+    // every org and of the platform, or of the platform only with Platform.
+    string OrgID = 4 [json_name = "OrgID"];
+    // Platform limits the result to the platform certificates (no org) when
+    // OrgID is empty
+    bool Platform = 5 [json_name = "Platform"];
+    // ProjectID limits the result to the project; used with OrgID
+    string ProjectID = 6 [json_name = "ProjectID"];
+    // IKID filters by issuer
+    string IKID = 7 [json_name = "IKID"];
+    // Profile filters by profile label
+    string Profile = 8 [json_name = "Profile"];
+    // Status filters by status; Unknown returns all
+    pb.CertificateStatus.Enum Status = 9 [json_name = "Status"];
+    // ExpiringBefore filters certificates with NotAfter before the time,
+    // in RFC3339 format
+    string ExpiringBefore = 10 [json_name = "ExpiringBefore"];
 }

@@ -56,6 +56,15 @@ Commands:
   api-key create                  create an API key; the secret is shown once
   api-key list                    list API keys
   api-key delete                  delete an API key
+  cert get                        get a certificate by ID, key identifier,
+                                  thumbprint or issuer and serial
+  cert status                     get the revocation status of a certificate
+  issuer get                      get the certificate chain and URLs of an
+                                  issuer by key identifier
+  crl get                         get the current CRL of an issuer by key
+                                  identifier
+  root list                       list the trust anchors of the platform,
+                                  or of an org
   version                         print remote server version
 
 Run "trustyca <command> --help" for more information on a command.

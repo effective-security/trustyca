@@ -56,7 +56,7 @@ type Cli struct {
 	TimeFormat string `name:"time" help:"Print time format: utc|local|ago" hidden:"" default:"utc"`
 
 	Timeout   int    `help:"Connection timeout"  default:"6"`
-	Cert      string `short:"c" help:"Client certificate file for mTLS"`
+	Cert      string `short:"c" help:"Client certificate file for mTLS; its identity replaces the auth token when none is stored"`
 	CertKey   string `short:"k" help:"Client certificate key for mTLS"`
 	TrustedCA string `short:"r" help:"Trusted CA store for server TLS"`
 
@@ -326,7 +326,12 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 			// } else {
 			err = clientCfg.LoadAuthTokenOrFromEnv("TRUSTYCA_AUTH_TOKEN")
 			if err != nil {
-				return nil, errors.WithMessage(err, "unable to load auth token")
+				// a client certificate is the identity of a backend caller
+				// (the trustyca-admin role): the token is optional with it
+				if cert == "" {
+					return nil, errors.WithMessage(err, "unable to load auth token")
+				}
+				logger.KV(xlog.DEBUG, "reason", "no_auth_token", "identity", "client_certificate")
 			}
 			//}
 		}
@@ -463,6 +468,37 @@ func (c *Cli) OrgsClient() (pb.OrgsServer, error) {
 		return nil, err
 	}
 	return proxypb.NewOrgsClient(r.Conn(), r.Opts()), nil
+}
+
+// CISClient returns the client of the Certificate Information Service,
+// the public, read-only side of the CA: it needs no token
+func (c *Cli) CISClient() (pb.CISServer, error) {
+	if c.HTTP {
+		h, err := c.HTTPClient(true)
+		if err != nil {
+			return nil, err
+		}
+		return proxypb.NewHTTPCISClient(h), nil
+	}
+	r, err := c.RPCClient(true)
+	if err != nil {
+		return nil, err
+	}
+	return proxypb.NewCISClient(r.Conn(), r.Opts()), nil
+}
+
+// CAClient returns the CA client of the connection. The CA API is served
+// by the backend listener over gRPC only, to the trustyca-admin identity of
+// the client certificate (--cert, --cert-key).
+func (c *Cli) CAClient() (pb.CAServer, error) {
+	if c.HTTP {
+		return nil, errors.New("CA endpoint is allowed only over gRPC")
+	}
+	r, err := c.RPCClient(false)
+	if err != nil {
+		return nil, err
+	}
+	return proxypb.NewCAClient(r.Conn(), r.Opts()), nil
 }
 
 // AdminClient returns Admin client from connection

@@ -76,4 +76,14 @@ var methods = map[string]*MethodInfo{
 		Allocator: func() any { return new(ListProjectsRequest) },
 		CliCmd:    "project list",
 	},
+
+	Admin_ListIssuers_FullMethodName: {
+		Allocator: func() any { return new(ListIssuersRequest) },
+		CliCmd:    "ca issuer list",
+	},
+
+	Admin_ListCertificates_FullMethodName: {
+		Allocator: func() any { return new(ListCertificatesRequest) },
+		CliCmd:    "ca cert list",
+	},
 }

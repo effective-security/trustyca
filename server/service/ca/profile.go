@@ -6,7 +6,7 @@ import (
 
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
-	core "github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/events"
@@ -43,7 +43,7 @@ func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRe
 	if len(def.IssuerLabel) > model.MaxLenForLabel {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid issuer label length")
 	}
-	if _, err := core.ProfileFromPb(def); err != nil {
+	if _, err := pbconv.ProfileFromPb(def); err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
 	orgID, err := s.tenantOrg(ctx, req.OrgID)

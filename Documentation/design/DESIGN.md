@@ -397,6 +397,12 @@ records where the CRL was uploaded when external publishing is enabled.
    The URL templates of file issuers use `:ISSUER_ID`, because the config
    loader expands `${...}` as environment variables.
 2. **Tenant issuers** are created through `pb.CA` and live only in the DB.
+   The first issuing CA of an org is signed by a platform intermediate that
+   allows a CA profile: in `etc/dev/ca-config.local.yaml` the L1 CA
+   `trusty.l1` (path length 1) lists `tenant_ca` in its `allowed_profiles`,
+   while the L2 `trusty.svc` has path length zero and signs no CA.
+   `trustycactl ca org bootstrap` registers it and copies the template
+   profiles (section 6).
 
 The CA does not keep one `authority.Authority`: that registry is keyed by
 label, and the labels of different orgs, and of different projects of one
@@ -496,8 +502,11 @@ Resolution at `SignCertificate(OrgID, ProjectID, Profile, IssuerLabel)`:
 An inactive profile is not found and does not fall back to the org scope.
 Platform profiles are never visible to tenants; the platform scope resolves
 only for the parent of a tenant issuer. Tenant onboarding copies a set of
-template profiles into the org (a CTL command), which keeps tenant
-configuration explicit and auditable.
+template profiles into the org (`trustycactl ca org bootstrap --org <id>
+--parent <platform issuer> --templates <dir>`: one YAML profile per file,
+named after its label; a template without `issuer_label` binds to the new
+issuing CA, one bound to `*` is listed in the allowed profiles of the
+issuer), which keeps tenant configuration explicit and auditable.
 
 The registry caches a resolution under the scope and label of the request,
 for `ca.issuer_cache_ttl`, and only resolutions that succeed; a request for
@@ -592,7 +601,8 @@ Tenant requests carry no `OrgID`; the server takes the org from the token.
 `Auth.SelectOrg(OrgID)` switches the org and returns the new token. The CLI
 maps these to `auth org`, `auth allowed`, `auth scope`, `org ...`,
 `member ...` (org-wide grants), `project ...` / `project member ...` and
-`api-key ...`.
+`api-key ...`. Its read-only `cert get|status`, `issuer get`, `crl get` and
+`root list` commands read the CIS (section 9.3) without a token.
 
 ### 9.2 CA (`api/pb/protos/ca.proto`)
 
@@ -614,6 +624,12 @@ matching `ca:*`/`certs:*` scopes so the
 same `CheckAccess` applies when a user token or an API key reaches the CA
 directly. Conventions: string IDs, enum wrappers,
 `Limit/Offset/Cursor` plus `NextPage` on every `List`, no HTTP annotations.
+
+The operator drives the CA with `trustycactl ca issuer|profile|root|cert|crl
+...` and `ca org bootstrap` over the backend listener, with the
+`trustyca-admin` client certificate, naming the org of every request;
+`privpb.Admin.ListIssuers` and `ListCertificates` are the support lists
+across orgs (`ca issuer list` and `ca cert list` without `--org`).
 
 ### 9.3 CIS (`api/pb/protos/cis.proto`)
 
@@ -707,7 +723,8 @@ Metrics follow `internal/metricskey`: `ca_sign_total{profile,org}`,
 - API key rotation (a second secret with an overlap window) and scoped user
   tokens minted from the UI.
 - Per-key rate limits and last-used reporting in `ListAPIKeys`.
-- `privpb.Admin` support views across orgs (`ListProjects`, `ListMemberships`).
+- `privpb.Admin` support views across orgs: `ListMemberships` (`ListProjects`,
+  `ListIssuers` and `ListCertificates` exist).
 - Certificate hold removal and CRL delta support.
 - Declarative partitioning of `certificate`/`revoked` once a tenant exceeds
   roughly 100M rows.
