@@ -11,10 +11,13 @@ import (
 )
 
 const (
-	// WFEServerName specifies server name for Web Front End
-	WFEServerName     = "wfe"
+	// WFEServerName is the listener of users and API keys: the Web Front
+	// End, with the token APIs, the CIS and the CA management
+	WFEServerName = "wfe"
+	// BackendServerName is the listener of the service identities over
+	// mTLS: the signing plane (the backend service), the CA of the RA and
+	// the operator, and the Admin API (DESIGN.md section 2.1)
 	BackendServerName = "backend"
-	RouterServerName  = "router"
 	// AIAServerName is the plain HTTP listener of the Authority Information
 	// Access service: the AIA, CRL and OCSP routes of the issued certificates
 	AIAServerName = "aia"
@@ -56,9 +59,6 @@ type Configuration struct {
 	// HTTPServers specifies a list of servers that expose HTTP or gRPC services
 	HTTPServers map[string]*gserver.Config `json:"servers" yaml:"servers"`
 
-	// Client specifies configurations for the client to connect to the cluster
-	Client client.Config `json:"client" yaml:"client"`
-
 	// Tasks specifies array of tasks
 	Tasks []Task `json:"tasks" yaml:"tasks"`
 
@@ -73,6 +73,10 @@ type Configuration struct {
 
 	// AIA specifies the Authority Information Access service configuration
 	AIA AIA `json:"aia" yaml:"aia"`
+
+	// Clients specifies the named service clients a process dials other
+	// listeners with, one per identity (DESIGN.md section 2.2)
+	Clients []client.Config `json:"clients" yaml:"clients"`
 }
 
 // Service specifies the basic service info
@@ -193,15 +197,10 @@ type CA struct {
 // AIA specifies the Authority Information Access service configuration:
 // the public, read-only service over plain HTTP that serves the issuer
 // certificates, CRLs and OCSP responses the issued certificates point at.
-// It holds no keys: OCSP requests are forwarded to the CA over the backend
-// gRPC client (`client.server_url.backend`).
+// It holds no keys: OCSP requests are forwarded to the backend service, in
+// process when it runs in the same process, else with the `aia` service
+// client (`clients`, `server_url.backend`).
 type AIA struct {
-	// ClientTLS specifies the TLS certificate the AIA presents to the CA
-	// backend, mapped to the `trustyca-aia` role by the backend listener
-	// (`spiffe://trustyca/aia`). Empty uses the `client.client_tls`
-	// certificate.
-	ClientTLS gserver.TLSInfo `json:"client_tls,omitempty" yaml:"client_tls,omitempty"`
-
 	// OcspCacheSize is the number of OCSP responses kept in memory, keyed by
 	// the hash of the request and served until the NextUpdate of the
 	// response; the least recently used response is evicted first. The

@@ -13,22 +13,42 @@ import (
 	"github.com/effective-security/porto/pkg/tlsconfig"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/api/pb/proxypb"
+	"github.com/effective-security/trustyca/privpb"
+	privproxypb "github.com/effective-security/trustyca/privpb/proxypb"
 	"github.com/effective-security/x/fileutil/resolve"
 )
 
 //go:generate mockgen -source=factory.go -destination=../../mocks/mockclient/client_mock.gen.go -package mockclient
 
-// UserAgent is the user agent for the client
 const (
-	UserAgentWfe = "trustyca-wfe"
+	// UserAgentWfe is the user agent of the clients of the service
+	UserAgentWfe = "trustyca"
+	// ClientNameDefault is the client of a process that has a single
+	// identity, such as a tool
+	ClientNameDefault = "default"
+	// ClientNameAIA is the client the AIA service forwards OCSP requests to
+	// the backend with: the trustyca-aia identity
+	ClientNameAIA = "aia"
+	// ClientNameCA is the client the CA service of a process without the
+	// backend service forwards the key operations with: the identity of the
+	// WFE (trustyca-peer)
+	ClientNameCA = "ca"
 )
 
-// Config specifies configurations for the client to connect to the cluster
+// Config specifies a named service client: the certificate it presents and
+// the URLs of the listeners it dials. A process holds one client per
+// identity it calls other listeners with (DESIGN.md section 2.2).
 type Config struct {
-	// ClientTLS describes the TLS certs used to connect to the cluster
+	// Name is the name the services select the client by, unique in the
+	// `clients` list
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+
+	// ClientTLS describes the TLS certificate the client presents and the
+	// roots it trusts
 	ClientTLS gserver.TLSInfo `json:"client_tls,omitempty" yaml:"client_tls,omitempty"`
 
-	// ServerURL specifies URLs for each server
+	// ServerURL specifies the URL of each listener the client dials, by
+	// listener name (wfe, backend)
 	ServerURL map[string]string `json:"server_url,omitempty" yaml:"server_url,omitempty"`
 
 	// DialTimeout is the timeout for failing to establish a connection.
@@ -46,16 +66,24 @@ type Config struct {
 	EnableCNA bool `json:"enable_cna,omitempty" yaml:"enable_cna,omitempty"`
 }
 
-// Factory specifies interface to create Client
+// Factory creates the gRPC clients of the services: every method dials the
+// listener named server with the TLS identity and settings of the named
+// client, and returns the closer of the connection
 type Factory interface {
 	// StatusClient returns Status client
-	StatusClient(svc string, ops ...Option) (pb.StatusServer, io.Closer, error)
+	StatusClient(clientName, server string, ops ...Option) (pb.StatusServer, io.Closer, error)
 
 	// OrgsClient returns Orgs client
-	OrgsClient(svc string, ops ...Option) (pb.OrgsServer, io.Closer, error)
+	OrgsClient(clientName, server string, ops ...Option) (pb.OrgsServer, io.Closer, error)
 
 	// CAClient returns CA client
-	CAClient(svc string, ops ...Option) (pb.CAServer, io.Closer, error)
+	CAClient(clientName, server string, ops ...Option) (pb.CAServer, io.Closer, error)
+
+	// CISClient returns CIS client
+	CISClient(clientName, server string, ops ...Option) (pb.CISServer, io.Closer, error)
+
+	// BackendClient returns the client of the signing plane (privpb.Backend)
+	BackendClient(clientName, server string, ops ...Option) (privpb.BackendServer, io.Closer, error)
 }
 
 // Option configures how we set up the client
@@ -102,24 +130,35 @@ func WithAgent(agent string) Option {
 
 type factory struct {
 	dops options
-	cfg  Config
+	cfgs map[string]*Config
 }
 
-// NewFactory returns new Factory
-func NewFactory(cfg Config, ops ...Option) Factory {
+// NewFactory returns the Factory of the named clients; a client without a
+// name, or two clients with the same name, is an error
+func NewFactory(cfgs []Config, ops ...Option) (Factory, error) {
 	f := &factory{
-		cfg:  cfg,
+		cfgs: make(map[string]*Config, len(cfgs)),
 		dops: options{},
+	}
+	for i, cfg := range cfgs {
+		if cfg.Name == "" {
+			return nil, errors.Errorf("client %d has no name", i)
+		}
+		if _, ok := f.cfgs[cfg.Name]; ok {
+			return nil, errors.Errorf("duplicate client: %s", cfg.Name)
+		}
+		f.cfgs[cfg.Name] = &cfg
 	}
 
 	for _, op := range ops {
 		op.apply(&f.dops)
 	}
 
-	return f
+	return f, nil
 }
 
-func (f *factory) NewClient(svc string, ops ...Option) (*rpcclient.Client, error) {
+// NewClient dials the listener named server with the named client
+func (f *factory) NewClient(clientName, server string, ops ...Option) (*rpcclient.Client, error) {
 	var err error
 
 	dops := f.dops
@@ -127,9 +166,14 @@ func (f *factory) NewClient(svc string, ops ...Option) (*rpcclient.Client, error
 		op.apply(&dops)
 	}
 
-	targetHost := f.cfg.ServerURL[svc]
+	cfg := f.cfgs[clientName]
+	if cfg == nil {
+		return nil, errors.Errorf("client %s not found", clientName)
+	}
+
+	targetHost := cfg.ServerURL[server]
 	if targetHost == "" {
-		return nil, errors.Errorf("service %s not found", svc)
+		return nil, errors.Errorf("server %s not found in client %s", server, clientName)
 	}
 
 	// the TLS configuration of the WithTLS option, else one built from the
@@ -137,10 +181,10 @@ func (f *factory) NewClient(svc string, ops ...Option) (*rpcclient.Client, error
 	tlscfg := dops.tlsCfg
 	if tlscfg == nil && strings.HasPrefix(targetHost, "https://") {
 		var tlsCert, tlsKey string
-		tlsCA := resolve.ExpandPath(f.cfg.ClientTLS.TrustedCAFile)
-		if !f.cfg.ClientTLS.Empty() {
-			tlsCert = resolve.ExpandPath(f.cfg.ClientTLS.CertFile)
-			tlsKey = resolve.ExpandPath(f.cfg.ClientTLS.KeyFile)
+		tlsCA := resolve.ExpandPath(cfg.ClientTLS.TrustedCAFile)
+		if !cfg.ClientTLS.Empty() {
+			tlsCert = resolve.ExpandPath(cfg.ClientTLS.CertFile)
+			tlsKey = resolve.ExpandPath(cfg.ClientTLS.KeyFile)
 		}
 
 		tlscfg, err = tlsconfig.NewClientTLSFromFiles(
@@ -153,9 +197,9 @@ func (f *factory) NewClient(svc string, ops ...Option) (*rpcclient.Client, error
 	}
 
 	clientCfg := &rpcclient.Config{
-		DialTimeout:          f.cfg.DialTimeout,
-		DialKeepAliveTimeout: f.cfg.DialKeepAliveTimeout,
-		DialKeepAliveTime:    f.cfg.DialKeepAliveTime,
+		DialTimeout:          cfg.DialTimeout,
+		DialKeepAliveTimeout: cfg.DialKeepAliveTimeout,
+		DialKeepAliveTime:    cfg.DialKeepAliveTime,
 		Endpoint:             targetHost,
 		TLS:                  tlscfg,
 		CallerIdentity:       dops.callerIdentity,
@@ -169,8 +213,8 @@ func (f *factory) NewClient(svc string, ops ...Option) (*rpcclient.Client, error
 }
 
 // StatusClient returns Status client from connection
-func (f *factory) StatusClient(svc string, ops ...Option) (pb.StatusServer, io.Closer, error) {
-	c, err := f.NewClient(svc, ops...)
+func (f *factory) StatusClient(clientName, server string, ops ...Option) (pb.StatusServer, io.Closer, error) {
+	c, err := f.NewClient(clientName, server, ops...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -178,8 +222,8 @@ func (f *factory) StatusClient(svc string, ops ...Option) (pb.StatusServer, io.C
 }
 
 // OrgsClient returns Orgs client from connection
-func (f *factory) OrgsClient(svc string, ops ...Option) (pb.OrgsServer, io.Closer, error) {
-	c, err := f.NewClient(svc, ops...)
+func (f *factory) OrgsClient(clientName, server string, ops ...Option) (pb.OrgsServer, io.Closer, error) {
+	c, err := f.NewClient(clientName, server, ops...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -187,10 +231,28 @@ func (f *factory) OrgsClient(svc string, ops ...Option) (pb.OrgsServer, io.Close
 }
 
 // CAClient returns CA client from connection
-func (f *factory) CAClient(svc string, ops ...Option) (pb.CAServer, io.Closer, error) {
-	c, err := f.NewClient(svc, ops...)
+func (f *factory) CAClient(clientName, server string, ops ...Option) (pb.CAServer, io.Closer, error) {
+	c, err := f.NewClient(clientName, server, ops...)
 	if err != nil {
 		return nil, nil, err
 	}
 	return proxypb.NewCAClient(c.Conn(), c.Opts()), c, nil
+}
+
+// CISClient returns CIS client from connection
+func (f *factory) CISClient(clientName, server string, ops ...Option) (pb.CISServer, io.Closer, error) {
+	c, err := f.NewClient(clientName, server, ops...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return proxypb.NewCISClient(c.Conn(), c.Opts()), c, nil
+}
+
+// BackendClient returns Backend client from connection
+func (f *factory) BackendClient(clientName, server string, ops ...Option) (privpb.BackendServer, io.Closer, error) {
+	c, err := f.NewClient(clientName, server, ops...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return privproxypb.NewBackendClient(c.Conn(), c.Opts()), c, nil
 }

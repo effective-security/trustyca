@@ -16,6 +16,7 @@ import (
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
+	"github.com/effective-security/trustyca/server/service/internal/caapi"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
 	"github.com/stretchr/testify/assert"
@@ -374,8 +375,10 @@ func TestService_PublishCrls(t *testing.T) {
 
 	_, err := svc.PublishCrls(admin, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA := &Service{db: tca.cadb}
+	noCA, noKeys := tca.noCA()
 	_, err = noCA.PublishCrls(admin, &pb.PublishCrlsRequest{})
+	assert.EqualError(t, err, "unavailable: CA is not configured")
+	_, err = noKeys.PublishCrls(admin, &pb.PublishCrlsRequest{})
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 	_, err = svc.PublishCrls(testCtx(orgAdminUser, ""), &pb.PublishCrlsRequest{})
 	assert.EqualError(t, err, "forbidden: org not selected")
@@ -434,7 +437,7 @@ func TestService_PublishCrls(t *testing.T) {
 	assert.Equal(t, crl.ID, evt.ReferenceID.String())
 	assert.Equal(t, "1", evt.OrgID.String())
 	assert.True(t, evt.ProjectID.IsZero())
-	assert.Equal(t, ServiceName, evt.Source.String())
+	assert.Equal(t, caapi.EventSource, evt.Source.String())
 	assert.Equal(t, testCallerEmail, evt.Email.String())
 	assert.Equal(t, `CRL 1 of issuer "`+tca.issuer.Subject+`" published`, evt.Description.String())
 

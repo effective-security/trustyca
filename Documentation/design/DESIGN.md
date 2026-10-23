@@ -7,18 +7,21 @@ Status: accepted design for v1. Companion documents:
 ## 1. Scope
 
 Trusty CA is a multi-tenant Certification Authority used as a backend by other
-products. Three services are built from this repo:
+products. These services are built from this repo:
 
-| Service             | Transport     | Exposure                                        | Purpose                                                              |
-| ------------------- | ------------- | ----------------------------------------------- | -------------------------------------------------------------------- |
-| CA (`pb.CA`)        | gRPC only     | backend network only                            | issuers, profiles, signing, revocation, CRL/OCSP signing             |
-| CIS (`pb.CIS`)      | gRPC and REST | HTTPS, authenticated callers of the `wfe`       | roots, issuer chains, certificate information and status, CRLs       |
-| AIA (binary routes) | REST only     | internet facing, plain HTTP, no authentication  | issuer certificates (AIA), CRL Distribution Points, OCSP responder   |
+| Service                       | Transport     | Exposure                                                                 | Purpose                                                                                     |
+| ----------------------------- | ------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| CA (`pb.CA`)                  | gRPC          | `wfe` for tenants (tokens, API keys); `backend` for service identities   | issuers, profiles, roots, certificates, revocation, CRLs: the management API of the CA      |
+| Backend (`privpb.Backend`)    | gRPC only     | `backend` network only, service identities over mTLS                     | the signing plane: issuer keys, certificate, CRL and OCSP signing                           |
+| CIS (`pb.CIS`)                | gRPC and REST | HTTPS, authenticated callers of the `wfe`                                | roots, issuer chains, certificate information and status, CRLs                              |
+| AIA (binary routes)           | REST only     | internet facing, plain HTTP, no authentication                           | issuer certificates (AIA), CRL Distribution Points, OCSP responder                          |
 
 Out of scope for this repo: Registration Authority (RA) and Validation Authority
-(VA). The RA is the only trusted caller of the CA. It authenticates end users,
-maps its own tenancy onto CA tenancy, enforces product policy, and calls
-`pb.CA` over mTLS.
+(VA). The RA authenticates end users, maps its own tenancy onto CA tenancy,
+enforces product policy, and calls `pb.CA` on the `backend` listener over
+mTLS. Tenants that manage their own CA (the Web UI, the CLI, API keys) call
+`pb.CA` on the `wfe` listener with their token; the WFE holds no issuer key
+and forwards the key operations to the backend (section 2.1).
 
 The access layer (login, users, orgs, projects, memberships, invites, events,
 `pb.Auth` and `pb.Orgs`) is part of this repo and is the foundation the CA
@@ -27,48 +30,137 @@ features build on. Its model is described in section 3.
 ## 2. Architecture
 
 ```
-                 internet                         backend network
-   ┌──────────┐   HTTPS    ┌──────────────┐  gRPC/mTLS  ┌──────────────┐
-   │ Clients  │──────────▶ │   RA / VA    │───────────▶ │  CA service  │
-   └──────────┘            │ (other repo) │             │  pb.CA       │
-                           └──────────────┘             └──────┬───────┘
-   ┌──────────┐   HTTP     ┌──────────────┐  gRPC/mTLS         │
-   │ TLS      │──────────▶ │ AIA service  │──SignOCSP──────────┘
-   │ verifiers│  CRL/OCSP  │ REST         │                    │
-   └──────────┘            └──────┬───────┘                    │
-   ┌──────────┐   HTTPS    ┌──────┴───────┐                    │
-   │ Users,   │──────────▶ │ CIS service  │                    │
-   │ CLI      │  token     │ pb.CIS (wfe) │                    │
-   └──────────┘            └──────┬───────┘                    │
-                                  │ read-only                  │ read/write
-                                  ▼                            ▼
-                           ┌─────────────────────────────────────────┐
-                           │ PostgreSQL trustycadb (schema trustyca) │
-                           └─────────────────────────────────────────┘
-                                                               │
-                                                               ▼
-                                         ┌─────────────────────────────────┐
-                                         │ crypto providers: AWS KMS, GCP  │
-                                         │ KMS, PKCS#11, inmem (dev)       │
-                                         └─────────────────────────────────┘
+          internet / tenant network                     backend network
+ ┌────────────┐ HTTPS  ┌───────────────────────┐ gRPC/mTLS ┌───────────────────────┐
+ │ Users, UI, │──────▶ │ wfe: auth, orgs, ui,  │─────────▶ │ backend:              │
+ │ CLI, keys  │ token  │ cis, ca (no keys)     │ key ops   │ privpb.Backend, pb.CA,│
+ └────────────┘        └───────────┬───────────┘           │ privpb.Admin          │
+ ┌────────────┐ gRPC/mTLS, pb.CA   │                       │                       │
+ │ RA (other  │────────────────────┼─────────────────────▶ │                       │
+ │ repo)      │                    │                       │                       │
+ └────────────┘                    │                       │                       │
+ ┌────────────┐ HTTP   ┌───────────┴───────────┐ gRPC/mTLS │                       │
+ │ TLS        │──────▶ │ aia: cert, CRL, OCSP  │─────────▶ │                       │
+ │ verifiers  │        └───────────┬───────────┘ SignOCSP  └─────┬─────────────┬───┘
+ └────────────┘                    │ read, and management         │ read/write  │ sign
+                                   ▼ writes of the wfe            ▼             ▼
+                     ┌──────────────────────────────────────────────┐ ┌─────────────────┐
+                     │ PostgreSQL trustycadb (schema trustyca)      │ │ crypto providers│
+                     └──────────────────────────────────────────────┘ │ KMS, PKCS#11,   │
+                                                                      │ inmem (dev)     │
+                                                                      └─────────────────┘
 ```
 
-The three services are `gserver` services in this binary (`server/service/ca`,
-`server/service/cis`, `server/service/aia`) and are enabled per listener in
+The services are `gserver` services in this binary (`server/service/ca`,
+`server/service/backend`, `server/service/cis`, `server/service/aia`; the
+tenant checks the CA and backend services share are
+`server/service/internal/caapi`) and are enabled per listener in
 `etc/dev/trustyca-config.yaml`:
 
-- `backend` listener: `status`, `admin`, `ca`. mTLS with client cert auth.
-- `wfe` listener: `status`, `auth`, `orgs`, `ui`, `cis`. HTTPS; the CIS is
-  read-only and admits any authenticated caller.
+- `backend` listener: `status`, `admin`, `backend`, `ca`. mTLS: the TLS
+  identity map gives the service identities their roles (`trustyca-ra`,
+  `trustyca-aia`, `trustyca-admin`, `trustyca-peer`), and every path but
+  the status routes requires one of them; a path without a rule is
+  refused.
+- `wfe` listener: `status`, `auth`, `orgs`, `ui`, `cis`, `ca`. HTTPS for
+  users and API keys; a client certificate is verified when one is given,
+  but the listener maps no TLS identity, so no service role is reachable
+  there. The CIS is read-only and admits any authenticated caller.
 - `aia` listener: `status`, `aia`. Plain HTTP on its own port (8888 in the
   dev configuration), no TLS and no identity mapping: the AIA, CRL and OCSP
   URLs embedded in the certificates are fetched by verifiers that have not
   validated anything yet, so they cannot depend on the TLS listener or on
   its authorization, and the listener serves nothing else.
 
-Signing is done in process with `xpki/authority`. Private keys live in a
-`cryptoprov` provider and never leave it. Tasks (`server/tasks`) run CRL
-renewal and certificate status maintenance on a schedule.
+Signing is done in process with `xpki/authority`, by the `backend` service
+only. Private keys live in a `cryptoprov` provider and never leave it.
+Tasks (`server/tasks`) run CRL renewal and certificate status maintenance
+on a schedule.
+
+### 2.1 Signing plane
+
+The CA is split by key use, not by API. Network placement alone is not an
+authorization boundary: a caller inside the cluster can use the
+certificate of a pod. What the split buys is that only one process holds
+the rights to use the issuer keys (the KMS permissions, an HSM PIN, the
+data protection key of software issuer keys), that this process parses no
+input from the internet (no JWT or DPoP, OAuth callbacks, cookies, JSON
+gateway or UI), and that its listener denies by default. Public CAs expose
+their management and issuance APIs the same way and keep the issuing
+systems in a secure zone (the CA/B Forum Network and Certificate System
+Security Requirements).
+
+| Runs on the `backend` (`privpb.Backend`): a key or the signer's state                                               | Runs where `pb.CA` is called: the CA tables only                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RegisterIssuer`, `ImportIssuer`, `ActivateIssuer`, `UpdateIssuer` (key generation, import, destroy, the registry) | `GetIssuer`, `ListIssuers`, `RegisterRoot`, `ListRoots`                                                                                              |
+| `SignCertificate`, `PublishCrls`, `SignOCSP`                                                                        | `RegisterProfile`, `GetProfile`, `ListProfiles`, `DeleteProfile`                                                                                     |
+|                                                                                                                     | `GetCertificate`, `ListCertificates`, `UpdateCertificateLabel`, `RevokeCertificate`, `ListRevokedCertificates`, `GetCRL`                             |
+
+Every issuer mutation runs on the backend, even the archive transition
+that needs no key: the backend's issuer registry must see an issuer stop
+signing at once. `privpb.Backend` reuses the `pb` request and response
+messages of `pb.CA`, which carry `OrgID` and `ProjectID`; a backend method
+whose public request has no explicit scope gets its own message in
+`privpb`.
+
+The `ca` service holds no issuer registry and loads no crypto provider. It
+runs the management methods against the DB and calls `privpb.Backend` for
+the others with the same request: in process when the `backend` service
+runs in the same process (porto discovery), else over gRPC with the
+service client `ca` (section 2.2), whose certificate is the identity of the
+WFE (`trustyca-peer` in the dev configuration). The caller's context
+travels with the call: in process it is the same context; over gRPC the
+`x-trustyca-context` metadata that `authctx.NewTrustyCtx` adds to every
+outgoing call. The backend interceptor accepts a forwarded context only
+from `trustyca-peer`, authorizes it again with `authctx.CheckAccess` for
+the same `pb.CA` method, and runs the method as that caller, so the
+service checks (the project, the row's project, the parent of an issuer,
+the projects a list or a CRL publish covers) and the actor of the audit
+events are the end user's. Any other service identity acts as itself, and
+a forwarded context that does not parse fails the call.
+
+What the split does not do: the WFE mints the tokens, so a compromised WFE
+can act as any user and drive the backend for any tenant. The backend
+bounds that with what it resolves itself: the issuer, the profile and the
+tenant come from the DB, the profile limits win over the request, an issuer
+that is not Active does not sign, and serial numbers are its own. The
+planned least-privilege items (ROADMAP.md) tighten the rest: KMS rights on
+the backend's workload identity only, a data protection key for issuer keys
+that the WFE does not hold, separate DB roles, name constraints on tenant
+issuing CAs, and an allowlist of methods per service role in code.
+
+Profiles stay on the WFE, so the backend's registry learns of a profile
+change from the WFE: at once when both run in one process, otherwise after
+`ca.issuer_cache_ttl`, as for a change made by another instance (section
+5.1); an invalidation broadcast to every backend instance is planned.
+
+### 2.2 Deployments and service clients
+
+A pod runs the listeners of its role, and the same binary serves every
+role:
+
+| Role           | Listeners and services                                         | Holds                                                                                        | Tasks                       |
+| -------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------- |
+| web            | `wfe`: `status`, `auth`, `orgs`, `ui`, `cis`, `ca`              | the token signing key; no crypto provider, no `ca.bootstrap_config`                          | `cert_status`               |
+| signing        | `backend`: `status`, `admin`, `backend`, `ca`                  | the crypto providers, the platform bootstrap                                                  | `crl_renewal`, `cert_status` |
+| AIA            | `aia`: `status`, `aia`                                          | nothing but its client certificate                                                           | none                        |
+| all-in-one     | the three listeners                                            | everything; key operations and OCSP stay in process                                          | both                        |
+
+The exposure differs per deployment, not the topology. When an RA is the
+front end, the `wfe` is an internal dashboard and the RA calls `pb.CA` on
+the `backend`; in a multi-tenant deployment the `wfe` is public and tenants
+manage their CA through it. The `aia` is always public and the `backend`
+never is.
+
+A process that calls another one names a service client in `clients`
+(`client.Config`, `client.NewFactory`): a client has a name, the
+certificate it presents (`client_tls`) and the URLs of the listeners it
+dials, by listener name (`server_url`). A service dials with its own
+client, so that one process can hold several identities: `ca` (the WFE to
+the `backend`) and `aia` (the AIA to the `backend`, `SignOCSP` only). In
+production the client certificates and the roles they map to come from the
+deployment (a Kubernetes CA issues the pod certificates); the dev
+configuration reuses `trustyca_peer` for the WFE.
 
 ## 3. Tenancy, membership and authorization
 
@@ -216,11 +308,13 @@ scopes are `org:read`, `project:read`, `ca:read`, `ca:write`, `certs:read`,
    before, and `/pb.Auth/*` (login, `SelectOrg`, `RevokeToken`, discovery) is
    gated by the server's identity configuration, not by roles.
 2. Service identities (`trustyca-ra`, `trustyca-aia`, ...) bypass grants: they
-   pass tenant scope explicitly and authorized the end user themselves. On
-   the backend listener they come from mTLS: the backend interceptor builds
-   the caller context from the context the WFE forwards
-   (`x-trustyca-context`) when there is one, otherwise from the identity the
-   listener authenticated.
+   pass tenant scope explicitly and authorized the end user themselves. They
+   come from mTLS on the backend listener only; the `wfe` maps no TLS
+   identity. The backend interceptor acts as the identity the listener
+   authenticated, except for a call of the WFE (`trustyca-peer`) that
+   forwards its caller's context (`x-trustyca-context`): that context is
+   authorized again for the same `pb.CA` method and the call runs as the
+   end user (section 2.1).
 3. The org comes from the token; an explicit `OrgID` in a request must match
    it. `ProjectID` (the `ProjectRequester` interface) selects project scope,
    and the project must belong to the org and be active.
@@ -271,7 +365,7 @@ rules and back the CLI commands `auth allowed` and `auth scope`.
 | ------------------------------------------- | -------------------------------------------------------------------------- |
 | tenant / enterprise                         | `org`                                                                      |
 | team, cloud account, namespace, environment | `project` (alias is client chosen, e.g. the account ID)                    |
-| end-user identity and product roles         | RA responsibility; the CA sees `OrgID`, `ProjectID` and the RA's mTLS role |
+| end-user identity and product roles         | RA responsibility; the CA sees `OrgID`, `ProjectID` and the RA's mTLS role on the `backend` |
 
 ### 3.8 API keys
 
@@ -427,9 +521,11 @@ org, collide. The issuer registry of `internal/ca` resolves the issuer and
 the profile of every request in the scope of the request (section 6) and
 keeps the built `authority.Issuer` per issuer row ID, which is unique across
 orgs, in a cache bounded by size and by `ca.issuer_cache_ttl`; the
-resolutions of a scope and label are cached under the requested scope. A
-mutation made through the service invalidates its entries at once; one made
-by another instance is visible after the TTL. Profiles are registered on the
+resolutions of a scope and label are cached under the requested scope. The
+registry lives in the `backend` service (section 2.1). An issuer mutation,
+which always runs there, invalidates its entries at once, and so does a
+profile mutation of a `ca` service in the same process; one made by
+another instance is visible after the TTL. Profiles are registered on the
 issuer under a versioned name (the profile row ID and its `updated_at`), so
 one issuer serves the profiles of several scopes with equal labels, and a
 replaced profile is picked up without rebuilding the issuer.
@@ -550,8 +646,10 @@ the new issuer: platform, org-wide or the same project.
 ## 7. Signing flow
 
 ```
-RA ──SignCertificate──▶ CA service
-  1. authz: mTLS role trustyca-ra (or a User token / API key with certs:issue); OrgID required
+RA ──SignCertificate──▶ CA service (backend) ──▶ Backend service
+UI ──SignCertificate──▶ CA service (wfe) ──privpb.Backend──▶ Backend service
+  1. authz: mTLS role trustyca-ra on the backend, or a User token / API key
+     with certs:issue on the wfe, authorized again by the backend; OrgID required
   2. validate ProjectID belongs to OrgID (cached)
   3. resolve profile and issuer (section 6)
   4. build csr.SignRequest: CSR bytes (PEM/DER), SAN, Subject, NotBefore/NotAfter,
@@ -597,9 +695,11 @@ maximum) generated by `xpki/authority`.
   issuer signs with a delegated responder certificate created lazily with
   `authority.Issuer.CreateDelegatedOCSPSigner`.
 - Neither the CIS nor the AIA holds issuer keys. The OCSP handler of the
-  AIA forwards DER requests to `CA.SignOCSP` over the backend gRPC client,
-  created on the first request with the `aia.client_tls` identity, and
-  caches the signed responses by request hash until their `NextUpdate`, so
+  AIA forwards DER requests to `Backend.SignOCSP`: in process when the
+  `backend` service runs in the same process, else over gRPC with the
+  service client `aia` (the `trustyca-aia` identity, allowed `SignOCSP`
+  only), created on the first request. It caches the signed responses by
+  request hash until their `NextUpdate`, so
   a revocation reaches a cached `good` answer when it expires
   (`ocsp_expiry`). A failure of the CA is an OCSP error response
   (malformedRequest, unauthorized for an issuer the CA does not serve,
@@ -635,8 +735,13 @@ maps these to `auth org`, `auth allowed`, `auth scope`, `org ...`,
 | Certificates      | `SignCertificate`, `GetCertificate`, `ListCertificates`, `UpdateCertificateLabel`, `RevokeCertificate`, `ListRevokedCertificates` |
 | Revocation status | `GetCRL`, `PublishCrls`, `SignOCSP`                                                                                               |
 
-The CA is a backend API: requests carry `OrgID` and optional `ProjectID`
-explicitly because the RA calls it with a service identity. Methods declare
+The CA is served on both listeners (section 2.1): on the `wfe` to user
+tokens and API keys, where an `OrgID` must be the org of the token, and on
+the `backend` to the RA and the operator, which name the org with their
+service identity. Requests carry `OrgID` and optional `ProjectID`
+explicitly for that reason. Either way the key operations run in the
+`backend` service (`privpb.Backend`, `privpb/protos/backend.proto`), whose
+methods take the same messages. Methods declare
 `allowed_roles` (`Admin` for issuer, root and profile administration,
 `User,APIKey` for signing, `Viewer,APIKey` for reads, `Security` for
 revocation, `Admin,Security,APIKey` for CRL publishing, where a project Admin
@@ -705,11 +810,22 @@ ca:
   allow_software_keys: true # keys stored wrapped by the data protection provider; dev only, refused in prod
   # planned: crl_publish_locations
 aia: # the CIS needs no configuration
-  client_tls: # the identity the AIA presents to the CA backend (spiffe://trustyca/aia)
-    cert: ${HOME}/.trustyca/certs/trustyca_aia.pem
-    key: ${HOME}/.trustyca/certs/trustyca_aia.key
-    trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
   ocsp_cache_size: 10000 # OCSP responses kept in memory until their NextUpdate
+clients: # the service clients a process dials other listeners with (section 2.2)
+  - name: ca # the WFE to the backend: the key operations of pb.CA
+    client_tls:
+      cert: ${HOME}/.trustyca/certs/trustyca_peer.pem # spiffe://trustyca/peer
+      key: ${HOME}/.trustyca/certs/trustyca_peer.key
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+    server_url:
+      backend: https://localhost:8881
+  - name: aia # the AIA to the backend: SignOCSP
+    client_tls:
+      cert: ${HOME}/.trustyca/certs/trustyca_aia.pem # spiffe://trustyca/aia
+      key: ${HOME}/.trustyca/certs/trustyca_aia.key
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+    server_url:
+      backend: https://localhost:8881
 tasks:
   - name: crl_renewal # the due CRLs of every issuer (section 8)
     schedule: "every 10 minutes"
@@ -717,22 +833,31 @@ tasks:
     schedule: "every 1 hour"
 ```
 
-Backend listener: `trustyca-ra` and `trustyca-aia` TLS roles
-(`identity_map.tls.enabled: true`), `authz.allow:
-/pb.CA:trustyca-ra,trustyca-admin` and `/pb.CA/SignOCSP` for `trustyca-aia`
-as well, the only method the AIA calls; it lists no root path under
-`authz.allow_any`, so a path without a rule is refused to every identity
-(the status routes are listed). The `wfe` listener keeps `/` public for the
-index page of the UI, which opens every path without a rule at this layer:
-its services rely on the access check of each method; `/pb.CIS` is listed
-under `authz.allow_any_role`, so the CIS admits any authenticated caller
-and refuses a guest, and no CIS path is under `identity_map.skip_auth`.
-The `aia` listener is plain HTTP without an identity map (every caller is
-a guest) and lists only the AIA and status routes under `authz.allow_any`,
-so every other path is refused. The AIA forwards OCSP to
-`client.server_url.backend` with the certificate of `aia.client_tls`;
-`make gen_test_certs` generates it (`trustyca_aia`) with the RA one
-(`trustyca_ra`).
+Backend listener: the `trustyca-ra`, `trustyca-aia`, `trustyca-admin`
+and `trustyca-peer` TLS roles (`identity_map.tls.enabled: true`). The dev
+configuration verifies a client certificate when one is given
+(`client_cert_auth: false`), so that a health probe reaches the status
+routes over TLS; a deployment whose probes do not use the port may require
+it. `authz.allow:
+/pb.CA:trustyca-ra,trustyca-admin`, `/privpb.Admin:trustyca-admin,trustyca-peer`,
+`/privpb.Backend:trustyca-peer` and `/privpb.Backend/SignOCSP` for
+`trustyca-aia` as well, the only method the AIA calls (porto authz takes
+the roles of the deepest matching path, so the rule repeats the peer). It
+lists no root path under `authz.allow_any`, so a path without a rule is
+refused to every identity (the status routes are listed). The `wfe`
+listener verifies a client certificate only when one is given and has no
+TLS identity map, so a service certificate is no role there; it keeps `/`
+public for the index page of the UI, which opens every path without a rule
+at this layer: its services rely on the access check of each method.
+`/pb.CIS` and `/pb.CA` are listed under `authz.allow_any_role`, so they
+admit any authenticated caller and refuse a guest (the CA methods then
+require their roles), and no CIS or CA path is under
+`identity_map.skip_auth`. The `aia` listener is plain HTTP without an
+identity map (every caller is a guest) and lists only the AIA and status
+routes under `authz.allow_any`, so every other path is refused.
+`make gen_test_certs` generates the client certificates of the dev
+configuration (`trustyca_peer`, `trustyca_aia`, `trustyca_ra`,
+`trustyca_admin`).
 
 ## 11. Audit and observability
 
@@ -781,3 +906,10 @@ counters of the AIA routes, `perf_db_query{method}` and `perf_task_run{task}`.
   scope, or a rename of the archived issuer.
 - `OCSPRequest.IKID` from the AIA route, so that an issuer is found for any
   hash algorithm without being in memory.
+- The least-privilege items of the signing plane (section 2.1): an
+  invalidation broadcast of profile changes to every backend instance, a
+  separate data protection key for issuer keys, DB roles per listener role,
+  name constraints on tenant issuing CAs, and a method allowlist per
+  service role.
+- Dropping `OrgID` from the public `pb.CA` requests (the org of the token),
+  with `privpb` copies of the requests the RA and the operator send.

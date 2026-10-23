@@ -1,4 +1,4 @@
-package ca
+package backend
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/trustyca/internal/metricskey"
+	"github.com/effective-security/trustyca/server/service/internal/caapi"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/authority"
@@ -61,11 +62,11 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 		return nil, err
 	}
 
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	projectID, err := s.tenantProject(ctx, orgID, req.ProjectID)
+	projectID, err := s.scope.Project(ctx, orgID, req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -90,11 +91,11 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	if err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
-	cr.NotBefore, err = parseTime(ctx, req.NotBefore, "NotBefore")
+	cr.NotBefore, err = caapi.ParseTime(ctx, req.NotBefore, "NotBefore")
 	if err != nil {
 		return nil, err
 	}
-	cr.NotAfter, err = parseTime(ctx, req.NotAfter, "NotAfter")
+	cr.NotAfter, err = caapi.ParseTime(ctx, req.NotAfter, "NotAfter")
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +119,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	metricskey.CACertIssued.IncrCounter(1, issuer.Label(), req.Profile, orgID.String())
 
 	mcert := model.NewCertificate(crt, orgID, projectID, req.Profile, string(crtPEM), issuer.PEM(), req.Label, nil, req.Metadata)
-	evt := events.New(ctx, ServiceName, pb.EventType_CertificateIssued, "Certificate issued").
+	evt := events.New(ctx, caapi.EventSource, pb.EventType_CertificateIssued, "Certificate issued").
 		Org(orgID).
 		Project(projectID).
 		Description("certificate %q issued by %q with profile %q", mcert.Subject, issuer.Label(), req.Profile)
@@ -252,7 +253,7 @@ func (s *Service) resolve(ctx context.Context, orgID, projectID xdb.ID, profile,
 	case errors.Is(err, core.ErrProfileNotAllowed):
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer %q does not support the profile: %s", issuerLabel, profile)
 	case errors.Is(err, core.ErrIssuerNotActive):
-		return nil, preconditionFailed(ctx, "issuer is not active")
+		return nil, caapi.PreconditionFailed(ctx, "issuer is not active")
 	}
 	logger.ContextKV(ctx, xlog.ERROR,
 		"reason", "load_issuer",
@@ -322,19 +323,6 @@ func subjectOf(subject *pb.X509Subject) *csr.X509Subject {
 		}
 	}
 	return res
-}
-
-// parseTime parses an optional RFC3339 time of a request; empty is the zero
-// time
-func parseTime(ctx context.Context, val, what string) (time.Time, error) {
-	if val == "" {
-		return time.Time{}, nil
-	}
-	t, err := time.Parse(time.RFC3339, val)
-	if err != nil {
-		return time.Time{}, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid %s: RFC3339 time expected", what)
-	}
-	return t.UTC(), nil
 }
 
 // isSignRequestError returns true when the signing error is the request's

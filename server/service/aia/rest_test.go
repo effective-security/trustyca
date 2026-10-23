@@ -15,14 +15,15 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/effective-security/porto/gserver"
 	"github.com/effective-security/porto/xhttp/header"
 	"github.com/effective-security/porto/xhttp/httperror"
+	"github.com/effective-security/trustyca/api/client"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/mocks/mockclient"
 	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
 	"github.com/effective-security/trustyca/server/service/aia"
+	"github.com/effective-security/trustyca/server/service/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -390,10 +391,13 @@ func TestOCSPHandlers(t *testing.T) {
 	e.ca.setGarbage(false)
 }
 
-// TestOCSPHandler_CAClient covers the client of the backend the service
-// creates on the first request when it is given no CA: a factory that
-// fails answers tryLater, and the next request tries again
-func TestOCSPHandler_CAClient(t *testing.T) {
+// TestOCSPHandler_Backend covers the backend the service forwards OCSP
+// requests to when the process runs none: without a locator every request
+// answers tryLater; the client of the backend listener is created with the
+// `aia` service client on the first request, a factory that fails answers
+// tryLater and the next request tries again, and the client is kept and
+// closed with the service
+func TestOCSPHandler_Backend(t *testing.T) {
 	t.Parallel()
 	e := newTestEnv(t)
 	ctrl := gomock.NewController(t)
@@ -401,8 +405,8 @@ func TestOCSPHandler_CAClient(t *testing.T) {
 	cadb := mocktrustycadb.NewMockCaReadonlyDb(ctrl)
 	goodReq := e.ocspRequest(t, e.leafCrt, crypto.SHA256)
 
-	// no CA and no factory
-	svc, err := aia.New(&config.Configuration{}, cadb, nil, nil)
+	// no backend
+	svc, err := aia.New(&config.Configuration{}, cadb, nil)
 	require.NoError(t, err)
 	w := httptest.NewRecorder()
 	svc.OCSPHandler()(w, httptest.NewRequest(http.MethodPost, pb.PathForOCSP, bytes.NewReader(goodReq)), nil)
@@ -415,10 +419,10 @@ func TestOCSPHandler_CAClient(t *testing.T) {
 	factory := mockclient.NewMockFactory(ctrl)
 	closer := &countingCloser{}
 	gomock.InOrder(
-		factory.EXPECT().CAClient(config.BackendServerName).Return(nil, nil, errors.New("backend down")),
-		factory.EXPECT().CAClient(config.BackendServerName).Return(e.ca, closer, nil),
+		factory.EXPECT().BackendClient(client.ClientNameAIA, config.BackendServerName).Return(nil, nil, errors.New("backend down")),
+		factory.EXPECT().BackendClient(client.ClientNameAIA, config.BackendServerName).Return(e.ca, closer, nil),
 	)
-	svc, err = aia.New(&config.Configuration{}, cadb, nil, factory)
+	svc, err = aia.New(&config.Configuration{}, cadb, shared.NewBackendLocator(nil, factory, client.ClientNameAIA, config.BackendServerName))
 	require.NoError(t, err)
 	w = httptest.NewRecorder()
 	svc.OCSPHandler()(w, httptest.NewRequest(http.MethodPost, pb.PathForOCSP, bytes.NewReader(goodReq)), nil)
@@ -429,22 +433,9 @@ func TestOCSPHandler_CAClient(t *testing.T) {
 		svc.OCSPHandler()(w, httptest.NewRequest(http.MethodPost, pb.PathForOCSP, bytes.NewReader(goodReq)), nil)
 		assert.Equal(t, http.StatusOK, w.Code)
 	}
-	assert.Equal(t, 1, e.ca.count())
+	assert.Equal(t, 1, e.ca.count(), "the second answer is the cached one")
 	svc.Close()
 	assert.Equal(t, 1, closer.closed)
-
-	// the AIA certificate must load when it is configured
-	factory = mockclient.NewMockFactory(ctrl)
-	svc, err = aia.New(&config.Configuration{AIA: config.AIA{ClientTLS: gserver.TLSInfo{
-		CertFile:      "/nope/cis.pem",
-		KeyFile:       "/nope/cis.key",
-		TrustedCAFile: "/nope/root.pem",
-	}}}, cadb, nil, factory)
-	require.NoError(t, err)
-	w = httptest.NewRecorder()
-	svc.OCSPHandler()(w, httptest.NewRequest(http.MethodPost, pb.PathForOCSP, bytes.NewReader(goodReq)), nil)
-	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
-	assert.Equal(t, ocsp.TryLaterErrorResponse, w.Body.Bytes())
 }
 
 // countingCloser counts its closes

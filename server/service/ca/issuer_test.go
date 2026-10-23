@@ -73,8 +73,10 @@ func TestService_RegisterIssuer(t *testing.T) {
 	// validation
 	_, err := svc.RegisterIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA := &Service{db: tca.cadb, orgs: tca.orgsdb, authorizer: newFakeAuthorizer()}
+	noCA, noKeys := tca.noCA()
 	_, err = noCA.RegisterIssuer(ctx, valid())
+	assert.EqualError(t, err, "unavailable: CA is not configured")
+	_, err = noKeys.RegisterIssuer(ctx, valid())
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 	req := valid()
 	req.Label = " "
@@ -353,8 +355,10 @@ func TestService_ImportIssuer(t *testing.T) {
 
 	_, err := svc.ImportIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA := &Service{db: tca.cadb, orgs: tca.orgsdb, authorizer: newFakeAuthorizer()}
+	noCA, noKeys := tca.noCA()
 	_, err = noCA.ImportIssuer(ctx, valid())
+	assert.EqualError(t, err, "unavailable: CA is not configured")
+	_, err = noKeys.ImportIssuer(ctx, valid())
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 	req := valid()
 	req.Label = ""
@@ -469,8 +473,10 @@ func TestService_ActivateIssuer(t *testing.T) {
 
 	_, err = svc.ActivateIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA := &Service{db: tca.cadb, orgs: tca.orgsdb, authorizer: newFakeAuthorizer()}
+	noCA, noKeys := tca.noCA()
 	_, err = noCA.ActivateIssuer(ctx, valid())
+	assert.EqualError(t, err, "unavailable: CA is not configured")
+	_, err = noKeys.ActivateIssuer(ctx, valid())
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 	req := valid()
 	req.Certificate = ""
@@ -570,8 +576,10 @@ func TestService_UpdateIssuer(t *testing.T) {
 
 	_, err := svc.UpdateIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA := &Service{db: tca.cadb, orgs: tca.orgsdb, authorizer: newFakeAuthorizer()}
+	noCA, noKeys := tca.noCA()
 	_, err = noCA.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Archived})
+	assert.EqualError(t, err, "unavailable: CA is not configured")
+	_, err = noKeys.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String()})
 	assert.EqualError(t, err, "bad_request: nothing to update")

@@ -115,13 +115,6 @@ ca:
 # (service `aia`). The Certificate Information Service (`cis`, the JSON
 # and gRPC API of the wfe listener) needs no configuration.
 aia:
-  # the TLS certificate the AIA presents to the CA backend when it forwards
-  # OCSP requests, mapped to the trustyca-aia role (spiffe://trustyca/aia)
-  # by the backend listener; empty uses client.client_tls
-  client_tls:
-    cert: ${HOME}/.trustyca/certs/trustyca_aia.pem
-    key: ${HOME}/.trustyca/certs/trustyca_aia.key
-    trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
   # the number of OCSP responses kept in memory, each until its NextUpdate
   ocsp_cache_size: 1000
 
@@ -185,11 +178,13 @@ servers:
       cert: ${HOME}/.trustyca/certs/trustyca_server.pem
       key: ${HOME}/.trustyca/certs/trustyca_server.key
       trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+      # accept but not require client certificate
       client_cert_auth: false
     services:
       - status
       - auth
       - orgs
+      - ca
       - ui
       - cis
     timeout:
@@ -241,16 +236,21 @@ servers:
         # the CIS reads the public views of the CA for authenticated callers;
         # the AIA routes of the issued certificates are the aia listener's
         - /pb.CIS
+        # the CA of the tenants: every method requires its roles and scopes
+        # (authctx.CheckAccess); the key operations run in the backend
+        - /pb.CA
       # allow the specified roles access to this path and its children, in format: ${path}:${role},${role}
       allow:
-      - /privpb.Admin:trustyca-admin
+        - /privpb.Admin:trustyca-admin
       # specifies to log allowed access to Any role
       log_allowed_any: true
       # specifies to log allowed access
       log_allowed: true
       # specifies to log denied access
       log_denied: true
-    # configuration for the Identity mappers
+    # configuration for the Identity mappers: users and API keys only. The
+    # wfe maps no TLS client certificate, so that no service role
+    # (trustyca-*) is reachable on the listener of the internet
     identity_map:
       debug_logs: false
       strict: true
@@ -294,8 +294,10 @@ servers:
           trustyca-admin:
             - denis@tbilicode.com
             - denis@effectivesecurity.pt
-          # trustyca-viewer:
 
+  # the signing plane (DESIGN.md section 2.1): the backend service holds the
+  # issuer keys; the RA and the operator call the CA here, the WFE and the
+  # AIA forward the key operations. Service identities over mTLS only.
   backend:
     description: Backend service
     disabled: false
@@ -305,10 +307,14 @@ servers:
       cert: ${HOME}/.trustyca/certs/trustyca_peer.pem
       key: ${HOME}/.trustyca/certs/trustyca_peer.key
       trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+      # a client certificate is verified when given; the authz rules below
+      # admit a mapped service role only, and the status routes stay open
+      # to a health probe
       client_cert_auth: false
     services:
       - status
       - admin
+      - backend
       - ca
     timeout:
       request: 3s
@@ -316,7 +322,6 @@ servers:
     # configuration for the authorization module
     authz:
       # allow any non-authenticated request access to this path and its children
-      # /v1/* is allowed
       # the backend denies by default: no root path here, so that a service
       # without a rule is refused to every identity; the status routes are
       # the only public ones
@@ -331,11 +336,13 @@ servers:
       # allow the specified roles access to this path and its children, in format: ${path}:${role},${role}
       allow:
         - /privpb.Admin:trustyca-admin,trustyca-peer
-        # the CA API: the RA signs and reads for its tenants, the admin operates it;
-        # the AIA forwards OCSP requests only. A deeper path replaces the roles of
-        # /pb.CA, so the OCSP method lists all three.
+        # the CA API: the RA signs and reads for its tenants, the admin operates it
         - /pb.CA:trustyca-ra,trustyca-admin
-        - /pb.CA/SignOCSP:trustyca-aia,trustyca-ra,trustyca-admin
+        # the signing plane: the WFE forwards the key operations of its callers,
+        # the AIA forwards OCSP requests only. A deeper path replaces the roles of
+        # /privpb.Backend, so the OCSP method lists the peer as well.
+        - /privpb.Backend:trustyca-peer
+        - /privpb.Backend/SignOCSP:trustyca-aia,trustyca-peer
       # specifies to log allowed access to Any role
       log_allowed_any: true
       # specifies to log allowed access
@@ -352,6 +359,7 @@ servers:
         enabled: true
         default_authenticated_role: user
         roles:
+          # the WFE, which forwards the key operations of its callers
           trustyca-peer:
             - spiffe://trustyca/peer
           trustyca-client:
@@ -365,14 +373,41 @@ servers:
           trustyca-aia:
             - spiffe://trustyca/aia
 
-client:
-  client_tls:
-    cert: ${HOME}/.trustyca/certs/trustyca_client.pem
-    key: ${HOME}/.trustyca/certs/trustyca_client.key
-    trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
-  server_url:
-    wfe: https://localhost:8880
-    backend: https://localhost:8881
-  dial_timeout: 30s
-  dial_keep_alive_time: 300s
-  dial_keep_alive_timeout: 30s
+# the service clients a process dials the other listeners with, one per
+# identity (DESIGN.md section 2.2): a service selects its client by name
+clients:
+  - name: default
+    client_tls:
+      cert: ${HOME}/.trustyca/certs/trustyca_client.pem
+      key: ${HOME}/.trustyca/certs/trustyca_client.key
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+    server_url:
+      wfe: https://localhost:8880
+      backend: https://localhost:8881
+    dial_timeout: 30s
+    dial_keep_alive_time: 300s
+    dial_keep_alive_timeout: 30s
+  # the CA service of a process without the backend service forwards the key
+  # operations of its callers to the backend: the WFE identity, trustyca-peer
+  - name: ca
+    client_tls:
+      cert: ${HOME}/.trustyca/certs/trustyca_peer.pem
+      key: ${HOME}/.trustyca/certs/trustyca_peer.key
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+    server_url:
+      backend: https://localhost:8881
+    dial_timeout: 30s
+    dial_keep_alive_time: 300s
+    dial_keep_alive_timeout: 30s
+  # the AIA forwards OCSP requests to the backend when the backend service
+  # does not run in its process: trustyca-aia, allowed SignOCSP only
+  - name: aia
+    client_tls:
+      cert: ${HOME}/.trustyca/certs/trustyca_aia.pem
+      key: ${HOME}/.trustyca/certs/trustyca_aia.key
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+    server_url:
+      backend: https://localhost:8881
+    dial_timeout: 30s
+    dial_keep_alive_time: 300s
+    dial_keep_alive_timeout: 30s

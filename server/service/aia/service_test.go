@@ -22,7 +22,9 @@ import (
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
+	"github.com/effective-security/trustyca/privpb"
 	"github.com/effective-security/trustyca/server/service/aia"
+	"github.com/effective-security/trustyca/server/service/shared"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/stretchr/testify/require"
@@ -111,13 +113,13 @@ func (s *testStore) getCrl(_ context.Context, ikid string) (*model.Crl, error) {
 	return nil, notFoundErr("crl", ikid)
 }
 
-// fakeCA is the CA the service forwards OCSP requests to: it signs with the
-// key of its issuing CA for the serials it knows, revoked ones with their
-// reason, and answers unknown for the others; a request for another issuer
-// is not found, as the CA service answers. A failure set on it is returned
-// instead, and the calls are counted.
+// fakeCA is the backend the service forwards OCSP requests to: it signs
+// with the key of its issuing CA for the serials it knows, revoked ones
+// with their reason, and answers unknown for the others; a request for
+// another issuer is not found, as the backend service answers. A failure
+// set on it is returned instead, and the calls are counted.
 type fakeCA struct {
-	pb.UnimplementedCAServer
+	privpb.UnimplementedBackendServer
 	ca       *testutils.TestCA
 	mu       sync.Mutex
 	calls    int
@@ -344,7 +346,7 @@ func newTestEnv(t *testing.T) *testEnv {
 	ca.register(expiredCrt, nil)
 	ca.register(revCrt, revRow)
 
-	svc, err := aia.New(&config.Configuration{}, cadb, ca, nil)
+	svc, err := aia.New(&config.Configuration{}, cadb, shared.NewStaticBackendLocator(ca))
 	require.NoError(t, err)
 	r := restserver.NewRouter(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found: "+r.URL.Path, http.StatusNotFound)

@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/effective-security/trustyca/server/service/backend"
+
 	"github.com/effective-security/porto/gserver"
 	"github.com/effective-security/porto/xhttp/header"
 	"github.com/effective-security/porto/xhttp/identity"
@@ -74,9 +76,10 @@ func TestService_EndToEnd(t *testing.T) {
 	// the CA, called over gRPC as the RA
 	caServer, err := gserver.Start("CISTestCA", &gserver.Config{
 		ListenURLs: []string{testutils.CreateURL("http", "")},
-		Services:   []string{ca.ServiceName},
+		Services:   []string{ca.ServiceName, backend.ServiceName},
 	}, container, map[string]gserver.ServiceFactory{
-		ca.ServiceName: ca.Factory,
+		ca.ServiceName:      ca.Factory,
+		backend.ServiceName: backend.Factory,
 	})
 	require.NoError(t, err)
 	t.Cleanup(caServer.Close)

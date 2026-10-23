@@ -22,7 +22,7 @@ import "github.com/effective-security/trustyca/server/app"
 
 
 <a name="App"></a>
-## type [App](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L55-L69>)
+## type [App](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L51-L65>)
 
 App provides application container
 
@@ -33,7 +33,7 @@ type App struct {
 ```
 
 <a name="NewApp"></a>
-### func [NewApp](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L72>)
+### func [NewApp](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L68>)
 
 ```go
 func NewApp(args []string) *App
@@ -42,7 +42,7 @@ func NewApp(args []string) *App
 NewApp returns new App
 
 <a name="App.Close"></a>
-### func \(\*App\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L122>)
+### func \(\*App\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L118>)
 
 ```go
 func (a *App) Close() error
@@ -51,7 +51,7 @@ func (a *App) Close() error
 Close implements Closer interface to clean up resources
 
 <a name="App.Configuration"></a>
-### func \(\*App\) [Configuration](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L159>)
+### func \(\*App\) [Configuration](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L155>)
 
 ```go
 func (a *App) Configuration() (*config.Configuration, error)
@@ -60,7 +60,7 @@ func (a *App) Configuration() (*config.Configuration, error)
 Configuration returns the current app configuration
 
 <a name="App.Container"></a>
-### func \(\*App\) [Container](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L147>)
+### func \(\*App\) [Container](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L143>)
 
 ```go
 func (a *App) Container() (*dig.Container, error)
@@ -69,7 +69,7 @@ func (a *App) Container() (*dig.Container, error)
 Container returns the current app container populater with dependencies
 
 <a name="App.OnClose"></a>
-### func \(\*App\) [OnClose](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L110>)
+### func \(\*App\) [OnClose](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L106>)
 
 ```go
 func (a *App) OnClose(closer io.Closer)
@@ -78,7 +78,7 @@ func (a *App) OnClose(closer io.Closer)
 OnClose adds a closer to be called when application exists
 
 <a name="App.Run"></a>
-### func \(\*App\) [Run](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L171>)
+### func \(\*App\) [Run](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L167>)
 
 ```go
 func (a *App) Run(startedCh chan<- bool) error
@@ -87,7 +87,7 @@ func (a *App) Run(startedCh chan<- bool) error
 Run the application
 
 <a name="App.Server"></a>
-### func \(\*App\) [Server](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L343>)
+### func \(\*App\) [Server](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L341>)
 
 ```go
 func (a *App) Server(name string) gserver.GServer
@@ -96,7 +96,7 @@ func (a *App) Server(name string) gserver.GServer
 Server returns a running TrustyServer by name
 
 <a name="App.WithConfiguration"></a>
-### func \(\*App\) [WithConfiguration](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L91>)
+### func \(\*App\) [WithConfiguration](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L87>)
 
 ```go
 func (a *App) WithConfiguration(cfg *config.Configuration) *App
@@ -105,7 +105,7 @@ func (a *App) WithConfiguration(cfg *config.Configuration) *App
 WithConfiguration allows to specify a custom configuration, used mainly for testing purposes
 
 <a name="App.WithContainerFactory"></a>
-### func \(\*App\) [WithContainerFactory](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L98>)
+### func \(\*App\) [WithContainerFactory](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L94>)
 
 ```go
 func (a *App) WithContainerFactory(f appcontainer.ContainerFactoryFn) *App
@@ -114,7 +114,7 @@ func (a *App) WithContainerFactory(f appcontainer.ContainerFactoryFn) *App
 WithContainerFactory allows to specify an app container factory, used mainly for testing purposes
 
 <a name="App.WithSignal"></a>
-### func \(\*App\) [WithSignal](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L104>)
+### func \(\*App\) [WithSignal](<https://github.com/effective-security/trustyca/blob/main/server/app/app.go#L100>)
 
 ```go
 func (a *App) WithSignal(sigs chan os.Signal) *App

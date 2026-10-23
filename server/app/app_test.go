@@ -54,7 +54,8 @@ func Test_AppOnClose(t *testing.T) {
 		"--log-std",
 		"--cfg", cfgFile,
 		"--wfe-listen-url", testutils.CreateURL("http", "localhost"),
-		"--router-listen-url", testutils.CreateURL("http", "localhost"),
+		"--backend-listen-url", testutils.CreateURL("http", "localhost"),
+		"--aia-listen-url", testutils.CreateURL("http", "localhost"),
 	})
 
 	app.OnClose(c)
@@ -73,6 +74,25 @@ func Test_AppOnClose(t *testing.T) {
 	assert.Equal(t, "already closed", err.Error())
 }
 
+// Test_App_ClientCertFlags checks that the single client certificate flags
+// of porto are refused: a process dials with the named clients of the
+// configuration, each with its own certificate
+func Test_App_ClientCertFlags(t *testing.T) {
+	cfgFile, err := configloader.GetAbsFilename("etc/dev/"+config.ConfigFileName, projFolder)
+	require.NoError(t, err, "unable to determine config file")
+
+	for _, flag := range []string{"--client-cert", "--client-key", "--client-trusted-ca"} {
+		app := NewApp([]string{
+			"--dry-run",
+			"--cfg", cfgFile,
+			flag, "/tmp/client.pem",
+		})
+		err = app.loadConfig()
+		assert.EqualError(t, err, "--client-cert, --client-key and --client-trusted-ca are not supported: set client_tls of the clients in the configuration", flag)
+		require.NoError(t, app.Close())
+	}
+}
+
 func Test_AppInitWithRun(t *testing.T) {
 	cfgFile, err := configloader.GetAbsFilename("etc/dev/"+config.ConfigFileName, projFolder)
 	require.NoError(t, err, "unable to determine config file")
@@ -82,7 +102,8 @@ func Test_AppInitWithRun(t *testing.T) {
 		"--dry-run",
 		"--cfg", cfgFile,
 		"--wfe-listen-url", testutils.CreateURL("http", "localhost"),
-		"--router-listen-url", testutils.CreateURL("http", "localhost"),
+		"--backend-listen-url", testutils.CreateURL("http", "localhost"),
+		"--aia-listen-url", testutils.CreateURL("http", "localhost"),
 	})
 
 	err = app.Run(nil)
@@ -103,7 +124,8 @@ func Test_AppInitWithCfg(t *testing.T) {
 		"--dry-run",
 		"--cfg", cfgFile,
 		"--wfe-listen-url", testutils.CreateURL("http", "localhost"),
-		"--router-listen-url", testutils.CreateURL("http", "localhost"),
+		"--backend-listen-url", testutils.CreateURL("http", "localhost"),
+		"--aia-listen-url", testutils.CreateURL("http", "localhost"),
 	})
 	defer app.OnClose(c)
 
@@ -127,7 +149,8 @@ func Test_AppInstance_StartStop(t *testing.T) {
 		"--log-std",
 		"--cfg", cfgPath,
 		"--wfe-listen-url", testutils.CreateURL("http", "localhost"),
-		"--router-listen-url", testutils.CreateURL("http", "localhost"),
+		"--backend-listen-url", testutils.CreateURL("http", "localhost"),
+		"--aia-listen-url", testutils.CreateURL("http", "localhost"),
 	}).WithSignal(sigs)
 	defer app.Close()
 
@@ -167,6 +190,63 @@ func Test_AppInstance_StartStop(t *testing.T) {
 	wg.Wait()
 
 	require.NoError(t, expError)
+}
+
+// Test_AppInstance_WebRole starts the listeners of a web pod (DESIGN.md
+// section 2.2) under a configuration whose crypto provider and platform
+// bootstrap do not exist: the wfe and aia listeners start, because only the
+// backend service and the crl_renewal task build the issuer registry,
+// while a process that runs the backend service fails to start on them
+func Test_AppInstance_WebRole(t *testing.T) {
+	testutils.SetDataProtectionSeed(t)
+	cfgPath, err := filepath.Abs(projFolder + "etc/dev/" + config.ConfigFileName)
+	require.NoError(t, err)
+	override := filepath.Join(t.TempDir(), "web-role.yaml")
+	require.NoError(t, os.WriteFile(override, []byte(`
+metrics:
+  disabled: true
+tasks: []
+crypto_provider:
+  default: /nonexistent/trustyca/kms.yaml
+ca:
+  bootstrap_config: /nonexistent/trustyca/ca-config.yaml
+`), 0o600))
+
+	start := func(backendURL string) error {
+		sigs := make(chan os.Signal, 2)
+		app := NewApp([]string{
+			"--log-std",
+			"--cfg", cfgPath,
+			"--cfg-override", override,
+			"--wfe-listen-url", testutils.CreateURL("http", "localhost"),
+			"--backend-listen-url", backendURL,
+			"--aia-listen-url", testutils.CreateURL("http", "localhost"),
+		}).WithSignal(sigs)
+		defer app.Close()
+
+		startedCh := make(chan bool, 1)
+		errCh := make(chan error, 1)
+		go func() {
+			errCh <- app.Run(startedCh)
+		}()
+		select {
+		case <-startedCh:
+			sigs <- syscall.SIGTERM
+			return <-errCh
+		case err := <-errCh:
+			return err
+		case <-time.After(10 * time.Second):
+			return errors.New("timeout")
+		}
+	}
+
+	// a web pod: wfe and aia, no backend
+	require.NoError(t, start("none"))
+
+	// a signing pod needs its crypto provider
+	err = start(testutils.CreateURL("http", "localhost"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "/nonexistent/trustyca/")
 }
 
 type closer struct {

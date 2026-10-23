@@ -14,6 +14,7 @@ import (
 	core "github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
+	"github.com/effective-security/trustyca/server/service/internal/caapi"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
@@ -45,8 +46,10 @@ func TestService_SignCertificate(t *testing.T) {
 	assert.EqualError(t, err, "bad_request: missing profile")
 	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, Label: string(make([]byte, 261))})
 	assert.EqualError(t, err, "bad_request: invalid label length")
-	noCA := &Service{db: cadb, orgs: orgsdb, authorizer: newFakeAuthorizer()}
+	noCA, noKeys := tca.noCA()
 	_, err = noCA.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
+	assert.EqualError(t, err, "unavailable: CA is not configured")
+	_, err = noKeys.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 
 	// tenancy of a user token
@@ -157,7 +160,7 @@ func TestService_SignCertificate(t *testing.T) {
 			assert.Equal(t, uint64(201), evt.ProjectID.UInt64())
 			assert.True(t, evt.ReferenceID.IsZero(), "the DB references the certificate")
 			assert.Equal(t, "Certificate issued", evt.Title)
-			assert.Equal(t, ServiceName, evt.Source.String())
+			assert.Equal(t, caapi.EventSource, evt.Source.String())
 			assert.Equal(t, testCallerEmail, evt.Email.String())
 			assert.Contains(t, evt.Description.String(), `issued by "L2_CA" with profile "peer"`)
 
@@ -300,8 +303,10 @@ func TestService_SignOCSP(t *testing.T) {
 	assert.EqualError(t, err, "bad_request: missing request")
 	_, err = svc.SignOCSP(ctx, &pb.OCSPRequest{Der: []byte("junk")})
 	assert.EqualError(t, err, "bad_request: invalid request")
-	noCA := &Service{db: cadb}
+	noCA, noKeys := tca.noCA()
 	_, err = noCA.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
+	assert.EqualError(t, err, "unavailable: CA is not configured")
+	_, err = noKeys.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 
 	// a certificate of an issuer the CA does not know

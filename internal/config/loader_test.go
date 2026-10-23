@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/effective-security/trustyca/api/client"
 	"github.com/effective-security/x/configloader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,9 +45,22 @@ func TestLoadConfig(t *testing.T) {
 			assert.True(t, filepath.IsAbs(dir), "dir %q should be an absoluite path, have: %s", name, dir)
 		}
 	}
-	testDirAbs("Client.ClientTLS.TrustedCAFile", c.Client.ClientTLS.TrustedCAFile)
-	testDirAbs("Client.ClientTLS.CertFile", c.Client.ClientTLS.CertFile)
-	testDirAbs("Client.ClientTLS.KeyFile", c.Client.ClientTLS.KeyFile)
+	// the service clients of the dev configuration, by name; their files
+	// are expanded to absolute paths
+	clients := map[string]client.Config{}
+	for _, cl := range c.Clients {
+		clients[cl.Name] = cl
+	}
+	require.Len(t, clients, len(c.Clients), "client names are unique")
+	for _, name := range []string{client.ClientNameDefault, client.ClientNameAIA} {
+		cl, ok := clients[name]
+		require.True(t, ok, "client %s", name)
+		testDirAbs("Clients."+name+".ClientTLS.TrustedCAFile", cl.ClientTLS.TrustedCAFile)
+		testDirAbs("Clients."+name+".ClientTLS.CertFile", cl.ClientTLS.CertFile)
+		testDirAbs("Clients."+name+".ClientTLS.KeyFile", cl.ClientTLS.KeyFile)
+		assert.NotEmpty(t, cl.ClientTLS.CertFile, "client %s", name)
+	}
+	assert.Equal(t, "https://localhost:8881", clients[client.ClientNameAIA].ServerURL[BackendServerName])
 
 	wfe := c.HTTPServers["wfe"]
 	require.NotNil(t, wfe)

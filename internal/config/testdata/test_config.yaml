@@ -107,12 +107,13 @@ servers:
     cors: *cors
     authz: *authz
 
-client:
-  client_tls:
-    cert: ${HOME}/.trustyca/certs/trustyca_client.pem
-    key: ${HOME}/.trustyca/certs/trustyca_client.pem
-    trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
-  server_url:
-    cis: http://localhost:8880
-    wfe: https://localhost:7891
-    ca: https://localhost:7892
+clients:
+  - name: aia
+    client_tls:
+      cert: ${HOME}/.trustyca/certs/trustyca_client.pem
+      key: ${HOME}/.trustyca/certs/trustyca_client.pem
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+    server_url:
+      cis: http://localhost:8880
+      wfe: https://localhost:7891
+      ca: https://localhost:7892

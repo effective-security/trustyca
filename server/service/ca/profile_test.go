@@ -46,9 +46,6 @@ func TestService_RegisterProfile(t *testing.T) {
 	assert.EqualError(t, err, "bad_request: missing profile")
 	_, err = svc.RegisterProfile(ctx, &pb.RegisterProfileRequest{})
 	assert.EqualError(t, err, "bad_request: missing profile")
-	noCA := &Service{db: tca.cadb, orgs: tca.orgsdb, authorizer: newFakeAuthorizer()}
-	_, err = noCA.RegisterProfile(ctx, valid())
-	assert.EqualError(t, err, "unavailable: CA is not configured")
 	req := valid()
 	req.Profile.Label = " "
 	_, err = svc.RegisterProfile(ctx, req)
@@ -307,9 +304,6 @@ func TestService_DeleteProfile(t *testing.T) {
 
 	_, err := svc.DeleteProfile(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA := &Service{db: tca.cadb, orgs: tca.orgsdb, authorizer: newFakeAuthorizer()}
-	_, err = noCA.DeleteProfile(ctx, &pb.DeleteProfileRequest{ID: tca.peer.ID.String()})
-	assert.EqualError(t, err, "unavailable: CA is not configured")
 	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{})
 	assert.EqualError(t, err, "bad_request: missing profile ID")
 	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{ID: "9999"})

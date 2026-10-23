@@ -18,9 +18,13 @@ import "github.com/effective-security/trustyca/privpb"
 - [func GetMethodsInfo\(\) map\[string\]\*MethodInfo](<#GetMethodsInfo>)
 - [func MarshalJSON\(v any\) \(\[\]byte, error\)](<#MarshalJSON>)
 - [func RegisterAdminServer\(s grpc.ServiceRegistrar, srv AdminServer\)](<#RegisterAdminServer>)
+- [func RegisterBackendServer\(s grpc.ServiceRegistrar, srv BackendServer\)](<#RegisterBackendServer>)
 - [type AdminClient](<#AdminClient>)
   - [func NewAdminClient\(cc grpc.ClientConnInterface\) AdminClient](<#NewAdminClient>)
 - [type AdminServer](<#AdminServer>)
+- [type BackendClient](<#BackendClient>)
+  - [func NewBackendClient\(cc grpc.ClientConnInterface\) BackendClient](<#NewBackendClient>)
+- [type BackendServer](<#BackendServer>)
 - [type CheckAccessFunc](<#CheckAccessFunc>)
 - [type ListCertificatesRequest](<#ListCertificatesRequest>)
   - [func \(\*ListCertificatesRequest\) Descriptor\(\) \(\[\]byte, \[\]int\)](<#ListCertificatesRequest.Descriptor>)
@@ -96,7 +100,16 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(UnimplementedAdminServer\) ListIssuers\(context.Context, \*ListIssuersRequest\) \(\*pb.IssuersResponse, error\)](<#UnimplementedAdminServer.ListIssuers>)
   - [func \(UnimplementedAdminServer\) ListOrgs\(context.Context, \*ListOrgsRequest\) \(\*pb.OrgsResponse, error\)](<#UnimplementedAdminServer.ListOrgs>)
   - [func \(UnimplementedAdminServer\) ListProjects\(context.Context, \*ListProjectsRequest\) \(\*pb.ProjectsResponse, error\)](<#UnimplementedAdminServer.ListProjects>)
+- [type UnimplementedBackendServer](<#UnimplementedBackendServer>)
+  - [func \(UnimplementedBackendServer\) ActivateIssuer\(context.Context, \*pb.ActivateIssuerRequest\) \(\*pb.Issuer, error\)](<#UnimplementedBackendServer.ActivateIssuer>)
+  - [func \(UnimplementedBackendServer\) ImportIssuer\(context.Context, \*pb.ImportIssuerRequest\) \(\*pb.Issuer, error\)](<#UnimplementedBackendServer.ImportIssuer>)
+  - [func \(UnimplementedBackendServer\) PublishCrls\(context.Context, \*pb.PublishCrlsRequest\) \(\*pb.CrlsResponse, error\)](<#UnimplementedBackendServer.PublishCrls>)
+  - [func \(UnimplementedBackendServer\) RegisterIssuer\(context.Context, \*pb.RegisterIssuerRequest\) \(\*pb.Issuer, error\)](<#UnimplementedBackendServer.RegisterIssuer>)
+  - [func \(UnimplementedBackendServer\) SignCertificate\(context.Context, \*pb.SignCertificateRequest\) \(\*pb.CertificateResponse, error\)](<#UnimplementedBackendServer.SignCertificate>)
+  - [func \(UnimplementedBackendServer\) SignOCSP\(context.Context, \*pb.OCSPRequest\) \(\*pb.OCSPResponse, error\)](<#UnimplementedBackendServer.SignOCSP>)
+  - [func \(UnimplementedBackendServer\) UpdateIssuer\(context.Context, \*pb.UpdateIssuerRequest\) \(\*pb.Issuer, error\)](<#UnimplementedBackendServer.UpdateIssuer>)
 - [type UnsafeAdminServer](<#UnsafeAdminServer>)
+- [type UnsafeBackendServer](<#UnsafeBackendServer>)
 
 
 ## Constants
@@ -112,7 +125,79 @@ const (
 )
 ```
 
+<a name="Backend_RegisterIssuer_FullMethodName"></a>
+
+```go
+const (
+    Backend_RegisterIssuer_FullMethodName  = "/privpb.Backend/RegisterIssuer"
+    Backend_ImportIssuer_FullMethodName    = "/privpb.Backend/ImportIssuer"
+    Backend_ActivateIssuer_FullMethodName  = "/privpb.Backend/ActivateIssuer"
+    Backend_UpdateIssuer_FullMethodName    = "/privpb.Backend/UpdateIssuer"
+    Backend_SignCertificate_FullMethodName = "/privpb.Backend/SignCertificate"
+    Backend_PublishCrls_FullMethodName     = "/privpb.Backend/PublishCrls"
+    Backend_SignOCSP_FullMethodName        = "/privpb.Backend/SignOCSP"
+)
+```
+
 ## Variables
+
+<a name="ActivateIssuerRequest_MessageDescription"></a>
+
+```go
+var ActivateIssuerRequest_MessageDescription = &api.MessageDescription{
+    Name:     "ActivateIssuerRequest",
+    Display:  "Activate Issuer Request",
+    FullName: "pb.ActivateIssuerRequest",
+    Documentation: `ActivateIssuerRequest specifies the externally signed certificate for a
+Pending issuer`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "OrgID",
+            FullName:      "pb.ActivateIssuerRequest.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `OrgID of the owning org`,
+        },
+        {
+            Name:          "ID",
+            FullName:      "pb.ActivateIssuerRequest.ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `ID of the Pending issuer`,
+        },
+        {
+            Name:          "Certificate",
+            FullName:      "pb.ActivateIssuerRequest.Certificate",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `Certificate provides the issuer certificate in PEM format`,
+        },
+        {
+            Name:          "Intermediates",
+            FullName:      "pb.ActivateIssuerRequest.Intermediates",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Intermediates provides the intermediate CA certificates in PEM format`,
+        },
+        {
+            Name:          "Root",
+            FullName:      "pb.ActivateIssuerRequest.Root",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Root provides the Root CA certificate in PEM format`,
+        },
+    },
+}
+```
 
 <a name="Admin_ServiceDesc"></a>Admin\_ServiceDesc is the grpc.ServiceDesc for Admin service. It's only intended for direct use with grpc.RegisterService, and not to be introspected or modified \(even as a copy\)
 
@@ -140,6 +225,67 @@ var Admin_ServiceDesc = grpc.ServiceDesc{
     },
     Streams:  []grpc.StreamDesc{},
     Metadata: "admin.proto",
+}
+```
+
+<a name="Backend_ServiceDesc"></a>Backend\_ServiceDesc is the grpc.ServiceDesc for Backend service. It's only intended for direct use with grpc.RegisterService, and not to be introspected or modified \(even as a copy\)
+
+```go
+var Backend_ServiceDesc = grpc.ServiceDesc{
+    ServiceName: "privpb.Backend",
+    HandlerType: (*BackendServer)(nil),
+    Methods: []grpc.MethodDesc{
+        {
+            MethodName: "RegisterIssuer",
+            Handler:    _Backend_RegisterIssuer_Handler,
+        },
+        {
+            MethodName: "ImportIssuer",
+            Handler:    _Backend_ImportIssuer_Handler,
+        },
+        {
+            MethodName: "ActivateIssuer",
+            Handler:    _Backend_ActivateIssuer_Handler,
+        },
+        {
+            MethodName: "UpdateIssuer",
+            Handler:    _Backend_UpdateIssuer_Handler,
+        },
+        {
+            MethodName: "SignCertificate",
+            Handler:    _Backend_SignCertificate_Handler,
+        },
+        {
+            MethodName: "PublishCrls",
+            Handler:    _Backend_PublishCrls_Handler,
+        },
+        {
+            MethodName: "SignOCSP",
+            Handler:    _Backend_SignOCSP_Handler,
+        },
+    },
+    Streams:  []grpc.StreamDesc{},
+    Metadata: "backend.proto",
+}
+```
+
+<a name="CertificateResponse_MessageDescription"></a>
+
+```go
+var CertificateResponse_MessageDescription = &api.MessageDescription{
+    Name:          "CertificateResponse",
+    Display:       "Certificate Response",
+    FullName:      "pb.CertificateResponse",
+    Documentation: `CertificateResponse returns Certificate`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:       "Certificate",
+            FullName:   "pb.CertificateResponse.Certificate",
+            Type:       "struct",
+            StructName: "pb.Certificate",
+            SearchType: "flat_object",
+        },
+    },
 }
 ```
 
@@ -374,6 +520,122 @@ fetch. If there are no more pages to fetch, NextPage will be empty.`,
 }
 ```
 
+<a name="Crl_MessageDescription"></a>
+
+```go
+var Crl_MessageDescription = &api.MessageDescription{
+    Name:          "Crl",
+    FullName:      "pb.Crl",
+    Documentation: `Crl provides X509 CRL information`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "ID",
+            FullName:      "pb.Crl.ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ID of the CRL`,
+        },
+        {
+            Name:          "OrgID",
+            FullName:      "pb.Crl.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `OrgID of the issuer's org`,
+        },
+        {
+            Name:          "IssuerID",
+            FullName:      "pb.Crl.IssuerID",
+            Display:       "Issuer ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `IssuerID of the issuer`,
+        },
+        {
+            Name:          "IKID",
+            FullName:      "pb.Crl.IKID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `IKID provides Issuer Key Identifier`,
+        },
+        {
+            Name:          "Number",
+            FullName:      "pb.Crl.Number",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Number is the monotonic CRL number`,
+        },
+        {
+            Name:          "ThisUpdate",
+            FullName:      "pb.Crl.ThisUpdate",
+            Display:       "This Update",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ThisUpdate is the time when the CRL was issued in RFC3339 format`,
+        },
+        {
+            Name:          "NextUpdate",
+            FullName:      "pb.Crl.NextUpdate",
+            Display:       "Next Update",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `NextUpdate is the time for the next update in RFC3339 format`,
+        },
+        {
+            Name:          "Issuer",
+            FullName:      "pb.Crl.Issuer",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Issuer name`,
+        },
+        {
+            Name:          "Pem",
+            FullName:      "pb.Crl.Pem",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Pem encoded CRL`,
+        },
+        {
+            Name:          "Locations",
+            FullName:      "pb.Crl.Locations",
+            Type:          "[]string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Locations of the published CRL`,
+        },
+    },
+}
+```
+
+<a name="CrlsResponse_MessageDescription"></a>
+
+```go
+var CrlsResponse_MessageDescription = &api.MessageDescription{
+    Name:          "CrlsResponse",
+    Display:       "Crls Response",
+    FullName:      "pb.CrlsResponse",
+    Documentation: `CrlsResponse returns published CRLs`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:       "Crls",
+            FullName:   "pb.CrlsResponse.Crls",
+            Type:       "[]struct",
+            StructName: "pb.Crl",
+            SearchType: "flat_object",
+        },
+    },
+}
+```
+
 <a name="EnumNameTypes"></a>
 
 ```go
@@ -384,6 +646,119 @@ var EnumNameTypes = map[string]reflect.Type{}
 
 ```go
 var File_admin_proto protoreflect.FileDescriptor
+```
+
+<a name="File_backend_proto"></a>
+
+```go
+var File_backend_proto protoreflect.FileDescriptor
+```
+
+<a name="ImportIssuerRequest_MessageDescription"></a>
+
+```go
+var ImportIssuerRequest_MessageDescription = &api.MessageDescription{
+    Name:          "ImportIssuerRequest",
+    Display:       "Import Issuer Request",
+    FullName:      "pb.ImportIssuerRequest",
+    Documentation: `ImportIssuerRequest specifies a request to import an existing issuer`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "OrgID",
+            FullName:      "pb.ImportIssuerRequest.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `OrgID of the owning org`,
+        },
+        {
+            Name:          "ProjectID",
+            FullName:      "pb.ImportIssuerRequest.ProjectID",
+            Display:       "Project ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ProjectID of the owning project; empty for an org-wide issuer`,
+        },
+        {
+            Name:          "Label",
+            FullName:      "pb.ImportIssuerRequest.Label",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Max:           64,
+            Documentation: `Label of the issuer, unique per (Org, Project)`,
+        },
+        {
+            Name:            "Type",
+            FullName:        "pb.ImportIssuerRequest.Type",
+            Type:            "int32",
+            SearchType:      "integer",
+            SearchOptions:   api.SearchOption_Sortable,
+            EnumDescription: pb.AuthorityType_Enum_EnumDescription,
+            Required:        true,
+            Documentation:   `Type of the authority`,
+        },
+        {
+            Name:          "Certificate",
+            FullName:      "pb.ImportIssuerRequest.Certificate",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `Certificate provides the issuer certificate in PEM format`,
+        },
+        {
+            Name:          "Intermediates",
+            FullName:      "pb.ImportIssuerRequest.Intermediates",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Intermediates provides the intermediate CA certificates in PEM format`,
+        },
+        {
+            Name:          "Root",
+            FullName:      "pb.ImportIssuerRequest.Root",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Root provides the Root CA certificate in PEM format`,
+        },
+        {
+            Name:          "KeyURI",
+            FullName:      "pb.ImportIssuerRequest.KeyURI",
+            Display:       "Key URI",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            RequiredOr:    []string{"KeyPem"},
+            Documentation: `KeyURI references an existing key in a crypto provider,
+e.g. awskms://..., gcpkms://..., pkcs11:...`,
+        },
+        {
+            Name:          "KeyPem",
+            FullName:      "pb.ImportIssuerRequest.KeyPem",
+            Display:       "Key Pem",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            RequiredOr:    []string{"KeyURI"},
+            Documentation: `KeyPem provides the private key in PEM format.
+It is stored protected by the data protection provider.`,
+        },
+        {
+            Name:          "Config",
+            FullName:      "pb.ImportIssuerRequest.Config",
+            Type:          "struct",
+            StructName:    "pb.IssuerConfig",
+            SearchType:    "flat_object",
+            Documentation: `Config provides runtime settings`,
+        },
+    },
+}
 ```
 
 <a name="IssuerConfig_MessageDescription"></a>
@@ -762,6 +1137,35 @@ var JsonUnmarshalOptions = protojson.UnmarshalOptions{
 }
 ```
 
+<a name="KeySpec_MessageDescription"></a>
+
+```go
+var KeySpec_MessageDescription = &api.MessageDescription{
+    Name:          "KeySpec",
+    Display:       "Key Spec",
+    FullName:      "pb.KeySpec",
+    Documentation: `KeySpec specifies the key to generate for an issuer`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "Algo",
+            FullName:      "pb.KeySpec.Algo",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Algo specifies the key algorithm: RSA|ECDSA`,
+        },
+        {
+            Name:          "Size",
+            FullName:      "pb.KeySpec.Size",
+            Type:          "int32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Size specifies RSA key size in bits or ECDSA curve size: 256|384|521`,
+        },
+    },
+}
+```
+
 <a name="ListCertificatesRequest_MessageDescription"></a>
 
 ```go
@@ -1106,6 +1510,49 @@ this response.`,
 }
 ```
 
+<a name="OCSPRequest_MessageDescription"></a>
+
+```go
+var OCSPRequest_MessageDescription = &api.MessageDescription{
+    Name:          "OCSPRequest",
+    Display:       "OCSP Request",
+    FullName:      "pb.OCSPRequest",
+    Documentation: `OCSPRequest provides DER encoded OCSP request`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "Der",
+            FullName:      "pb.OCSPRequest.Der",
+            Type:          "[]byte",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `Der provides DER encoded request`,
+        },
+    },
+}
+```
+
+<a name="OCSPResponse_MessageDescription"></a>
+
+```go
+var OCSPResponse_MessageDescription = &api.MessageDescription{
+    Name:          "OCSPResponse",
+    Display:       "OCSP Response",
+    FullName:      "pb.OCSPResponse",
+    Documentation: `OCSPResponse returns DER encoded OCSP response`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "Der",
+            FullName:      "pb.OCSPResponse.Der",
+            Type:          "[]byte",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Der provides DER encoded response`,
+        },
+    },
+}
+```
+
 <a name="Org_MessageDescription"></a>
 
 ```go
@@ -1294,8 +1741,522 @@ fetch. If there are no more pages to fetch, NextPage will be empty.`,
 }
 ```
 
+<a name="PublishCrlsRequest_MessageDescription"></a>
+
+```go
+var PublishCrlsRequest_MessageDescription = &api.MessageDescription{
+    Name:          "PublishCrlsRequest",
+    Display:       "Publish Crls Request",
+    FullName:      "pb.PublishCrlsRequest",
+    Documentation: `PublishCrlsRequest allows to publish CRLs on demand`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "OrgID",
+            FullName:      "pb.PublishCrlsRequest.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `OrgID of the owning org; empty for all orgs`,
+        },
+        {
+            Name:          "ProjectID",
+            FullName:      "pb.PublishCrlsRequest.ProjectID",
+            Display:       "Project ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ProjectID limits the scope to the project: the issuer of the IKID
+must belong to it, and without an IKID the issuers of the project
+publish. Empty publishes for the org-wide issuers and the projects the
+caller may read; a project Admin names the project, and an API key
+restricted to a project publishes for its project.`,
+        },
+        {
+            Name:          "IKID",
+            FullName:      "pb.PublishCrlsRequest.IKID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `IKID specifies Issuer Key ID; empty to publish for all issuers in scope`,
+        },
+        {
+            Name:          "Force",
+            FullName:      "pb.PublishCrlsRequest.Force",
+            Type:          "bool",
+            SearchType:    "boolean",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Force specifies to publish even if the current CRL is not due for renewal`,
+        },
+    },
+}
+```
+
+<a name="RegisterIssuerRequest_MessageDescription"></a>
+
+```go
+var RegisterIssuerRequest_MessageDescription = &api.MessageDescription{
+    Name:          "RegisterIssuerRequest",
+    Display:       "Register Issuer Request",
+    FullName:      "pb.RegisterIssuerRequest",
+    Documentation: `RegisterIssuerRequest specifies a request to create a new issuer`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "OrgID",
+            FullName:      "pb.RegisterIssuerRequest.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `OrgID of the owning org`,
+        },
+        {
+            Name:          "ProjectID",
+            FullName:      "pb.RegisterIssuerRequest.ProjectID",
+            Display:       "Project ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ProjectID of the owning project; empty for an org-wide issuer`,
+        },
+        {
+            Name:          "Label",
+            FullName:      "pb.RegisterIssuerRequest.Label",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Max:           64,
+            Documentation: `Label of the issuer, unique per (Org, Project)`,
+        },
+        {
+            Name:            "Type",
+            FullName:        "pb.RegisterIssuerRequest.Type",
+            Type:            "int32",
+            SearchType:      "integer",
+            SearchOptions:   api.SearchOption_Sortable,
+            EnumDescription: pb.AuthorityType_Enum_EnumDescription,
+            Required:        true,
+            Documentation:   `Type of the authority`,
+        },
+        {
+            Name:          "Subject",
+            FullName:      "pb.RegisterIssuerRequest.Subject",
+            Type:          "struct",
+            StructName:    "pb.X509Subject",
+            SearchType:    "flat_object",
+            Required:      true,
+            Documentation: `Subject of the issuer certificate`,
+        },
+        {
+            Name:          "KeySpec",
+            FullName:      "pb.RegisterIssuerRequest.KeySpec",
+            Display:       "Key Spec",
+            Type:          "struct",
+            StructName:    "pb.KeySpec",
+            SearchType:    "flat_object",
+            Documentation: `KeySpec of the key to generate; defaults to ECDSA P-256`,
+        },
+        {
+            Name:          "KeyProvider",
+            FullName:      "pb.RegisterIssuerRequest.KeyProvider",
+            Display:       "Key Provider",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `KeyProvider selects the crypto provider; empty for the server default`,
+        },
+        {
+            Name:          "ParentID",
+            FullName:      "pb.RegisterIssuerRequest.ParentID",
+            Display:       "Parent ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ParentID specifies the signing issuer. It must belong to the same org,
+or be a platform issuer that allows the Profile.
+Empty for Root type, or to create a Pending issuer with a CSR.`,
+        },
+        {
+            Name:          "Profile",
+            FullName:      "pb.RegisterIssuerRequest.Profile",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Profile specifies the CA profile the parent uses to sign the issuer
+certificate. Required when ParentID is set or Type is Root.`,
+        },
+        {
+            Name:          "Config",
+            FullName:      "pb.RegisterIssuerRequest.Config",
+            Type:          "struct",
+            StructName:    "pb.IssuerConfig",
+            SearchType:    "flat_object",
+            Documentation: `Config provides runtime settings`,
+        },
+        {
+            Name:          "SAN",
+            FullName:      "pb.RegisterIssuerRequest.SAN",
+            Type:          "[]string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `SAN specifies Subject Alternative Names for the issuer certificate`,
+        },
+        {
+            Name:          "Extensions",
+            FullName:      "pb.RegisterIssuerRequest.Extensions",
+            Type:          "[]struct",
+            StructName:    "pb.X509Extension",
+            SearchType:    "flat_object",
+            Documentation: `Extensions specifies additional extensions for the issuer certificate`,
+        },
+    },
+}
+```
+
+<a name="SignCertificateRequest_MessageDescription"></a>
+
+```go
+var SignCertificateRequest_MessageDescription = &api.MessageDescription{
+    Name:          "SignCertificateRequest",
+    Display:       "Sign Certificate Request",
+    FullName:      "pb.SignCertificateRequest",
+    Documentation: `SignCertificateRequest specifies certificate sign request`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "OrgID",
+            FullName:      "pb.SignCertificateRequest.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `OrgID of the owning org`,
+        },
+        {
+            Name:          "ProjectID",
+            FullName:      "pb.SignCertificateRequest.ProjectID",
+            Display:       "Project ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ProjectID of the owning project; recorded on the certificate and used to
+resolve project-scoped profiles and issuers`,
+        },
+        {
+            Name:          "Profile",
+            FullName:      "pb.SignCertificateRequest.Profile",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `Profile specifies the certificate profile label`,
+        },
+        {
+            Name:          "IssuerLabel",
+            FullName:      "pb.SignCertificateRequest.IssuerLabel",
+            Display:       "Issuer Label",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `IssuerLabel selects the issuer when the profile binds to "*";
+otherwise it must match the profile's issuer`,
+        },
+        {
+            Name:            "RequestFormat",
+            FullName:        "pb.SignCertificateRequest.RequestFormat",
+            Display:         "Request Format",
+            Type:            "int32",
+            SearchType:      "integer",
+            SearchOptions:   api.SearchOption_Sortable,
+            EnumDescription: pb.EncodingFormat_Enum_EnumDescription,
+            Documentation:   `RequestFormat provides the certificate request format: PEM or DER`,
+        },
+        {
+            Name:          "Request",
+            FullName:      "pb.SignCertificateRequest.Request",
+            Type:          "[]byte",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `Request provides the PKCS#10 certificate request`,
+        },
+        {
+            Name:          "SAN",
+            FullName:      "pb.SignCertificateRequest.SAN",
+            Type:          "[]string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `SAN specifies Subject Alternative Names to add or override`,
+        },
+        {
+            Name:          "Subject",
+            FullName:      "pb.SignCertificateRequest.Subject",
+            Type:          "struct",
+            StructName:    "pb.X509Subject",
+            SearchType:    "flat_object",
+            Documentation: `Subject overrides the subject name from the request`,
+        },
+        {
+            Name:          "NotBefore",
+            FullName:      "pb.SignCertificateRequest.NotBefore",
+            Display:       "Not Before",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `NotBefore overrides the validity start in RFC3339 format;
+no backdate is applied when provided`,
+        },
+        {
+            Name:          "NotAfter",
+            FullName:      "pb.SignCertificateRequest.NotAfter",
+            Display:       "Not After",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `NotAfter overrides the validity end in RFC3339 format;
+it must not exceed the profile expiry`,
+        },
+        {
+            Name:       "Extensions",
+            FullName:   "pb.SignCertificateRequest.Extensions",
+            Type:       "[]struct",
+            StructName: "pb.X509Extension",
+            SearchType: "flat_object",
+            Documentation: `Extensions specifies additional extensions to include, subject to the
+profile's AllowedExtensions`,
+        },
+        {
+            Name:          "Label",
+            FullName:      "pb.SignCertificateRequest.Label",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Max:           260,
+            Documentation: `Label is provided by the client for search and display`,
+        },
+        {
+            Name:          "Metadata",
+            FullName:      "pb.SignCertificateRequest.Metadata",
+            Type:          "map",
+            StructName:    "pb.SignCertificateRequest.MetadataEntry",
+            SearchType:    "flat_object",
+            Documentation: `Metadata is provided by the client`,
+        },
+    },
+}
+```
+
+<a name="SignCertificateRequest_MetadataEntry_MessageDescription"></a>
+
+```go
+var SignCertificateRequest_MetadataEntry_MessageDescription = &api.MessageDescription{
+    Name:     "SignCertificateRequest_MetadataEntry",
+    Display:  "Metadata Entry",
+    FullName: "pb.SignCertificateRequest.MetadataEntry",
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "Key",
+            FullName:      "pb.SignCertificateRequest.MetadataEntry.Key",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+        },
+        {
+            Name:          "Value",
+            FullName:      "pb.SignCertificateRequest.MetadataEntry.Value",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+        },
+    },
+}
+```
+
+<a name="UpdateIssuerRequest_MessageDescription"></a>
+
+```go
+var UpdateIssuerRequest_MessageDescription = &api.MessageDescription{
+    Name:          "UpdateIssuerRequest",
+    Display:       "Update Issuer Request",
+    FullName:      "pb.UpdateIssuerRequest",
+    Documentation: `UpdateIssuerRequest updates issuer config or status`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "OrgID",
+            FullName:      "pb.UpdateIssuerRequest.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `OrgID of the owning org`,
+        },
+        {
+            Name:          "ID",
+            FullName:      "pb.UpdateIssuerRequest.ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `ID of the issuer`,
+        },
+        {
+            Name:          "Config",
+            FullName:      "pb.UpdateIssuerRequest.Config",
+            Type:          "struct",
+            StructName:    "pb.IssuerConfig",
+            SearchType:    "flat_object",
+            Documentation: `Config replaces runtime settings when provided`,
+        },
+        {
+            Name:            "Status",
+            FullName:        "pb.UpdateIssuerRequest.Status",
+            Type:            "int32",
+            SearchType:      "integer",
+            SearchOptions:   api.SearchOption_Sortable,
+            EnumDescription: pb.IssuerStatus_Enum_EnumDescription,
+            Documentation:   `Status changes the status when provided: Archived or Destroyed`,
+        },
+    },
+}
+```
+
+<a name="X509Extension_MessageDescription"></a>
+
+```go
+var X509Extension_MessageDescription = &api.MessageDescription{
+    Name:          "X509Extension",
+    Display:       "X509 Extension",
+    FullName:      "pb.X509Extension",
+    Documentation: `X509Extension represents a raw extension to be included in the certificate.`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "ID",
+            FullName:      "pb.X509Extension.ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ID is the extension OID in dotted notation, e.g. 2.5.29.31`,
+        },
+        {
+            Name:          "Critical",
+            FullName:      "pb.X509Extension.Critical",
+            Type:          "bool",
+            SearchType:    "boolean",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Critical flag`,
+        },
+        {
+            Name:          "Value",
+            FullName:      "pb.X509Extension.Value",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Value is hex or base64 encoded DER value of the extension`,
+        },
+    },
+}
+```
+
+<a name="X509Name_MessageDescription"></a>
+
+```go
+var X509Name_MessageDescription = &api.MessageDescription{
+    Name:          "X509Name",
+    Display:       "X509 Name",
+    FullName:      "pb.X509Name",
+    Documentation: `X509Name specifies X509 Name`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "Country",
+            FullName:      "pb.X509Name.Country",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "State",
+            FullName:      "pb.X509Name.State",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "Locality",
+            FullName:      "pb.X509Name.Locality",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "Organisation",
+            FullName:      "pb.X509Name.Organisation",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "OrganisationalUnit",
+            FullName:      "pb.X509Name.OrganisationalUnit",
+            Display:       "Organisational Unit",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:          "SerialNumber",
+            FullName:      "pb.X509Name.SerialNumber",
+            Display:       "Serial Number",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+    },
+}
+```
+
+<a name="X509Subject_MessageDescription"></a>
+
+```go
+var X509Subject_MessageDescription = &api.MessageDescription{
+    Name:          "X509Subject",
+    Display:       "X509 Subject",
+    FullName:      "pb.X509Subject",
+    Documentation: `X509Subject specifies X509 Subject`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "CommonName",
+            FullName:      "pb.X509Subject.CommonName",
+            Display:       "Common Name",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+        {
+            Name:       "Names",
+            FullName:   "pb.X509Subject.Names",
+            Type:       "[]struct",
+            StructName: "pb.X509Name",
+            SearchType: "flat_object",
+        },
+        {
+            Name:          "SerialNumber",
+            FullName:      "pb.X509Subject.SerialNumber",
+            Display:       "Serial Number",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+        },
+    },
+}
+```
+
 <a name="CreateMessage"></a>
-## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1144>)
+## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1999>)
 
 ```go
 func CreateMessage(fullname string) any
@@ -1313,7 +2274,7 @@ func GetAdminMethodsInfo() map[string]*MethodInfo
 GetAdminMethodsInfo returns the methods info for the admin service. It filters out the methods that are not prefixed with "/privpb.Admin/".
 
 <a name="GetMessageDescription"></a>
-## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1152>)
+## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L2007>)
 
 ```go
 func GetMessageDescription(fullname string) *api.MessageDescription
@@ -1322,7 +2283,7 @@ func GetMessageDescription(fullname string) *api.MessageDescription
 
 
 <a name="GetMessageDescriptions"></a>
-## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1128>)
+## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1983>)
 
 ```go
 func GetMessageDescriptions() map[string]*api.MessageDescription
@@ -1331,7 +2292,7 @@ func GetMessageDescriptions() map[string]*api.MessageDescription
 
 
 <a name="GetMethodAliases"></a>
-## func [GetMethodAliases](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L57>)
+## func [GetMethodAliases](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L58>)
 
 ```go
 func GetMethodAliases() map[string]string
@@ -1340,7 +2301,7 @@ func GetMethodAliases() map[string]string
 GetMethodAliases returns map of method CLI commands to method names
 
 <a name="GetMethodsInfo"></a>
-## func [GetMethodsInfo](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L52>)
+## func [GetMethodsInfo](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L53>)
 
 ```go
 func GetMethodsInfo() map[string]*MethodInfo
@@ -1362,6 +2323,15 @@ MarshalJSON implements json.Marshaler
 
 ```go
 func RegisterAdminServer(s grpc.ServiceRegistrar, srv AdminServer)
+```
+
+
+
+<a name="RegisterBackendServer"></a>
+## func [RegisterBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L226>)
+
+```go
+func RegisterBackendServer(s grpc.ServiceRegistrar, srv BackendServer)
 ```
 
 
@@ -1491,8 +2461,89 @@ type AdminServer interface {
 }
 ```
 
+<a name="BackendClient"></a>
+## type [BackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L46-L70>)
+
+BackendClient is the client API for Backend service.
+
+For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+
+Backend is the signing plane of the CA \(DESIGN.md section 2.1\): the methods of pb.CA that use an issuer key or change the issuer registry. It is served over gRPC only, by the backend listener, to service identities over mTLS: the CA service of a WFE forwards the calls of its callers with their context \(trustyca\-peer\), and the AIA forwards OCSP requests \(trustyca\-aia\). Every method takes the messages of the pb.CA method of the same name, which name the org and the project explicitly, and behaves as that method for the caller: the backend authorizes a forwarded caller again with the roles and scopes of the pb.CA method.
+
+```go
+type BackendClient interface {
+    // RegisterIssuer creates an issuer of the org: the key is generated in
+    // the crypto provider, and the certificate is self-signed for a Root,
+    // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
+    RegisterIssuer(ctx context.Context, in *pb.RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+    // ImportIssuer registers an issuer from an existing certificate and a
+    // key URI of a crypto provider or a PEM key stored protected
+    // (CA.ImportIssuer)
+    ImportIssuer(ctx context.Context, in *pb.ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+    // ActivateIssuer sets the externally signed certificate of a Pending
+    // issuer, which must be for the issuer's key (CA.ActivateIssuer)
+    ActivateIssuer(ctx context.Context, in *pb.ActivateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+    // UpdateIssuer updates the runtime configuration or the status of an
+    // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
+    UpdateIssuer(ctx context.Context, in *pb.UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+    // SignCertificate signs a certificate request with the issuer of the
+    // profile and registers the certificate (CA.SignCertificate)
+    SignCertificate(ctx context.Context, in *pb.SignCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error)
+    // PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
+    // of the issuers in scope (CA.PublishCrls)
+    PublishCrls(ctx context.Context, in *pb.PublishCrlsRequest, opts ...grpc.CallOption) (*pb.CrlsResponse, error)
+    // SignOCSP signs the OCSP response of a DER request; the request names
+    // the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+    SignOCSP(ctx context.Context, in *pb.OCSPRequest, opts ...grpc.CallOption) (*pb.OCSPResponse, error)
+}
+```
+
+<a name="NewBackendClient"></a>
+### func [NewBackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L76>)
+
+```go
+func NewBackendClient(cc grpc.ClientConnInterface) BackendClient
+```
+
+
+
+<a name="BackendServer"></a>
+## type [BackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L163-L187>)
+
+BackendServer is the server API for Backend service. All implementations should embed UnimplementedBackendServer for forward compatibility.
+
+Backend is the signing plane of the CA \(DESIGN.md section 2.1\): the methods of pb.CA that use an issuer key or change the issuer registry. It is served over gRPC only, by the backend listener, to service identities over mTLS: the CA service of a WFE forwards the calls of its callers with their context \(trustyca\-peer\), and the AIA forwards OCSP requests \(trustyca\-aia\). Every method takes the messages of the pb.CA method of the same name, which name the org and the project explicitly, and behaves as that method for the caller: the backend authorizes a forwarded caller again with the roles and scopes of the pb.CA method.
+
+```go
+type BackendServer interface {
+    // RegisterIssuer creates an issuer of the org: the key is generated in
+    // the crypto provider, and the certificate is self-signed for a Root,
+    // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
+    RegisterIssuer(context.Context, *pb.RegisterIssuerRequest) (*pb.Issuer, error)
+    // ImportIssuer registers an issuer from an existing certificate and a
+    // key URI of a crypto provider or a PEM key stored protected
+    // (CA.ImportIssuer)
+    ImportIssuer(context.Context, *pb.ImportIssuerRequest) (*pb.Issuer, error)
+    // ActivateIssuer sets the externally signed certificate of a Pending
+    // issuer, which must be for the issuer's key (CA.ActivateIssuer)
+    ActivateIssuer(context.Context, *pb.ActivateIssuerRequest) (*pb.Issuer, error)
+    // UpdateIssuer updates the runtime configuration or the status of an
+    // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
+    UpdateIssuer(context.Context, *pb.UpdateIssuerRequest) (*pb.Issuer, error)
+    // SignCertificate signs a certificate request with the issuer of the
+    // profile and registers the certificate (CA.SignCertificate)
+    SignCertificate(context.Context, *pb.SignCertificateRequest) (*pb.CertificateResponse, error)
+    // PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
+    // of the issuers in scope (CA.PublishCrls)
+    PublishCrls(context.Context, *pb.PublishCrlsRequest) (*pb.CrlsResponse, error)
+    // SignOCSP signs the OCSP response of a DER request; the request names
+    // the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+    SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error)
+}
+```
+
 <a name="CheckAccessFunc"></a>
-## type [CheckAccessFunc](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L17>)
+## type [CheckAccessFunc](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L18>)
 
 CheckAccessFunc defines function to check access rights for the HTTP request
 
@@ -1691,7 +2742,7 @@ func (msg *ListCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListCertificatesRequest.Validate"></a>
-### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1115>)
+### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1970>)
 
 ```go
 func (m *ListCertificatesRequest) Validate(ctx context.Context) error
@@ -1879,7 +2930,7 @@ func (msg *ListIssuersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1118>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1973>)
 
 ```go
 func (m *ListIssuersRequest) Validate(ctx context.Context) error
@@ -2013,7 +3064,7 @@ func (msg *ListOrgsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListOrgsRequest.Validate"></a>
-### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1121>)
+### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1976>)
 
 ```go
 func (m *ListOrgsRequest) Validate(ctx context.Context) error
@@ -2158,7 +3209,7 @@ func (msg *ListProjectsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProjectsRequest.Validate"></a>
-### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1124>)
+### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1979>)
 
 ```go
 func (m *ListProjectsRequest) Validate(ctx context.Context) error
@@ -2167,7 +3218,7 @@ func (m *ListProjectsRequest) Validate(ctx context.Context) error
 
 
 <a name="MessageAllocator"></a>
-## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1074>)
+## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L1897>)
 
 MessageAllocator defines constructor to allocate Protobuf message
 
@@ -2176,7 +3227,7 @@ type MessageAllocator func() any
 ```
 
 <a name="MethodInfo"></a>
-## type [MethodInfo](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L20-L26>)
+## type [MethodInfo](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L21-L27>)
 
 MethodInfo provides info about RPC method
 
@@ -2191,7 +3242,7 @@ type MethodInfo struct {
 ```
 
 <a name="GetMethodInfo"></a>
-### func [GetMethodInfo](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L47>)
+### func [GetMethodInfo](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L48>)
 
 ```go
 func GetMethodInfo(method string) *MethodInfo
@@ -2200,7 +3251,7 @@ func GetMethodInfo(method string) *MethodInfo
 GetMethodInfo returns MethodInfo
 
 <a name="UnmarshalRequest"></a>
-### func [UnmarshalRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L29>)
+### func [UnmarshalRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L30>)
 
 ```go
 func UnmarshalRequest(w http.ResponseWriter, r *http.Request) (any, *MethodInfo, error)
@@ -2209,7 +3260,7 @@ func UnmarshalRequest(w http.ResponseWriter, r *http.Request) (any, *MethodInfo,
 UnmarshalRequest unmarshals JSON body of HTTP request to protobuf request
 
 <a name="RequestAllocator"></a>
-## type [RequestAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L14>)
+## type [RequestAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/allocator.pb.go#L15>)
 
 RequestAllocator defines constructor to allocate Protobuf request
 
@@ -2264,6 +3315,80 @@ func (UnimplementedAdminServer) ListProjects(context.Context, *ListProjectsReque
 
 
 
+<a name="UnimplementedBackendServer"></a>
+## type [UnimplementedBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L194>)
+
+UnimplementedBackendServer should be embedded to have forward compatible implementations.
+
+NOTE: this should be embedded by value instead of pointer to avoid a nil pointer dereference when methods are called.
+
+```go
+type UnimplementedBackendServer struct{}
+```
+
+<a name="UnimplementedBackendServer.ActivateIssuer"></a>
+### func \(UnimplementedBackendServer\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L202>)
+
+```go
+func (UnimplementedBackendServer) ActivateIssuer(context.Context, *pb.ActivateIssuerRequest) (*pb.Issuer, error)
+```
+
+
+
+<a name="UnimplementedBackendServer.ImportIssuer"></a>
+### func \(UnimplementedBackendServer\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L199>)
+
+```go
+func (UnimplementedBackendServer) ImportIssuer(context.Context, *pb.ImportIssuerRequest) (*pb.Issuer, error)
+```
+
+
+
+<a name="UnimplementedBackendServer.PublishCrls"></a>
+### func \(UnimplementedBackendServer\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L211>)
+
+```go
+func (UnimplementedBackendServer) PublishCrls(context.Context, *pb.PublishCrlsRequest) (*pb.CrlsResponse, error)
+```
+
+
+
+<a name="UnimplementedBackendServer.RegisterIssuer"></a>
+### func \(UnimplementedBackendServer\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L196>)
+
+```go
+func (UnimplementedBackendServer) RegisterIssuer(context.Context, *pb.RegisterIssuerRequest) (*pb.Issuer, error)
+```
+
+
+
+<a name="UnimplementedBackendServer.SignCertificate"></a>
+### func \(UnimplementedBackendServer\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L208>)
+
+```go
+func (UnimplementedBackendServer) SignCertificate(context.Context, *pb.SignCertificateRequest) (*pb.CertificateResponse, error)
+```
+
+
+
+<a name="UnimplementedBackendServer.SignOCSP"></a>
+### func \(UnimplementedBackendServer\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L214>)
+
+```go
+func (UnimplementedBackendServer) SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error)
+```
+
+
+
+<a name="UnimplementedBackendServer.UpdateIssuer"></a>
+### func \(UnimplementedBackendServer\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L205>)
+
+```go
+func (UnimplementedBackendServer) UpdateIssuer(context.Context, *pb.UpdateIssuerRequest) (*pb.Issuer, error)
+```
+
+
+
 <a name="UnsafeAdminServer"></a>
 ## type [UnsafeAdminServer](<https://github.com/effective-security/trustyca/blob/main/privpb/admin_grpc.pb.go#L208-L210>)
 
@@ -2271,6 +3396,17 @@ UnsafeAdminServer may be embedded to opt out of forward compatibility for this s
 
 ```go
 type UnsafeAdminServer interface {
+    // contains filtered or unexported methods
+}
+```
+
+<a name="UnsafeBackendServer"></a>
+## type [UnsafeBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L222-L224>)
+
+UnsafeBackendServer may be embedded to opt out of forward compatibility for this service. Use of this interface is not recommended, as added methods to BackendServer will result in compilation errors.
+
+```go
+type UnsafeBackendServer interface {
     // contains filtered or unexported methods
 }
 ```

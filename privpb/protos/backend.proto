@@ -1,0 +1,43 @@
+syntax = "proto3";
+package privpb;
+
+option go_package = "github.com/effective-security/trustyca/privpb";
+
+import "ca.proto";
+import "pkix.proto";
+
+// Backend is the signing plane of the CA (DESIGN.md section 2.1): the
+// methods of pb.CA that use an issuer key or change the issuer registry.
+// It is served over gRPC only, by the backend listener, to service
+// identities over mTLS: the CA service of a WFE forwards the calls of its
+// callers with their context (trustyca-peer), and the AIA forwards OCSP
+// requests (trustyca-aia). Every method takes the messages of the pb.CA
+// method of the same name, which name the org and the project explicitly,
+// and behaves as that method for the caller: the backend authorizes a
+// forwarded caller again with the roles and scopes of the pb.CA method.
+service Backend {
+    // RegisterIssuer creates an issuer of the org: the key is generated in
+    // the crypto provider, and the certificate is self-signed for a Root,
+    // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
+    rpc RegisterIssuer(pb.RegisterIssuerRequest) returns (pb.Issuer);
+    // ImportIssuer registers an issuer from an existing certificate and a
+    // key URI of a crypto provider or a PEM key stored protected
+    // (CA.ImportIssuer)
+    rpc ImportIssuer(pb.ImportIssuerRequest) returns (pb.Issuer);
+    // ActivateIssuer sets the externally signed certificate of a Pending
+    // issuer, which must be for the issuer's key (CA.ActivateIssuer)
+    rpc ActivateIssuer(pb.ActivateIssuerRequest) returns (pb.Issuer);
+    // UpdateIssuer updates the runtime configuration or the status of an
+    // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
+    rpc UpdateIssuer(pb.UpdateIssuerRequest) returns (pb.Issuer);
+    // SignCertificate signs a certificate request with the issuer of the
+    // profile and registers the certificate (CA.SignCertificate)
+    rpc SignCertificate(pb.SignCertificateRequest)
+        returns (pb.CertificateResponse);
+    // PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
+    // of the issuers in scope (CA.PublishCrls)
+    rpc PublishCrls(pb.PublishCrlsRequest) returns (pb.CrlsResponse);
+    // SignOCSP signs the OCSP response of a DER request; the request names
+    // the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+    rpc SignOCSP(pb.OCSPRequest) returns (pb.OCSPResponse);
+}

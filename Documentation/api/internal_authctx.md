@@ -21,7 +21,7 @@ import "github.com/effective-security/trustyca/internal/authctx"
 - [func IsKnownScope\(scope string\) bool](<#IsKnownScope>)
 - [func IsOrgRole\(role pb.Role\_Enum\) bool](<#IsOrgRole>)
 - [func IsProjectRole\(role pb.Role\_Enum\) bool](<#IsProjectRole>)
-- [func NewAuthUnaryBackendInterceptor\(\) grpc.UnaryServerInterceptor](<#NewAuthUnaryBackendInterceptor>)
+- [func NewAuthUnaryBackendInterceptor\(authorizer Authorizer\) grpc.UnaryServerInterceptor](<#NewAuthUnaryBackendInterceptor>)
 - [func NewAuthUnaryInterceptor\(authorizer Authorizer, skipLogPaths \[\]telemetry.LoggerSkipPath\) grpc.UnaryServerInterceptor](<#NewAuthUnaryInterceptor>)
 - [func NewTrustyCtx\(ctx context.Context, idnCtx identity.Context\) context.Context](<#NewTrustyCtx>)
 - [func ParseRole\(name string\) pb.Role\_Enum](<#ParseRole>)
@@ -98,6 +98,12 @@ const (
     ScopeCertsRevoke = "certs:revoke"
     ScopeAll         = "*"
 )
+```
+
+<a name="PeerRoleName"></a>PeerRoleName is the role of a trustyca instance that calls the backend listener for its callers: the WFE forwards the key operations of the CA with the context of the end user \(DESIGN.md section 2.1\). It is the only role whose forwarded context the backend accepts.
+
+```go
+const PeerRoleName = "trustyca-peer"
 ```
 
 <a name="ServiceRolePrefix"></a>ServiceRolePrefix marks trusted service identities \(mTLS peers\), which pass tenant scope explicitly and are not subject to membership checks TODO: add a config option for the service role prefix
@@ -255,7 +261,7 @@ func GetCallerScope(ctx context.Context, authorizer Authorizer) (*pb.CallerScope
 GetCallerScope returns the caller's resolved scope in the org selected in the token, and the access rules of every public method with the verdict at org scope
 
 <a name="Handler"></a>
-## func [Handler](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L156>)
+## func [Handler](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L159>)
 
 ```go
 func Handler(delegate http.Handler) http.Handler
@@ -309,13 +315,13 @@ func IsProjectRole(role pb.Role_Enum) bool
 IsProjectRole returns true if the role can be granted in a project
 
 <a name="NewAuthUnaryBackendInterceptor"></a>
-## func [NewAuthUnaryBackendInterceptor](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L266>)
+## func [NewAuthUnaryBackendInterceptor](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L284>)
 
 ```go
-func NewAuthUnaryBackendInterceptor() grpc.UnaryServerInterceptor
+func NewAuthUnaryBackendInterceptor(authorizer Authorizer) grpc.UnaryServerInterceptor
 ```
 
-NewAuthUnaryBackendInterceptor returns grpc.UnaryServerInterceptor that sets the TrustyCtx of a backend call: the context forwarded by the WFE in the x\-trustyca\-context metadata when there is one \(the WFE authenticated the end user\), otherwise the identity the backend listener authenticated itself, so that a service caller over mTLS \(RA, CIS, jobs\) acts under its own role. A forwarded context that does not parse sets no identity, so the call fails closed downstream instead of acting as the peer. The backend runs no CheckAccess: the server authz config restricts its methods to service roles.
+NewAuthUnaryBackendInterceptor returns grpc.UnaryServerInterceptor that sets the TrustyCtx of a call of the backend listener. A caller acts as the identity the listener authenticated, so that a service caller over mTLS \(RA, AIA, the operator\) acts under its own role. The WFE \(PeerRoleName\) forwards the calls of its callers with their context in the x\-trustyca\-context metadata: the call then runs as that caller, after CheckAccess authorizes it again for the method, a method of the backend service with the roles and scopes of the pb.CA method of the same name. A forwarded context of another role is ignored, and one that does not parse fails the call. The backend runs no CheckAccess for its service callers: the server authz config restricts its methods to service roles.
 
 <a name="NewAuthUnaryInterceptor"></a>
 ## func [NewAuthUnaryInterceptor](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/authz.go#L43>)
@@ -327,7 +333,7 @@ func NewAuthUnaryInterceptor(authorizer Authorizer, skipLogPaths []telemetry.Log
 NewAuthUnaryInterceptor returns grpc.UnaryServerInterceptor that checks access to the method
 
 <a name="NewTrustyCtx"></a>
-## func [NewTrustyCtx](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L191>)
+## func [NewTrustyCtx](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L194>)
 
 ```go
 func NewTrustyCtx(ctx context.Context, idnCtx identity.Context) context.Context
@@ -563,7 +569,7 @@ type ProjectRequester interface {
 ```
 
 <a name="TrustyCtx"></a>
-## type [TrustyCtx](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L40-L63>)
+## type [TrustyCtx](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L43-L66>)
 
 TrustyCtx provides trustyca context
 
@@ -595,7 +601,7 @@ type TrustyCtx interface {
 ```
 
 <a name="FromContext"></a>
-### func [FromContext](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L177>)
+### func [FromContext](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L180>)
 
 ```go
 func FromContext(ctx context.Context) TrustyCtx
@@ -604,7 +610,7 @@ func FromContext(ctx context.Context) TrustyCtx
 FromContext extracts the TrustyCtx stored inside a go context. Returns empty context if no such value exists.
 
 <a name="FromRequest"></a>
-### func [FromRequest](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L186>)
+### func [FromRequest](<https://github.com/effective-security/trustyca/blob/main/internal/authctx/ctx.go#L189>)
 
 ```go
 func FromRequest(r *http.Request) TrustyCtx

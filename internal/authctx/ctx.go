@@ -6,12 +6,15 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/porto/xhttp/identity"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/privpb"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/jwt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -254,29 +257,55 @@ func NewTrustyCtx(ctx context.Context, idnCtx identity.Context) context.Context 
 // trustycaContextGRPCHeaderName specifies default name for gRPC header
 const trustycaContextGRPCHeaderName = "x-trustyca-context"
 
+// PeerRoleName is the role of a trustyca instance that calls the backend
+// listener for its callers: the WFE forwards the key operations of the CA
+// with the context of the end user (DESIGN.md section 2.1). It is the only
+// role whose forwarded context the backend accepts.
+const PeerRoleName = "trustyca-peer"
+
+// The methods of the backend service are the pb.CA methods of the same
+// name, which declare the roles and scopes a forwarded caller needs
+var (
+	backendMethodPrefix = "/" + privpb.Backend_ServiceDesc.ServiceName + "/"
+	caMethodPrefix      = "/" + pb.CA_ServiceDesc.ServiceName + "/"
+)
+
 // NewAuthUnaryBackendInterceptor returns grpc.UnaryServerInterceptor that
-// sets the TrustyCtx of a backend call: the context forwarded by the WFE in
-// the x-trustyca-context metadata when there is one (the WFE authenticated
-// the end user), otherwise the identity the backend listener authenticated
-// itself, so that a service caller over mTLS (RA, CIS, jobs) acts under its
-// own role. A forwarded context that does not parse sets no identity, so the
-// call fails closed downstream instead of acting as the peer. The backend
-// runs no CheckAccess: the server authz config restricts its methods to
-// service roles.
-func NewAuthUnaryBackendInterceptor() grpc.UnaryServerInterceptor {
+// sets the TrustyCtx of a call of the backend listener. A caller acts as the
+// identity the listener authenticated, so that a service caller over mTLS
+// (RA, AIA, the operator) acts under its own role. The WFE (PeerRoleName)
+// forwards the calls of its callers with their context in the
+// x-trustyca-context metadata: the call then runs as that caller, after
+// CheckAccess authorizes it again for the method, a method of the backend
+// service with the roles and scopes of the pb.CA method of the same name. A
+// forwarded context of another role is ignored, and one that does not parse
+// fails the call. The backend runs no CheckAccess for its service callers:
+// the server authz config restricts its methods to service roles.
+func NewAuthUnaryBackendInterceptor(authorizer Authorizer) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok || len(md[trustycaContextGRPCHeaderName]) == 0 {
-			return handler(NewTrustyCtx(ctx, identity.FromContext(ctx)), req)
+		idn := identity.FromContext(ctx)
+		md, _ := metadata.FromIncomingContext(ctx)
+		forwarded := md.Get(trustycaContextGRPCHeaderName)
+		if len(forwarded) == 0 {
+			return handler(NewTrustyCtx(ctx, idn), req)
 		}
+		peerRole := idn.Identity().Role()
+		if peerRole != PeerRoleName {
+			logger.ContextKV(ctx, xlog.WARNING,
+				"reason", "forwarded_context_ignored",
+				"action", info.FullMethod,
+				"role", peerRole)
+			return handler(NewTrustyCtx(ctx, idn), req)
+		}
+
 		var ss trustycaCtxState
-		err := json.Unmarshal([]byte(md[trustycaContextGRPCHeaderName][0]), &ss)
+		err := json.Unmarshal([]byte(forwarded[0]), &ss)
 		if err != nil {
 			logger.ContextKV(ctx, xlog.WARNING,
 				"reason", "forwarded_context",
 				"action", info.FullMethod,
 				"err", err.Error())
-			return handler(ctx, req)
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.Unauthenticated, "invalid forwarded context")
 		}
 		rctx := &trustycactx{
 			appRole:    ss.AppRole,
@@ -299,6 +328,15 @@ func NewAuthUnaryBackendInterceptor() grpc.UnaryServerInterceptor {
 			"email", ss.Email,
 			"role", ss.AppRole,
 		)
+
+		action := info.FullMethod
+		if name, ok := strings.CutPrefix(action, backendMethodPrefix); ok {
+			action = caMethodPrefix + name
+		}
+		err = CheckAccess(ctx, authorizer, req, action)
+		if err != nil {
+			return nil, err
+		}
 		return handler(ctx, req)
 	}
 }

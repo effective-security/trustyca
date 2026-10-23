@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/effective-security/trustyca/server/service/backend"
+
 	"github.com/effective-security/porto/gserver"
 	"github.com/effective-security/porto/xhttp/identity"
 	"github.com/effective-security/trustyca/api/pb"
@@ -47,8 +49,9 @@ const (
 )
 
 // TestService_EndToEnd runs the CA service of the app container over the
-// configured database, with the platform issuer of ca.bootstrap_config, and
-// calls it over gRPC as the RA: it registers a root of its own in a new
+// configured database, with the backend service of the same process and the
+// platform issuer of ca.bootstrap_config, and calls it over gRPC as the RA
+// (the key operations reach the backend in process): it registers a root of its own in a new
 // org, signs, reads, lists, relabels and revokes a certificate, checks the
 // revocation status through OCSP, publishes and reads the CRL of the root,
 // and asks the bootstrap issuer for the status of a certificate it issued
@@ -70,11 +73,14 @@ func TestService_EndToEnd(t *testing.T) {
 	var provider db.Provider
 	require.NoError(t, container.Invoke(func(p db.Provider) { provider = p }))
 
+	// the CA service forwards the key operations to the backend service of
+	// the same process, which it finds through discovery
 	server, err := gserver.Start("CATest", &gserver.Config{
 		ListenURLs: []string{testutils.CreateURL("http", "")},
-		Services:   []string{ca.ServiceName},
+		Services:   []string{ca.ServiceName, backend.ServiceName},
 	}, container, map[string]gserver.ServiceFactory{
-		ca.ServiceName: ca.Factory,
+		ca.ServiceName:      ca.Factory,
+		backend.ServiceName: backend.Factory,
 	})
 	require.NoError(t, err)
 	t.Cleanup(server.Close)

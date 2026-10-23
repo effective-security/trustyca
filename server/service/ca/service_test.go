@@ -21,6 +21,8 @@ import (
 	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
+	"github.com/effective-security/trustyca/server/service/backend"
+	"github.com/effective-security/trustyca/server/service/shared"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/cryptoprov"
@@ -114,7 +116,7 @@ func notFoundErr(table string, id any) error {
 
 // fakeAuthorizer resolves projects and grants from a fixed set: the
 // interceptor authorizes the scope of a request, and the service the rows
-// it resolves by ID (rowAccess) and the projects a list covers
+// it resolves by ID (Scope.RowAccess) and the projects a list covers
 type fakeAuthorizer struct {
 	projects map[uint64]*model.Project
 }
@@ -540,15 +542,20 @@ func newTestCA(t testing.TB, ctrl *gomock.Controller) *testCA {
 	return tca
 }
 
-// service returns the service of the tests over the CA
+// service returns the CA service of the tests, which forwards the key
+// operations to the backend service over the CA in the same process, with
+// the context of the caller
 func (tca *testCA) service() *Service {
-	return &Service{
-		db:         tca.cadb,
-		orgs:       tca.orgsdb,
-		authorizer: newFakeAuthorizer(),
-		registry:   tca.registry,
-		publisher:  core.NewCrlPublisher(tca.cadb, tca.registry),
-	}
+	authorizer := newFakeAuthorizer()
+	backendSvc := backend.New(tca.cadb, tca.orgsdb, authorizer, tca.registry)
+	return New(tca.cadb, tca.orgsdb, authorizer, shared.NewStaticBackendLocator(backendSvc))
+}
+
+// noCA returns a CA service without a backend and a backend service without
+// an issuer registry, over the DB of the CA
+func (tca *testCA) noCA() (*Service, *backend.Service) {
+	authorizer := newFakeAuthorizer()
+	return New(tca.cadb, tca.orgsdb, authorizer, nil), backend.New(tca.cadb, tca.orgsdb, authorizer, nil)
 }
 
 // addProfile stores a profile of the scope
@@ -641,7 +648,7 @@ func newCSR(t testing.TB, cn string) ([]byte, []byte) {
 		Subject: pkix.Name{CommonName: cn},
 	}, key)
 	require.NoError(t, err)
-	return der, pem.EncodeToMemory(&pem.Block{Type: csrPEMType, Bytes: der})
+	return der, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: der})
 }
 
 // keyPEM returns the PEM encoding of the key

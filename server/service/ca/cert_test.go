@@ -16,6 +16,7 @@ import (
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
+	"github.com/effective-security/trustyca/server/service/internal/caapi"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/stretchr/testify/assert"
@@ -568,7 +569,7 @@ func TestService_RevokeCertificate(t *testing.T) {
 	assert.True(t, evt.ProjectID.IsZero())
 	assert.Equal(t, orgCert.ID.UInt64(), evt.ReferenceID.UInt64())
 	assert.Equal(t, "Certificate revoked", evt.Title)
-	assert.Equal(t, ServiceName, evt.Source.String())
+	assert.Equal(t, caapi.EventSource, evt.Source.String())
 	assert.Equal(t, testCallerEmail, evt.Email.String())
 	assert.Equal(t, `certificate "CN=org.example.com" revoked: KeyCompromise`, evt.Description.String())
 

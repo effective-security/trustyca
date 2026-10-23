@@ -7,12 +7,7 @@ metrics:
 servers:
   wfe:
     disabled: false
+  aia:
+    disabled: false
 
 tasks: []
-
-client:
-  client_tls:
-    cert: $(HOME)/.trustyca/certs/trustyca_client.pem
-    key: $(HOME)/.trustyca/certs/trustyca_client.key
-    trusted_ca: $(HOME)/.trustyca/certs/trustyca_root.pem
-  dial_timeout: 60s
