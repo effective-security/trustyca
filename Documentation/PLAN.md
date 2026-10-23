@@ -624,6 +624,95 @@ Follow-ups:
 2. `OCSPRequest.IKID` from the `/v1/ocspi/{ikid}` routes (ROADMAP.md
    RM-003) is still open.
 
+## Phase 9: signing plane and service clients (steps 1 to 3 done, 4 in part)
+
+DESIGN.md sections 2.1 and 2.2: tenants manage their CA through `pb.CA` on
+the `wfe` (the Web UI), while the issuer keys stay in the `backend`
+service on the backend listener, and pods of different roles reach each
+other with named service clients. Each step ends green.
+
+1. Service clients and the backend listener (done):
+   - `api/client`: `Config.Name`; `NewFactory(clients)` refuses an unnamed
+     or duplicate client, and every client method takes the client name
+     and the listener name, so a process dials with several identities.
+     `config.Configuration.Clients` replaces `client`; `aia.client_tls`
+     went, the `aia` client carries the AIA certificate. The dev
+     configuration names `default`, `ca` (`trustyca_peer`) and `aia`
+     (`trustyca_aia`); the `cis` client of the first draft went, since no
+     service dials with it and `make gen_test_certs` generates no
+     `trustyca_cis`. porto's `--client-cert`, `--client-key` and
+     `--client-trusted-ca` fail the start: there is no single client to
+     override.
+   - The `backend` listener is back (`config.BackendServerName`,
+     `--backend-listen-url`), verifying a client certificate when given so
+     that probes reach its status routes; the TLS identity map is on the
+     backend only. The `wfe` keeps `client_cert_auth: false`, so browsers
+     connect, and maps no TLS identity, so no `trustyca-*` role is
+     reachable there. The `router` listener went.
+   - Tests: the factory (names, an unknown client and listener, the TLS
+     files of each client), the role matrix of the three listeners, the app
+     tests pass a URL for each listener, so they bind no fixed port.
+2. `privpb.Backend` (done): `privpb/protos/backend.proto` with
+   `RegisterIssuer`, `ImportIssuer`, `ActivateIssuer`, `UpdateIssuer`,
+   `SignCertificate`, `PublishCrls` and `SignOCSP` over the `pb` messages
+   of `pb.CA`; every request of these methods carries `OrgID`, so no
+   `privpb` copy was needed. `make proto-priv` generates the server, the
+   proxy client and the mock (the HTTP handler is generated and not
+   registered). `server/service/backend` (service `backend`) owns the
+   issuer registry and the CRL publisher and runs the code `ca.Service`
+   ran; both services use the tenant checks of
+   `server/service/internal/caapi` (Scope). Every issuer
+   mutation runs there, archiving included, so the registry stops an
+   issuer at once. `client.Factory.BackendClient` dials it; the AIA calls
+   `Backend.SignOCSP` through `client.BackendLocator`. Backend authz:
+   `/privpb.Backend:trustyca-peer` and `/privpb.Backend/SignOCSP` for
+   `trustyca-aia` as well; the AIA's `/pb.CA/SignOCSP` rule went.
+3. The forwarding `ca` service (done): `ca.Service` has no registry and
+   forwards the key methods (`forward`) through `client.BackendLocator`:
+   the backend of the process found by discovery under
+   `client.LocalBackend` (the forwarding service has the methods of
+   `privpb.BackendServer` too and would otherwise find itself), called
+   directly, else the `ca` client. A profile change invalidates an
+   in-process backend; a remote one waits for its TTL. A FailedPrecondition
+   from a remote backend is HTTP 409 conflict again (`forwardedError`):
+   the pinned porto converts it to 400. NewAuthUnaryBackendInterceptor
+   takes the authorizer, accepts a forwarded context from `trustyca-peer`
+   only, authorizes it with CheckAccess for the `pb.CA` method of the same
+   name, ignores one from another role and refuses one that does not
+   parse. The `wfe` serves `ca` (`/pb.CA` under `authz.allow_any_role`).
+   Tests: the CA service tests run through the forwarding over an
+   in-process backend; the interceptor matrix; the locator (local, the
+   forwarding service not found, remote retries and close, concurrent
+   lookups under the race detector); TestService_ForwardOverMTLS: a web
+   process's CA service against the backend listener of the dev
+   configuration over mTLS, with the DB grants, the actor of the event,
+   the AIA identity and the 409 of a refusal.
+4. Pod roles (in part): only the backend service and the `crl_renewal`
+   task build the registry; Test_AppInstance_WebRole starts the wfe and
+   aia listeners under a crypto provider and bootstrap that do not exist,
+   and a process with the backend fails on them. Open: an integration test
+   of two apps in one test process, a web app (wfe, aia, the `ca` and `aia`
+   clients pointing at the other) and a signing app (backend), where a
+   tenant token signs, revokes and publishes through the wfe and the AIA
+   answers OCSP through its client.
+5. Documentation (done): DESIGN.md sections 1, 2, 3.5, 5.1, 7, 8, 9.2, 10
+   and 12, the codemap, the README, ROADMAP.md (RM-006 to RM-009), the
+   `doc.go` of `api/client` and `server/service/ca`.
+
+Follow-ups (ROADMAP.md):
+
+1. Profile invalidation broadcast to every backend instance (Redis pub/sub
+   or PostgreSQL NOTIFY); until then a profile change reaches a remote
+   backend after `ca.issuer_cache_ttl` (RM-007).
+2. Least privilege of the signing plane: a data protection key for issuer
+   keys that the web pods do not hold, DB roles per pod role, name
+   constraints on tenant issuing CAs, a method allowlist per service role
+   in `authctx` (RM-008).
+3. Dropping `OrgID` from the public `pb.CA` requests, with `privpb` copies
+   for the RA and the operator (RM-009).
+4. The Web UI calls the CA over gRPC: `ca` registers no JSON route on the
+   wfe (`httppb.GetCAHTTPHandler` with the access check), as `cis` does.
+
 ## Verification checklist per phase
 
 - `make proto` (when protos change), `go generate ./...`, `make build`,

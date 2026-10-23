@@ -266,7 +266,11 @@ func provideClientFactory(cfg *config.Configuration) (client.Factory, error) {
 	// 	ci := awsprov.NewCallerIdentity(awsFactory, 5*time.Minute, nil)
 	// 	ops = append(ops, client.WithCallerIdentity(ci))
 	// }
-	return client.NewFactory(cfg.Client, ops...), nil
+	f, err := client.NewFactory(cfg.Clients, ops...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "invalid clients configuration")
+	}
+	return f, nil
 }
 
 func provideOAuth2Clients(cfg *config.Configuration) (*oauth2client.Provider, error) {

@@ -91,10 +91,11 @@ configuration), without TLS or authentication, as a TLS verifier fetches
 them: the issuer certificate (AIA caIssuers, `GET /v1/cert/{ikid}`), the
 CRL (CRL Distribution Point, `GET /v1/crl/{ikid}`) and the OCSP responder
 (`/v1/ocsp`, `/v1/ocspi/{ikid}`). The listener serves nothing else. The
-service holds no keys: OCSP requests are forwarded to `CA.SignOCSP` on the
-backend listener with the certificate of the `aia` section
-(`make gen_test_certs` creates `trustyca_aia`), and the signed responses
-are cached until their next update.
+service holds no keys: OCSP requests are forwarded to `Backend.SignOCSP`,
+in process when the `backend` service runs in the same process, else on the
+backend listener with the `aia` service client (`make gen_test_certs`
+creates its certificate, `trustyca_aia`), and the signed responses are
+cached until their next update.
 
     # the issuer certificate and the CRL of an issuer, by its key identifier
     curl -s http://localhost:8888/v1/cert/$IKID -o issuer.der
@@ -109,12 +110,21 @@ a ca-config file, `Config` of `RegisterIssuer`) name the AIA routes with
 
 ## Certification Authority
 
-The `ca` service of the `backend` listener is the CA: the issuers,
-profiles, trust anchors, certificates, revocations and CRLs of every org.
-It is not exposed to the internet: the Registration Authority calls it with
-the `trustyca-ra` identity and the operator with `trustyca-admin`, both TLS
+The `ca` service is the CA API: the issuers, profiles, trust anchors,
+certificates, revocations and CRLs of every org. The `wfe` listener serves
+it to the tenants with their token (the Web UI, the CLI, API keys); the
+`backend` listener serves it to the Registration Authority with the
+`trustyca-ra` identity and to the operator with `trustyca-admin`, both TLS
 client certificates mapped by `identity_map.tls` of the listener
-(`make gen_test_certs` creates `trustyca_ra` and `trustyca_admin`). The `ca`
+(`make gen_test_certs` creates `trustyca_ra` and `trustyca_admin`). The
+issuer keys stay in the `backend` service of the backend listener (the
+signing plane, `privpb.Backend`), which is never exposed to the internet:
+the `ca` service forwards the key operations (issuer registration, import,
+activation and updates, signing, CRL publishing, OCSP) to it, in process or
+with the `ca` service client of the `clients` section (the `trustyca-peer`
+identity), and the backend authorizes the forwarded caller again. A pod
+runs the listeners of its role (DESIGN.md sections 2.1 and 2.2): a web pod
+without the `backend` listener loads no crypto provider. The `ca`
 section of the configuration names the ca-config of the platform issuers
 (`bootstrap_config`), mirrored into the CA tables at startup: in
 `etc/dev/ca-config.local.yaml` the L1 CA `trusty.l1` signs the issuing CAs

@@ -13,6 +13,8 @@ import (
 	"net"
 	"testing"
 
+	"github.com/effective-security/trustyca/server/service/backend"
+
 	"github.com/alecthomas/kong"
 	"github.com/effective-security/porto/gserver"
 	"github.com/effective-security/porto/xhttp/identity"
@@ -73,9 +75,10 @@ func TestCA_EndToEnd(t *testing.T) {
 
 	server, err := gserver.Start("CTLTest", &gserver.Config{
 		ListenURLs: []string{testutils.CreateURL("http", "")},
-		Services:   []string{casvc.ServiceName, adminsvc.ServiceName},
+		Services:   []string{casvc.ServiceName, backend.ServiceName, adminsvc.ServiceName},
 	}, container, map[string]gserver.ServiceFactory{
 		casvc.ServiceName:    casvc.Factory,
+		backend.ServiceName:  backend.Factory,
 		adminsvc.ServiceName: adminsvc.Factory,
 	})
 	require.NoError(t, err)

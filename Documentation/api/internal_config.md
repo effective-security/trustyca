@@ -32,10 +32,13 @@ import "github.com/effective-security/trustyca/internal/config"
 
 ```go
 const (
-    // WFEServerName specifies server name for Web Front End
-    WFEServerName     = "wfe"
+    // WFEServerName is the listener of users and API keys: the Web Front
+    // End, with the token APIs, the CIS and the CA management
+    WFEServerName = "wfe"
+    // BackendServerName is the listener of the service identities over
+    // mTLS: the signing plane (the backend service), the CA of the RA and
+    // the operator, and the Admin API (DESIGN.md section 2.1)
     BackendServerName = "backend"
-    RouterServerName  = "router"
     // AIAServerName is the plain HTTP listener of the Authority Information
     // Access service: the AIA, CRL and OCSP routes of the issued certificates
     AIAServerName = "aia"
@@ -89,18 +92,12 @@ func LoadWithOverride(configFile, configOverride string, config any, sc configlo
 LoadWithOverride will load the configuration from the named config and optional override file
 
 <a name="AIA"></a>
-## type [AIA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L198-L210>)
+## type [AIA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L203-L209>)
 
-AIA specifies the Authority Information Access service configuration: the public, read\-only service over plain HTTP that serves the issuer certificates, CRLs and OCSP responses the issued certificates point at. It holds no keys: OCSP requests are forwarded to the CA over the backend gRPC client \(\`client.server\_url.backend\`\).
+AIA specifies the Authority Information Access service configuration: the public, read\-only service over plain HTTP that serves the issuer certificates, CRLs and OCSP responses the issued certificates point at. It holds no keys: OCSP requests are forwarded to the backend service, in process when it runs in the same process, else with the \`aia\` service client \(\`clients\`, \`server\_url.backend\`\).
 
 ```go
 type AIA struct {
-    // ClientTLS specifies the TLS certificate the AIA presents to the CA
-    // backend, mapped to the `trustyca-aia` role by the backend listener
-    // (`spiffe://trustyca/aia`). Empty uses the `client.client_tls`
-    // certificate.
-    ClientTLS gserver.TLSInfo `json:"client_tls,omitempty" yaml:"client_tls,omitempty"`
-
     // OcspCacheSize is the number of OCSP responses kept in memory, keyed by
     // the hash of the request and served until the NextUpdate of the
     // response; the least recently used response is evicted first. The
@@ -110,7 +107,7 @@ type AIA struct {
 ```
 
 <a name="Auth"></a>
-## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L94-L114>)
+## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L98-L118>)
 
 Auth specifies the authentication configuration
 
@@ -139,7 +136,7 @@ type Auth struct {
 ```
 
 <a name="CA"></a>
-## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L164-L191>)
+## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L168-L195>)
 
 CA specifies the Certification Authority configuration
 
@@ -175,7 +172,7 @@ type CA struct {
 ```
 
 <a name="Cache"></a>
-## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L117-L127>)
+## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L121-L131>)
 
 Cache specifies configuration of the cache.
 
@@ -194,7 +191,7 @@ type Cache struct {
 ```
 
 <a name="Configuration"></a>
-## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L34-L76>)
+## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L37-L80>)
 
 Configuration contains the user configurable data for the service
 
@@ -221,9 +218,6 @@ type Configuration struct {
     // HTTPServers specifies a list of servers that expose HTTP or gRPC services
     HTTPServers map[string]*gserver.Config `json:"servers" yaml:"servers"`
 
-    // Client specifies configurations for the client to connect to the cluster
-    Client client.Config `json:"client" yaml:"client"`
-
     // Tasks specifies array of tasks
     Tasks []Task `json:"tasks" yaml:"tasks"`
 
@@ -238,6 +232,10 @@ type Configuration struct {
 
     // AIA specifies the Authority Information Access service configuration
     AIA AIA `json:"aia" yaml:"aia"`
+
+    // Clients specifies the named service clients a process dials other
+    // listeners with, one per identity (DESIGN.md section 2.2)
+    Clients []client.Config `json:"clients" yaml:"clients"`
 }
 ```
 
@@ -251,7 +249,7 @@ func Load(configFile string) (*Configuration, error)
 Load will load the configuration from the named config file, apply any overrides, and resolve relative directory locations.
 
 <a name="CryptoProv"></a>
-## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L152-L161>)
+## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L156-L165>)
 
 CryptoProv specifies the configuration for crypto providers
 
@@ -269,7 +267,7 @@ type CryptoProv struct {
 ```
 
 <a name="Orgs"></a>
-## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L142-L149>)
+## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L146-L153>)
 
 Orgs specifies the Orgs configuration
 
@@ -285,7 +283,7 @@ type Orgs struct {
 ```
 
 <a name="Retention"></a>
-## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L213-L218>)
+## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L212-L217>)
 
 Retention specifies the retention of expired certificates
 
@@ -324,7 +322,7 @@ type SQL struct {
 ```
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L79-L91>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L83-L95>)
 
 Service specifies the basic service info
 
@@ -345,7 +343,7 @@ type Service struct {
 ```
 
 <a name="Task"></a>
-## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L130-L139>)
+## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L134-L143>)
 
 Task specifies configuration of a single task.
 

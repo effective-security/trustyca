@@ -2,18 +2,16 @@ package aia
 
 import (
 	"cmp"
-	"io"
-	"sync"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/gserver"
-	"github.com/effective-security/porto/pkg/tlsconfig"
 	"github.com/effective-security/porto/restserver"
 	"github.com/effective-security/trustyca/api/client"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/internal/db"
-	"github.com/effective-security/x/fileutil/resolve"
+	"github.com/effective-security/trustyca/privpb"
+	"github.com/effective-security/trustyca/server/service/shared"
 	"github.com/effective-security/xlog"
 )
 
@@ -32,21 +30,17 @@ var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca/serve
 // CRL Distribution Point URLs: the issuer certificate (AIA caIssuers), the
 // current CRL (CDP) and the OCSP responder. The service is REST only, reads
 // the CA tables and holds no issuer keys: OCSP requests are forwarded to
-// the CA over the backend gRPC client and the signed responses are cached
+// the backend service (privpb.Backend) and the signed responses are cached
 // until their NextUpdate.
 type Service struct {
-	server gserver.GServer
-	cfg    *config.Configuration
-	db     db.CaReadonlyDb
-	cache  *ocspCache
+	cfg   *config.Configuration
+	db    db.CaReadonlyDb
+	cache *ocspCache
 
-	// the CA the OCSP requests are forwarded to: the one given to New, or
-	// else a client of the backend created on the first request, since the
-	// gRPC client blocks until the backend is reachable
-	caLock   sync.Mutex
-	ca       pb.CAServer
-	caCloser io.Closer
-	clients  client.Factory
+	// the backend the OCSP requests are forwarded to: the backend service
+	// of the process, else a client of the backend listener with the `aia`
+	// service client, created on the first request
+	backend *shared.BackendLocator
 }
 
 // Factory returns a factory of the service
@@ -58,20 +52,20 @@ func Factory(server gserver.GServer) any {
 	return func(cfg *config.Configuration,
 		caDb db.CaReadonlyDb,
 		clients client.Factory) error {
-		svc, err := New(cfg, caDb, nil, clients)
+		backend := shared.NewBackendLocator(server.Discovery, clients, client.ClientNameAIA, config.BackendServerName)
+		svc, err := New(cfg, caDb, backend)
 		if err != nil {
 			return err
 		}
-		svc.server = server
 		server.AddService(svc)
 		return nil
 	}
 }
 
-// New returns the service over the CA tables. The CA is the server the
-// OCSP requests are forwarded to; when it is nil, a client of the backend
-// is created with the factory on the first request.
-func New(cfg *config.Configuration, caDb db.CaReadonlyDb, ca pb.CAServer, clients client.Factory) (*Service, error) {
+// New returns the service over the CA tables. The backend locator returns
+// the backend the OCSP requests are forwarded to; without one every OCSP
+// request answers tryLater.
+func New(cfg *config.Configuration, caDb db.CaReadonlyDb, backend *shared.BackendLocator) (*Service, error) {
 	if cfg == nil || caDb == nil {
 		return nil, errors.New("aia.New: invalid parameter")
 	}
@@ -83,8 +77,7 @@ func New(cfg *config.Configuration, caDb db.CaReadonlyDb, ca pb.CAServer, client
 		cfg:     cfg,
 		db:      caDb,
 		cache:   cache,
-		ca:      ca,
-		clients: clients,
+		backend: backend,
 	}, nil
 }
 
@@ -100,12 +93,10 @@ func (s *Service) IsReady() bool {
 
 // Close the subservices and its resources
 func (s *Service) Close() {
-	s.caLock.Lock()
-	defer s.caLock.Unlock()
-	if s.caCloser != nil {
-		_ = s.caCloser.Close()
-		s.caCloser = nil
-		s.ca = nil
+	if s.backend != nil {
+		if err := s.backend.Close(); err != nil {
+			logger.KV(xlog.ERROR, "reason", "close_backend", "err", err.Error())
+		}
 	}
 	logger.KV(xlog.INFO, "closed", ServiceName)
 }
@@ -123,36 +114,11 @@ func (s *Service) RegisterRoute(r restserver.Router) {
 	r.POST(pb.PathForOCSP, s.OCSPHandler())
 }
 
-// caClient returns the CA the OCSP requests are forwarded to, creating the
-// client of the backend on the first call: with the TLS certificate of
-// `aia.client_tls` when it is set, else with the one of the client
-// configuration. A backend that is not reachable fails the call, and the
-// next request tries again.
-func (s *Service) caClient() (pb.CAServer, error) {
-	s.caLock.Lock()
-	defer s.caLock.Unlock()
-	if s.ca != nil {
-		return s.ca, nil
+// signer returns the backend the OCSP requests are forwarded to; a backend
+// that is not reachable fails the call, and the next request tries again
+func (s *Service) signer() (privpb.BackendServer, error) {
+	if s.backend == nil {
+		return nil, errors.New("backend is not configured")
 	}
-	if s.clients == nil {
-		return nil, errors.New("CA client is not configured")
-	}
-	var ops []client.Option
-	if tlsInfo := s.cfg.AIA.ClientTLS; !tlsInfo.Empty() {
-		tlsCfg, err := tlsconfig.NewClientTLSFromFiles(
-			resolve.ExpandPath(tlsInfo.CertFile),
-			resolve.ExpandPath(tlsInfo.KeyFile),
-			resolve.ExpandPath(tlsInfo.TrustedCAFile))
-		if err != nil {
-			return nil, errors.WithMessage(err, "unable to build the TLS configuration of the CA client")
-		}
-		ops = append(ops, client.WithTLS(tlsCfg))
-	}
-	ca, closer, err := s.clients.CAClient(config.BackendServerName, ops...)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to create the CA client")
-	}
-	s.ca = ca
-	s.caCloser = closer
-	return ca, nil
+	return s.backend.Backend()
 }

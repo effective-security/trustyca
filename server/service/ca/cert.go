@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/effective-security/trustyca/server/service/internal/caapi"
+
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
@@ -37,7 +39,7 @@ func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateRequ
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +64,11 @@ func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificates
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	projectID, err := s.tenantProject(ctx, orgID, req.ProjectID)
+	projectID, err := s.scope.Project(ctx, orgID, req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +76,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificates
 	if err != nil {
 		return nil, err
 	}
-	expiringBefore, err := parseTime(ctx, req.ExpiringBefore, "ExpiringBefore")
+	expiringBefore, err := caapi.ParseTime(ctx, req.ExpiringBefore, "ExpiringBefore")
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +94,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificates
 		q.ExpiringBefore = &expiringBefore
 	}
 	if projectID.IsZero() {
-		q.ProjectIDs, err = s.listProjects(ctx, orgID)
+		q.ProjectIDs, err = s.scope.ListProjects(ctx, orgID)
 		if err != nil {
 			return nil, err
 		}
@@ -117,14 +119,14 @@ func (s *Service) UpdateCertificateLabel(ctx context.Context, req *pb.UpdateCert
 	if len(req.Label) > model.MaxLenForName {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid label length")
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
 	if req.ID == "" {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing certificate ID")
 	}
-	projectID, err := s.requestProject(ctx, orgID, req.ProjectID)
+	projectID, err := s.scope.RequestProject(ctx, orgID, req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -184,11 +186,11 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 	if len(req.ReasonText) > model.MaxLenForName {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid reason text length")
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	projectID, err := s.requestProject(ctx, orgID, req.ProjectID)
+	projectID, err := s.scope.RequestProject(ctx, orgID, req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +204,7 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 		return nil, err
 	}
 	if row.Status == pb.CertificateStatus_Revoked {
-		return nil, preconditionFailed(ctx, "certificate is already revoked")
+		return nil, caapi.PreconditionFailed(ctx, "certificate is already revoked")
 	}
 	res, err := s.db.RevokeCertificate(ctx, &query.RevokeCertificateRequest{
 		CertificateID: row.ID.UInt64(),
@@ -214,7 +216,7 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 	if err != nil {
 		switch {
 		case errors.Is(err, db.ErrAlreadyRevoked):
-			return nil, preconditionFailed(ctx, "certificate is already revoked")
+			return nil, caapi.PreconditionFailed(ctx, "certificate is already revoked")
 		case xdb.IsNotFoundError(err):
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "certificate not found")
 		}
@@ -237,7 +239,7 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 		"serial", res.SerialNumber,
 		"subject", res.Subject,
 		"revocation_reason", res.Reason.String())
-	events.New(ctx, ServiceName, pb.EventType_CertificateRevoked, "Certificate revoked").
+	events.New(ctx, caapi.EventSource, pb.EventType_CertificateRevoked, "Certificate revoked").
 		Org(orgID).
 		Project(res.ProjectID).
 		Reference(res.CertificateID).
@@ -255,11 +257,11 @@ func (s *Service) ListRevokedCertificates(ctx context.Context, req *pb.ListRevok
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	projectID, err := s.tenantProject(ctx, orgID, req.ProjectID)
+	projectID, err := s.scope.Project(ctx, orgID, req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +278,7 @@ func (s *Service) ListRevokedCertificates(ctx context.Context, req *pb.ListRevok
 		Cursor:    cursor,
 	}
 	if projectID.IsZero() {
-		q.ProjectIDs, err = s.listProjects(ctx, orgID)
+		q.ProjectIDs, err = s.scope.ListProjects(ctx, orgID)
 		if err != nil {
 			return nil, err
 		}
@@ -289,18 +291,18 @@ func (s *Service) ListRevokedCertificates(ctx context.Context, req *pb.ListRevok
 }
 
 // findCertificate returns the certificate of the org the selector names,
-// when the caller may call the method on it (rowAccess): by ID, by issuer
-// and serial number, by thumbprint, or the newest certificate of a Subject
-// Key Identifier among those the caller may read. A certificate of another
-// org, of the platform, of a project the caller cannot read or, when the
-// selector names a project, of another project is not found.
+// when the caller may call the method on it (Scope.RowAccess): by ID, by
+// issuer and serial number, by thumbprint, or the newest certificate of a
+// Subject Key Identifier among those the caller may read. A certificate of
+// another org, of the platform, of a project the caller cannot read or,
+// when the selector names a project, of another project is not found.
 func (s *Service) findCertificate(ctx context.Context, orgID xdb.ID, sel *certificateSelector, method string) (*model.Certificate, error) {
 	var row *model.Certificate
 	var err error
 	switch {
 	case sel.id != "":
 		var id xdb.ID
-		id, err = parseID(ctx, sel.id, "certificate ID")
+		id, err = caapi.ParseID(ctx, sel.id, "certificate ID")
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +331,7 @@ func (s *Service) findCertificate(ctx context.Context, orgID xdb.ID, sel *certif
 	if !sel.projectID.IsZero() && row.ProjectID.UInt64() != sel.projectID.UInt64() {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "certificate not found")
 	}
-	err = s.rowAccess(ctx, orgID, row.ProjectID, method, "certificate")
+	err = s.scope.RowAccess(ctx, orgID, row.ProjectID, method, "certificate")
 	if err != nil {
 		return nil, err
 	}
@@ -352,12 +354,12 @@ func (s *Service) certificateBySKID(ctx context.Context, orgID, projectID xdb.ID
 	if !projectID.IsZero() {
 		q.ProjectID = projectID.UInt64()
 	} else {
-		keyProjectID, err := s.tenantProject(ctx, orgID, "")
+		keyProjectID, err := s.scope.Project(ctx, orgID, "")
 		if err != nil {
 			return nil, err
 		}
 		if keyProjectID.IsZero() {
-			q.ProjectIDs, err = s.listProjects(ctx, orgID)
+			q.ProjectIDs, err = s.scope.ListProjects(ctx, orgID)
 			if err != nil {
 				return nil, err
 			}

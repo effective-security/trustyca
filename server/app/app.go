@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"io"
 	"os"
 	"os/signal"
@@ -24,7 +25,6 @@ import (
 	"github.com/effective-security/trustyca/server/service"
 	trustyTasks "github.com/effective-security/trustyca/server/tasks"
 	"github.com/effective-security/x/netutil"
-	"github.com/effective-security/x/values"
 	"github.com/effective-security/xlog"
 	"go.uber.org/dig"
 )
@@ -36,19 +36,15 @@ type appFlags struct {
 	appinit.LogConfig
 	appinit.Flags
 
-	PromAddr            string   `help:"Address for Prometheus metrics end point"`
-	HostName            []string `help:"hostname to use for the service certificate"`
-	WfeListenURL        []string `help:"URL for the WFE listening end-point"`
-	RouterListenURL     []string `help:"URL for the Router listening end-point"`
-	BackendListenURL    []string `help:"URL for the Backend listening end-point"`
-	AiaListenURL        []string `help:"URL for the AIA listening end-point"`
-	HttpsCertFile       string   `help:"HTTPS server certificate file"`
-	HttpsKeyFile        string   `help:"HTTPS server key file"`
-	HttpsTrustedCAFile  string   `help:"HTTPS server trusted CA file"`
-	ClientCertFile      string   `help:"Client certificate file"`
-	ClientKeyFile       string   `help:"Client key file"`
-	ClientTrustedCAFile string   `help:"Client trusted CA file"`
-	OnlyServer          string   `help:"Only start the specified server"`
+	PromAddr           string   `help:"Address for Prometheus metrics end point"`
+	HostName           []string `help:"hostname to use for the service certificate"`
+	WfeListenURL       []string `help:"URL for the WFE listening end-point"`
+	BackendListenURL   []string `help:"URL for the Backend listening end-point"`
+	AiaListenURL       []string `help:"URL for the AIA listening end-point"`
+	HttpsCertFile      string   `help:"HTTPS server certificate file"`
+	HttpsKeyFile       string   `help:"HTTPS server key file"`
+	HttpsTrustedCAFile string   `help:"HTTPS server trusted CA file"`
+	OnlyServer         string   `help:"Only start the specified server"`
 }
 
 // App provides application container
@@ -246,8 +242,8 @@ func (a *App) Run(startedCh chan<- bool) error {
 				// Add Authz per Project to WFE
 				err = a.container.Invoke(func(authorizer authctx.Authorizer) error {
 					opts = append(opts,
-						gserver.MaxRecvMsgSize(values.NumbersCoalesce(svcCfg.MaxRecvMsgSize, 10*1024*1024)),
-						gserver.MaxSendMsgSize(values.NumbersCoalesce(svcCfg.MaxSendMsgSize, 5*1024*1024)),
+						gserver.MaxRecvMsgSize(cmp.Or(svcCfg.MaxRecvMsgSize, 10*1024*1024)),
+						gserver.MaxSendMsgSize(cmp.Or(svcCfg.MaxSendMsgSize, 5*1024*1024)),
 						gserver.WithMiddleware(authctx.Handler),
 						gserver.WithUnaryServerInterceptor(authctx.NewAuthUnaryInterceptor(authorizer, svcCfg.SkipLogPaths)),
 						//gserver.WithStreamServerInterceptor(authctx.NewAuthStreamInterceptor(authorizer, svcCfg.SkipLogPaths)),
@@ -259,18 +255,20 @@ func (a *App) Run(startedCh chan<- bool) error {
 					return err
 				}
 			case config.BackendServerName:
-				opts = append(opts,
-					gserver.MaxRecvMsgSize(values.NumbersCoalesce(svcCfg.MaxRecvMsgSize, 10*1024*1024)),
-					gserver.MaxSendMsgSize(values.NumbersCoalesce(svcCfg.MaxSendMsgSize, 5*1024*1024)),
-					gserver.WithUnaryServerInterceptor(authctx.NewAuthUnaryBackendInterceptor()),
-					//gserver.WithStreamServerInterceptor(authctx.NewAuthStreamInterceptor(nil, svcCfg.SkipLogPaths)),
-				)
-
-			case config.RouterServerName:
-				opts = append(opts,
-					gserver.MaxRecvMsgSize(values.NumbersCoalesce(svcCfg.MaxRecvMsgSize, 10*1024*1024)),
-					gserver.MaxSendMsgSize(values.NumbersCoalesce(svcCfg.MaxSendMsgSize, 5*1024*1024)),
-				)
+				// service identities over mTLS, and the callers the WFE
+				// forwards, authorized again (DESIGN.md section 2.1)
+				err = a.container.Invoke(func(authorizer authctx.Authorizer) error {
+					opts = append(opts,
+						gserver.MaxRecvMsgSize(cmp.Or(svcCfg.MaxRecvMsgSize, 10*1024*1024)),
+						gserver.MaxSendMsgSize(cmp.Or(svcCfg.MaxSendMsgSize, 5*1024*1024)),
+						gserver.WithUnaryServerInterceptor(authctx.NewAuthUnaryBackendInterceptor(authorizer)),
+					)
+					return nil
+				})
+				if err != nil {
+					a.stopServers()
+					return err
+				}
 			}
 
 			httpServer, err := gserver.Start(name, svcCfg, a.container, service.Factories, opts...)
@@ -380,7 +378,7 @@ func (a *App) loadConfig() error {
 
 	a.cfg = new(config.Configuration)
 	err = config.LoadWithOverride(
-		values.StringsCoalesce(a.flags.Cfg, config.ConfigFileName),
+		cmp.Or(a.flags.Cfg, config.ConfigFileName),
 		a.flags.CfgOverride,
 		a.cfg,
 		nil,
@@ -401,6 +399,12 @@ func (a *App) loadConfig() error {
 		}
 	}
 
+	// a process dials with several named clients, each with its own
+	// certificate, so a single client certificate has nothing to override
+	if a.flags.ClientCert != "" || a.flags.ClientKey != "" || a.flags.ClientTrustedCA != "" {
+		return errors.New("--client-cert, --client-key and --client-trusted-ca are not supported: set client_tls of the clients in the configuration")
+	}
+
 	overrideStrings := []struct {
 		to   *string
 		from *string
@@ -409,9 +413,6 @@ func (a *App) loadConfig() error {
 		{&a.cfg.Service.Name, &a.flags.ServiceName},
 		{&a.cfg.Service.Region, &a.flags.Region},
 		{&a.cfg.Service.ClusterName, &a.flags.Cluster},
-		{&a.cfg.Client.ClientTLS.CertFile, &a.flags.ClientCert},
-		{&a.cfg.Client.ClientTLS.KeyFile, &a.flags.ClientKey},
-		{&a.cfg.Client.ClientTLS.TrustedCAFile, &a.flags.ClientTrustedCA},
 	}
 	for _, o := range overrideStrings {
 		if *o.from != "" {
@@ -444,12 +445,6 @@ func (a *App) loadConfig() error {
 			case config.BackendServerName:
 				if len(a.flags.BackendListenURL) > 0 {
 					httpCfg.ListenURLs = a.flags.BackendListenURL
-					httpCfg.Disabled = len(httpCfg.ListenURLs) == 1 && httpCfg.ListenURLs[0] == "none"
-				}
-
-			case config.RouterServerName:
-				if len(a.flags.RouterListenURL) > 0 {
-					httpCfg.ListenURLs = a.flags.RouterListenURL
 					httpCfg.Disabled = len(httpCfg.ListenURLs) == 1 && httpCfg.ListenURLs[0] == "none"
 				}
 

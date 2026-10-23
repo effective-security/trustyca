@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/effective-security/trustyca/server/service/internal/caapi"
+
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/ca/pbconv"
@@ -24,10 +26,6 @@ func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRe
 	if req == nil || req.Profile == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing profile")
 	}
-	err := s.requireCA(ctx)
-	if err != nil {
-		return nil, err
-	}
 	def := req.Profile
 	def.Label = strings.TrimSpace(def.Label)
 	def.IssuerLabel = strings.TrimSpace(def.IssuerLabel)
@@ -46,11 +44,11 @@ func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRe
 	if _, err := pbconv.ProfileFromPb(def); err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	projectID, err := s.tenantProject(ctx, orgID, req.ProjectID)
+	projectID, err := s.scope.Project(ctx, orgID, req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +61,7 @@ func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRe
 	if err != nil {
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to register profile")
 	}
-	s.registry.InvalidateProfile(orgID, projectID, res.Label)
+	s.invalidateProfile(orgID, projectID, res.Label)
 	logger.ContextKV(ctx, xlog.NOTICE,
 		"status", "profile_registered",
 		"profile_id", res.ID.UnderscoreString(),
@@ -71,7 +69,7 @@ func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRe
 		"project_id", res.ProjectID.UnderscoreString(),
 		"profile", res.Label,
 		"issuer", res.IssuerLabel)
-	events.New(ctx, ServiceName, pb.EventType_ProfileRegistered, "Profile registered").
+	events.New(ctx, caapi.EventSource, pb.EventType_ProfileRegistered, "Profile registered").
 		Org(orgID).
 		Project(projectID).
 		Reference(res.ID).
@@ -86,21 +84,21 @@ func (s *Service) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*p
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
 	var row *model.CertificateProfile
 	switch {
 	case req.ID != "":
-		row, err = s.orgProfile(ctx, orgID, req.ID, pb.CA_GetProfile_FullMethodName)
+		row, err = s.scope.Profile(ctx, orgID, req.ID, pb.CA_GetProfile_FullMethodName)
 	case req.Label != "":
 		var projectID xdb.ID
-		projectID, err = s.tenantProject(ctx, orgID, req.ProjectID)
+		projectID, err = s.scope.Project(ctx, orgID, req.ProjectID)
 		if err != nil {
 			return nil, err
 		}
-		row, err = s.profileByLabel(ctx, orgID, projectID, req.Label)
+		row, err = s.scope.ProfileByLabel(ctx, orgID, projectID, req.Label)
 	default:
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "profile ID or label is required")
 	}
@@ -118,11 +116,11 @@ func (s *Service) ListProfiles(ctx context.Context, req *pb.ListProfilesRequest)
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	projectID, err := s.tenantProject(ctx, orgID, req.ProjectID)
+	projectID, err := s.scope.Project(ctx, orgID, req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +137,7 @@ func (s *Service) ListProfiles(ctx context.Context, req *pb.ListProfilesRequest)
 		Cursor:      cursor,
 	}
 	if projectID.IsZero() {
-		q.ProjectIDs, err = s.listProjects(ctx, orgID)
+		q.ProjectIDs, err = s.scope.ListProjects(ctx, orgID)
 		if err != nil {
 			return nil, err
 		}
@@ -160,15 +158,11 @@ func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileReques
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	err := s.requireCA(ctx)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
-	if err != nil {
-		return nil, err
-	}
-	row, err := s.orgProfile(ctx, orgID, req.ID, pb.CA_DeleteProfile_FullMethodName)
+	row, err := s.scope.Profile(ctx, orgID, req.ID, pb.CA_DeleteProfile_FullMethodName)
 	if err != nil {
 		return nil, err
 	}
@@ -179,20 +173,29 @@ func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileReques
 	if deleted == 0 {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "profile not found")
 	}
-	s.registry.InvalidateProfile(row.OrgID, row.ProjectID, row.Label)
+	s.invalidateProfile(row.OrgID, row.ProjectID, row.Label)
 	logger.ContextKV(ctx, xlog.NOTICE,
 		"status", "profile_deleted",
 		"profile_id", row.ID.UnderscoreString(),
 		"org_id", row.OrgID.UnderscoreString(),
 		"project_id", row.ProjectID.UnderscoreString(),
 		"profile", row.Label)
-	events.New(ctx, ServiceName, pb.EventType_ProfileDeleted, "Profile deleted").
+	events.New(ctx, caapi.EventSource, pb.EventType_ProfileDeleted, "Profile deleted").
 		Org(orgID).
 		Project(row.ProjectID).
 		Reference(row.ID).
 		Description("profile %q deleted", row.Label).
 		Emit(s.orgs)
 	return &emptypb.Empty{}, nil
+}
+
+// invalidateProfile drops the cached resolutions of the profile in the
+// backend of the process; a remote backend sees the change after the TTL of
+// its issuer registry (DESIGN.md section 2.1)
+func (s *Service) invalidateProfile(orgID, projectID xdb.ID, label string) {
+	if s.backend != nil {
+		s.backend.InvalidateProfile(orgID, projectID, label)
+	}
 }
 
 // profilePb converts a profile row to its API message

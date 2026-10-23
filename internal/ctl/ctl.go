@@ -29,7 +29,7 @@ import (
 	"github.com/effective-security/xlog"
 )
 
-var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca/pkg", "cli")
+var logger = xlog.NewPackageLogger("github.com/effective-security/trustyca/pkg", "ctl")
 
 var (
 	// DefaultStoragePath specifies default storage path

@@ -8,6 +8,7 @@ import (
 
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/porto/xhttp/marshal"
+	pb "github.com/effective-security/trustyca/api/pb"
 )
 
 // RequestAllocator defines constructor to allocate Protobuf request
@@ -85,5 +86,33 @@ var methods = map[string]*MethodInfo{
 	Admin_ListCertificates_FullMethodName: {
 		Allocator: func() any { return new(ListCertificatesRequest) },
 		CliCmd:    "ca cert list",
+	},
+
+	Backend_RegisterIssuer_FullMethodName: {
+		Allocator: func() any { return new(pb.RegisterIssuerRequest) },
+	},
+
+	Backend_ImportIssuer_FullMethodName: {
+		Allocator: func() any { return new(pb.ImportIssuerRequest) },
+	},
+
+	Backend_ActivateIssuer_FullMethodName: {
+		Allocator: func() any { return new(pb.ActivateIssuerRequest) },
+	},
+
+	Backend_UpdateIssuer_FullMethodName: {
+		Allocator: func() any { return new(pb.UpdateIssuerRequest) },
+	},
+
+	Backend_SignCertificate_FullMethodName: {
+		Allocator: func() any { return new(pb.SignCertificateRequest) },
+	},
+
+	Backend_PublishCrls_FullMethodName: {
+		Allocator: func() any { return new(pb.PublishCrlsRequest) },
+	},
+
+	Backend_SignOCSP_FullMethodName: {
+		Allocator: func() any { return new(pb.OCSPRequest) },
 	},
 }

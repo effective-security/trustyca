@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/effective-security/trustyca/server/service/internal/caapi"
+
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
@@ -24,7 +26,7 @@ func (s *Service) RegisterRoot(ctx context.Context, req *pb.RegisterRootRequest)
 	if req == nil || strings.TrimSpace(req.Pem) == "" {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing certificate")
 	}
-	orgID, err := s.tenantOrg(ctx, req.OrgID)
+	orgID, err := s.scope.Org(ctx, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +54,7 @@ func (s *Service) RegisterRoot(ctx context.Context, req *pb.RegisterRootRequest)
 		"org_id", res.OrgID.UnderscoreString(),
 		"skid", res.Skid,
 		"subject", res.Subject)
-	events.New(ctx, ServiceName, pb.EventType_RootRegistered, "Root registered").
+	events.New(ctx, caapi.EventSource, pb.EventType_RootRegistered, "Root registered").
 		Org(orgID).
 		Reference(res.ID).
 		Description("root %q registered", res.Subject).
@@ -79,7 +81,7 @@ func (s *Service) ListRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.
 	if req.OrgID == "" && tctx.OrgID().IsZero() && strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
 		q.Platform = true
 	} else {
-		orgID, err := s.tenantOrg(ctx, req.OrgID)
+		orgID, err := s.scope.Org(ctx, req.OrgID)
 		if err != nil {
 			return nil, err
 		}

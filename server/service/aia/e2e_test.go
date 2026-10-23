@@ -21,15 +21,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/effective-security/trustyca/server/service/backend"
+	"github.com/effective-security/trustyca/server/service/shared"
+
 	"github.com/effective-security/porto/gserver"
 	"github.com/effective-security/porto/xhttp/header"
 	"github.com/effective-security/porto/xhttp/identity"
 	"github.com/effective-security/trustyca/api/pb"
-	"github.com/effective-security/trustyca/api/pb/proxypb"
 	"github.com/effective-security/trustyca/internal/authctx"
 	"github.com/effective-security/trustyca/internal/config"
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
+	"github.com/effective-security/trustyca/privpb"
+	privproxypb "github.com/effective-security/trustyca/privpb/proxypb"
 	"github.com/effective-security/trustyca/server/appcontainer"
 	"github.com/effective-security/trustyca/server/service/aia"
 	"github.com/effective-security/trustyca/server/service/ca"
@@ -80,20 +84,24 @@ func TestService_EndToEnd(t *testing.T) {
 	var provider db.Provider
 	require.NoError(t, container.Invoke(func(p db.Provider) { provider = p }))
 
-	// the CA, called over gRPC as the RA and as the AIA
+	// the CA and its backend, called over gRPC: the CA as the RA, the
+	// backend as the AIA
 	caServer, err := gserver.Start("AIATestCA", &gserver.Config{
 		ListenURLs: []string{testutils.CreateURL("http", "")},
-		Services:   []string{ca.ServiceName},
+		Services:   []string{ca.ServiceName, backend.ServiceName},
 	}, container, map[string]gserver.ServiceFactory{
-		ca.ServiceName: ca.Factory,
+		ca.ServiceName:      ca.Factory,
+		backend.ServiceName: backend.Factory,
 	})
 	require.NoError(t, err)
 	t.Cleanup(caServer.Close)
 	caSvc := caServer.Service(ca.ServiceName).(pb.CAServer)
-	raClient := pb.NewCAClient(grpcConn(t, caSvc, e2eRARole))
-	aiaClient := proxypb.NewCAClient(grpcConn(t, caSvc, e2eAIARole), nil)
+	backendSvc := caServer.Service(backend.ServiceName).(privpb.BackendServer)
+	raClient := pb.NewCAClient(grpcConn(t, e2eRARole, func(srv *grpc.Server) { pb.RegisterCAServer(srv, caSvc) }))
+	aiaClient := privproxypb.NewBackendClient(grpcConn(t, e2eAIARole, func(srv *grpc.Server) { privpb.RegisterBackendServer(srv, backendSvc) }), nil)
 
-	// the AIA over plain HTTP, forwarding OCSP to the CA as the AIA identity
+	// the AIA over plain HTTP, forwarding OCSP to the backend as the AIA
+	// identity
 	aiaURL := testutils.CreateURL("http", "")
 	aiaServer, err := gserver.Start("AIATest", &gserver.Config{
 		ListenURLs: []string{aiaURL},
@@ -101,7 +109,7 @@ func TestService_EndToEnd(t *testing.T) {
 	}, container, map[string]gserver.ServiceFactory{
 		aia.ServiceName: func(server gserver.GServer) any {
 			return func(cfg *config.Configuration, caDb db.CaReadonlyDb) error {
-				svc, err := aia.New(cfg, caDb, aiaClient, nil)
+				svc, err := aia.New(cfg, caDb, shared.NewStaticBackendLocator(aiaClient))
 				if err != nil {
 					return err
 				}
@@ -330,9 +338,10 @@ func opensslVerify(t *testing.T, root *x509.Certificate, crlDER []byte, good, re
 	assert.Contains(t, strings.ToLower(string(out)), "certificate revoked")
 }
 
-// grpcConn serves the CA over an in-memory gRPC connection as a service
-// identity: the auth interceptor sets the role of the caller
-func grpcConn(t *testing.T, svc pb.CAServer, role string) *grpc.ClientConn {
+// grpcConn serves the services that register adds over an in-memory gRPC
+// connection as a service identity: the auth interceptor sets the role of
+// the caller
+func grpcConn(t *testing.T, role string, register func(*grpc.Server)) *grpc.ClientConn {
 	t.Helper()
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer(grpc.UnaryInterceptor(
@@ -340,7 +349,7 @@ func grpcConn(t *testing.T, svc pb.CAServer, role string) *grpc.ClientConn {
 			uid := identity.NewIdentity(role, "spiffe://trustyca/"+strings.TrimPrefix(role, "trustyca-"), "", map[string]any{}, "", "", identity.MethodCertificate)
 			return handler(authctx.NewTrustyCtx(ctx, identity.NewRequestContext(uid, info.FullMethod)), req)
 		}))
-	pb.RegisterCAServer(srv, svc)
+	register(srv)
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(srv.Stop)
 

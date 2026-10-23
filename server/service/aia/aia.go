@@ -226,11 +226,11 @@ func (s *Service) ocspResponse(w http.ResponseWriter, r *http.Request, requestBo
 	}
 	metricskey.AIACacheMiss.IncrCounter(1, cacheMetricOCSP)
 
-	ca, err := s.caClient()
+	ca, err := s.signer()
 	if err != nil {
 		metricskey.AIADownloadFailOCSP.IncrCounter(1)
 		logger.ContextKV(ctx, xlog.ERROR,
-			"reason", "ca_client",
+			"reason", "backend",
 			"serial", serial,
 			"err", err.Error())
 		writeOCSPError(w, http.StatusServiceUnavailable, ocsp.TryLaterErrorResponse)

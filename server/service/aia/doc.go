@@ -8,17 +8,17 @@
 // service of the wfe listener.
 //
 // The service reads the CA tables and holds no issuer keys. An OCSP request
-// is forwarded to pb.CA.SignOCSP over the backend gRPC client, which is
-// created on the first request with the certificate of the
-// `aia.client_tls` configuration (the `trustyca-aia` identity), and the
-// signed response is cached by the hash of the request until its
-// NextUpdate. Every lookup is by the key identifier of the issuer, or by
-// the OCSP request itself: the service lists nothing.
+// is forwarded to privpb.Backend.SignOCSP: to the backend service of the
+// same process, else over gRPC with the `aia` service client (the
+// `trustyca-aia` identity), created on the first request
+// (client.BackendLocator). The signed response is cached by the hash of the
+// request until its NextUpdate. Every lookup is by the key identifier of
+// the issuer, or by the OCSP request itself: the service lists nothing.
 //
 // The service is built by its Factory from the app container; a test wires
-// a CA directly:
+// a backend directly:
 //
-//	svc, err := aia.New(cfg, caReadonlyDb, caServer, nil)
+//	svc, err := aia.New(cfg, caReadonlyDb, client.NewStaticBackendLocator(backend))
 //	if err != nil {
 //		return err
 //	}

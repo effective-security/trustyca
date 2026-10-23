@@ -8,12 +8,12 @@ import "github.com/effective-security/trustyca/server/service/aia"
 
 Package aia implements the Authority Information Access service: the public, read\-only routes the issued certificates point at, served over plain HTTP without authentication, as a TLS verifier fetches them: the issuer certificate \(AIA caIssuers, GET /v1/cert/\{ikid\}\), the current CRL \(CRL Distribution Point, GET /v1/crl/\{ikid\}\) and the OCSP responder \(GET and POST under /v1/ocsp and /v1/ocspi\). The service is REST only; the JSON and gRPC API of the certificate information \(pb.CIS\) is the cis service of the wfe listener.
 
-The service reads the CA tables and holds no issuer keys. An OCSP request is forwarded to pb.CA.SignOCSP over the backend gRPC client, which is created on the first request with the certificate of the \`aia.client\_tls\` configuration \(the \`trustyca\-aia\` identity\), and the signed response is cached by the hash of the request until its NextUpdate. Every lookup is by the key identifier of the issuer, or by the OCSP request itself: the service lists nothing.
+The service reads the CA tables and holds no issuer keys. An OCSP request is forwarded to privpb.Backend.SignOCSP: to the backend service of the same process, else over gRPC with the \`aia\` service client \(the \`trustyca\-aia\` identity\), created on the first request \(client.BackendLocator\). The signed response is cached by the hash of the request until its NextUpdate. Every lookup is by the key identifier of the issuer, or by the OCSP request itself: the service lists nothing.
 
-The service is built by its Factory from the app container; a test wires a CA directly:
+The service is built by its Factory from the app container; a test wires a backend directly:
 
 ```
-svc, err := aia.New(cfg, caReadonlyDb, caServer, nil)
+svc, err := aia.New(cfg, caReadonlyDb, client.NewStaticBackendLocator(backend))
 if err != nil {
 	return err
 }
@@ -25,7 +25,7 @@ svc.RegisterRoute(router)
 - [Constants](<#constants>)
 - [func Factory\(server gserver.GServer\) any](<#Factory>)
 - [type Service](<#Service>)
-  - [func New\(cfg \*config.Configuration, caDb db.CaReadonlyDb, ca pb.CAServer, clients client.Factory\) \(\*Service, error\)](<#New>)
+  - [func New\(cfg \*config.Configuration, caDb db.CaReadonlyDb, backend \*shared.BackendLocator\) \(\*Service, error\)](<#New>)
   - [func \(s \*Service\) CRLHandler\(\) restserver.Handle](<#Service.CRLHandler>)
   - [func \(s \*Service\) Close\(\)](<#Service.Close>)
   - [func \(s \*Service\) GetOcspHandler\(\) restserver.Handle](<#Service.GetOcspHandler>)
@@ -45,7 +45,7 @@ const ServiceName = "aia"
 ```
 
 <a name="Factory"></a>
-## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L53>)
+## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L47>)
 
 ```go
 func Factory(server gserver.GServer) any
@@ -54,9 +54,9 @@ func Factory(server gserver.GServer) any
 Factory returns a factory of the service
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L37-L50>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L35-L44>)
 
-Service defines the Authority Information Access service: the binary routes the issued certificates point at, served to any caller over the plain HTTP listener of the service, as RFC 5280 requires of the AIA and CRL Distribution Point URLs: the issuer certificate \(AIA caIssuers\), the current CRL \(CDP\) and the OCSP responder. The service is REST only, reads the CA tables and holds no issuer keys: OCSP requests are forwarded to the CA over the backend gRPC client and the signed responses are cached until their NextUpdate.
+Service defines the Authority Information Access service: the binary routes the issued certificates point at, served to any caller over the plain HTTP listener of the service, as RFC 5280 requires of the AIA and CRL Distribution Point URLs: the issuer certificate \(AIA caIssuers\), the current CRL \(CDP\) and the OCSP responder. The service is REST only, reads the CA tables and holds no issuer keys: OCSP requests are forwarded to the backend service \(privpb.Backend\) and the signed responses are cached until their NextUpdate.
 
 ```go
 type Service struct {
@@ -65,13 +65,13 @@ type Service struct {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L74>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L68>)
 
 ```go
-func New(cfg *config.Configuration, caDb db.CaReadonlyDb, ca pb.CAServer, clients client.Factory) (*Service, error)
+func New(cfg *config.Configuration, caDb db.CaReadonlyDb, backend *shared.BackendLocator) (*Service, error)
 ```
 
-New returns the service over the CA tables. The CA is the server the OCSP requests are forwarded to; when it is nil, a client of the backend is created with the factory on the first request.
+New returns the service over the CA tables. The backend locator returns the backend the OCSP requests are forwarded to; without one every OCSP request answers tryLater.
 
 <a name="Service.CRLHandler"></a>
 ### func \(\*Service\) [CRLHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia.go#L98>)
@@ -83,7 +83,7 @@ func (s *Service) CRLHandler() restserver.Handle
 CRLHandler serves the current CRL of the issuer with the key identifier in DER, the CRL Distribution Point of the certificates it issued
 
 <a name="Service.Close"></a>
-### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L102>)
+### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L95>)
 
 ```go
 func (s *Service) Close()
@@ -101,7 +101,7 @@ func (s *Service) GetOcspHandler() restserver.Handle
 GetOcspHandler answers an OCSP request sent as the URL\-encoded base64 of its DER encoding in the path \(RFC 6960 A.1\); the issuer segment of the route by issuer is not needed to answer, the request carries the issuer
 
 <a name="Service.IsReady"></a>
-### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L97>)
+### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L90>)
 
 ```go
 func (s *Service) IsReady() bool
@@ -119,7 +119,7 @@ func (s *Service) IssuerHandler() restserver.Handle
 IssuerHandler serves the certificate of the issuer with the key identifier in DER, the AIA caIssuers URL of the certificates it issued
 
 <a name="Service.Name"></a>
-### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L92>)
+### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L85>)
 
 ```go
 func (s *Service) Name() string
@@ -137,7 +137,7 @@ func (s *Service) OCSPHandler() restserver.Handle
 OCSPHandler answers an OCSP request posted as the body, which is read up to maxOCSPRequestSize whatever the request declares
 
 <a name="Service.RegisterRoute"></a>
-### func \(\*Service\) [RegisterRoute](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L115>)
+### func \(\*Service\) [RegisterRoute](<https://github.com/effective-security/trustyca/blob/main/server/service/aia/aia_service.go#L106>)
 
 ```go
 func (s *Service) RegisterRoute(r restserver.Router)

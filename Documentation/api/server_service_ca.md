@@ -6,11 +6,24 @@
 import "github.com/effective-security/trustyca/server/service/ca"
 ```
 
+Package ca implements the CA service \(pb.CA\), the CA API of the tenants on the wfe listener and of the RA and the operator on the backend listener \(DESIGN.md section 2.1\).
+
+The service holds no issuer key and no issuer registry. It serves the methods that read and write the CA tables \(issuers, roots, profiles, certificates, revocation, CRLs\), and forwards RegisterIssuer, ImportIssuer, ActivateIssuer, UpdateIssuer, SignCertificate, PublishCrls and SignOCSP to the backend service \(server/service/backend, privpb.Backend\) with the context of its caller. It finds the backend through a client.BackendLocator: the backend service of the same process, else the backend listener with the \`ca\` service client. The tenant checks are shared with the backend \(server/service/internal/caapi\).
+
+The service is built by its Factory from the app container; a test wires it to a backend in one process:
+
+```
+backendSvc := backend.New(caDb, orgsDb, authorizer, registry)
+svc := ca.New(caDb, orgsDb, authorizer, client.NewStaticBackendLocator(backendSvc))
+res, err := svc.SignCertificate(ctx, req)
+```
+
 ## Index
 
 - [Constants](<#constants>)
 - [func Factory\(server gserver.GServer\) any](<#Factory>)
 - [type Service](<#Service>)
+  - [func New\(caDb db.CaDb, orgsDb db.OrgsDb, authorizer authctx.Authorizer, backend \*shared.BackendLocator\) \*Service](<#New>)
   - [func \(s \*Service\) ActivateIssuer\(ctx context.Context, req \*pb.ActivateIssuerRequest\) \(\*pb.Issuer, error\)](<#Service.ActivateIssuer>)
   - [func \(s \*Service\) Close\(\)](<#Service.Close>)
   - [func \(s \*Service\) DeleteProfile\(ctx context.Context, req \*pb.DeleteProfileRequest\) \(\*emptypb.Empty, error\)](<#Service.DeleteProfile>)
@@ -47,7 +60,7 @@ const ServiceName = "ca"
 ```
 
 <a name="Factory"></a>
-## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L35>)
+## func [Factory](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L38>)
 
 ```go
 func Factory(server gserver.GServer) any
@@ -56,9 +69,9 @@ func Factory(server gserver.GServer) any
 Factory returns a factory of the service
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L24-L32>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L29-L35>)
 
-Service defines the CA service: issuers, trust anchors, profiles, certificates, revocation status and CRLs of the org of the request. Issuers and profiles are resolved from the DB through the issuer registry of internal/ca, which caches the built issuers per row, and CRLs are signed by its publisher, which the crl\_renewal task shares.
+Service defines the CA service \(pb.CA\): issuers, trust anchors, profiles, certificates, revocation status and CRLs of the org of the request. It holds no issuer key and no issuer registry: it serves the methods that read and write the CA tables, and forwards the methods that use a key or change the registry to the backend service \(server/service/backend, DESIGN.md section 2.1\), in process when this process runs it, else over gRPC with the \`ca\` service client, with the context of the caller.
 
 ```go
 type Service struct {
@@ -66,17 +79,26 @@ type Service struct {
 }
 ```
 
+<a name="New"></a>
+### func [New](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L57>)
+
+```go
+func New(caDb db.CaDb, orgsDb db.OrgsDb, authorizer authctx.Authorizer, backend *shared.BackendLocator) *Service
+```
+
+New returns the service over the CA tables that forwards the key operations to the backend the locator finds; without a locator they are Unavailable
+
 <a name="Service.ActivateIssuer"></a>
-### func \(\*Service\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L233>)
+### func \(\*Service\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L29>)
 
 ```go
 func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequest) (*pb.Issuer, error)
 ```
 
-ActivateIssuer sets the externally signed certificate of a Pending issuer of the org and activates it; the certificate must be for the key of the issuer and its chain must verify
+ActivateIssuer activates a Pending issuer in the backend \(Backend.ActivateIssuer\)
 
 <a name="Service.Close"></a>
-### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L70>)
+### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L77>)
 
 ```go
 func (s *Service) Close()
@@ -85,7 +107,7 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.DeleteProfile"></a>
-### func \(\*Service\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/profile.go#L159>)
+### func \(\*Service\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/profile.go#L157>)
 
 ```go
 func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileRequest) (*emptypb.Empty, error)
@@ -94,7 +116,7 @@ func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileReques
 DeleteProfile deletes a profile of the org
 
 <a name="Service.GetCRL"></a>
-### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L24>)
+### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L19>)
 
 ```go
 func (s *Service) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (*pb.CrlResponse, error)
@@ -103,7 +125,7 @@ func (s *Service) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (*pb.CrlRes
 GetCRL returns the current CRL of the issuer with the key identifier. A tenant reads the CRLs of its org: the CRL of another org, of the platform or of a project the caller cannot read is not found. A trusted service caller that names no org \(CIS\) reads the CRL of any issuer, since CRLs are public.
 
 <a name="Service.GetCertificate"></a>
-### func \(\*Service\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L36>)
+### func \(\*Service\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L38>)
 
 ```go
 func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateRequest) (*pb.CertificateResponse, error)
@@ -112,16 +134,16 @@ func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateRequ
 GetCertificate returns a certificate of the org by its ID, its Subject Key Identifier \(the newest one of the key\), its SHA\-256 thumbprint, or the key identifier of its issuer and its serial number. A certificate of another org, or of a project the caller cannot read, is not found.
 
 <a name="Service.GetIssuer"></a>
-### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L368>)
+### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L18>)
 
 ```go
 func (s *Service) GetIssuer(ctx context.Context, req *pb.GetIssuerRequest) (*pb.Issuer, error)
 ```
 
-GetIssuer returns an issuer of the org by ID, by label resolved in the project then in the org, or by IKID. An issuer found by ID or IKID must be of a project the caller can read, or org\-wide \(rowAccess\).
+GetIssuer returns an issuer of the org by ID, by label resolved in the project then in the org, or by IKID. An issuer found by ID or IKID must be of a project the caller can read, or org\-wide \(Scope.RowAccess\).
 
 <a name="Service.GetProfile"></a>
-### func \(\*Service\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/profile.go#L85>)
+### func \(\*Service\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/profile.go#L83>)
 
 ```go
 func (s *Service) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*pb.CertProfile, error)
@@ -130,16 +152,16 @@ func (s *Service) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*p
 GetProfile returns a profile of the org by ID, or by label resolved in the project then in the org
 
 <a name="Service.ImportIssuer"></a>
-### func \(\*Service\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L160>)
+### func \(\*Service\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L23>)
 
 ```go
 func (s *Service) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest) (*pb.Issuer, error)
 ```
 
-ImportIssuer registers an issuer from an existing certificate and key: a key in a crypto provider by its URI, or a PEM key that is stored wrapped. The chain must verify to the given or the self\-signed root.
+ImportIssuer registers an existing issuer and its key in the backend \(Backend.ImportIssuer\)
 
 <a name="Service.IsReady"></a>
-### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L65>)
+### func \(\*Service\) [IsReady](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L72>)
 
 ```go
 func (s *Service) IsReady() bool
@@ -148,7 +170,7 @@ func (s *Service) IsReady() bool
 IsReady indicates that the service is ready to serve its end\-points
 
 <a name="Service.ListCertificates"></a>
-### func \(\*Service\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L61>)
+### func \(\*Service\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L63>)
 
 ```go
 func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificatesRequest) (*pb.CertificatesResponse, error)
@@ -157,7 +179,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificates
 ListCertificates returns the certificates of the org, newest first: of the project of the request, or of the org\-wide scope and every project the caller may read \(DESIGN.md section 3.3\)
 
 <a name="Service.ListIssuers"></a>
-### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L408>)
+### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L58>)
 
 ```go
 func (s *Service) ListIssuers(ctx context.Context, req *pb.ListIssuersRequest) (*pb.IssuersResponse, error)
@@ -166,7 +188,7 @@ func (s *Service) ListIssuers(ctx context.Context, req *pb.ListIssuersRequest) (
 ListIssuers returns the issuers of the org, newest first; a project limits the result to its own issuers. Without a project, a member with project grants only lists the org\-wide issuers and those of its projects.
 
 <a name="Service.ListProfiles"></a>
-### func \(\*Service\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/profile.go#L117>)
+### func \(\*Service\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/profile.go#L115>)
 
 ```go
 func (s *Service) ListProfiles(ctx context.Context, req *pb.ListProfilesRequest) (*pb.ProfilesResponse, error)
@@ -175,7 +197,7 @@ func (s *Service) ListProfiles(ctx context.Context, req *pb.ListProfilesRequest)
 ListProfiles returns the profiles of the org, newest first; a project limits the result to its own profiles. Without a project, a member with project grants only lists the org\-wide profiles and those of its projects.
 
 <a name="Service.ListRevokedCertificates"></a>
-### func \(\*Service\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L254>)
+### func \(\*Service\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L256>)
 
 ```go
 func (s *Service) ListRevokedCertificates(ctx context.Context, req *pb.ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error)
@@ -184,7 +206,7 @@ func (s *Service) ListRevokedCertificates(ctx context.Context, req *pb.ListRevok
 ListRevokedCertificates returns the revoked certificates of the org with their revocation, newest revocation first, in the scope of the request as ListCertificates does
 
 <a name="Service.ListRoots"></a>
-### func \(\*Service\) [ListRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/root.go#L65>)
+### func \(\*Service\) [ListRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/root.go#L67>)
 
 ```go
 func (s *Service) ListRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.RootsResponse, error)
@@ -193,7 +215,7 @@ func (s *Service) ListRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.
 ListRoots returns the trust anchors of the org, newest first; a trusted service caller that names no org lists the platform anchors
 
 <a name="Service.Name"></a>
-### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L60>)
+### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L67>)
 
 ```go
 func (s *Service) Name() string
@@ -202,16 +224,16 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.PublishCrls"></a>
-### func \(\*Service\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/crl.go#L76>)
+### func \(\*Service\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L46>)
 
 ```go
 func (s *Service) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error)
 ```
 
-PublishCrls publishes the CRLs that are due, or every CRL in scope when forced, and returns the CRLs it published. A tenant publishes for the issuers of its org: the one of the IKID, which must belong to the project when the request names one; the Active and Archived issuers of the project the request names, or of a restricted API key; or else the org\-wide issuers and those of the projects the caller may read. A trusted service caller that names no org publishes for every org and the platform, as the crl\_renewal task does in\-process. An issuer that does not publish CRLs \(Pending, Destroyed, expired\) is refused with a precondition failure when named by its IKID; in a scope it is skipped, and an issuer whose CRL fails is logged and counted, so the request fails after the others are published. Every published CRL records a CrlPublished event before the request fails, since a retry finds those CRLs fresh.
+PublishCrls publishes CRLs in the backend \(Backend.PublishCrls\)
 
 <a name="Service.RegisterGRPC"></a>
-### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L75>)
+### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/ca_service.go#L87>)
 
 ```go
 func (s *Service) RegisterGRPC(r *grpc.Server)
@@ -220,16 +242,16 @@ func (s *Service) RegisterGRPC(r *grpc.Server)
 RegisterGRPC registers gRPC handler
 
 <a name="Service.RegisterIssuer"></a>
-### func \(\*Service\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L40>)
+### func \(\*Service\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L17>)
 
 ```go
 func (s *Service) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequest) (*pb.Issuer, error)
 ```
 
-RegisterIssuer creates an issuer of the org \(DESIGN.md section 5.2\): a self\-signed root when the type is Root, an issuer signed by the parent when ParentID is set, otherwise a Pending issuer with its CSR. The key is generated in the crypto provider and never leaves it; a software key is stored wrapped.
+RegisterIssuer creates an issuer of the org in the backend \(Backend.RegisterIssuer\)
 
 <a name="Service.RegisterProfile"></a>
-### func \(\*Service\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/profile.go#L23>)
+### func \(\*Service\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/profile.go#L25>)
 
 ```go
 func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRequest) (*pb.CertProfile, error)
@@ -238,7 +260,7 @@ func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRe
 RegisterProfile creates a profile of the org or of the project, or replaces the one with the same label in the same scope. The profile is validated as the authority will sign with it; its issuer label binds it to an issuer of the org, or to any issuer that allows it.
 
 <a name="Service.RegisterRoot"></a>
-### func \(\*Service\) [RegisterRoot](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/root.go#L23>)
+### func \(\*Service\) [RegisterRoot](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/root.go#L25>)
 
 ```go
 func (s *Service) RegisterRoot(ctx context.Context, req *pb.RegisterRootRequest) (*pb.RootCertificate, error)
@@ -247,7 +269,7 @@ func (s *Service) RegisterRoot(ctx context.Context, req *pb.RegisterRootRequest)
 RegisterRoot registers a self\-signed CA certificate as a trust anchor of the org; registering it again updates its trust
 
 <a name="Service.RevokeCertificate"></a>
-### func \(\*Service\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L174>)
+### func \(\*Service\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L176>)
 
 ```go
 func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error)
@@ -256,25 +278,25 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 RevokeCertificate revokes a certificate of the org, named by its ID, its Subject Key Identifier or its issuer and serial number: the revocation and the status of the certificate are written in one transaction \(db.RevokeCertificate\), then the CertificateRevoked event is recorded. A revoked certificate is refused with a precondition failure, and the reason RemoveFromCRL, which releases a certificate from hold \(RFC 5280 section 5.3.1\), is refused since hold removal is not implemented. The request names the project of the certificate when the caller's role is granted there only; a certificate of another project is then not found.
 
 <a name="Service.SignCertificate"></a>
-### func \(\*Service\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L49>)
+### func \(\*Service\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L41>)
 
 ```go
 func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest) (*pb.CertificateResponse, error)
 ```
 
-SignCertificate signs a certificate request with the issuer of the profile, resolved in the scope of the request \(DESIGN.md section 6\), and records the certificate with its issue event in one transaction.
+SignCertificate signs a certificate in the backend \(Backend.SignCertificate\)
 
 <a name="Service.SignOCSP"></a>
-### func \(\*Service\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/signer.go#L160>)
+### func \(\*Service\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L51>)
 
 ```go
 func (s *Service) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error)
 ```
 
-SignOCSP signs an OCSP response for the certificate of the request: good for a registered certificate, revoked with the reason and time of its revocation, and unknown for a serial the issuer never registered.
+SignOCSP signs an OCSP response in the backend \(Backend.SignOCSP\)
 
 <a name="Service.UpdateCertificateLabel"></a>
-### func \(\*Service\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L113>)
+### func \(\*Service\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/cert.go#L115>)
 
 ```go
 func (s *Service) UpdateCertificateLabel(ctx context.Context, req *pb.UpdateCertificateLabelRequest) (*pb.CertificateResponse, error)
@@ -283,12 +305,12 @@ func (s *Service) UpdateCertificateLabel(ctx context.Context, req *pb.UpdateCert
 UpdateCertificateLabel replaces the label a client gave a certificate, and its client metadata when the request carries any. The request names the project of the certificate when the caller's role is granted there only \(the interceptor authorizes that scope\); a certificate of another project is then not found. There is no event type for the change: it is logged, not recorded in the audit trail.
 
 <a name="Service.UpdateIssuer"></a>
-### func \(\*Service\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/issuer.go#L289>)
+### func \(\*Service\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L35>)
 
 ```go
 func (s *Service) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest) (*pb.Issuer, error)
 ```
 
-UpdateIssuer replaces the runtime settings of an issuer of the org, or moves it along its lifecycle: Active to Archived, Archived to Destroyed. Destroying an issuer removes its key from the crypto provider when the provider manages keys, and clears a wrapped software key.
+UpdateIssuer changes an issuer in the backend, whose registry must see an issuer stop signing at once \(Backend.UpdateIssuer\)
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
