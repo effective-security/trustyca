@@ -263,13 +263,15 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 				if rc.TLS != nil {
 					ca = resolve.ExpandPath(values.StringsCoalesce(ca, rc.TLS.TrustedCAFile))
 				}
+			}
+		}
 
-				if !skipAuth {
-					err = clientCfg.LoadAuthTokenOrFromEnv("TRUSTYCA_AUTH_TOKEN")
-					if err != nil {
-						return nil, errors.WithMessage(err, "unable to load auth token")
-					}
-				}
+		// the token of a host the config file does not list is in the
+		// storage folder too, as for the HTTP client
+		if !skipAuth {
+			err = clientCfg.LoadAuthTokenOrFromEnv("TRUSTYCA_AUTH_TOKEN")
+			if err != nil {
+				return nil, errors.WithMessage(err, "unable to load auth token")
 			}
 		}
 

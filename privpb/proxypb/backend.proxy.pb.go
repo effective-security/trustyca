@@ -95,7 +95,8 @@ func (s *postproxyBackendClient) RegisterIssuer(ctx context.Context, req *privpb
 }
 
 // ImportIssuer registers an issuer from an existing certificate and a
-// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+// key URI of a crypto provider or a PEM key stored protected
+// (CA.ImportIssuer)
 func (s *proxyBackendServer) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -107,7 +108,8 @@ func (s *proxyBackendServer) ImportIssuer(ctx context.Context, req *privpb.Impor
 }
 
 // ImportIssuer registers an issuer from an existing certificate and a
-// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+// key URI of a crypto provider or a PEM key stored protected
+// (CA.ImportIssuer)
 func (s *proxyBackendClient) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -119,7 +121,8 @@ func (s *proxyBackendClient) ImportIssuer(ctx context.Context, req *privpb.Impor
 }
 
 // ImportIssuer registers an issuer from an existing certificate and a
-// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+// key URI of a crypto provider or a PEM key stored protected
+// (CA.ImportIssuer)
 func (s *postproxyBackendClient) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest) (*pb.Issuer, error) {
 	var res pb.Issuer
 	path := privpb.Backend_ImportIssuer_FullMethodName
@@ -202,7 +205,8 @@ func (s *postproxyBackendClient) UpdateIssuer(ctx context.Context, req *privpb.U
 	return &res, nil
 }
 
-// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+// GetIssuer returns an issuer of the org by ID, label or IKID
+// (CA.GetIssuer)
 func (s *proxyBackendServer) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -213,7 +217,8 @@ func (s *proxyBackendServer) GetIssuer(ctx context.Context, req *privpb.GetIssue
 	return res, nil
 }
 
-// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+// GetIssuer returns an issuer of the org by ID, label or IKID
+// (CA.GetIssuer)
 func (s *proxyBackendClient) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -224,7 +229,8 @@ func (s *proxyBackendClient) GetIssuer(ctx context.Context, req *privpb.GetIssue
 	return res, nil
 }
 
-// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+// GetIssuer returns an issuer of the org by ID, label or IKID
+// (CA.GetIssuer)
 func (s *postproxyBackendClient) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error) {
 	var res pb.Issuer
 	path := privpb.Backend_GetIssuer_FullMethodName
@@ -268,7 +274,8 @@ func (s *postproxyBackendClient) ListIssuers(ctx context.Context, req *privpb.Li
 	return &res, nil
 }
 
-// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+// RegisterRoot registers an external trust anchor of the org
+// (CA.RegisterRoot)
 func (s *proxyBackendServer) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest, opts ...grpc.CallOption) (*pb.RootCertificate, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -279,7 +286,8 @@ func (s *proxyBackendServer) RegisterRoot(ctx context.Context, req *privpb.Regis
 	return res, nil
 }
 
-// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+// RegisterRoot registers an external trust anchor of the org
+// (CA.RegisterRoot)
 func (s *proxyBackendClient) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest) (*pb.RootCertificate, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -290,7 +298,8 @@ func (s *proxyBackendClient) RegisterRoot(ctx context.Context, req *privpb.Regis
 	return res, nil
 }
 
-// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+// RegisterRoot registers an external trust anchor of the org
+// (CA.RegisterRoot)
 func (s *postproxyBackendClient) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest) (*pb.RootCertificate, error) {
 	var res pb.RootCertificate
 	path := privpb.Backend_RegisterRoot_FullMethodName

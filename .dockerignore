@@ -1,0 +1,6 @@
+# The images copy the binaries of `make docker-build` and the SQL
+# migrations only (Dockerfile); the rest of the tree stays out of the
+# build context.
+*
+!bin/linux/
+!sql/

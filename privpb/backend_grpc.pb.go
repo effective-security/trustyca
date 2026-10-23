@@ -67,7 +67,8 @@ type BackendClient interface {
 	// signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
 	RegisterIssuer(ctx context.Context, in *RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
 	// ImportIssuer registers an issuer from an existing certificate and a
-	// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+	// key URI of a crypto provider or a PEM key stored protected
+	// (CA.ImportIssuer)
 	ImportIssuer(ctx context.Context, in *ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
 	// ActivateIssuer sets the externally signed certificate of a Pending
 	// issuer, which must be for the issuer's key (CA.ActivateIssuer)
@@ -75,11 +76,13 @@ type BackendClient interface {
 	// UpdateIssuer updates the runtime configuration or the status of an
 	// issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
 	UpdateIssuer(ctx context.Context, in *UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
-	// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+	// GetIssuer returns an issuer of the org by ID, label or IKID
+	// (CA.GetIssuer)
 	GetIssuer(ctx context.Context, in *GetIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
 	// ListIssuers returns the issuers of the org (CA.ListIssuers)
 	ListIssuers(ctx context.Context, in *ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error)
-	// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+	// RegisterRoot registers an external trust anchor of the org
+	// (CA.RegisterRoot)
 	RegisterRoot(ctx context.Context, in *RegisterRootRequest, opts ...grpc.CallOption) (*pb.RootCertificate, error)
 	// ListRoots returns the trust anchors of the org, or of the
 	// platform (CA.ListRoots)
@@ -360,7 +363,8 @@ type BackendServer interface {
 	// signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
 	RegisterIssuer(context.Context, *RegisterIssuerRequest) (*pb.Issuer, error)
 	// ImportIssuer registers an issuer from an existing certificate and a
-	// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+	// key URI of a crypto provider or a PEM key stored protected
+	// (CA.ImportIssuer)
 	ImportIssuer(context.Context, *ImportIssuerRequest) (*pb.Issuer, error)
 	// ActivateIssuer sets the externally signed certificate of a Pending
 	// issuer, which must be for the issuer's key (CA.ActivateIssuer)
@@ -368,11 +372,13 @@ type BackendServer interface {
 	// UpdateIssuer updates the runtime configuration or the status of an
 	// issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
 	UpdateIssuer(context.Context, *UpdateIssuerRequest) (*pb.Issuer, error)
-	// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+	// GetIssuer returns an issuer of the org by ID, label or IKID
+	// (CA.GetIssuer)
 	GetIssuer(context.Context, *GetIssuerRequest) (*pb.Issuer, error)
 	// ListIssuers returns the issuers of the org (CA.ListIssuers)
 	ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error)
-	// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+	// RegisterRoot registers an external trust anchor of the org
+	// (CA.RegisterRoot)
 	RegisterRoot(context.Context, *RegisterRootRequest) (*pb.RootCertificate, error)
 	// ListRoots returns the trust anchors of the org, or of the
 	// platform (CA.ListRoots)

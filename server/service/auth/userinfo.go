@@ -146,6 +146,10 @@ func (s *Service) RevokeToken(ctx context.Context, _ *emptypb.Empty) (*emptypb.E
 func (s *Service) revoke(ctx context.Context) error {
 	ictx := identity.FromContext(ctx)
 	caller := ictx.Identity()
+	if caller.AccessToken() == "" {
+		// a guest has no token to revoke, and nobody signs out
+		return httperror.NewGrpcFromCtx(ctx, codes.Unauthenticated, "no token to revoke")
+	}
 	mapclaims := caller.Claims()
 	revocation := s.JwtParser.GetRevocation()
 	if revocation == nil {
@@ -179,7 +183,9 @@ func (s *Service) revoke(ctx context.Context) error {
 	return nil
 }
 
-// RevokeTokenHandler returns handler for revoking the user token
+// RevokeTokenHandler handles DELETE /pb.Auth/RevokeToken, the sign-out of a
+// REST caller and of a cookie session: it removes the auth and CSRF cookies
+// whatever the outcome, then revokes the caller's token
 func (s *Service) RevokeTokenHandler() restserver.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ restserver.Params) {
 		ctx := r.Context()
@@ -188,7 +194,9 @@ func (s *Service) RevokeTokenHandler() restserver.Handle {
 
 		err := s.revoke(ctx)
 		if err != nil {
-			marshal.WriteJSON(w, r, httperror.Wrap(err, "request failed").WithContext(ctx))
+			// revoke returns sanitized errors: a guest's, a revocation the
+			// server does not support, or a failed revocation
+			marshal.WriteJSON(w, r, err)
 			return
 		}
 

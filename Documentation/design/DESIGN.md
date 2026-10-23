@@ -273,6 +273,17 @@ for a default org created for a user without any grant when
 org-wide or project grant and issues a new token; it is the only tenant
 request that carries `OrgID`.
 
+The Web UI may keep the token in an HttpOnly cookie instead (a login with
+`response_type=cookie`): every call then carries the readable CSRF cookie in
+`X-CSRF-Token`, or the cookie is ignored. Such a session never receives the
+token: it switches the org with `POST /v1/auth/org`, which runs the check of
+`SelectOrg` and replaces the cookies. `Auth.RevokeToken` revokes the token
+of the caller in the cache every instance reads (at once on the instance
+that revoked it, within minutes on the others), and `DELETE
+/pb.Auth/RevokeToken` also removes the cookies. The `local` identity provider
+(`local+<user>@<domain>`, no external IdP) exists only on a local instance
+(`service.environment: local` in `service.cluster: local`).
+
 Token claims:
 
 | Claim             | Meaning                                                                                         |

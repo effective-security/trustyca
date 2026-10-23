@@ -121,7 +121,9 @@ func (s *Service) RegisterRoute(r restserver.Router) {
 
 	r.GET(pb.PathForAuthProviders, s.AuthProvidersHandler())
 	r.POST(pb.PathForAuthProviders, s.AuthProvidersHandler())
-	// r.POST(pb.PathForAuthTenant, s.AuthTenantHandler())
+
+	// the org switch of a cookie session, which also replaces the cookie
+	r.POST(pb.PathForAuthOrg, s.AuthOrgHandler())
 
 	r.GET(pb.PathForAuthDone, s.AuthDoneHandler())
 	r.POST(pb.PathForAuthDone, s.AuthDoneHandler())
@@ -137,7 +139,8 @@ func (s *Service) RegisterRoute(r restserver.Router) {
 
 	r.GET(pb.PathForStatusCaller, s.callerStatus())
 
-	r.GET(pb.Auth_RevokeToken_FullMethodName, s.RevokeTokenHandler())
+	// DELETE only: a cookie session passes the CSRF check on unsafe methods
+	// only, so a GET would let any page that embeds the URL sign the user out
 	r.DELETE(pb.Auth_RevokeToken_FullMethodName, s.RevokeTokenHandler())
 
 	// GET reads the API key headers; POST goes through the HTTP proxy
@@ -190,8 +193,15 @@ func (s *Service) SetAuthProvider(ctx context.Context, cfg *oauth2client.ClientC
 }
 
 // AuthProviderForEmail checks if the email is allowed to login,
-// and returns oauth2client.Client for the provider
+// and returns oauth2client.Client for the provider.
+// On a local instance (config.Service.IsLocal) an address with the
+// localEmailPrefix signs in through the `local` provider, which needs no
+// invitation; elsewhere it is an ordinary address.
 func (s *Service) AuthProviderForEmail(ctx context.Context, email string) (cl *oauth2client.Client, err error) {
+	if strings.HasPrefix(email, localEmailPrefix) && s.isLocal() {
+		return s.AuthProvider(ctx, pb.IDP_Local)
+	}
+
 	if cl, found := s.allowedEmailsCache.Get(email); found {
 		if cl == nil {
 			return nil, errRestrictedUsers
@@ -250,4 +260,9 @@ func (s *Service) isEmailAllowedLogin(ctx context.Context, email string) error {
 
 	logger.ContextKV(ctx, xlog.DEBUG, "reason", "isEmailAllowedLogin", "email", email)
 	return errRestrictedUsers
+}
+
+// isLocal reports whether the instance offers the `local` identity provider
+func (s *Service) isLocal() bool {
+	return s.cfg != nil && s.cfg.Service.IsLocal()
 }

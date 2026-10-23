@@ -4,8 +4,10 @@ service:
   name: trustyca
   # specifies the Region / Datacenter where the instance is running
   region: dev
-  # specifies the environment where the instance is running: prod|stage|dev
-  environment: dev
+  # specifies the environment where the instance is running: prod|stage|dev|local
+  # `local` in the `local` cluster is a developer machine or the integration
+  # test stack: it enables the `local` identity provider (local+<user>@<domain>)
+  environment: local
   # specifies the cluster name
   cluster: local
 
@@ -193,16 +195,23 @@ servers:
       enabled: true
       max_age: 600
       allow_credentials: true
+      # full origins (scheme://host[:port]), matched exactly against the
+      # Origin header; "*" cannot be combined with allow_credentials
       allowed_origins:
-        - http://localhost:4200 # Angular app
+        # the console in bearer mode (Angular dev server)
+        - http://localhost:4200
+        # the console in cookie mode: it must be served over https on a host
+        # under identity_map.cookies.domain, to read the CSRF cookie
+        - https://app.local.trustyca.io:4200
       allowed_methods:
         - HEAD
         - OPTIONS
         - GET
         - POST
         - DELETE
+      # the REST responses; gRPC-Web responses expose their own headers to an
+      # allowed origin. No "*": a credentialed response never honors it
       exposed_headers:
-        - "*"
         - Grpc-Status
         - Grpc-Message
         - X-Correlation-ID

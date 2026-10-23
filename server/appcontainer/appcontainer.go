@@ -9,6 +9,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/pkg/cache"
 	"github.com/effective-security/porto/pkg/discovery"
+	"github.com/effective-security/porto/pkg/revocation"
 	"github.com/effective-security/porto/pkg/tasks"
 	"github.com/effective-security/trustyca/api/client"
 	"github.com/effective-security/trustyca/internal/authctx"
@@ -46,7 +47,7 @@ type ProvideDiscoveryFn func() (discovery.Discovery, error)
 type ProvideSchedulerFn func() (tasks.Scheduler, error)
 
 // ProvideJwtFn defines JWT provider
-type ProvideJwtFn func(cfg *config.Configuration, dp dataprotection.Provider) (jwt.Parser, jwt.Signer, error)
+type ProvideJwtFn func(cfg *config.Configuration, dp dataprotection.Provider, cache cache.Provider) (jwt.Parser, jwt.Signer, error)
 
 // ProvideDbFn defines DB provider
 type ProvideDbFn func(cfg *config.Configuration) (db.Provider, db.OrgsDb, db.OrgsReadonlyDb, db.CaDb, db.CaReadonlyDb, error)
@@ -232,7 +233,11 @@ func provideDiscovery() (discovery.Discovery, error) {
 	return discovery.New(), nil
 }
 
-func provideJwt(cfg *config.Configuration, dp dataprotection.Provider) (jwt.Parser, jwt.Signer, error) {
+// provideJwt returns the token parser and signer. A revoked token (Auth.RevokeToken,
+// the sign-out of a bearer or cookie session) is refused at once by the
+// process that revoked it, and by the others once they reload the revoked
+// IDs from the cache, within the snapshot TTL of porto/pkg/revocation.
+func provideJwt(cfg *config.Configuration, dp dataprotection.Provider, cache cache.Provider) (jwt.Parser, jwt.Signer, error) {
 	var provider jwt.Provider
 	var err error
 	if cfg.Auth.JWT != "" {
@@ -244,6 +249,7 @@ func provideJwt(cfg *config.Configuration, dp dataprotection.Provider) (jwt.Pars
 	// we encrypt Admin access token,
 	// the accesstoken provider handles both, encrypted PAT and plain JWT
 	at := accesstoken.New(dp, provider)
+	at.SetRevocation(revocation.New(cache))
 	return at, at, nil
 }
 

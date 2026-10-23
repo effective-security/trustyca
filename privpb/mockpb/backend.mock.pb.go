@@ -62,7 +62,8 @@ func (m *MockBackendServer) RegisterIssuer(ctx context.Context, req *privpb.Regi
 }
 
 // ImportIssuer registers an issuer from an existing certificate and a
-// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+// key URI of a crypto provider or a PEM key stored protected
+// (CA.ImportIssuer)
 
 func (m *MockBackendServer) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest) (*pb.Issuer, error) {
 	if m.Err != nil {
@@ -91,7 +92,8 @@ func (m *MockBackendServer) UpdateIssuer(ctx context.Context, req *privpb.Update
 	return m.next().(*pb.Issuer), nil
 }
 
-// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+// GetIssuer returns an issuer of the org by ID, label or IKID
+// (CA.GetIssuer)
 
 func (m *MockBackendServer) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error) {
 	if m.Err != nil {
@@ -109,7 +111,8 @@ func (m *MockBackendServer) ListIssuers(ctx context.Context, req *privpb.ListIss
 	return m.next().(*pb.IssuersResponse), nil
 }
 
-// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+// RegisterRoot registers an external trust anchor of the org
+// (CA.RegisterRoot)
 
 func (m *MockBackendServer) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest) (*pb.RootCertificate, error) {
 	if m.Err != nil {

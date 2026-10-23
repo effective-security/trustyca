@@ -19,6 +19,14 @@ import (
 
 const (
 	allowedClientID = "trustyca"
+
+	// localEmailPrefix marks an address that signs in through the `local`
+	// provider on a local instance (config.Service.IsLocal):
+	// local+user1@trustyca.io signs in as user1@trustyca.io
+	localEmailPrefix = "local+"
+	// localAuthCode is the authorization code of the `local` provider,
+	// which has no IdP to issue one; the callback ignores its value
+	localAuthCode = "local"
 )
 
 var errRestrictedUsers = httperror.Forbidden("login is restricted to invited users only. Please contact support@tbilicode.com")
@@ -65,9 +73,17 @@ func (s *Service) AuthorizeHandler() restserver.Handle {
 			}
 		}
 
-		if req.Provider == pb.IDP_Undefined {
+		switch req.Provider {
+		case pb.IDP_Undefined:
 			marshal.WriteJSON(w, r, httperror.InvalidRequest("unsupported IDP"))
 			return
+		case pb.IDP_Local:
+			if !s.isLocal() {
+				marshal.WriteJSON(w, r, httperror.InvalidRequest("unsupported IDP"))
+				return
+			}
+			// the local provider signs in the address without the prefix
+			idpuserEmail = strings.TrimPrefix(idpuserEmail, localEmailPrefix)
 		}
 
 		if req.ResponseType == pb.OAuthResponseTypeCookie && ccfg.Auth == "" {
@@ -182,6 +198,12 @@ func (s *Service) AuthorizeHandler() restserver.Handle {
 			Endpoint: oauth2.Endpoint{
 				AuthURL: provConfig.AuthURL,
 			},
+		}
+		if req.Provider == pb.IDP_Local {
+			// the local provider has no IdP: the callback on the host this
+			// flow started on answers the authorization request, so the
+			// cookies of a cookie session are set for that host
+			conf.Endpoint.AuthURL = conf.RedirectURL + "?code=" + localAuthCode
 		}
 
 		opts := []oauth2.AuthCodeOption{

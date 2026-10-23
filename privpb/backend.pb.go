@@ -1814,11 +1814,11 @@ type PublishCrlsRequest struct {
 	// publish. Empty publishes for the org-wide issuers and the projects the
 	// caller may read; a project Admin names the project, and an API key
 	// restricted to a project publishes for its project.
-	ProjectID string `protobuf:"bytes,4,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// IKID specifies Issuer Key ID; empty to publish for all issuers in scope
-	IKID string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
+	IKID string `protobuf:"bytes,3,opt,name=IKID,proto3" json:"IKID,omitempty"`
 	// Force specifies to publish even if the current CRL is not due for renewal
-	Force         bool `protobuf:"varint,3,opt,name=Force,proto3" json:"Force,omitempty"`
+	Force         bool `protobuf:"varint,4,opt,name=Force,proto3" json:"Force,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2038,9 +2038,9 @@ const file_backend_proto_rawDesc = "" +
 	"\x04IKID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x04IKID\"r\n" +
 	"\x12PublishCrlsRequest\x12\x14\n" +
 	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x1c\n" +
-	"\tProjectID\x18\x04 \x01(\tR\tProjectID\x12\x12\n" +
-	"\x04IKID\x18\x02 \x01(\tR\x04IKID\x12\x14\n" +
-	"\x05Force\x18\x03 \x01(\bR\x05Force2\x84\v\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x12\n" +
+	"\x04IKID\x18\x03 \x01(\tR\x04IKID\x12\x14\n" +
+	"\x05Force\x18\x04 \x01(\bR\x05Force2\x84\v\n" +
 	"\aBackend\x12;\n" +
 	"\x0eRegisterIssuer\x12\x1d.privpb.RegisterIssuerRequest\x1a\n" +
 	".pb.Issuer\x127\n" +

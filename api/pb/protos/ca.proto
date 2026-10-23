@@ -173,6 +173,8 @@ service CA {
 
 // RegisterIssuerRequest specifies a request to create a new issuer
 message RegisterIssuerRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID of the owning project; empty for an org-wide issuer
     string ProjectID = 2 [json_name = "ProjectID"];
     // Label of the issuer, unique per (Org, Project)
@@ -203,6 +205,8 @@ message RegisterIssuerRequest {
 
 // ImportIssuerRequest specifies a request to import an existing issuer
 message ImportIssuerRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID of the owning project; empty for an org-wide issuer
     string ProjectID = 2 [json_name = "ProjectID"];
     // Label of the issuer, unique per (Org, Project)
@@ -230,19 +234,23 @@ message ImportIssuerRequest {
 // ActivateIssuerRequest specifies the externally signed certificate for a
 // Pending issuer
 message ActivateIssuerRequest {
+    reserved 1;
+    reserved "OrgID";
     // ID of the Pending issuer
-    string ID = 1 [json_name = "ID", (es.api.required) = true];
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
     // Certificate provides the issuer certificate in PEM format
-    string Certificate = 2
+    string Certificate = 3
         [json_name = "Certificate", (es.api.required) = true];
     // Intermediates provides the intermediate CA certificates in PEM format
-    string Intermediates = 3 [json_name = "Intermediates"];
+    string Intermediates = 4 [json_name = "Intermediates"];
     // Root provides the Root CA certificate in PEM format
-    string Root = 4 [json_name = "Root"];
+    string Root = 5 [json_name = "Root"];
 }
 
 // GetIssuerRequest specifies an issuer by ID, label or IKID
 message GetIssuerRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID of the owning project; used with Label
     string ProjectID = 2 [json_name = "ProjectID"];
     // ID of the issuer
@@ -255,6 +263,8 @@ message GetIssuerRequest {
 
 // ListIssuersRequest specifies a paginated list of issuers
 message ListIssuersRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID filters by project; empty returns org-wide and all project
     // issuers
     string ProjectID = 2 [json_name = "ProjectID"];
@@ -282,6 +292,8 @@ message IssuersResponse {
 
 // UpdateIssuerRequest updates issuer config or status
 message UpdateIssuerRequest {
+    reserved 1;
+    reserved "OrgID";
     // ID of the issuer
     string ID = 2 [json_name = "ID", (es.api.required) = true];
     // Config replaces runtime settings when provided
@@ -296,6 +308,8 @@ message UpdateIssuerRequest {
 
 // RegisterRootRequest registers an external trust anchor
 message RegisterRootRequest {
+    reserved 1;
+    reserved "OrgID";
     // Pem encoded root certificate
     string Pem = 2 [json_name = "Pem", (es.api.required) = true];
     // Trust scope
@@ -304,6 +318,8 @@ message RegisterRootRequest {
 
 // ListRootsRequest specifies a list of trust anchors
 message ListRootsRequest {
+    reserved 1;
+    reserved "OrgID";
     // Limit specifies maximum number of records to return
     uint32 Limit = 2 [json_name = "Limit"];
     // Offset specifies offset for the offset-based pagination
@@ -326,6 +342,8 @@ message RootsResponse {
 
 // RegisterProfileRequest creates or replaces a profile
 message RegisterProfileRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID of the owning project; empty for an org-wide profile
     string ProjectID = 2 [json_name = "ProjectID"];
     // Profile provides the profile definition.
@@ -335,6 +353,8 @@ message RegisterProfileRequest {
 
 // GetProfileRequest specifies a profile by ID or label
 message GetProfileRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID of the owning project; used with Label
     string ProjectID = 2 [json_name = "ProjectID"];
     // ID of the profile
@@ -345,6 +365,8 @@ message GetProfileRequest {
 
 // ListProfilesRequest specifies a paginated list of profiles
 message ListProfilesRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID filters by project; empty returns org-wide and all project
     // profiles
     string ProjectID = 2 [json_name = "ProjectID"];
@@ -368,6 +390,8 @@ message ProfilesResponse {
 
 // DeleteProfileRequest deletes a profile
 message DeleteProfileRequest {
+    reserved 1;
+    reserved "OrgID";
     // ID of the profile
     string ID = 2 [json_name = "ID", (es.api.required) = true];
 }
@@ -378,6 +402,8 @@ message DeleteProfileRequest {
 
 // SignCertificateRequest specifies certificate sign request
 message SignCertificateRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID of the owning project; recorded on the certificate and used to
     // resolve project-scoped profiles and issuers
     string ProjectID = 2 [json_name = "ProjectID"];
@@ -411,6 +437,8 @@ message SignCertificateRequest {
 
 // UpdateCertificateLabelRequest specifies certificate label update request
 message UpdateCertificateLabelRequest {
+    reserved 1;
+    reserved "OrgID";
     // ID specifies certificate ID
     string ID = 2 [json_name = "ID", (es.api.required) = true];
     // Label is provided by the client
@@ -426,6 +454,8 @@ message UpdateCertificateLabelRequest {
 // GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer
 // and serial number
 message GetCertificateRequest {
+    reserved 1;
+    reserved "OrgID";
     // ID specifies certificate ID
     string ID = 2
         [json_name = "ID", (es.api.required_or) = "SKID,Sha256,IssuerSerial"];
@@ -443,6 +473,8 @@ message GetCertificateRequest {
 // ListCertificatesRequest specifies a paginated list of certificates,
 // sorted by ID descending (newest first)
 message ListCertificatesRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID filters by project; empty returns org-wide and all project
     // certificates
     string ProjectID = 2 [json_name = "ProjectID"];
@@ -468,6 +500,8 @@ message ListCertificatesRequest {
 // ListRevokedCertificatesRequest specifies a paginated list of revoked
 // certificates, sorted by revocation ID descending
 message ListRevokedCertificatesRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID filters by project
     string ProjectID = 2 [json_name = "ProjectID"];
     // IKID filters by issuer
@@ -482,6 +516,8 @@ message ListRevokedCertificatesRequest {
 
 // RevokeCertificateRequest specifies revocation request
 message RevokeCertificateRequest {
+    reserved 1;
+    reserved "OrgID";
     // ID specifies certificate ID
     string ID = 2
         [json_name = "ID", (es.api.required_or) = "SKID,IssuerSerial"];
@@ -535,22 +571,26 @@ message RevokedCertificatesResponse {
 
 // GetCrlRequest specifies CRL request by IKID
 message GetCrlRequest {
+    reserved 1;
+    reserved "OrgID";
     // IKID specifies Issuer Key ID
-    string IKID = 1 [json_name = "IKID", (es.api.required) = true];
+    string IKID = 2 [json_name = "IKID", (es.api.required) = true];
 }
 
 // PublishCrlsRequest allows to publish CRLs on demand
 message PublishCrlsRequest {
+    reserved 1;
+    reserved "OrgID";
     // ProjectID limits the scope to the project: the issuer of the IKID
     // must belong to it, and without an IKID the issuers of the project
     // publish. Empty publishes for the org-wide issuers and the projects the
     // caller may read; a project Admin names the project, and an API key
     // restricted to a project publishes for its project.
-    string ProjectID = 1 [json_name = "ProjectID"];
+    string ProjectID = 2 [json_name = "ProjectID"];
     // IKID specifies Issuer Key ID; empty to publish for all issuers in scope
-    string IKID = 2 [json_name = "IKID"];
+    string IKID = 3 [json_name = "IKID"];
     // Force specifies to publish even if the current CRL is not due for renewal
-    bool Force = 3 [json_name = "Force"];
+    bool Force = 4 [json_name = "Force"];
 }
 
 // CrlsResponse returns published CRLs

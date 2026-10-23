@@ -241,6 +241,10 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 	)
 
 	if st.Provider == pb.IDP_Local {
+		if !s.isLocal() {
+			marshal.WriteJSON(w, r, httperror.InvalidRequest("unsupported provider: %s", st.Provider))
+			return
+		}
 		token = &oauth2.Token{
 			Expiry: time.Now().Add(DefaultTokenTTL),
 		}
@@ -285,6 +289,10 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 	if err != nil {
 		marshal.WriteJSON(w, r, err)
 		return
+	}
+	if st.Provider == pb.IDP_Local && st.Email != "" {
+		// the local provider signs in the address the flow started with
+		ui = localUserInfo(st.Email)
 	}
 
 	if st.Email != "" && !strings.EqualFold(ui.Email, st.Email) {
@@ -531,10 +539,24 @@ func claimsFromUserInfo(claims jwt.MapClaims, ui *pb.UserInfo) {
 	}
 }
 
+// localUser is the user the `local` provider signs in without an address
 var localUser = &pb.UserInfo{
 	ID:    "testuser",
 	Email: "test@trustyca.io",
 	Name:  "Trusty Test",
+}
+
+// localUserInfo returns the user the `local` provider signs in for email,
+// already without the localEmailPrefix. The email is the external ID, so
+// every local user has a login of its own.
+func localUserInfo(email string) *pb.UserInfo {
+	name, _, _ := strings.Cut(email, "@")
+	return &pb.UserInfo{
+		ID:            email,
+		Email:         email,
+		EmailVerified: true,
+		Name:          name,
+	}
 }
 
 // githubNoReplyDomain is the domain GitHub issues to users who keep their

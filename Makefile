@@ -15,6 +15,19 @@ export TRUSTYCA_GITHUB_CLIENT_SECRET=testclientsecret
 export TRUSTYCA_GOOGLE_CLIENT_ID=testclientid
 export TRUSTYCA_GOOGLE_CLIENT_SECRET=testclientsecret
 
+# Container images built by `make docker` / `make docker-tester` and consumed
+# by tests/integration/docker-compose.tester.yml.
+ITEST_IMAGE ?= effective-security/trustyca
+ITEST_TESTER_IMAGE ?= effective-security/trustyca-tester
+ITEST_IMAGE_TAG ?= main
+export ITEST_IMAGE
+export ITEST_TESTER_IMAGE
+export ITEST_IMAGE_TAG
+# the binaries link the PKCS#11 provider with cgo: docker-build builds them in
+# the golang image of the Go version of go.mod, on the Debian release of the
+# images of the Dockerfile, so that they find the glibc they were built with
+DOCKER_GO_IMAGE ?= golang:$(shell sed -n 's/^go //p' go.mod)-trixie
+
 export COVERAGE_EXCLUSIONS="tests|third_party|api/pb/|main\.go|clisuite|testsuite\.go|mocks\.go|\.pb\.go|\.gen\.go"
 export TRUSTYCA_DIR=${PROJ_ROOT}
 BUILD_FLAGS=
@@ -115,6 +128,13 @@ gen_test_root:
 		--root
 	cd $(PROJ_ROOT)/etc/dev/certs/root && tar -cvzf trustyca_root.key.tar.gz trustyca_root.key
 
+# TEST_CERTS_SAN is added to the server and peer certificates on top of
+# localhost and the host name (gen_certs.sh --san replaces the san list of
+# the CSR profiles): api.local.trustyca.io is the wfe under the dev cookie
+# domain, the API host of the console in cookie mode (README.md, Web UI
+# sessions). The integration test stack issues its own (tests/integration).
+TEST_CERTS_SAN ?= 127.0.0.1,api.local.trustyca.io
+
 gen_test_certs: trusty_root
 	echo "*** Running gen_test_certs"
 	echo "*** generating test CAs"
@@ -126,6 +146,7 @@ gen_test_certs: trusty_root
 		--csr-prefix trustyca_ \
 		--out-prefix trustyca_ \
 		--key-label test_ \
+		--san $(TEST_CERTS_SAN) \
 		--root-ca $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.pem \
 		--root-ca-key $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.key \
 		--ca1 --ca2  --bundle --server --peer --client --admin --ra --aia --force
@@ -192,16 +213,44 @@ gen-sql-schema: #dry-run
 		--view vw_revoked_certificate
 	#goimports -w ./internal/db/model/*.gen.go ./internal/db/schema/*.gen.go
 
-docker: change_log
-	docker build --no-cache -f Dockerfile -t effective-security/trustyca:main .
+# docker-build builds the linux binaries of the images into bin/linux with
+# the host's module cache, read-only and offline, so the container needs no
+# network and no credentials: run `make build` (or `go mod download`) first.
+docker-build:
+	echo "*** building the linux binaries of the images in $(DOCKER_GO_IMAGE)"
+	mkdir -p $(PROJ_ROOT)/bin/linux $(PROJ_ROOT)/.tmp/docker-gocache
+	docker run --rm \
+		--user $$(id -u):$$(id -g) \
+		-v $(PROJ_ROOT):/src \
+		-v $$(go env GOMODCACHE):/go/pkg/mod:ro \
+		-e HOME=/tmp \
+		-e GOCACHE=/src/.tmp/docker-gocache \
+		-e GOMODCACHE=/go/pkg/mod \
+		-e GOPROXY=off \
+		-e GOFLAGS="-mod=readonly -buildvcs=false" \
+		-e GOTOOLCHAIN=local \
+		-w /src \
+		$(DOCKER_GO_IMAGE) \
+		sh -c 'for cmd in trustycasvc trustyca trustycactl; do go build ${BUILD_FLAGS} -o bin/linux/$$cmd ./cmd/$$cmd || exit 1; done'
+
+docker: change_log docker-build
+	echo "*** building $(ITEST_IMAGE):$(ITEST_IMAGE_TAG)"
+	docker build -f Dockerfile --target runtime -t $(ITEST_IMAGE):$(ITEST_IMAGE_TAG) .
+
+docker-tester: docker-build
+	echo "*** building $(ITEST_TESTER_IMAGE):$(ITEST_IMAGE_TAG)"
+	docker build -f Dockerfile --target tester -t $(ITEST_TESTER_IMAGE):$(ITEST_IMAGE_TAG) .
 
 docker-push: docker
 	[ ! -z ${DOCKER_PASSWORD} ] && echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin || echo "skipping docker login"
-	docker push effective-security/trustyca:main
+	docker push $(ITEST_IMAGE):$(ITEST_IMAGE_TAG)
 	#[ ! -z ${DOCKER_NUMBER} ] && docker push effective-security/trustyca:${DOCKER_NUMBER} || echo "skipping docker version, pushing latest only"
 
-docker-citest:
-	cd ./scripts/integration && ./setup.sh
+# docker-citest builds both images and runs the integration suite of
+# tests/integration in its own compose stack, with its own throw-away PKI
+# (tests/integration/README.md); it never touches ~/.trustyca or the dev DB
+docker-citest: docker docker-tester
+	cd ./tests/integration && ./setup.sh
 
 proto: proto-pub proto-priv
 	echo "*** built protos"

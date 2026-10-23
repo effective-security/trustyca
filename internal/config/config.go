@@ -25,12 +25,17 @@ const (
 	// EnvironmentProd is the service.environment of a production instance: it
 	// refuses the settings of development, such as software issuer keys
 	EnvironmentProd = "prod"
-	// EnvironmentDev is the service.environment of a development instance it
-	// refuses the settings of development, such as software issuer keys
+	// EnvironmentDev is the service.environment of the deployed development
+	// instance
 	EnvironmentDev = "dev"
-	// EnvironmentLocal is the service.environment of a local instance: it
-	// allows software issuer keys
+	// EnvironmentLocal is the service.environment of an instance on a
+	// developer machine or in the integration test stack: with ClusterLocal
+	// it enables the `local` identity provider (Service.IsLocal)
 	EnvironmentLocal = "local"
+
+	// ClusterLocal is the service.cluster of an instance on a developer
+	// machine or in the integration test stack
+	ClusterLocal = "local"
 )
 
 // Configuration contains the user configurable data for the service
@@ -87,11 +92,20 @@ type Service struct {
 	// Region specifies the Region / Datacenter where the instance is running
 	Region string `json:"region,omitempty" yaml:"region,omitempty"`
 
-	// Environment specifies the environment where the instance is running: prod|stage|dev
+	// Environment specifies the environment where the instance is running: prod|stage|dev|local
 	Environment string `json:"environment,omitempty" yaml:"environment,omitempty"`
 
 	// ClusterName specifies the cluster name
 	ClusterName string `json:"cluster,omitempty" yaml:"cluster,omitempty"`
+}
+
+// IsLocal reports whether the instance runs on a developer machine or in the
+// integration test stack: environment EnvironmentLocal in cluster
+// ClusterLocal. Functionality for development and tests only, such as the
+// `local` identity provider, checks it and fails closed in every other
+// environment and cluster.
+func (s Service) IsLocal() bool {
+	return s.Environment == EnvironmentLocal && s.ClusterName == ClusterLocal
 }
 
 // Auth specifies the authentication configuration

@@ -62,7 +62,75 @@ Review coverage report:
 
 ## Integration test
 
-    make docker docker-citest
+    make docker-citest
+
+builds the service and test runner images (`make docker docker-tester`) and
+runs [tests/integration](tests/integration/README.md) against the service in
+a compose stack of its own: its own database, Redis, KMS emulator and a
+throw-away PKI, so `~/.trustyca` and the dev DB are never touched. It needs
+Docker, `hsm-tool` (`make tools`) and the module cache of a `make build`.
+`ITEST_KEEP_UP=1 make docker-citest` leaves the stack running for debugging.
+
+## Web UI sessions
+
+The console (`trustyca-ui`) signs users in through `/v1/auth/authorize` and
+calls the `wfe` over gRPC-Web, in one of two modes:
+
+- bearer (`response_type=code`): the console exchanges a one-time code for
+  the token and sends `Authorization: Bearer`. It works from
+  `http://localhost:4200`.
+- cookie (`response_type=cookie`): the callback sets an HttpOnly auth cookie
+  and a readable CSRF cookie on `identity_map.cookies.domain`
+  (`.local.trustyca.io` in dev), `Secure` and `SameSite=None`, and lands on
+  the console with `cookie_set=true&csrf=<CSRF cookie name>`. The console
+  sends every call with `credentials: 'include'` and the CSRF cookie in the
+  `X-CSRF-Token` header (every gRPC-Web call, every REST call but GET):
+  without it the cookie is ignored and the caller is a guest. The org
+  switch is `POST /v1/auth/org` (`{"OrgID": ..., "RememberMe": ...}`),
+  which replaces both cookies; the sign-out is `DELETE /pb.Auth/RevokeToken`,
+  which revokes the token and removes the cookies.
+
+The cookie mode needs the console and the API on hosts under the cookie
+domain, over https: the console reads the CSRF cookie from its own page,
+and the browser stores the cookies of the callback only for a host under
+the domain. In dev:
+
+    # /etc/hosts
+    127.0.0.1 app.local.trustyca.io api.local.trustyca.io
+
+- serve the console at `https://app.local.trustyca.io:4200` (an origin of
+  the wfe CORS configuration), for example
+  `ng serve --host app.local.trustyca.io --ssl`;
+- point it at `https://api.local.trustyca.io:8880` and start the login
+  there: the callback that sets the cookies runs on the host of the
+  authorize request. `auth.auth_url` stays on localhost for the CLI;
+- trust `etc/dev/certs/root/trustyca_root.pem` in the browser. The server
+  certificate of `make gen_test_certs` names `api.local.trustyca.io`
+  (`TEST_CERTS_SAN`); a dev certificate issued before that has no such
+  name. Issue a new server certificate alone, never with `--force` (which
+  `make gen_test_certs` passes), since that rotates the CA keys of the
+  platform issuers of the dev DB:
+
+```sh
+rm ~/.trustyca/certs/trustyca_server.*
+PATH="$PWD/bin:$PATH" .project/gen_certs.sh --hsm-config inmem \
+    --ca-config etc/dev/certs/ca-config.bootstrap.yaml \
+    --output-dir ~/.trustyca/certs --csr-dir etc/dev/certs/csr_profile \
+    --csr-prefix trustyca_ --out-prefix trustyca_ --key-label test_ \
+    --san 127.0.0.1,api.local.trustyca.io \
+    --root-ca etc/dev/certs/root/trustyca_root.pem \
+    --root-ca-key etc/dev/certs/root/trustyca_root.key \
+    --server
+```
+
+### Local identity provider
+
+The dev configuration (`service.environment: local` in `service.cluster:
+local`) offers the `local` provider, which needs no external IdP and no
+invitation: `trustyca auth login local+user1@trustyca.io`, or a console
+login with `idpuser.email=local+user1@trustyca.io`, signs in as
+`user1@trustyca.io`. Any other environment refuses the provider, and an
+address with `local+` is an ordinary address there.
 
 ## Certificate Information Service
 
@@ -266,3 +334,7 @@ clients:
       timeout: 6s
     storage_folder: ~/.trustyca
 ```
+
+## Dashboard
+
+`Documentation/login_page.png`

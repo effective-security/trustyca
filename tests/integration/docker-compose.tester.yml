@@ -1,0 +1,173 @@
+# Integration test environment for trustyca.
+#
+# Driven by ./setup.sh (`make docker-citest`), which generates the PKI of the
+# stack into ./.citest/certs first. Paths are relative to this file.
+#
+# Every service joins one bridge network and is addressed by its compose
+# alias, so nothing depends on host ports or on a fixed subnet. The names
+# (api.local.trustyca.io, redis.local.trustyca.io) are in the SAN list of
+# the server and peer certificates setup.sh issues, which is what lets the
+# clients verify TLS instead of skipping the check, and api.local.trustyca.io
+# is under the dev cookie domain, so the cookies of the console are accepted.
+
+name: trustyca-ci
+
+networks:
+  citest:
+    driver: bridge
+
+services:
+  sql:
+    image: effectivesecurity/postgres15:sha-d151f03
+    platform: linux/amd64
+    networks: [citest]
+    volumes:
+      - ../../sql:/trustyca_sql:ro
+    environment:
+      POSTGRES_PORT: 55432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    entrypoint: ["/bin/bash", "-c", "/start_postgres.sh"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "55432", "-U", "postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 40
+      start_period: 5s
+
+  # One-shot: creates the trustycadb database and the roles the service
+  # migrates with. Started explicitly by setup.sh, never by `up`, so that
+  # its exit does not tear the stack down.
+  sql-init:
+    image: effectivesecurity/postgres15:sha-d151f03
+    platform: linux/amd64
+    networks: [citest]
+    profiles: [tools]
+    volumes:
+      - ../../sql:/trustyca_sql:ro
+    environment:
+      PGPASSWORD: postgres
+    entrypoint:
+      - psql
+      - -v
+      - ON_ERROR_STOP=1
+      - -h
+      - sql
+      - -p
+      - "55432"
+      - -U
+      - postgres
+      - -f
+      - /trustyca_sql/trustycadb/create_local_db.sql
+
+  redis:
+    image: redis:8.2
+    networks:
+      citest:
+        aliases: [redis.local.trustyca.io]
+    volumes:
+      - ./.citest/certs:/trustyca:ro
+    command:
+      - --port
+      - "0"
+      - --tls-port
+      - "6379"
+      - --tls-cert-file
+      - /trustyca/trustyca_peer.pem
+      - --tls-key-file
+      - /trustyca/trustyca_peer.key
+      - --tls-ca-cert-file
+      - /trustyca/trustyca_root.pem
+      - --tls-auth-clients
+      - "no"
+      - --requirepass
+      - redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "--tls", "--insecure", "-p", "6379", "-a", "redis", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 2s
+
+  # the AWS KMS emulator of crypto_provider.default (the issuer keys of the
+  # tenants)
+  kms:
+    image: nsmithuk/local-kms:3.11.7
+    networks:
+      citest:
+        aliases: [kms.local.trustyca.io]
+    environment:
+      PORT: "54551"
+
+  trustyca:
+    image: ${ITEST_IMAGE:-effective-security/trustyca}:${ITEST_IMAGE_TAG:-main}
+    networks:
+      citest:
+        aliases: [api.local.trustyca.io]
+    depends_on:
+      sql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kms:
+        condition: service_started
+    volumes:
+      # read-only: the service must not be able to change what the test
+      # asserts on
+      - ../../etc/dev:/opt/trustyca/etc/dev:ro
+      # the base configuration reads its TLS material from
+      # ${HOME}/.trustyca/certs, as on a developer machine
+      - ./.citest/certs:/home/nonroot/.trustyca/certs:ro
+    environment:
+      HOME: /home/nonroot
+      TRUSTYCA_DP_SEED: testseed
+      TRUSTYCA_GITHUB_CLIENT_ID: testclientid
+      TRUSTYCA_GITHUB_CLIENT_SECRET: testclientsecret
+      TRUSTYCA_GOOGLE_CLIENT_ID: testclientid
+      TRUSTYCA_GOOGLE_CLIENT_SECRET: testclientsecret
+      TRUSTYCA_RECAPTCHA_SITE_KEY: ""
+      # the KMS emulator accepts any credentials
+      AWS_ACCESS_KEY_ID: notusedbyemulator
+      AWS_SECRET_ACCESS_KEY: notusedbyemulator
+      AWS_DEFAULT_REGION: us-west-2
+      # url-escaped password, see sql/trustycadb/create_local_db.sql
+      TRUSTYCA_SQL_CONN: postgres://trustyca:trustyca%3Flocal%23%26@sql:55432?sslmode=disable&dbname=trustycadb
+    # the image entry point is trustycasvc; the config override carries
+    # everything that differs inside the container
+    command:
+      - --log-std
+      - --cfg=/opt/trustyca/etc/dev/trustyca-config.yaml
+      - --cfg-override=/opt/trustyca/etc/dev/trustyca-config.citest.yaml
+    ports:
+      # published for debugging only, nothing in the suite goes through them.
+      # The host ports are deliberately not the dev ones, so the CI stack and
+      # `make start-localstack` with a dev server can run side by side.
+      - "127.0.0.1:${ITEST_WFE_PORT:-18880}:8880"
+      - "127.0.0.1:${ITEST_BACKEND_PORT:-18881}:8881"
+      - "127.0.0.1:${ITEST_AIA_PORT:-18888}:8888"
+
+  test-runner:
+    image: ${ITEST_TESTER_IMAGE:-effective-security/trustyca-tester}:${ITEST_IMAGE_TAG:-main}
+    networks:
+      citest:
+        aliases: [tester.local.trustyca.io]
+    profiles: [tools]
+    depends_on:
+      trustyca:
+        condition: service_started
+    volumes:
+      # bind-mounted rather than baked in, so a test can be edited and re-run
+      # without rebuilding the image
+      - ./tests:/opt/trustyca/tests:ro
+      - ./.citest/certs:/opt/trustyca/certs:ro
+    environment:
+      TRUSTYCA_URL: https://api.local.trustyca.io:8880
+      TRUSTYCA_BACKEND_URL: https://api.local.trustyca.io:8881
+      TRUSTYCA_AIA_URL: http://api.local.trustyca.io:8888
+      TRUSTYCA_TRUSTED_CA: /opt/trustyca/certs/trustyca_root.pem
+      # the console of the dev CORS configuration in cookie mode
+      CONSOLE_ORIGIN: https://app.local.trustyca.io:4200
+      # per-user CLI token storage and cookie jars live under here
+      TRUSTYCA_WORKDIR: /tmp/trustyca
+    entrypoint: ["/opt/trustyca/tests/if-trustyca-ready.sh"]
+    command: ["/opt/trustyca/tests/run.sh"]

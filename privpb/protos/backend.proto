@@ -26,7 +26,8 @@ service Backend {
     // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
     rpc RegisterIssuer(RegisterIssuerRequest) returns (pb.Issuer);
     // ImportIssuer registers an issuer from an existing certificate and a
-    // key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+    // key URI of a crypto provider or a PEM key stored protected
+    // (CA.ImportIssuer)
     rpc ImportIssuer(ImportIssuerRequest) returns (pb.Issuer);
     // ActivateIssuer sets the externally signed certificate of a Pending
     // issuer, which must be for the issuer's key (CA.ActivateIssuer)
@@ -34,11 +35,13 @@ service Backend {
     // UpdateIssuer updates the runtime configuration or the status of an
     // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
     rpc UpdateIssuer(UpdateIssuerRequest) returns (pb.Issuer);
-    // GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+    // GetIssuer returns an issuer of the org by ID, label or IKID
+    // (CA.GetIssuer)
     rpc GetIssuer(GetIssuerRequest) returns (pb.Issuer);
     // ListIssuers returns the issuers of the org (CA.ListIssuers)
     rpc ListIssuers(ListIssuersRequest) returns (pb.IssuersResponse);
-    // RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+    // RegisterRoot registers an external trust anchor of the org
+    // (CA.RegisterRoot)
     rpc RegisterRoot(RegisterRootRequest) returns (pb.RootCertificate);
     // ListRoots returns the trust anchors of the org, or of the
     // platform (CA.ListRoots)
@@ -54,21 +57,26 @@ service Backend {
     rpc DeleteProfile(DeleteProfileRequest) returns (google.protobuf.Empty);
     // SignCertificate signs a certificate request with the issuer of the
     // profile and registers the certificate (CA.SignCertificate)
-    rpc SignCertificate(SignCertificateRequest) returns (pb.CertificateResponse);
+    rpc SignCertificate(SignCertificateRequest)
+        returns (pb.CertificateResponse);
     // GetCertificate returns a certificate of the org by ID, SKID,
     // Sha256 or issuer and serial number (CA.GetCertificate)
     rpc GetCertificate(GetCertificateRequest) returns (pb.CertificateResponse);
     // ListCertificates returns the certificates of the org, newest
     // first (CA.ListCertificates)
-    rpc ListCertificates(ListCertificatesRequest) returns (pb.CertificatesResponse);
+    rpc ListCertificates(ListCertificatesRequest)
+        returns (pb.CertificatesResponse);
     // UpdateCertificateLabel updates the client-provided label and
     // metadata of a certificate (CA.UpdateCertificateLabel)
-    rpc UpdateCertificateLabel(UpdateCertificateLabelRequest) returns (pb.CertificateResponse);
+    rpc UpdateCertificateLabel(UpdateCertificateLabelRequest)
+        returns (pb.CertificateResponse);
     // RevokeCertificate revokes a certificate of the org (CA.RevokeCertificate)
-    rpc RevokeCertificate(RevokeCertificateRequest) returns (pb.RevokedCertificateResponse);
+    rpc RevokeCertificate(RevokeCertificateRequest)
+        returns (pb.RevokedCertificateResponse);
     // ListRevokedCertificates returns the revoked certificates of
     // the org (CA.ListRevokedCertificates)
-    rpc ListRevokedCertificates(ListRevokedCertificatesRequest) returns (pb.RevokedCertificatesResponse);
+    rpc ListRevokedCertificates(ListRevokedCertificatesRequest)
+        returns (pb.RevokedCertificatesResponse);
     // GetCRL returns the current CRL of an issuer (CA.GetCRL)
     rpc GetCRL(GetCrlRequest) returns (pb.CrlResponse);
     // PublishCrls signs and publishes the CRL of an issuer, or the due
@@ -91,9 +99,11 @@ message RegisterIssuerRequest {
     string Label = 3
         [json_name = "Label", (es.api.required) = true, (es.api.max) = 64];
     // Type of the authority
-    pb.AuthorityType.Enum Type = 4 [json_name = "Type", (es.api.required) = true];
+    pb.AuthorityType.Enum Type = 4
+        [json_name = "Type", (es.api.required) = true];
     // Subject of the issuer certificate
-    pb.X509Subject Subject = 5 [json_name = "Subject", (es.api.required) = true];
+    pb.X509Subject Subject = 5
+        [json_name = "Subject", (es.api.required) = true];
     // KeySpec of the key to generate; defaults to ECDSA P-256
     pb.KeySpec KeySpec = 6 [json_name = "KeySpec"];
     // KeyProvider selects the crypto provider; empty for the server default
@@ -125,7 +135,8 @@ message ImportIssuerRequest {
     string Label = 3
         [json_name = "Label", (es.api.required) = true, (es.api.max) = 64];
     // Type of the authority
-    pb.AuthorityType.Enum Type = 4 [json_name = "Type", (es.api.required) = true];
+    pb.AuthorityType.Enum Type = 4
+        [json_name = "Type", (es.api.required) = true];
     // Certificate provides the issuer certificate in PEM format
     string Certificate = 5
         [json_name = "Certificate", (es.api.required) = true];
@@ -250,7 +261,8 @@ message RegisterProfileRequest {
     string ProjectID = 2 [json_name = "ProjectID"];
     // Profile provides the profile definition.
     // Profile.Label and Profile.IssuerLabel are required.
-    pb.CertProfile Profile = 3 [json_name = "Profile", (es.api.required) = true];
+    pb.CertProfile Profile = 3
+        [json_name = "Profile", (es.api.required) = true];
 }
 
 // GetProfileRequest specifies a profile by ID or label
@@ -467,9 +479,9 @@ message PublishCrlsRequest {
     // publish. Empty publishes for the org-wide issuers and the projects the
     // caller may read; a project Admin names the project, and an API key
     // restricted to a project publishes for its project.
-    string ProjectID = 4 [json_name = "ProjectID"];
+    string ProjectID = 2 [json_name = "ProjectID"];
     // IKID specifies Issuer Key ID; empty to publish for all issuers in scope
-    string IKID = 2 [json_name = "IKID"];
+    string IKID = 3 [json_name = "IKID"];
     // Force specifies to publish even if the current CRL is not due for renewal
-    bool Force = 3 [json_name = "Force"];
+    bool Force = 4 [json_name = "Force"];
 }
