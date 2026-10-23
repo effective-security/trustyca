@@ -622,7 +622,13 @@ func Test_DPoPCallbackHandler(t *testing.T) {
 		require.NoError(t, err)
 
 		h(w, r, nil)
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		require.Equal(t, http.StatusSeeOther, w.Code)
+		loc, err := url.Parse(w.Header().Get(header.Location))
+		require.NoError(t, err)
+		assert.Equal(t, url.Values{
+			pb.OAuthParamError:            {pb.OAuthErrorUnsupportedResponseType},
+			pb.OAuthParamErrorDescription: {"unsupported response_type: 'id_token'"},
+		}, loc.Query())
 	})
 
 	t.Run("valid_state_post_token_google", func(t *testing.T) {
@@ -722,8 +728,15 @@ func Test_DPoPCallbackHandler(t *testing.T) {
 		require.NoError(t, err)
 
 		h(w, r, nil)
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Equal(t, `{"code":"invalid_request","message":"invalid state"}`, w.Body.String())
+		require.Equal(t, http.StatusSeeOther, w.Code)
+		loc, err := url.Parse(w.Header().Get(header.Location))
+		require.NoError(t, err)
+		vals, err := url.ParseQuery(loc.Fragment)
+		require.NoError(t, err)
+		assert.Equal(t, url.Values{
+			pb.OAuthParamError:            {pb.OAuthErrorInvalidRequest},
+			pb.OAuthParamErrorDescription: {"invalid state"},
+		}, vals)
 	})
 }
 
@@ -923,8 +936,12 @@ func Test_DPoPCallbackHandlerGithub(t *testing.T) {
 		require.NoError(t, err)
 
 		h(w, r, nil)
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Equal(t, `{"code":"invalid_request","message":"unsupported response_type: 'token id_token'"}`, w.Body.String())
+		// the refusal is posted to the client, in its response mode
+		assert.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		assert.Contains(t, body, `action="http://localhost:38989"`)
+		assert.Contains(t, body, `name="error" value="unsupported_response_type"`)
+		assert.Contains(t, body, `name="error_description" value="unsupported response_type: &#39;token id_token&#39;"`)
 	})
 
 	var token string
@@ -971,6 +988,9 @@ func Test_DPoPCallbackHandlerGithub(t *testing.T) {
 		"sub":   "1234",
 		"email": "test@test.org",
 		"role":  "trustyca-admin",
+		// the provider of an older token is the number of the enum value,
+		// a float64 once the JSON of the token is decoded
+		"provider": float64(pb.IDP_Github),
 	}
 	adminIdn := identity.NewIdentity("trustyca-admin", "10.0.0.1", "", c, token, "DPoP", identity.MethodDPoP)
 
@@ -1010,6 +1030,7 @@ func Test_DPoPCallbackHandlerGithub(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "1234", ti.UserInfo.ID)
 		assert.Equal(t, "test@test.org", ti.UserInfo.Email)
+		assert.Equal(t, pb.IDP_Github, ti.Token.Provider)
 	})
 
 	t.Run("usertoken_rpc", func(t *testing.T) {
@@ -1029,6 +1050,7 @@ func Test_DPoPCallbackHandlerGithub(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "1234", ti.UserInfo.ID)
 		assert.Equal(t, "test@test.org", ti.UserInfo.Email)
+		assert.Equal(t, pb.IDP_Github, ti.Token.Provider)
 	})
 
 	t.Run("caller_rpc", func(t *testing.T) {

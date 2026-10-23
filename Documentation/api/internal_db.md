@@ -68,7 +68,7 @@ var (
 ```
 
 <a name="IsUniqueViolation"></a>
-## func [IsUniqueViolation](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L287>)
+## func [IsUniqueViolation](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L289>)
 
 ```go
 func IsUniqueViolation(err error, prefix string) bool
@@ -77,17 +77,19 @@ func IsUniqueViolation(err error, prefix string) bool
 IsUniqueViolation reports whether the error is a unique constraint violation of a constraint whose name starts with the prefix \(empty for any\), so that a caller maps a conflict without parsing the message
 
 <a name="CaDb"></a>
-## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L213-L273>)
+## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L213-L275>)
 
-CaDb defines an interface for CRUD operations on the CA tables. Every mutation of an existing row names the exact org scope of the row \(a zero orgID is the platform\), so a row of another org is not found or not deleted. State changes that must agree are one transaction: a certificate and its issue event, a revocation and the certificate status, a CRL and the issuer's CRL number.
+CaDb defines an interface for CRUD operations on the CA tables. Every mutation of an existing row names the exact org scope of the row \(a zero orgID is the platform\), so a row of another org is not found or not deleted. State changes that must agree are one transaction: a certificate and its issue event, a root issuer and its trust anchor, a revocation and the certificate status, a CRL and the issuer's CRL number.
 
 ```go
 type CaDb interface {
     CaReadonlyDb
 
     // RegisterIssuer inserts an issuer: a Pending one with its CSR, any
-    // other status with its certificate
-    RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
+    // other status with its certificate. The anchor of a root issuer (its
+    // certificate as a trust anchor of its org, nil for any other issuer)
+    // is registered in the same transaction, as RegisterRoot does.
+    RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error)
     // UpdateIssuer changes the lifecycle status or the runtime settings of
     // an issuer; Destroyed also clears the protected key material
     UpdateIssuer(ctx context.Context, req *query.UpdateIssuerRequest) (*model.Issuer, error)
@@ -343,7 +345,7 @@ type OrgsReadonlyDb interface {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L308-L313>)
+## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L310-L315>)
 
 Provider provides complete DB access
 
@@ -357,7 +359,7 @@ type Provider interface {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L316>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L318>)
 
 ```go
 func New(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator) (Provider, error)

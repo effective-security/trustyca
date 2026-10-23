@@ -970,7 +970,11 @@ var IssuerConfig_MessageDescription = &api.MessageDescription{
 	Display:  "Issuer Config",
 	FullName: "pb.IssuerConfig",
 	Documentation: `IssuerConfig provides runtime settings of an issuer.
-The shape matches the 'issuers[].aia' section of ca-config files.`,
+The shape matches the 'issuers[].aia' section of ca-config files.
+The URL templates name the issuer with ':ISSUER_ID', which is replaced
+with the issuer's SKID. The API also accepts '${ISSUER_ID}'; a ca-config
+file cannot use it, since its loader expands '${...}' as an environment
+variable, and the bootstrap refuses such a file.`,
 	Fields: []*api.FieldMeta{
 		{
 			Name:          "AiaURL",
@@ -979,8 +983,7 @@ The shape matches the 'issuers[].aia' section of ca-config files.`,
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `AiaURL specifies a template for the AIA Issuer URL.
-The ${ISSUER_ID} variable is replaced with the issuer's SKID.`,
+			Documentation: `AiaURL specifies a template for the AIA Issuer URL`,
 		},
 		{
 			Name:          "OcspURL",

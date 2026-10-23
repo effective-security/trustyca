@@ -107,7 +107,7 @@ func (s *Service) authenticateAPIKey(ctx context.Context, authHeader, timestamp 
 		authctx.ClaimScope:   key.Scopes,
 		"sub":                key.ID,
 		"email":              email,
-		"provider":           "apikey",
+		claimProvider:        "apikey",
 		"iss":                s.JwtSigner.Issuer(),
 		"aud":                s.getAudience(false),
 		"nonce":              certutil.RandomString(8),
@@ -152,7 +152,8 @@ func (s *Service) authenticateAPIKey(ctx context.Context, authHeader, timestamp 
 			IssuedAt:    claims.TimeVal("iat").Format(time.RFC3339),
 			Issuer:      claims.String("iss"),
 			Audience:    claims.String("aud"),
-			Provider:    pb.IDP_Undefined.Parse(claims.String("provider")),
+			// an API key signs in without an identity provider
+			Provider: pb.IDP_Undefined,
 		},
 		UserInfo: &pb.UserInfo{
 			ID:            key.ID,

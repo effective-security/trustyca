@@ -11,6 +11,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
 	core "github.com/effective-security/trustyca/internal/ca"
+	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/tests/testutils"
@@ -22,11 +23,12 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// storeIssuer is the RegisterIssuer expectation that stores the row after
-// the assertions on it
+// storeIssuer is the RegisterIssuer expectation of an issuer that is not a
+// root, so without a trust anchor; it stores the row after the assertions
+// on it
 func storeIssuer(tca *testCA, check func(m *model.Issuer)) {
-	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, m *model.Issuer) (*model.Issuer, error) {
+	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any(), gomock.Nil()).DoAndReturn(
+		func(_ context.Context, m *model.Issuer, _ *model.RootCertificate) (*model.Issuer, error) {
 			if check != nil {
 				check(m)
 			}
@@ -34,16 +36,16 @@ func storeIssuer(tca *testCA, check func(m *model.Issuer)) {
 		})
 }
 
-// storeRoot is the RegisterRoot expectation of a root issuer
-func storeRoot(tca *testCA, check func(m *model.RootCertificate)) {
-	tca.cadb.EXPECT().RegisterRoot(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, m *model.RootCertificate) (*model.RootCertificate, error) {
+// storeRootIssuer is the RegisterIssuer expectation of a root issuer, whose
+// certificate is a trust anchor of its org registered in the same call; it
+// stores the row after the assertions on both
+func storeRootIssuer(tca *testCA, check func(m *model.Issuer, anchor *model.RootCertificate)) {
+	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any(), gomock.Not(gomock.Nil())).DoAndReturn(
+		func(_ context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error) {
 			if check != nil {
-				check(m)
+				check(m, anchor)
 			}
-			res := *m
-			res.ID = xdb.NewID(900)
-			return &res, nil
+			return tca.rows.addIssuer(m), nil
 		})
 }
 
@@ -165,18 +167,19 @@ func TestService_RegisterIssuer(t *testing.T) {
 	tca.addProfile(testOrgID(), xdb.ID(0), rootProfileDef("SELF"))
 	req.Profile = "SELF"
 	var rootSkid string
-	storeIssuer(tca, func(m *model.Issuer) {
+	storeRootIssuer(tca, func(m *model.Issuer, anchor *model.RootCertificate) {
 		assert.Equal(t, pb.AuthorityType_Root, m.Type)
 		assert.Equal(t, pb.IssuerStatus_Active, m.Status)
 		assert.Equal(t, m.Pem, m.RootPem)
 		assert.Empty(t, m.ChainPem)
 		assert.True(t, m.ParentID.IsZero())
 		rootSkid = m.Skid
-	})
-	storeRoot(tca, func(m *model.RootCertificate) {
-		assert.Equal(t, uint64(1), m.OrgID.UInt64())
-		assert.Equal(t, pb.Trust_Private, m.Trust)
-		assert.Equal(t, rootSkid, m.Skid)
+		// the anchor is the certificate of the root in its org
+		assert.Equal(t, uint64(1), anchor.OrgID.UInt64())
+		assert.Equal(t, pb.Trust_Private, anchor.Trust)
+		assert.Equal(t, m.Skid, anchor.Skid)
+		assert.Equal(t, m.Sha256, anchor.Sha256)
+		assert.Equal(t, m.Pem, anchor.Pem)
 	})
 	root, err := svc.RegisterIssuer(ctx, req)
 	require.NoError(t, err)
@@ -297,28 +300,32 @@ func TestService_RegisterIssuer(t *testing.T) {
 	// conflicts and failures of the registration
 	req = valid()
 	req.Label = "L6"
-	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any()).
+	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any(), gomock.Nil()).
 		Return(nil, errors.New(`pq: duplicate key value violates unique constraint "unique_issuer_org_project_label"`))
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, "conflict: issuer label is already registered: L6")
-	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any()).
+	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any(), gomock.Nil()).
 		Return(nil, errors.New(`pq: duplicate key value violates unique constraint "unique_issuer_skid"`))
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, "conflict: issuer key is already registered")
-	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
+	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any(), gomock.Nil()).Return(nil, errors.New("db down"))
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, "unexpected: failed to register issuer")
 
-	// a trust anchor that is not registered does not fail the root
+	// the trust anchor of a root is registered with it: an anchor that
+	// cannot be registered fails the root, and nothing is stored
 	req = valid()
 	req.Label = "R3"
 	req.Type = pb.AuthorityType_Root
 	req.Profile = "SELF"
-	storeIssuer(tca, nil)
-	tca.cadb.EXPECT().RegisterRoot(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
-	r3, err := svc.RegisterIssuer(ctx, req)
-	require.NoError(t, err)
-	assert.Equal(t, pb.IssuerStatus_Active, r3.Status)
+	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any(), gomock.Not(gomock.Nil())).
+		Return(nil, errors.WithMessage(db.ErrRootConflict, "unable to register root"))
+	_, err = svc.RegisterIssuer(ctx, req)
+	assert.EqualError(t, err, "conflict: root certificate is registered in another scope")
+	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any(), gomock.Not(gomock.Nil())).
+		Return(nil, errors.New("db down"))
+	_, err = svc.RegisterIssuer(ctx, req)
+	assert.EqualError(t, err, "unexpected: failed to register issuer")
 
 	// a service caller names the org
 	ra := serviceCtx("trustyca-ra")
@@ -432,16 +439,15 @@ func TestService_ImportIssuer(t *testing.T) {
 	req.Certificate = testutils.CertPEM(root.Cert)
 	req.Root = ""
 	req.KeyPem = keyPEM(t, root.Key)
-	storeIssuer(tca, func(m *model.Issuer) {
+	storeRootIssuer(tca, func(m *model.Issuer, anchor *model.RootCertificate) {
 		assert.Equal(t, m.Pem, m.RootPem)
-	})
-	storeRoot(tca, func(m *model.RootCertificate) {
-		assert.Equal(t, certutil.GetSubjectKeyID(root.Cert), m.Skid)
+		assert.Equal(t, certutil.GetSubjectKeyID(root.Cert), anchor.Skid)
+		assert.Equal(t, m.Sha256, anchor.Sha256)
 	})
 	_, err = svc.ImportIssuer(ctx, req)
 	require.NoError(t, err)
 
-	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any()).
+	tca.cadb.EXPECT().RegisterIssuer(gomock.Any(), gomock.Any(), gomock.Nil()).
 		Return(nil, errors.New(`pq: duplicate key value violates unique constraint "unique_issuer_org_project_label"`))
 	_, err = svc.ImportIssuer(ctx, valid())
 	assert.EqualError(t, err, "conflict: issuer label is already registered: BYO")

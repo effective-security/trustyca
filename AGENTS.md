@@ -151,8 +151,9 @@ Package boundaries and direct internal imports are listed in
   `trustyca/{org}/{project}/{label}`. Serial numbers come from
   `xpki/authority`, never from a counter.
 - State changes that must agree are one transaction: a certificate insert and
-  its issue event, a revocation and the certificate status, a CRL upsert and
-  the issuer's CRL number (which only grows).
+  its issue event, a root issuer and its trust anchor, a revocation and the
+  certificate status, a CRL upsert and the issuer's CRL number (which only
+  grows).
 - CIS is public and read-only, holds no issuer keys and forwards OCSP signing
   to the CA.
 

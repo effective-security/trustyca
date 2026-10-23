@@ -230,7 +230,7 @@ func TestCrlPublisher_PublishCrl_Errors(t *testing.T) {
 		Provider: f.prov,
 	})
 	require.NoError(t, err)
-	pending, err = f.db.RegisterIssuer(f.ctx, pending)
+	pending, err = f.db.RegisterIssuer(f.ctx, pending, nil)
 	require.NoError(t, err)
 	_, _, err = pub.PublishCrl(f.ctx, pending, true)
 	assert.ErrorIs(t, err, ca.ErrIssuerNotActive)
@@ -298,7 +298,7 @@ func TestCrlPublisher_PublishCrls(t *testing.T) {
 		Provider: f.prov,
 	})
 	require.NoError(t, err)
-	_, err = f.db.RegisterIssuer(f.ctx, pending)
+	_, err = f.db.RegisterIssuer(f.ctx, pending, nil)
 	require.NoError(t, err)
 
 	ikids := func(res *ca.PublishCrlsResult) []string {

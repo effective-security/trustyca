@@ -226,9 +226,9 @@ func (m *missedLookup) FindIssuer(ctx context.Context, orgID, projectID uint64, 
 	return m.CaDb.FindIssuer(ctx, orgID, projectID, label)
 }
 
-func (m *missedLookup) RegisterIssuer(ctx context.Context, row *model.Issuer) (*model.Issuer, error) {
+func (m *missedLookup) RegisterIssuer(ctx context.Context, row *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error) {
 	m.inserts++
-	return m.CaDb.RegisterIssuer(ctx, row)
+	return m.CaDb.RegisterIssuer(ctx, row, anchor)
 }
 
 // TestProvideCA_SoftwareKeys covers the production guard of the issuer

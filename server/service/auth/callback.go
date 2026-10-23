@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -37,6 +39,10 @@ import (
 const (
 	DefaultTokenTTL   = 48 * time.Hour
 	DefaultOTCSeconds = 30
+
+	// claimProvider is the claim of a token that names the identity
+	// provider of the login, by the name of its pb.IDP_Enum value
+	claimProvider = "provider"
 )
 
 // GetProviders returns the list of supported providers
@@ -129,34 +135,45 @@ func (s *Service) CallbackHandler() restserver.Handle {
 
 			code = r.Form.Get("code")
 			state = r.Form.Get("state")
-			errCode = r.Form.Get("error")
-			errDescr = r.Form.Get("error_description")
+			errCode = r.Form.Get(pb.OAuthParamError)
+			errDescr = r.Form.Get(pb.OAuthParamErrorDescription)
 		} else {
 			vals := r.URL.Query()
 			code = urlutil.GetValue(vals, "code")
 			state = urlutil.GetValue(vals, "state")
-			errCode = urlutil.GetValue(vals, "error")
-			errDescr = urlutil.GetValue(vals, "error_description")
-		}
-		if errCode != "" {
-			marshal.WriteJSON(w, r, httperror.FromOAuth(errCode, "OAuth provider error: "+errDescr))
-			return
+			errCode = urlutil.GetValue(vals, pb.OAuthParamError)
+			errDescr = urlutil.GetValue(vals, pb.OAuthParamErrorDescription)
 		}
 
+		var (
+			st    State
+			stErr error
+		)
 		if state == "" {
-			marshal.WriteJSON(w, r, httperror.InvalidRequest("missing state parameter"))
+			stErr = httperror.InvalidRequest("missing state parameter")
+		} else if err := s.Unprotect(ctx, state, &st); err != nil {
+			stErr = httperror.InvalidRequest("failed to decrypt state").WithCause(err)
+		}
+
+		if errCode != "" {
+			idpErr := httperror.FromOAuth(errCode, "OAuth provider error: "+cmp.Or(errDescr, errCode))
+			if stErr != nil {
+				// without the state the redirect URI of the client is unknown
+				marshal.WriteJSON(w, r, idpErr)
+				return
+			}
+			writeOauthError(w, r, &st, idpErr)
+			return
+		}
+		if stErr != nil {
+			marshal.WriteJSON(w, r, stErr)
 			return
 		}
 
-		var st State
-		err := s.Unprotect(r.Context(), state, &st)
-		if err != nil {
-			marshal.WriteJSON(w, r, httperror.InvalidRequest("failed to decrypt state").WithCause(err))
-			return
-		}
-
+		// the state is decoded: every failure from here on is answered on
+		// the redirect URI of the client
 		if time.Since(time.Unix(st.IssuedAt, 0)) > 5*time.Minute {
-			marshal.WriteJSON(w, r, httperror.InvalidRequest("invalid state"))
+			writeOauthError(w, r, &st, httperror.InvalidRequest("invalid state"))
 			return
 		}
 
@@ -168,12 +185,13 @@ func (s *Service) CallbackHandler() restserver.Handle {
 		if st.ResponseType != pb.OAuthResponseTypeToken &&
 			st.ResponseType != pb.OAuthResponseTypeCode &&
 			st.ResponseType != pb.OAuthResponseTypeCookie {
-			marshal.WriteJSON(w, r, httperror.InvalidRequest("unsupported response_type: '%s'", st.ResponseType))
+			writeOauthError(w, r, &st, httperror.FromOAuth(pb.OAuthErrorUnsupportedResponseType,
+				fmt.Sprintf("unsupported response_type: '%s'", st.ResponseType)))
 			return
 		}
 
 		if code == "" {
-			marshal.WriteJSON(w, r, httperror.InvalidRequest("missing code parameter"))
+			writeOauthError(w, r, &st, httperror.InvalidRequest("missing code parameter"))
 			return
 		}
 
@@ -188,7 +206,7 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 		prov, _ = s.AuthProviderForEmail(ctx, st.Email)
 	}
 	if prov == nil {
-		marshal.WriteJSON(w, r, httperror.InvalidRequest("unsupported provider: %s", st.Provider))
+		writeOauthError(w, r, st, httperror.InvalidRequest("unsupported provider: %s", st.Provider))
 		return
 	}
 
@@ -200,7 +218,7 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 
 	if st.Provider == pb.IDP_Local {
 		if !s.isLocal() {
-			marshal.WriteJSON(w, r, httperror.InvalidRequest("unsupported provider: %s", st.Provider))
+			writeOauthError(w, r, st, httperror.InvalidRequest("unsupported provider: %s", st.Provider))
 			return
 		}
 		token = &oauth2.Token{
@@ -219,7 +237,8 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 			},
 		}
 
-		token, err = conf.Exchange(ctx, code)
+		// the exchange uses the client of the context, which is bounded
+		token, err = conf.Exchange(context.WithValue(ctx, oauth2.HTTPClient, idpClient()), code)
 		if err != nil {
 			err = errors.WithStack(err)
 			logger.KV(xlog.ERROR,
@@ -227,7 +246,7 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 				"redirect_url", conf.RedirectURL,
 				"token_url", o.TokenURL,
 				"err", err.Error())
-			marshal.WriteJSON(w, r, httperror.Forbidden("authorization failed: unable to exchange token").WithContext(ctx))
+			writeOauthError(w, r, st, httperror.Forbidden("authorization failed: unable to exchange token").WithContext(ctx))
 			return
 		}
 
@@ -238,14 +257,14 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 		)
 
 		if !token.Valid() {
-			marshal.WriteJSON(w, r, httperror.Forbidden("retrieved invalid token"))
+			writeOauthError(w, r, st, httperror.Forbidden("retrieved invalid token"))
 			return
 		}
 	}
 
 	ui, idpClaims, err := s.GetUserInfo(ctx, st.Provider, prov.Config(), conf, token)
 	if err != nil {
-		marshal.WriteJSON(w, r, err)
+		writeOauthError(w, r, st, err)
 		return
 	}
 	if st.Provider == pb.IDP_Local && st.Email != "" {
@@ -254,14 +273,14 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 	}
 
 	if st.Email != "" && !strings.EqualFold(ui.Email, st.Email) {
-		marshal.WriteJSON(w, r, httperror.Forbidden("email mismatch: provider: %s", st.Provider))
+		writeOauthError(w, r, st, httperror.Forbidden("email mismatch: provider: %s", st.Provider))
 		return
 	}
 
 	claims := jwt.MapClaims{
-		"jti":      s.db.NextID().String(),
-		"provider": st.Provider,
-		"iss":      s.JwtSigner.Issuer(),
+		"jti":         s.db.NextID().String(),
+		claimProvider: st.Provider.String(),
+		"iss":         s.JwtSigner.Issuer(),
 	}
 
 	if idpClaims != nil && idpClaims.String("login") != "" {
@@ -312,7 +331,7 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 		RefreshToken: rt,
 	})
 	if err != nil {
-		marshal.WriteJSON(w, r, httperror.Unexpected("failed to login").WithCause(err).WithContext(ctx))
+		writeOauthError(w, r, st, httperror.Unexpected("failed to login").WithCause(err).WithContext(ctx))
 		return
 	}
 
@@ -373,7 +392,7 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 
 	tokenStr, err := s.JwtSigner.Sign(ctx, claims)
 	if err != nil {
-		marshal.WriteJSON(w, r, httperror.Unexpected("failed to protect Access Token").WithCause(err))
+		writeOauthError(w, r, st, httperror.Unexpected("failed to protect Access Token").WithCause(err))
 		return
 	}
 
@@ -401,12 +420,12 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 		}
 		data, err := dataprotection.ProtectObject(ctx, s.dataprotection, &protectedToken)
 		if err != nil {
-			marshal.WriteJSON(w, r, httperror.Unexpected("failed to protect Access Token").WithCause(err))
+			writeOauthError(w, r, st, httperror.Unexpected("failed to protect Access Token").WithCause(err))
 			return
 		}
 		err = s.cache.Set(ctx, fmt.Sprintf("/auth/otc/%s", otc), data, DefaultOTCSeconds*time.Second)
 		if err != nil {
-			marshal.WriteJSON(w, r, httperror.Unexpected("failed to set otc").WithCause(err))
+			writeOauthError(w, r, st, httperror.Unexpected("failed to set otc").WithCause(err))
 			return
 		}
 
@@ -438,6 +457,68 @@ func (s *Service) handleToken(w http.ResponseWriter, r *http.Request, code, idTo
 	signedIn.Emit(s.db)
 
 	writeOauthResponse(w, r, st, vals)
+}
+
+// oauthErrorCodes are the error codes of an authorization response
+// (RFC 6749 section 4.1.2.1)
+var oauthErrorCodes = []string{
+	pb.OAuthErrorInvalidRequest,
+	pb.OAuthErrorUnauthorizedClient,
+	pb.OAuthErrorAccessDenied,
+	pb.OAuthErrorUnsupportedResponseType,
+	pb.OAuthErrorInvalidScope,
+	pb.OAuthErrorServerError,
+	pb.OAuthErrorTemporarilyUnavailable,
+}
+
+// oauthErrorCode returns the OAuth error code of a failed login: the code of
+// an error that already is one (an IdP error, an invalid request), else the
+// code of its HTTP status
+func oauthErrorCode(e *httperror.Error) string {
+	switch {
+	case slices.Contains(oauthErrorCodes, e.Code):
+		return e.Code
+	case e.HTTPStatus == http.StatusServiceUnavailable:
+		return pb.OAuthErrorTemporarilyUnavailable
+	case e.HTTPStatus >= http.StatusInternalServerError:
+		return pb.OAuthErrorServerError
+	case e.HTTPStatus == http.StatusUnauthorized, e.HTTPStatus == http.StatusForbidden:
+		return pb.OAuthErrorAccessDenied
+	default:
+		return pb.OAuthErrorInvalidRequest
+	}
+}
+
+// writeOauthError answers a login that fails after its state is decoded on
+// the redirect URI of the client, in the response mode of the state, with
+// the OAuth error code and description (RFC 6749 section 4.1.2.1): the
+// console, the CLI listener and the authenticated page show the failure.
+// The authorize request checked the redirect URI, and the state protects
+// it. The cause stays in the server log; a server-side failure is described
+// by its HTTP status text only, as marshal.WriteJSON does.
+func writeOauthError(w http.ResponseWriter, r *http.Request, st *State, err error) {
+	e := httperror.NewFromPb(err)
+	code := oauthErrorCode(e)
+	descr := e.Message
+	sev := xlog.WARNING
+	if e.HTTPStatus >= http.StatusInternalServerError {
+		descr = http.StatusText(e.HTTPStatus)
+		sev = xlog.ERROR
+	}
+	msg := e.Error()
+	if cause := e.Cause(); cause != nil {
+		msg += ": " + cause.Error()
+	}
+	logger.ContextKV(r.Context(), sev,
+		"reason", "login_failed",
+		"provider", st.Provider,
+		"code", code,
+		"err", msg)
+
+	writeOauthResponse(w, r, st, url.Values{
+		pb.OAuthParamError:            []string{code},
+		pb.OAuthParamErrorDescription: []string{descr},
+	})
 }
 
 func writeOauthResponse(w http.ResponseWriter, r *http.Request, st *State, vals url.Values) {
@@ -482,6 +563,13 @@ func writeAuthorizeFormPostResponse(w io.Writer, redirectURL string, parameters 
 	})
 }
 
+// tokenProvider returns the identity provider of the login a token comes
+// from. The claim holds the name of the provider; IDPFromString also reads
+// the number of the enum value, which older tokens carry.
+func tokenProvider(claims jwt.MapClaims) pb.IDP_Enum {
+	return pb.IDPFromString(claims.String(claimProvider))
+}
+
 func claimsFromUserInfo(claims jwt.MapClaims, ui *pb.UserInfo) {
 	if ui.ID != "" {
 		claims["sub"] = ui.ID
@@ -521,8 +609,15 @@ func localUserInfo(email string) *pb.UserInfo {
 // address private. Mail to it is discarded, so it is not usable for an account.
 const githubNoReplyDomain = "@users.noreply.github.com"
 
-// githubAPITimeout bounds the emails call so a slow GitHub cannot hang a login.
-const githubAPITimeout = 10 * time.Second
+// idpAPITimeout bounds every call of the callback to an IdP (the code
+// exchange, the user info and the GitHub emails), so a slow IdP cannot hang
+// a login
+const idpAPITimeout = 10 * time.Second
+
+// idpClient returns the HTTP client of the calls to an IdP
+func idpClient() *http.Client {
+	return &http.Client{Timeout: idpAPITimeout}
+}
 
 // getGithubEmail returns the user's primary verified email from GitHub.
 // It prefers the primary address, and falls back to any other verified one.
@@ -545,8 +640,7 @@ func (s *Service) getGithubEmail(ctx context.Context, token *oauth2.Token) (stri
 	}
 	req.Header.Add(header.Authorization, "Bearer "+token.AccessToken)
 
-	client := &http.Client{Timeout: githubAPITimeout}
-	resp, err := client.Do(req)
+	resp, err := idpClient().Do(req)
 	if err != nil {
 		return "", errors.WithMessage(err, "unable to get user emails")
 	}
@@ -604,6 +698,10 @@ func (s *Service) getGithubEmail(ctx context.Context, token *oauth2.Token) (stri
 	return fallback, nil
 }
 
+// GetUserInfo returns the user the IdP signed in with the token. A user the
+// service cannot sign in (no verified email, no name) is PermissionDenied,
+// a failed call to the IdP is Unavailable; the answer of the IdP stays in
+// the cause, for the server log.
 func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oauth2client.ClientConfig, _ *oauth2.Config, token *oauth2.Token) (*pb.UserInfo, jwt.MapClaims, error) {
 	if idpType == pb.IDP_Local {
 		return localUser, nil, nil
@@ -611,34 +709,42 @@ func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oaut
 
 	userInfoURL := cl.UserinfoURL
 	if s.BaseURL != nil {
-		u, _ := url.Parse(userInfoURL)
+		u, err := url.Parse(userInfoURL)
+		if err != nil {
+			return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.Internal, "invalid user info URL").WithCause(err)
+		}
 		u.Scheme = s.BaseURL.Scheme
 		u.Host = s.BaseURL.Host
 		userInfoURL = u.String()
 	}
-	req, _ := http.NewRequest(http.MethodGet, userInfoURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, userInfoURL, nil)
+	if err != nil {
+		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.Internal, "invalid user info URL").WithCause(err)
+	}
 	req.Header.Add(header.Authorization, "Bearer "+token.AccessToken)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := idpClient().Do(req)
 	if err != nil {
-		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "unable to get user info").WithCause(err)
+		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.Unavailable, "unable to get user info").WithCause(err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "unable to decode user info").WithCause(err)
+		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.Unavailable, "unable to decode user info").WithCause(err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "unable to get user info from %s: %s: %s", userInfoURL, resp.Status, string(body))
+		// the answer of the IdP is for the server log, not for the redirect
+		// URI of the client
+		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.Unavailable, "unable to get user info").
+			WithCause(errors.Errorf("unable to get user info from %s: %s: %s", userInfoURL, resp.Status, string(body)))
 	}
 
 	var res jwt.MapClaims
 	err = json.Unmarshal(body, &res)
 	if err != nil {
-		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "unable to decode user info").WithCause(err)
+		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.Unavailable, "unable to decode user info").WithCause(err)
 	}
 
 	logger.ContextKV(ctx, xlog.DEBUG, "userinfo", res)
@@ -669,10 +775,10 @@ func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oaut
 
 	if u.Email == "" {
 		if idpType == pb.IDP_Github {
-			return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument,
+			return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied,
 				"no verified email address: verify an email address in your GitHub account settings, then sign in again")
 		}
-		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "email is required")
+		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "email is required")
 	}
 
 	if u.Name == "" {
@@ -694,7 +800,7 @@ func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oaut
 	}
 
 	if u.Name == "" {
-		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "name is required")
+		return nil, nil, httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "name is required")
 	}
 
 	return u, res, nil

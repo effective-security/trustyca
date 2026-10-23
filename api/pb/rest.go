@@ -166,6 +166,24 @@ const (
 	OAuthResponseTypeCookie  = "cookie"
 )
 
+// The error of a failed authorization (RFC 6749 section 4.1.2.1): the
+// callback answers a login that fails after its state is decoded on the
+// redirect URI of the client, with the code in OAuthParamError and the
+// reason in OAuthParamErrorDescription; an IdP answers the callback the
+// same way.
+const (
+	OAuthParamError            = "error"
+	OAuthParamErrorDescription = "error_description"
+
+	OAuthErrorInvalidRequest          = "invalid_request"
+	OAuthErrorUnauthorizedClient      = "unauthorized_client"
+	OAuthErrorAccessDenied            = "access_denied"
+	OAuthErrorUnsupportedResponseType = "unsupported_response_type"
+	OAuthErrorInvalidScope            = "invalid_scope"
+	OAuthErrorServerError             = "server_error"
+	OAuthErrorTemporarilyUnavailable  = "temporarily_unavailable"
+)
+
 // Web pages served by the ui service.
 // These are plain HTML test pages, not API end-points.
 const (

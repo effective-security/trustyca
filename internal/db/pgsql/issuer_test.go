@@ -24,7 +24,7 @@ func Test_Issuer(t *testing.T) {
 	l1 := testutils.NewTestCA(t, "Issuer L1", root)
 	l2 := testutils.NewTestCA(t, "Issuer L2", l1)
 
-	_, err = provider.RegisterIssuer(ctx, &model.Issuer{OrgID: org.ID, Label: "x"})
+	_, err = provider.RegisterIssuer(ctx, &model.Issuer{OrgID: org.ID, Label: "x"}, nil)
 	assert.EqualError(t, err, "invalid issuer type")
 
 	// a platform root, an org intermediate and a project issuing CA
@@ -52,11 +52,11 @@ func Test_Issuer(t *testing.T) {
 	assert.Equal(t, project.ID.UInt64(), prjIssuer.ProjectID.UInt64())
 
 	// the label is unique in its scope, the SKID across the table
-	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "L1", testutils.NewTestCA(t, "Other L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID))
+	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "L1", testutils.NewTestCA(t, "Other L1", root), pb.AuthorityType_Intermediate, rootIssuer.ID), nil)
 	assert.ErrorContains(t, err, "unique_issuer_org_project_label")
 	assert.True(t, db.IsUniqueViolation(err, db.UniqueIssuerLabel), "the driver's error names the constraint")
 	assert.False(t, db.IsUniqueViolation(err, db.UniqueIssuerSkid))
-	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "L1-copy", l1, pb.AuthorityType_Intermediate, rootIssuer.ID))
+	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "L1-copy", l1, pb.AuthorityType_Intermediate, rootIssuer.ID), nil)
 	assert.ErrorContains(t, err, "unique_issuer_skid")
 	assert.True(t, db.IsUniqueViolation(err, db.UniqueIssuerSkid))
 	assert.True(t, db.IsUniqueViolation(err, ""))
@@ -272,7 +272,7 @@ func Test_Issuer_Activate(t *testing.T) {
 		KeyProvider: testKeyProvider,
 		KeyID:       "trustyca/" + org.ID.String() + "/0/ext",
 		CsrPem:      "-----BEGIN CERTIFICATE REQUEST-----\nMIIB\n-----END CERTIFICATE REQUEST-----\n",
-	})
+	}, nil)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_, _ = provider.DeleteIssuer(ctx, org.ID.UInt64(), pending.ID.UInt64())
@@ -316,4 +316,58 @@ func Test_Issuer_Activate(t *testing.T) {
 	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Status: pb.IssuerStatus_Pending, Limit: 10})
 	require.NoError(t, err)
 	assert.Empty(t, list.Rows)
+}
+
+// Test_Issuer_RootAnchor covers the anchor of a root issuer: it is written
+// in the transaction of the issuer, and an anchor that cannot be written
+// leaves no issuer
+func Test_Issuer_RootAnchor(t *testing.T) {
+	_, org := setupOwnerAndOrg(t, "Test_Issuer_RootAnchor")
+	_, other := setupOwnerAndOrg(t, "Test_Issuer_RootAnchor_Other")
+
+	root := testutils.NewTestCA(t, "Anchored Root", nil)
+	m := newTestIssuer(org.ID, xdb.ID(0), "ANCHORED", root, pb.AuthorityType_Root, xdb.ID(0))
+
+	// the anchor is the certificate of the issuer in its org
+	wrong := model.NewRootCertificate(root.Cert, other.ID, pb.Trust_Private, m.Pem)
+	_, err := provider.RegisterIssuer(ctx, m, wrong)
+	assert.EqualError(t, err, "the anchor must be the certificate of the issuer in its org")
+	foreign := testutils.NewTestCA(t, "Foreign Root", nil)
+	wrong = model.NewRootCertificate(foreign.Cert, org.ID, pb.Trust_Private, testutils.CertPEM(foreign.Cert))
+	_, err = provider.RegisterIssuer(ctx, m, wrong)
+	assert.EqualError(t, err, "the anchor must be the certificate of the issuer in its org")
+
+	anchor := model.NewRootCertificate(root.Cert, org.ID, pb.Trust_Private, m.Pem)
+	res, err := provider.RegisterIssuer(ctx, m, anchor)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = provider.DeleteIssuer(ctx, org.ID.UInt64(), res.ID.UInt64())
+	})
+	roots, err := provider.ListRoots(ctx, &query.ListRootsRequest{OrgID: org.ID.UInt64(), Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, roots.Rows, 1)
+	stored := roots.Rows[0]
+	t.Cleanup(func() {
+		_, _ = provider.DeleteRoot(ctx, org.ID.UInt64(), stored.ID.UInt64())
+	})
+	assert.Equal(t, res.Sha256, stored.Sha256)
+	assert.Equal(t, res.Skid, stored.Skid)
+	assert.Equal(t, pb.Trust_Private, stored.Trust)
+	assert.Equal(t, res.Pem, stored.Pem)
+
+	// the certificate of a root that another org registered as its anchor:
+	// the anchor conflicts, and the issuer insert is rolled back with it
+	shared := testutils.NewTestCA(t, "Shared Root", nil)
+	ra, err := provider.RegisterRoot(ctx, model.NewRootCertificate(shared.Cert, other.ID, pb.Trust_Private, testutils.CertPEM(shared.Cert)))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = provider.DeleteRoot(ctx, other.ID.UInt64(), ra.ID.UInt64())
+	})
+	m = newTestIssuer(org.ID, xdb.ID(0), "SHARED", shared, pb.AuthorityType_Root, xdb.ID(0))
+	_, err = provider.RegisterIssuer(ctx, m, model.NewRootCertificate(shared.Cert, org.ID, pb.Trust_Private, m.Pem))
+	assert.ErrorIs(t, err, db.ErrRootConflict)
+	_, err = provider.FindIssuer(ctx, org.ID.UInt64(), 0, "SHARED")
+	assert.True(t, xdb.IsNotFoundError(err), "the issuer is not stored: %v", err)
+	_, err = provider.GetIssuerBySKID(ctx, certutil.GetSubjectKeyID(shared.Cert))
+	assert.True(t, xdb.IsNotFoundError(err), "the issuer is not stored: %v", err)
 }

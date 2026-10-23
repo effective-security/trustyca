@@ -534,14 +534,14 @@ func (s *svcState) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 		token = r.Form.Get(s.responseType)
 		expiresIn = r.Form.Get("expires_in")
-		errCode = r.Form.Get("error")
-		errDescr = r.Form.Get("error_description")
+		errCode = r.Form.Get(pb.OAuthParamError)
+		errDescr = r.Form.Get(pb.OAuthParamErrorDescription)
 	} else {
 		vals := r.URL.Query()
 		token = urlutil.GetValue(vals, s.responseType)
 		expiresIn = urlutil.GetValue(vals, "expires_in")
-		errCode = urlutil.GetValue(vals, "error")
-		errDescr = urlutil.GetValue(vals, "error_description")
+		errCode = urlutil.GetValue(vals, pb.OAuthParamError)
+		errDescr = urlutil.GetValue(vals, pb.OAuthParamErrorDescription)
 	}
 	if errCode != "" {
 		err = httperror.New(http.StatusInternalServerError, errCode, "%s", errDescr)

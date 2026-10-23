@@ -152,7 +152,7 @@ func (f *fixture) root(orgID, projectID xdb.ID, label string, cfg *pb.IssuerConf
 		Config:    cfg,
 	}, rootProfile, profile)
 	require.NoError(f.t, err)
-	res, err := f.db.RegisterIssuer(f.ctx, m)
+	res, err := f.db.RegisterIssuer(f.ctx, m, nil)
 	require.NoError(f.t, err)
 	return res
 }
@@ -178,7 +178,7 @@ func (f *fixture) child(parent *model.Issuer, caProfileLabel string, orgID, proj
 		Config:    cfg,
 	}, res)
 	require.NoError(f.t, err)
-	row, err := f.db.RegisterIssuer(f.ctx, m)
+	row, err := f.db.RegisterIssuer(f.ctx, m, nil)
 	require.NoError(f.t, err)
 	return row
 }

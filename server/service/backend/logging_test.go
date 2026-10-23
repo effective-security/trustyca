@@ -54,10 +54,8 @@ func TestService_KeyMaterialNeverLogged(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
 	ctx := testCtx("42", "1")
-	storeIssuer(tca, nil)
-	storeRoot(tca, nil)
-	storeIssuer(tca, nil)
-	storeRoot(tca, nil)
+	storeRootIssuer(tca, nil)
+	storeRootIssuer(tca, nil)
 
 	root := testutils.NewTestCA(t, "Logged Root", nil)
 	key := keyPEM(t, root.Key)

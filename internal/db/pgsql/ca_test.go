@@ -34,7 +34,7 @@ func newTestIssuer(orgID, projectID xdb.ID, label string, ca *testutils.TestCA, 
 // registerIssuer registers the issuer and deletes it after the test
 func registerIssuer(t *testing.T, m *model.Issuer) *model.Issuer {
 	t.Helper()
-	res, err := provider.RegisterIssuer(ctx, m)
+	res, err := provider.RegisterIssuer(ctx, m, nil)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_, _ = provider.DeleteIssuer(ctx, res.OrgID.UInt64(), res.ID.UInt64())

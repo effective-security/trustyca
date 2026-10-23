@@ -403,3 +403,64 @@ func TestBootstrap_ProviderKey(t *testing.T) {
 	assert.Equal(t, row.Skid, child.Ikid)
 	assert.Equal(t, row.Pem, child.RootPem)
 }
+
+func TestLoadBootstrapConfig(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	// config is a ca-config of one issuer with the URL templates; the key
+	// and certificate paths use the environment, as the dev config does
+	config := func(aia, crl, ocsp string) string {
+		return `authority:
+  issuers:
+    - label: L1
+      type: tls
+      cert: ${HOME}/l1.pem
+      key: ${HOME}/l1.key
+      aia:
+        issuer_url: ` + aia + `
+        crl_url: ` + crl + `
+        ocsp_url: ` + ocsp + `
+profiles:
+  server:
+    issuer_label: L1
+    expiry: 168h
+    usages:
+      - server auth
+`
+	}
+
+	path := writeFile(t, dir, "placeholder.yaml", config(
+		"http://localhost:8888/v1/cert/:ISSUER_ID",
+		"http://localhost:8888/v1/crl/:ISSUER_ID",
+		"http://localhost:8888/v1/ocspi/:ISSUER_ID"))
+	cfg, err := ca.LoadBootstrapConfig(path)
+	require.NoError(t, err)
+	require.Len(t, cfg.Authority.Issuers, 1)
+	iss := cfg.Authority.Issuers[0]
+	assert.Equal(t, "http://localhost:8888/v1/cert/:ISSUER_ID", iss.AIA.AiaURL)
+	assert.Equal(t, "http://localhost:8888/v1/crl/:ISSUER_ID", iss.AIA.CrlURL)
+	assert.Equal(t, "http://localhost:8888/v1/ocspi/:ISSUER_ID", iss.AIA.OcspURL)
+	assert.Equal(t, os.Getenv("HOME")+"/l1.pem", iss.CertFile, "the other values are expanded")
+
+	path = writeFile(t, dir, "variable.yaml", config(
+		"http://localhost:8888/v1/cert/:ISSUER_ID",
+		"http://localhost:8888/v1/crl/${ISSUER_ID}",
+		"http://localhost:8888/v1/ocspi/:ISSUER_ID"))
+	_, err = ca.LoadBootstrapConfig(path)
+	assert.EqualError(t, err, `issuer "L1": the URL template "http://localhost:8888/v1/crl/${ISSUER_ID}" names the issuer as an environment variable, which the config loader expands: use :ISSUER_ID`)
+
+	path = writeFile(t, dir, "bare.yaml", config(
+		"http://localhost:8888/v1/cert/:ISSUER_ID",
+		"http://localhost:8888/v1/crl/:ISSUER_ID",
+		"http://localhost:8888/v1/ocspi/$ISSUER_ID"))
+	_, err = ca.LoadBootstrapConfig(path)
+	assert.EqualError(t, err, `issuer "L1": the URL template "http://localhost:8888/v1/ocspi/$ISSUER_ID" names the issuer as an environment variable, which the config loader expands: use :ISSUER_ID`)
+
+	_, err = ca.LoadBootstrapConfig(filepath.Join(dir, "missing.yaml"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to read CA config")
+
+	_, err = ca.LoadBootstrapConfig("")
+	assert.EqualError(t, err, "CA config path is required")
+}

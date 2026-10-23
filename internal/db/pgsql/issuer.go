@@ -11,12 +11,16 @@ import (
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
+	"github.com/effective-security/xlog"
 )
 
 // RegisterIssuer inserts an issuer. A Pending issuer carries its CSR, any
 // other status its certificate; the label is unique in its scope and the
-// SKID across the table.
-func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error) {
+// SKID across the table. The anchor of a root issuer, its own certificate
+// as a trust anchor of its org, is registered as RegisterRoot does in the
+// transaction of the insert, so a root issuer is never stored without it;
+// an anchor registered in another scope fails both with ErrRootConflict.
+func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error) {
 	im := *m
 	if im.ID.IsZero() {
 		im.ID = p.NextID()
@@ -26,7 +30,45 @@ func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	if anchor == nil {
+		return p.registerIssuer(ctx, &im)
+	}
+	if anchor.OrgID.UInt64() != im.OrgID.UInt64() || anchor.Sha256 != im.Sha256 {
+		return nil, errors.New("the anchor must be the certificate of the issuer in its org")
+	}
 
+	defer DbMeasureSince(time.Now())
+
+	tx, err := p.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	defer func() {
+		err := tx.Close()
+		if err != nil {
+			logger.ContextKV(ctx, xlog.ERROR, "reason", "close", "err", err.Error())
+		}
+	}()
+
+	txProvider := tx.(*Provider)
+	res, err := txProvider.registerIssuer(ctx, &im)
+	if err != nil {
+		return nil, err
+	}
+	_, err = txProvider.RegisterRoot(ctx, anchor)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to register root")
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return res, nil
+}
+
+// registerIssuer inserts the validated issuer row
+func (p *Provider) registerIssuer(ctx context.Context, im *model.Issuer) (*model.Issuer, error) {
 	q, name := query.RegisterIssuer()
 	defer DbMeasureQuerySince(name, time.Now())
 
