@@ -230,13 +230,13 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 AcceptInvite accepts an invite for a user, adds the user as a member at the invite's scope with the invited role, and removes the invite.
 
 <a name="Provider.AcceptInvites"></a>
-### func \(\*Provider\) [AcceptInvites](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/invite.go#L208>)
+### func \(\*Provider\) [AcceptInvites](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/invite.go#L213>)
 
 ```go
 func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error)
 ```
 
-AcceptInvites moves the pending invites for a user's email to grants at the invites' scopes, and returns the grants it created. An invite whose grant fails is logged and skipped; a grant whose invite is not deleted is still returned.
+AcceptInvites moves the pending invites for a user's email to grants at the invites' scopes, and returns the grants it created. Each invite is accepted in a transaction of its own: an invite whose grant or delete fails is logged, stays pending and is not returned.
 
 <a name="Provider.ActivateIssuer"></a>
 ### func \(\*Provider\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L98>)
@@ -423,7 +423,7 @@ func (p *Provider) DeleteMember(ctx context.Context, r *query.DeleteMemberReques
 DeleteMember deletes grants at the requested scope
 
 <a name="Provider.DeleteOrg"></a>
-### func \(\*Provider\) [DeleteOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L159>)
+### func \(\*Provider\) [DeleteOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L161>)
 
 ```go
 func (p *Provider) DeleteOrg(ctx context.Context, id uint64) (map[string]int64, error)
@@ -495,7 +495,7 @@ func (p *Provider) FindIssuer(ctx context.Context, orgID, projectID uint64, labe
 FindIssuer returns the issuer of the exact scope and label: a zero orgID is the platform scope and a zero projectID the org scope. The resolution of a label through the scopes is the caller's.
 
 <a name="Provider.FindOrg"></a>
-### func \(\*Provider\) [FindOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L124>)
+### func \(\*Provider\) [FindOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L126>)
 
 ```go
 func (p *Provider) FindOrg(ctx context.Context, alias string) (*model.Org, error)
@@ -639,7 +639,7 @@ func (p *Provider) GetLoginsByEmail(ctx context.Context, email string) (model.Lo
 GetLoginsByEmail returns Logins
 
 <a name="Provider.GetOrg"></a>
-### func \(\*Provider\) [GetOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L112>)
+### func \(\*Provider\) [GetOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L114>)
 
 ```go
 func (p *Provider) GetOrg(ctx context.Context, id uint64) (*model.Org, error)
@@ -729,7 +729,7 @@ func (p *Provider) GetUserMemberships(ctx context.Context, userID uint64) (model
 GetUserMemberships returns all grants of a user in active orgs
 
 <a name="Provider.GetUserOrgs"></a>
-### func \(\*Provider\) [GetUserOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L136>)
+### func \(\*Provider\) [GetUserOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L138>)
 
 ```go
 func (p *Provider) GetUserOrgs(ctx context.Context, userID uint64) (model.OrgSlice, error)
@@ -810,7 +810,7 @@ func (p *Provider) ListMemberships(ctx context.Context, req *query.ListMembershi
 ListMemberships lists memberships
 
 <a name="Provider.ListOrgs"></a>
-### func \(\*Provider\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L98>)
+### func \(\*Provider\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L100>)
 
 ```go
 func (p *Provider) ListOrgs(ctx context.Context, req *query.ListOrgsRequest) (*model.OrgResult, error)
@@ -954,13 +954,13 @@ func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.
 RegisterIssuer inserts an issuer. A Pending issuer carries its CSR, any other status its certificate; the label is unique in its scope and the SKID across the table.
 
 <a name="Provider.RegisterOrg"></a>
-### func \(\*Provider\) [RegisterOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L19>)
+### func \(\*Provider\) [RegisterOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L20>)
 
 ```go
 func (p *Provider) RegisterOrg(ctx context.Context, m *model.Org, ownerID uint64) (*model.Org, error)
 ```
 
-RegisterOrg registers a new org
+RegisterOrg registers a new org and, when ownerID is set, its Owner in one transaction: an org is never left without its Owner
 
 <a name="Provider.RegisterProfile"></a>
 ### func \(\*Provider\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/profile.go#L19>)
@@ -1053,7 +1053,7 @@ func (p *Provider) UpdateMemberRole(ctx context.Context, req *query.UpdateMember
 UpdateMemberRole updates the role of a grant at the given scope
 
 <a name="Provider.UpdateOrg"></a>
-### func \(\*Provider\) [UpdateOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L78>)
+### func \(\*Provider\) [UpdateOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L80>)
 
 ```go
 func (p *Provider) UpdateOrg(ctx context.Context, req *query.UpdateOrgRequest) (*model.Org, error)

@@ -166,7 +166,12 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 	if invite.IsExpired(time.Now()) {
 		return nil, errors.Errorf("invite expired")
 	}
+	return p.acceptInvite(ctx, invite, user.ID)
+}
 
+// acceptInvite adds the grant of an invite and deletes the invite in one
+// transaction, so that an invite is never both granted and pending
+func (p *Provider) acceptInvite(ctx context.Context, invite *model.Invite, userID xdb.ID) (*model.Membership, error) {
 	tx, err := p.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -182,7 +187,7 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 	membership, err := txProvider.AddMember(ctx, &model.Membership{
 		OrgID:     invite.OrgID,
 		ProjectID: invite.ProjectID,
-		UserID:    user.ID,
+		UserID:    userID,
 		Role:      invite.Role,
 	})
 	if err != nil {
@@ -202,9 +207,9 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 }
 
 // AcceptInvites moves the pending invites for a user's email to grants at
-// the invites' scopes, and returns the grants it created. An invite whose
-// grant fails is logged and skipped; a grant whose invite is not deleted is
-// still returned.
+// the invites' scopes, and returns the grants it created. Each invite is
+// accepted in a transaction of its own: an invite whose grant or delete
+// fails is logged, stays pending and is not returned.
 func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error) {
 	invites, err := p.GetUserInvites(ctx, user.Email)
 	if err != nil {
@@ -217,21 +222,12 @@ func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.M
 
 	accepted := make(model.MembershipSlice, 0, len(invites))
 	for _, inv := range invites {
-		m, err := p.AddMember(ctx, &model.Membership{
-			OrgID:     inv.OrgID,
-			ProjectID: inv.ProjectID,
-			UserID:    user.ID,
-			Role:      inv.Role,
-		})
+		m, err := p.acceptInvite(ctx, inv, user.ID)
 		if err != nil {
 			logger.ContextKV(ctx, xlog.ERROR, "role", inv.Role, "user", user.ID.UnderscoreString(), "err", err.Error())
 			continue
 		}
 		accepted = append(accepted, m)
-		_, err = p.DeleteInviteByID(ctx, inv.ID.UInt64())
-		if err != nil {
-			logger.ContextKV(ctx, xlog.ERROR, "role", inv.Role, "user", user.ID.UnderscoreString(), "err", err.Error())
-		}
 	}
 	return accepted, nil
 }

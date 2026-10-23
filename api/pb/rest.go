@@ -51,12 +51,6 @@ const (
 	// Response: 303
 	PathForAuthorize = "/v1/auth/authorize"
 
-	// PathForAuthDone completes authorization flow
-	//
-	// Verbs: GET
-	// Response: 200
-	PathForAuthDone = "/v1/auth/done"
-
 	// PathForAuthOrg selects the org of the session, as Auth.SelectOrg does,
 	// and writes the new token into the auth cookie of a cookie session
 	//

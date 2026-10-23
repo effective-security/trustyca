@@ -173,3 +173,53 @@ func Test_AcceptInvite_EmailMismatch(t *testing.T) {
 	_, err = provider.AcceptInvite(ctx, invite.ID.UInt64(), other.ID.UInt64())
 	assert.EqualError(t, err, "invite email does not match user email")
 }
+
+func Test_AcceptInvites_GrantFails(t *testing.T) {
+	owner, org := setupOwnerAndOrg(t, "Test_AcceptInvites_GrantFails")
+
+	inviteeID := provider.NextID()
+	inviteeEmail := inviteeID.String() + "@example.com"
+	invite, err := provider.CreateInvite(ctx, &model.Invite{
+		OrgID:     org.ID,
+		InviterID: owner.ID,
+		Email:     inviteeEmail,
+		Role:      pb.Role_User,
+	})
+	require.NoError(t, err)
+
+	// the user is not registered: the grant violates its foreign key, and
+	// the invite stays pending for a later login
+	accepted, err := provider.AcceptInvites(ctx, &model.User{ID: inviteeID, Email: inviteeEmail})
+	require.NoError(t, err)
+	assert.Empty(t, accepted)
+
+	pending, err := provider.GetUserInvites(ctx, inviteeEmail)
+	require.NoError(t, err)
+	require.Len(t, pending, 1)
+	assert.Equal(t, invite.ID.UInt64(), pending[0].ID.UInt64())
+
+	inviteeLogin := &model.Login{
+		ID:         inviteeID,
+		ExternalID: inviteeID.String(),
+		Name:       "Invitee",
+		Email:      inviteeEmail,
+		Provider:   pb.IDP_Github,
+	}
+	_, invitee, err := provider.LoginUser(ctx, inviteeLogin)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, err := provider.DeleteUserByEmail(ctx, inviteeLogin.Email)
+		assert.NoError(t, err)
+	})
+
+	accepted, err = provider.AcceptInvites(ctx, invitee)
+	require.NoError(t, err)
+	require.Len(t, accepted, 1)
+	assert.Equal(t, org.ID.UInt64(), accepted[0].OrgID.UInt64())
+	assert.Equal(t, invitee.ID.UInt64(), accepted[0].UserID.UInt64())
+	assert.Equal(t, pb.Role_User, accepted[0].Role)
+
+	pending, err = provider.GetUserInvites(ctx, inviteeEmail)
+	require.NoError(t, err)
+	assert.Empty(t, pending)
+}

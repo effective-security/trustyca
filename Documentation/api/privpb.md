@@ -4287,7 +4287,7 @@ func RegisterAdminServer(s grpc.ServiceRegistrar, srv AdminServer)
 
 
 <a name="RegisterBackendServer"></a>
-## func [RegisterBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L495>)
+## func [RegisterBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L501>)
 
 ```go
 func RegisterBackendServer(s grpc.ServiceRegistrar, srv BackendServer)
@@ -4561,7 +4561,7 @@ type AdminServer interface {
 ```
 
 <a name="BackendClient"></a>
-## type [BackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L64-L121>)
+## type [BackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L64-L124>)
 
 BackendClient is the client API for Backend service.
 
@@ -4576,7 +4576,8 @@ type BackendClient interface {
     // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
     RegisterIssuer(ctx context.Context, in *RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
     // ImportIssuer registers an issuer from an existing certificate and a
-    // key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+    // key URI of a crypto provider or a PEM key stored protected
+    // (CA.ImportIssuer)
     ImportIssuer(ctx context.Context, in *ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
     // ActivateIssuer sets the externally signed certificate of a Pending
     // issuer, which must be for the issuer's key (CA.ActivateIssuer)
@@ -4584,11 +4585,13 @@ type BackendClient interface {
     // UpdateIssuer updates the runtime configuration or the status of an
     // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
     UpdateIssuer(ctx context.Context, in *UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
-    // GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+    // GetIssuer returns an issuer of the org by ID, label or IKID
+    // (CA.GetIssuer)
     GetIssuer(ctx context.Context, in *GetIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
     // ListIssuers returns the issuers of the org (CA.ListIssuers)
     ListIssuers(ctx context.Context, in *ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error)
-    // RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+    // RegisterRoot registers an external trust anchor of the org
+    // (CA.RegisterRoot)
     RegisterRoot(ctx context.Context, in *RegisterRootRequest, opts ...grpc.CallOption) (*pb.RootCertificate, error)
     // ListRoots returns the trust anchors of the org, or of the
     // platform (CA.ListRoots)
@@ -4631,7 +4634,7 @@ type BackendClient interface {
 ```
 
 <a name="NewBackendClient"></a>
-### func [NewBackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L127>)
+### func [NewBackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L130>)
 
 ```go
 func NewBackendClient(cc grpc.ClientConnInterface) BackendClient
@@ -4640,7 +4643,7 @@ func NewBackendClient(cc grpc.ClientConnInterface) BackendClient
 
 
 <a name="BackendServer"></a>
-## type [BackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L357-L414>)
+## type [BackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L360-L420>)
 
 BackendServer is the server API for Backend service. All implementations should embed UnimplementedBackendServer for forward compatibility.
 
@@ -4653,7 +4656,8 @@ type BackendServer interface {
     // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
     RegisterIssuer(context.Context, *RegisterIssuerRequest) (*pb.Issuer, error)
     // ImportIssuer registers an issuer from an existing certificate and a
-    // key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+    // key URI of a crypto provider or a PEM key stored protected
+    // (CA.ImportIssuer)
     ImportIssuer(context.Context, *ImportIssuerRequest) (*pb.Issuer, error)
     // ActivateIssuer sets the externally signed certificate of a Pending
     // issuer, which must be for the issuer's key (CA.ActivateIssuer)
@@ -4661,11 +4665,13 @@ type BackendServer interface {
     // UpdateIssuer updates the runtime configuration or the status of an
     // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
     UpdateIssuer(context.Context, *UpdateIssuerRequest) (*pb.Issuer, error)
-    // GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+    // GetIssuer returns an issuer of the org by ID, label or IKID
+    // (CA.GetIssuer)
     GetIssuer(context.Context, *GetIssuerRequest) (*pb.Issuer, error)
     // ListIssuers returns the issuers of the org (CA.ListIssuers)
     ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error)
-    // RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+    // RegisterRoot registers an external trust anchor of the org
+    // (CA.RegisterRoot)
     RegisterRoot(context.Context, *RegisterRootRequest) (*pb.RootCertificate, error)
     // ListRoots returns the trust anchors of the org, or of the
     // platform (CA.ListRoots)
@@ -7045,11 +7051,11 @@ type PublishCrlsRequest struct {
     // publish. Empty publishes for the org-wide issuers and the projects the
     // caller may read; a project Admin names the project, and an API key
     // restricted to a project publishes for its project.
-    ProjectID string `protobuf:"bytes,4,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+    ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
     // IKID specifies Issuer Key ID; empty to publish for all issuers in scope
-    IKID string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
+    IKID string `protobuf:"bytes,3,opt,name=IKID,proto3" json:"IKID,omitempty"`
     // Force specifies to publish even if the current CRL is not due for renewal
-    Force bool `protobuf:"varint,3,opt,name=Force,proto3" json:"Force,omitempty"`
+    Force bool `protobuf:"varint,4,opt,name=Force,proto3" json:"Force,omitempty"`
     // contains filtered or unexported fields
 }
 ```
@@ -8074,7 +8080,7 @@ func (UnimplementedAdminServer) ListProjects(context.Context, *ListProjectsReque
 
 
 <a name="UnimplementedBackendServer"></a>
-## type [UnimplementedBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L421>)
+## type [UnimplementedBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L427>)
 
 UnimplementedBackendServer should be embedded to have forward compatible implementations.
 
@@ -8085,7 +8091,7 @@ type UnimplementedBackendServer struct{}
 ```
 
 <a name="UnimplementedBackendServer.ActivateIssuer"></a>
-### func \(UnimplementedBackendServer\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L429>)
+### func \(UnimplementedBackendServer\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L435>)
 
 ```go
 func (UnimplementedBackendServer) ActivateIssuer(context.Context, *ActivateIssuerRequest) (*pb.Issuer, error)
@@ -8094,7 +8100,7 @@ func (UnimplementedBackendServer) ActivateIssuer(context.Context, *ActivateIssue
 
 
 <a name="UnimplementedBackendServer.DeleteProfile"></a>
-### func \(UnimplementedBackendServer\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L456>)
+### func \(UnimplementedBackendServer\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L462>)
 
 ```go
 func (UnimplementedBackendServer) DeleteProfile(context.Context, *DeleteProfileRequest) (*emptypb.Empty, error)
@@ -8103,7 +8109,7 @@ func (UnimplementedBackendServer) DeleteProfile(context.Context, *DeleteProfileR
 
 
 <a name="UnimplementedBackendServer.GetCRL"></a>
-### func \(UnimplementedBackendServer\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L477>)
+### func \(UnimplementedBackendServer\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L483>)
 
 ```go
 func (UnimplementedBackendServer) GetCRL(context.Context, *GetCrlRequest) (*pb.CrlResponse, error)
@@ -8112,7 +8118,7 @@ func (UnimplementedBackendServer) GetCRL(context.Context, *GetCrlRequest) (*pb.C
 
 
 <a name="UnimplementedBackendServer.GetCertificate"></a>
-### func \(UnimplementedBackendServer\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L462>)
+### func \(UnimplementedBackendServer\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L468>)
 
 ```go
 func (UnimplementedBackendServer) GetCertificate(context.Context, *GetCertificateRequest) (*pb.CertificateResponse, error)
@@ -8121,7 +8127,7 @@ func (UnimplementedBackendServer) GetCertificate(context.Context, *GetCertificat
 
 
 <a name="UnimplementedBackendServer.GetIssuer"></a>
-### func \(UnimplementedBackendServer\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L435>)
+### func \(UnimplementedBackendServer\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L441>)
 
 ```go
 func (UnimplementedBackendServer) GetIssuer(context.Context, *GetIssuerRequest) (*pb.Issuer, error)
@@ -8130,7 +8136,7 @@ func (UnimplementedBackendServer) GetIssuer(context.Context, *GetIssuerRequest) 
 
 
 <a name="UnimplementedBackendServer.GetProfile"></a>
-### func \(UnimplementedBackendServer\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L450>)
+### func \(UnimplementedBackendServer\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L456>)
 
 ```go
 func (UnimplementedBackendServer) GetProfile(context.Context, *GetProfileRequest) (*pb.CertProfile, error)
@@ -8139,7 +8145,7 @@ func (UnimplementedBackendServer) GetProfile(context.Context, *GetProfileRequest
 
 
 <a name="UnimplementedBackendServer.ImportIssuer"></a>
-### func \(UnimplementedBackendServer\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L426>)
+### func \(UnimplementedBackendServer\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L432>)
 
 ```go
 func (UnimplementedBackendServer) ImportIssuer(context.Context, *ImportIssuerRequest) (*pb.Issuer, error)
@@ -8148,7 +8154,7 @@ func (UnimplementedBackendServer) ImportIssuer(context.Context, *ImportIssuerReq
 
 
 <a name="UnimplementedBackendServer.ListCertificates"></a>
-### func \(UnimplementedBackendServer\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L465>)
+### func \(UnimplementedBackendServer\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L471>)
 
 ```go
 func (UnimplementedBackendServer) ListCertificates(context.Context, *ListCertificatesRequest) (*pb.CertificatesResponse, error)
@@ -8157,7 +8163,7 @@ func (UnimplementedBackendServer) ListCertificates(context.Context, *ListCertifi
 
 
 <a name="UnimplementedBackendServer.ListIssuers"></a>
-### func \(UnimplementedBackendServer\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L438>)
+### func \(UnimplementedBackendServer\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L444>)
 
 ```go
 func (UnimplementedBackendServer) ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error)
@@ -8166,7 +8172,7 @@ func (UnimplementedBackendServer) ListIssuers(context.Context, *ListIssuersReque
 
 
 <a name="UnimplementedBackendServer.ListProfiles"></a>
-### func \(UnimplementedBackendServer\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L453>)
+### func \(UnimplementedBackendServer\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L459>)
 
 ```go
 func (UnimplementedBackendServer) ListProfiles(context.Context, *ListProfilesRequest) (*pb.ProfilesResponse, error)
@@ -8175,7 +8181,7 @@ func (UnimplementedBackendServer) ListProfiles(context.Context, *ListProfilesReq
 
 
 <a name="UnimplementedBackendServer.ListRevokedCertificates"></a>
-### func \(UnimplementedBackendServer\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L474>)
+### func \(UnimplementedBackendServer\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L480>)
 
 ```go
 func (UnimplementedBackendServer) ListRevokedCertificates(context.Context, *ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error)
@@ -8184,7 +8190,7 @@ func (UnimplementedBackendServer) ListRevokedCertificates(context.Context, *List
 
 
 <a name="UnimplementedBackendServer.ListRoots"></a>
-### func \(UnimplementedBackendServer\) [ListRoots](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L444>)
+### func \(UnimplementedBackendServer\) [ListRoots](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L450>)
 
 ```go
 func (UnimplementedBackendServer) ListRoots(context.Context, *ListRootsRequest) (*pb.RootsResponse, error)
@@ -8193,7 +8199,7 @@ func (UnimplementedBackendServer) ListRoots(context.Context, *ListRootsRequest) 
 
 
 <a name="UnimplementedBackendServer.PublishCrls"></a>
-### func \(UnimplementedBackendServer\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L480>)
+### func \(UnimplementedBackendServer\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L486>)
 
 ```go
 func (UnimplementedBackendServer) PublishCrls(context.Context, *PublishCrlsRequest) (*pb.CrlsResponse, error)
@@ -8202,7 +8208,7 @@ func (UnimplementedBackendServer) PublishCrls(context.Context, *PublishCrlsReque
 
 
 <a name="UnimplementedBackendServer.RegisterIssuer"></a>
-### func \(UnimplementedBackendServer\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L423>)
+### func \(UnimplementedBackendServer\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L429>)
 
 ```go
 func (UnimplementedBackendServer) RegisterIssuer(context.Context, *RegisterIssuerRequest) (*pb.Issuer, error)
@@ -8211,7 +8217,7 @@ func (UnimplementedBackendServer) RegisterIssuer(context.Context, *RegisterIssue
 
 
 <a name="UnimplementedBackendServer.RegisterProfile"></a>
-### func \(UnimplementedBackendServer\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L447>)
+### func \(UnimplementedBackendServer\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L453>)
 
 ```go
 func (UnimplementedBackendServer) RegisterProfile(context.Context, *RegisterProfileRequest) (*pb.CertProfile, error)
@@ -8220,7 +8226,7 @@ func (UnimplementedBackendServer) RegisterProfile(context.Context, *RegisterProf
 
 
 <a name="UnimplementedBackendServer.RegisterRoot"></a>
-### func \(UnimplementedBackendServer\) [RegisterRoot](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L441>)
+### func \(UnimplementedBackendServer\) [RegisterRoot](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L447>)
 
 ```go
 func (UnimplementedBackendServer) RegisterRoot(context.Context, *RegisterRootRequest) (*pb.RootCertificate, error)
@@ -8229,7 +8235,7 @@ func (UnimplementedBackendServer) RegisterRoot(context.Context, *RegisterRootReq
 
 
 <a name="UnimplementedBackendServer.RevokeCertificate"></a>
-### func \(UnimplementedBackendServer\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L471>)
+### func \(UnimplementedBackendServer\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L477>)
 
 ```go
 func (UnimplementedBackendServer) RevokeCertificate(context.Context, *RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error)
@@ -8238,7 +8244,7 @@ func (UnimplementedBackendServer) RevokeCertificate(context.Context, *RevokeCert
 
 
 <a name="UnimplementedBackendServer.SignCertificate"></a>
-### func \(UnimplementedBackendServer\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L459>)
+### func \(UnimplementedBackendServer\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L465>)
 
 ```go
 func (UnimplementedBackendServer) SignCertificate(context.Context, *SignCertificateRequest) (*pb.CertificateResponse, error)
@@ -8247,7 +8253,7 @@ func (UnimplementedBackendServer) SignCertificate(context.Context, *SignCertific
 
 
 <a name="UnimplementedBackendServer.SignOCSP"></a>
-### func \(UnimplementedBackendServer\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L483>)
+### func \(UnimplementedBackendServer\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L489>)
 
 ```go
 func (UnimplementedBackendServer) SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error)
@@ -8256,7 +8262,7 @@ func (UnimplementedBackendServer) SignOCSP(context.Context, *pb.OCSPRequest) (*p
 
 
 <a name="UnimplementedBackendServer.UpdateCertificateLabel"></a>
-### func \(UnimplementedBackendServer\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L468>)
+### func \(UnimplementedBackendServer\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L474>)
 
 ```go
 func (UnimplementedBackendServer) UpdateCertificateLabel(context.Context, *UpdateCertificateLabelRequest) (*pb.CertificateResponse, error)
@@ -8265,7 +8271,7 @@ func (UnimplementedBackendServer) UpdateCertificateLabel(context.Context, *Updat
 
 
 <a name="UnimplementedBackendServer.UpdateIssuer"></a>
-### func \(UnimplementedBackendServer\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L432>)
+### func \(UnimplementedBackendServer\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L438>)
 
 ```go
 func (UnimplementedBackendServer) UpdateIssuer(context.Context, *UpdateIssuerRequest) (*pb.Issuer, error)
@@ -8285,7 +8291,7 @@ type UnsafeAdminServer interface {
 ```
 
 <a name="UnsafeBackendServer"></a>
-## type [UnsafeBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L491-L493>)
+## type [UnsafeBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L497-L499>)
 
 UnsafeBackendServer may be embedded to opt out of forward compatibility for this service. Use of this interface is not recommended, as added methods to BackendServer will result in compilation errors.
 

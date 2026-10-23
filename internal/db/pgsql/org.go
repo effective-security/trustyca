@@ -15,7 +15,8 @@ import (
 	"github.com/effective-security/xpki/certutil"
 )
 
-// RegisterOrg registers a new org
+// RegisterOrg registers a new org and, when ownerID is set, its Owner in one
+// transaction: an org is never left without its Owner
 func (p *Provider) RegisterOrg(ctx context.Context, m *model.Org, ownerID uint64) (*model.Org, error) {
 	org := *m
 	if org.ID.UInt64() == 0 {
@@ -44,7 +45,8 @@ func (p *Provider) RegisterOrg(ctx context.Context, m *model.Org, ownerID uint64
 	q, name := query.RegisterOrg()
 	defer DbMeasureQuerySince(name, time.Now())
 
-	res, err := xdb.QueryRow[model.Org](ctx, p,
+	txProvider := tx.(*Provider)
+	res, err := xdb.QueryRow[model.Org](ctx, txProvider,
 		q,
 		org.ID,
 		org.Alias,
@@ -57,7 +59,7 @@ func (p *Provider) RegisterOrg(ctx context.Context, m *model.Org, ownerID uint64
 	}
 
 	if ownerID != 0 {
-		_, err = tx.(*Provider).AddMember(ctx, &model.Membership{
+		_, err = txProvider.AddMember(ctx, &model.Membership{
 			OrgID:  res.ID,
 			UserID: xdb.NewID(ownerID),
 			Role:   pb.Role_Owner,

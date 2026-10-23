@@ -119,7 +119,8 @@ type OrgsDb interface {
 	// AcceptInvite accepts an org invite for a user
 	AcceptInvite(ctx context.Context, inviteID, userID uint64) (*model.Membership, error)
 	// AcceptInvites moves the pending invites for a user's email to grants
-	// and returns the grants it created
+	// and returns the grants it created; each invite is accepted in a
+	// transaction of its own
 	AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error)
 
 	// CreateEvent returns new Event

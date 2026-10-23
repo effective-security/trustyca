@@ -2134,12 +2134,6 @@ const (
     // Response: 303
     PathForAuthorize = "/v1/auth/authorize"
 
-    // PathForAuthDone completes authorization flow
-    //
-    // Verbs: GET
-    // Response: 200
-    PathForAuthDone = "/v1/auth/done"
-
     // PathForAuthOrg selects the org of the session, as Auth.SelectOrg does,
     // and writes the new token into the auth cookie of a cookie session
     //
@@ -10596,13 +10590,13 @@ ActivateIssuerRequest specifies the externally signed certificate for a Pending 
 type ActivateIssuerRequest struct {
 
     // ID of the Pending issuer
-    ID  string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+    ID  string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
     // Certificate provides the issuer certificate in PEM format
-    Certificate string `protobuf:"bytes,2,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
+    Certificate string `protobuf:"bytes,3,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
     // Intermediates provides the intermediate CA certificates in PEM format
-    Intermediates string `protobuf:"bytes,3,opt,name=Intermediates,proto3" json:"Intermediates,omitempty"`
+    Intermediates string `protobuf:"bytes,4,opt,name=Intermediates,proto3" json:"Intermediates,omitempty"`
     // Root provides the Root CA certificate in PEM format
-    Root string `protobuf:"bytes,4,opt,name=Root,proto3" json:"Root,omitempty"`
+    Root string `protobuf:"bytes,5,opt,name=Root,proto3" json:"Root,omitempty"`
     // contains filtered or unexported fields
 }
 ```
@@ -16347,7 +16341,7 @@ GetCrlRequest specifies CRL request by IKID
 type GetCrlRequest struct {
 
     // IKID specifies Issuer Key ID
-    IKID string `protobuf:"bytes,1,opt,name=IKID,proto3" json:"IKID,omitempty"`
+    IKID string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
     // contains filtered or unexported fields
 }
 ```
@@ -22564,11 +22558,11 @@ type PublishCrlsRequest struct {
     // publish. Empty publishes for the org-wide issuers and the projects the
     // caller may read; a project Admin names the project, and an API key
     // restricted to a project publishes for its project.
-    ProjectID string `protobuf:"bytes,1,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+    ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
     // IKID specifies Issuer Key ID; empty to publish for all issuers in scope
-    IKID string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
+    IKID string `protobuf:"bytes,3,opt,name=IKID,proto3" json:"IKID,omitempty"`
     // Force specifies to publish even if the current CRL is not due for renewal
-    Force bool `protobuf:"varint,3,opt,name=Force,proto3" json:"Force,omitempty"`
+    Force bool `protobuf:"varint,4,opt,name=Force,proto3" json:"Force,omitempty"`
     // contains filtered or unexported fields
 }
 ```

@@ -101,48 +101,6 @@ func (s *Service) AuthProvidersHandler() restserver.Handle {
 	}
 }
 
-// AuthDoneHandler handles pb.PathForAuthDone
-func (s *Service) AuthDoneHandler() restserver.Handle {
-	return func(w http.ResponseWriter, r *http.Request, _ restserver.Params) {
-		var (
-			token string
-			//expiresIn string
-			errCode  string
-			errDescr string
-		)
-		if r.Method == http.MethodPost {
-			err := r.ParseForm()
-			if err != nil {
-				marshal.WriteJSON(w, r, httperror.InvalidRequest("unable to parse response body"))
-				return
-			}
-
-			token = r.Form.Get("token")
-			//expiresIn = r.Form.Get("expires_in")
-			errCode = r.Form.Get("error")
-			errDescr = r.Form.Get("error_description")
-		} else {
-			vals := r.URL.Query()
-			token = urlutil.GetValue(vals, "token")
-			//expiresIn = urlutil.GetValue(vals, "expires_in")
-			errCode = urlutil.GetValue(vals, "error")
-			errDescr = urlutil.GetValue(vals, "error_description")
-		}
-		if errCode != "" {
-			marshal.WriteJSON(w, r, httperror.New(http.StatusInternalServerError, errCode, "%s", errDescr))
-			return
-		}
-
-		if token == "" {
-			marshal.WriteJSON(w, r, httperror.InvalidRequest("missing token parameter"))
-			return
-		}
-
-		w.Header().Set(header.ContentType, header.TextPlain)
-		fmt.Fprintf(w, "Authenticated!\n\nexport TRUSTYCA_AUTH_TOKEN=%s\n", token)
-	}
-}
-
 // CallbackHandler handles pb.PathForAuthCallback
 func (s *Service) CallbackHandler() restserver.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ restserver.Params) {

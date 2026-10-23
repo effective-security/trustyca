@@ -204,60 +204,6 @@ func Test_AuthProvidersHandlerPost(t *testing.T) {
 	assert.NotEmpty(t, res.Providers)
 }
 
-func Test_AuthDoneHandler(t *testing.T) {
-	t.Parallel()
-	service := testServer.Service(auth.ServiceName).(*auth.Service)
-	require.NotNil(t, service)
-
-	h := service.AuthDoneHandler()
-
-	t.Run("get", func(t *testing.T) {
-		t.Parallel()
-		w := httptest.NewRecorder()
-		r, err := http.NewRequest(http.MethodGet, pb.PathForAuthDone+"?token=123", nil)
-		require.NoError(t, err)
-
-		h(w, r, nil)
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-
-	t.Run("post", func(t *testing.T) {
-		t.Parallel()
-		params := url.Values{
-			"token": {"1123"},
-		}
-
-		w := httptest.NewRecorder()
-		r, err := http.NewRequest(http.MethodPost,
-			pb.PathForAuthDone,
-			strings.NewReader(params.Encode()))
-		require.NoError(t, err)
-		r.Header.Add(header.ContentType, "application/x-www-form-urlencoded")
-		h(w, r, nil)
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-
-	t.Run("no_token", func(t *testing.T) {
-		t.Parallel()
-		w := httptest.NewRecorder()
-		r, err := http.NewRequest(http.MethodGet, pb.PathForAuthDone+"?code=123", nil)
-		require.NoError(t, err)
-
-		h(w, r, nil)
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-	})
-
-	t.Run("error", func(t *testing.T) {
-		t.Parallel()
-		w := httptest.NewRecorder()
-		r, err := http.NewRequest(http.MethodGet, pb.PathForAuthDone+"?error=123&errDescr=message", nil)
-		require.NoError(t, err)
-
-		h(w, r, nil)
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-	})
-}
-
 func Test_CallbackHandler(t *testing.T) {
 	// not parallel: it changes BaseURL and the Github provider of testServer
 	service := testServer.Service(auth.ServiceName).(*auth.Service)

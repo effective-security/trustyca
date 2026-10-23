@@ -285,7 +285,6 @@ servers:
         - /payment
         - /v1/auth/authorize
         - /v1/auth/callback
-        - /v1/auth/done
         - /v1/auth/providers
         - /v1/auth/removecookie
         - /v1/status/node
