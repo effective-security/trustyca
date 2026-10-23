@@ -430,7 +430,7 @@ func Test_CheckAccess(t *testing.T) {
 		err = authctx.CheckAccess(key, a, &pb.GetMembersRequest{}, "/pb.Orgs/GetMembers")
 		assert.EqualError(t, err, "forbidden: API key not allowed, action: /pb.Orgs/GetMembers")
 		// the key lacks the method scope
-		err = authctx.CheckAccess(key, a, &pb.SignCertificateRequest{OrgID: org}, "/pb.CA/SignCertificate")
+		err = authctx.CheckAccess(key, a, &pb.SignCertificateRequest{}, "/pb.CA/SignCertificate")
 		assert.EqualError(t, err, "forbidden: insufficient scope, action: /pb.CA/SignCertificate")
 		// inactive or foreign project
 		err = authctx.CheckAccess(key, a, &pb.GetProjectRequest{ProjectID: "203"}, "/pb.Orgs/GetProject")
@@ -438,16 +438,16 @@ func Test_CheckAccess(t *testing.T) {
 
 		// wildcard scopes
 		wide := requestCtx(apiKeyIdentity("778", org, "", "*"))
-		assert.NoError(t, authctx.CheckAccess(wide, a, &pb.SignCertificateRequest{OrgID: org}, "/pb.CA/SignCertificate"))
+		assert.NoError(t, authctx.CheckAccess(wide, a, &pb.SignCertificateRequest{}, "/pb.CA/SignCertificate"))
 		certs := requestCtx(apiKeyIdentity("779", org, "", "certs:*"))
-		assert.NoError(t, authctx.CheckAccess(certs, a, &pb.SignCertificateRequest{OrgID: org}, "/pb.CA/SignCertificate"))
-		err = authctx.CheckAccess(certs, a, &pb.ListIssuersRequest{OrgID: org}, "/pb.CA/ListIssuers")
+		assert.NoError(t, authctx.CheckAccess(certs, a, &pb.SignCertificateRequest{}, "/pb.CA/SignCertificate"))
+		err = authctx.CheckAccess(certs, a, &pb.ListIssuersRequest{}, "/pb.CA/ListIssuers")
 		assert.EqualError(t, err, "forbidden: insufficient scope, action: /pb.CA/ListIssuers")
 
 		// project scoped key acts in its project only
 		pkey := requestCtx(apiKeyIdentity("780", org, "201", "project:read", "certs:issue"))
 		assert.NoError(t, authctx.CheckAccess(pkey, a, &pb.GetProjectRequest{ProjectID: "201"}, "/pb.Orgs/GetProject"))
-		assert.NoError(t, authctx.CheckAccess(pkey, a, &pb.SignCertificateRequest{OrgID: org}, "/pb.CA/SignCertificate"), "no ProjectID defaults to the key project")
+		assert.NoError(t, authctx.CheckAccess(pkey, a, &pb.SignCertificateRequest{}, "/pb.CA/SignCertificate"), "no ProjectID defaults to the key project")
 		err = authctx.CheckAccess(pkey, a, &pb.GetProjectRequest{ProjectID: "202"}, "/pb.Orgs/GetProject")
 		assert.EqualError(t, err, "forbidden: project mismatch, action: /pb.Orgs/GetProject")
 	})
@@ -471,7 +471,7 @@ func Test_CheckAccess(t *testing.T) {
 	t.Run("service_roles", func(t *testing.T) {
 		uid := identity.NewIdentity("trustyca-ra", "spiffe://trustyca/ra", "", nil, "", "", identity.MethodJWT)
 		ctx := requestCtx(uid)
-		assert.NoError(t, authctx.CheckAccess(ctx, a, &pb.SignCertificateRequest{OrgID: org}, "/pb.CA/SignCertificate"))
+		assert.NoError(t, authctx.CheckAccess(ctx, a, &pb.SignCertificateRequest{}, "/pb.CA/SignCertificate"))
 		assert.NoError(t, authctx.CheckAccess(ctx, a, &emptypb.Empty{}, "/pb.Status/Version"))
 
 		admin := requestCtx(identity.NewIdentity("trustyca-admin", "1", "", nil, "", "", identity.MethodJWT))

@@ -1,0 +1,55 @@
+---
+# Override applied on top of trustyca-config.yaml when the service runs in the
+# integration test stack (tests/integration/docker-compose.tester.yml).
+#
+# It is merged into the base configuration key by key, so only what differs
+# inside the container is listed here:
+#
+#   - the TLS material keeps the paths of the base file: the stack sets HOME
+#     and mounts its own throw-away PKI on ${HOME}/.trustyca/certs;
+#   - the other containers are reached by their compose network aliases
+#     (redis.local.trustyca.io, kms.local.trustyca.io, sql), not by
+#     localhost. The service itself is api.local.trustyca.io, a host under
+#     the dev cookie domain, so the cookie session of the console is tested
+#     with the cookie and CORS settings of the base file.
+
+log_levels:
+  - repo: "*"
+    level: INFO
+  - repo: github.com/effective-security/trustyca
+    package: "*"
+    level: DEBUG
+
+metrics:
+  disabled: true
+
+# no background tasks: the tests drive every state change themselves
+tasks: []
+
+auth:
+  # the CLI asks the server where to start the OAuth flow, so the URL has to
+  # resolve from the test runner container
+  auth_url: https://api.local.trustyca.io:8880/v1/auth/authorize
+
+sql:
+  data_source: env://TRUSTYCA_SQL_CONN
+
+cache:
+  provider: redis
+  redis:
+    server: redis://redis.local.trustyca.io:6379
+    password: redis
+    client_tls:
+      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
+
+crypto_provider:
+  default: ${TRUSTYCA_CONFIG_DIR}/kms/aws-dev-kms.citest.yaml
+
+servers:
+  wfe:
+    timeout:
+      # a cold container is slower than a warm dev machine
+      request: 15s
+  backend:
+    timeout:
+      request: 15s

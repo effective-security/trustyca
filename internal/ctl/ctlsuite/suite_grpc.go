@@ -19,12 +19,12 @@ import (
 // TestSuiteGrpc provider test suite for RPC
 type TestSuiteGrpc struct {
 	TestSuite
-	MockAuth   mockpb.MockAuthServer
-	MockStatus mockpb.MockStatusServer
-	MockOrgs   mockpb.MockOrgsServer
-	MockCA     mockpb.MockCAServer
-	MockAdmin  privmockpb.MockAdminServer
-	RPCServer  *grpc.Server
+	MockAuth    mockpb.MockAuthServer
+	MockStatus  mockpb.MockStatusServer
+	MockOrgs    mockpb.MockOrgsServer
+	MockBackend privmockpb.MockBackendServer
+	MockAdmin   privmockpb.MockAdminServer
+	RPCServer   *grpc.Server
 }
 
 // SetupSuite called once to setup
@@ -87,7 +87,7 @@ func (s *TestSuiteGrpc) SetupMockGRPC() *grpc.Server {
 	pb.RegisterAuthServer(serv, &s.MockAuth)
 	pb.RegisterStatusServer(serv, &s.MockStatus)
 	pb.RegisterOrgsServer(serv, &s.MockOrgs)
-	pb.RegisterCAServer(serv, &s.MockCA)
+	privpb.RegisterBackendServer(serv, &s.MockBackend)
 	privpb.RegisterAdminServer(serv, &s.MockAdmin)
 
 	var lis net.Listener

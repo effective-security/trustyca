@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/effective-security/trustyca/privpb"
+
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
@@ -16,7 +18,6 @@ import (
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/events"
 	"github.com/effective-security/trustyca/internal/metricskey"
-	"github.com/effective-security/trustyca/server/service/internal/caapi"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/authority"
@@ -47,7 +48,7 @@ var signRequestErrorMarkers = []string{
 // SignCertificate signs a certificate request with the issuer of the
 // profile, resolved in the scope of the request (DESIGN.md section 6), and
 // records the certificate with its issue event in one transaction.
-func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest) (*pb.CertificateResponse, error) {
+func (s *Service) SignCertificate(ctx context.Context, req *privpb.SignCertificateRequest) (*pb.CertificateResponse, error) {
 	if req == nil || len(req.Request) == 0 {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -91,11 +92,11 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	if err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
-	cr.NotBefore, err = caapi.ParseTime(ctx, req.NotBefore, "NotBefore")
+	cr.NotBefore, err = parseTime(ctx, req.NotBefore, "NotBefore")
 	if err != nil {
 		return nil, err
 	}
-	cr.NotAfter, err = caapi.ParseTime(ctx, req.NotAfter, "NotAfter")
+	cr.NotAfter, err = parseTime(ctx, req.NotAfter, "NotAfter")
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func (s *Service) SignCertificate(ctx context.Context, req *pb.SignCertificateRe
 	metricskey.CACertIssued.IncrCounter(1, issuer.Label(), req.Profile, orgID.String())
 
 	mcert := model.NewCertificate(crt, orgID, projectID, req.Profile, string(crtPEM), issuer.PEM(), req.Label, nil, req.Metadata)
-	evt := events.New(ctx, caapi.EventSource, pb.EventType_CertificateIssued, "Certificate issued").
+	evt := events.New(ctx, EventSource, pb.EventType_CertificateIssued, "Certificate issued").
 		Org(orgID).
 		Project(projectID).
 		Description("certificate %q issued by %q with profile %q", mcert.Subject, issuer.Label(), req.Profile)
@@ -253,7 +254,7 @@ func (s *Service) resolve(ctx context.Context, orgID, projectID xdb.ID, profile,
 	case errors.Is(err, core.ErrProfileNotAllowed):
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer %q does not support the profile: %s", issuerLabel, profile)
 	case errors.Is(err, core.ErrIssuerNotActive):
-		return nil, caapi.PreconditionFailed(ctx, "issuer is not active")
+		return nil, preconditionFailed(ctx, "issuer is not active")
 	}
 	logger.ContextKV(ctx, xlog.ERROR,
 		"reason", "load_issuer",

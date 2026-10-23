@@ -79,37 +79,93 @@ var methods = map[string]*MethodInfo{
 	},
 
 	Admin_ListIssuers_FullMethodName: {
-		Allocator: func() any { return new(ListIssuersRequest) },
+		Allocator: func() any { return new(ListAllIssuersRequest) },
 		CliCmd:    "ca issuer list",
 	},
 
 	Admin_ListCertificates_FullMethodName: {
-		Allocator: func() any { return new(ListCertificatesRequest) },
+		Allocator: func() any { return new(ListAllCertificatesRequest) },
 		CliCmd:    "ca cert list",
 	},
 
 	Backend_RegisterIssuer_FullMethodName: {
-		Allocator: func() any { return new(pb.RegisterIssuerRequest) },
+		Allocator: func() any { return new(RegisterIssuerRequest) },
 	},
 
 	Backend_ImportIssuer_FullMethodName: {
-		Allocator: func() any { return new(pb.ImportIssuerRequest) },
+		Allocator: func() any { return new(ImportIssuerRequest) },
 	},
 
 	Backend_ActivateIssuer_FullMethodName: {
-		Allocator: func() any { return new(pb.ActivateIssuerRequest) },
+		Allocator: func() any { return new(ActivateIssuerRequest) },
 	},
 
 	Backend_UpdateIssuer_FullMethodName: {
-		Allocator: func() any { return new(pb.UpdateIssuerRequest) },
+		Allocator: func() any { return new(UpdateIssuerRequest) },
+	},
+
+	Backend_GetIssuer_FullMethodName: {
+		Allocator: func() any { return new(GetIssuerRequest) },
+	},
+
+	Backend_ListIssuers_FullMethodName: {
+		Allocator: func() any { return new(ListIssuersRequest) },
+	},
+
+	Backend_RegisterRoot_FullMethodName: {
+		Allocator: func() any { return new(RegisterRootRequest) },
+	},
+
+	Backend_ListRoots_FullMethodName: {
+		Allocator: func() any { return new(ListRootsRequest) },
+	},
+
+	Backend_RegisterProfile_FullMethodName: {
+		Allocator: func() any { return new(RegisterProfileRequest) },
+	},
+
+	Backend_GetProfile_FullMethodName: {
+		Allocator: func() any { return new(GetProfileRequest) },
+	},
+
+	Backend_ListProfiles_FullMethodName: {
+		Allocator: func() any { return new(ListProfilesRequest) },
+	},
+
+	Backend_DeleteProfile_FullMethodName: {
+		Allocator: func() any { return new(DeleteProfileRequest) },
 	},
 
 	Backend_SignCertificate_FullMethodName: {
-		Allocator: func() any { return new(pb.SignCertificateRequest) },
+		Allocator: func() any { return new(SignCertificateRequest) },
+	},
+
+	Backend_GetCertificate_FullMethodName: {
+		Allocator: func() any { return new(GetCertificateRequest) },
+	},
+
+	Backend_ListCertificates_FullMethodName: {
+		Allocator: func() any { return new(ListCertificatesRequest) },
+	},
+
+	Backend_UpdateCertificateLabel_FullMethodName: {
+		Allocator: func() any { return new(UpdateCertificateLabelRequest) },
+	},
+
+	Backend_RevokeCertificate_FullMethodName: {
+		Allocator: func() any { return new(RevokeCertificateRequest) },
+	},
+
+	Backend_ListRevokedCertificates_FullMethodName: {
+		Allocator: func() any { return new(ListRevokedCertificatesRequest) },
+	},
+
+	Backend_GetCRL_FullMethodName: {
+		Allocator: func() any { return new(GetCrlRequest) },
 	},
 
 	Backend_PublishCrls_FullMethodName: {
-		Allocator: func() any { return new(pb.PublishCrlsRequest) },
+		Allocator: func() any { return new(PublishCrlsRequest) },
 	},
 
 	Backend_SignOCSP_FullMethodName: {

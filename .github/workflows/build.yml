@@ -117,6 +117,13 @@ jobs:
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_USER: ${{ github.actor }}
 
+      - name: Integration tests
+        if: needs.detect-noop.outputs.should_skip != 'true'
+        # builds the service and test runner images and runs
+        # tests/integration against them in a stack of their own;
+        # see tests/integration/README.md
+        run: make docker-citest
+
       - name: Detect Version Changes
         # https://github.com/fkirc/skip-duplicate-actions
         id: version-changed

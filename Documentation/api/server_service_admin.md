@@ -14,8 +14,8 @@ import "github.com/effective-security/trustyca/server/service/admin"
   - [func \(s \*Service\) AdminHTTPHandler\(\) restserver.Handle](<#Service.AdminHTTPHandler>)
   - [func \(s \*Service\) Close\(\)](<#Service.Close>)
   - [func \(s \*Service\) IsReady\(\) bool](<#Service.IsReady>)
-  - [func \(s \*Service\) ListCertificates\(ctx context.Context, req \*privpb.ListCertificatesRequest\) \(\*pb.CertificatesResponse, error\)](<#Service.ListCertificates>)
-  - [func \(s \*Service\) ListIssuers\(ctx context.Context, req \*privpb.ListIssuersRequest\) \(\*pb.IssuersResponse, error\)](<#Service.ListIssuers>)
+  - [func \(s \*Service\) ListCertificates\(ctx context.Context, req \*privpb.ListAllCertificatesRequest\) \(\*pb.CertificatesResponse, error\)](<#Service.ListCertificates>)
+  - [func \(s \*Service\) ListIssuers\(ctx context.Context, req \*privpb.ListAllIssuersRequest\) \(\*pb.IssuersResponse, error\)](<#Service.ListIssuers>)
   - [func \(s \*Service\) ListOrgs\(ctx context.Context, req \*privpb.ListOrgsRequest\) \(\*pb.OrgsResponse, error\)](<#Service.ListOrgs>)
   - [func \(s \*Service\) ListProjects\(ctx context.Context, req \*privpb.ListProjectsRequest\) \(\*pb.ProjectsResponse, error\)](<#Service.ListProjects>)
   - [func \(s \*Service\) Name\(\) string](<#Service.Name>)
@@ -82,7 +82,7 @@ IsReady indicates that the service is ready to serve its end\-points
 ### func \(\*Service\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/certificates.go#L17>)
 
 ```go
-func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error)
+func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListAllCertificatesRequest) (*pb.CertificatesResponse, error)
 ```
 
 ListCertificates lists the certificates of the org the request names, of the platform, or of every org and the platform, newest first, for support staff
@@ -91,7 +91,7 @@ ListCertificates lists the certificates of the org the request names, of the pla
 ### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/issuers.go#L17>)
 
 ```go
-func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error)
+func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListAllIssuersRequest) (*pb.IssuersResponse, error)
 ```
 
 ListIssuers lists the issuers of the org the request names, of the platform, or of every org and the platform, newest first, for support staff. Private key material is never part of the rows' API view.

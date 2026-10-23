@@ -83,7 +83,7 @@ func (c *Cli) AfterApply(app *kong.Kong, vars kong.Vars) error
 AfterApply hook loads config. It sets the process\-wide log formatter, log level and time format, so two CLIs must not be parsed concurrently in one process.
 
 <a name="Cli.AuthClient"></a>
-### func \(\*Cli\) [AuthClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L415>)
+### func \(\*Cli\) [AuthClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L417>)
 
 ```go
 func (c *Cli) AuthClient(skipAuth bool) (pb.AuthServer, error)
@@ -92,7 +92,7 @@ func (c *Cli) AuthClient(skipAuth bool) (pb.AuthServer, error)
 AuthClient returns AuthClient client from connection
 
 <a name="Cli.CISClient"></a>
-### func \(\*Cli\) [CISClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L399>)
+### func \(\*Cli\) [CISClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L401>)
 
 ```go
 func (c *Cli) CISClient() (pb.CISServer, error)
@@ -119,7 +119,7 @@ func (c *Cli) ErrWriter() io.Writer
 ErrWriter returns a writer for control output
 
 <a name="Cli.HTTPClient"></a>
-### func \(\*Cli\) [HTTPClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L299>)
+### func \(\*Cli\) [HTTPClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L301>)
 
 ```go
 func (c *Cli) HTTPClient(skipAuth bool) (*retriable.Client, error)
@@ -137,7 +137,7 @@ func (c *Cli) IsJSON() bool
 IsJSON returns true if the output format us JSON
 
 <a name="Cli.OrgsClient"></a>
-### func \(\*Cli\) [OrgsClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L381>)
+### func \(\*Cli\) [OrgsClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L383>)
 
 ```go
 func (c *Cli) OrgsClient() (pb.OrgsServer, error)
@@ -146,7 +146,7 @@ func (c *Cli) OrgsClient() (pb.OrgsServer, error)
 OrgsClient returns Orgs client from connection
 
 <a name="Cli.Print"></a>
-### func \(\*Cli\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L432>)
+### func \(\*Cli\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L434>)
 
 ```go
 func (c *Cli) Print(value any) error
@@ -173,7 +173,7 @@ func (c *Cli) Reader() io.Reader
 Reader is the source to read from, typically set to os.Stdin
 
 <a name="Cli.StatusClient"></a>
-### func \(\*Cli\) [StatusClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L365>)
+### func \(\*Cli\) [StatusClient](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L367>)
 
 ```go
 func (c *Cli) StatusClient() (pb.StatusServer, error)
@@ -182,7 +182,7 @@ func (c *Cli) StatusClient() (pb.StatusServer, error)
 StatusClient returns StatusClient client from connection
 
 <a name="Cli.StringPrompt"></a>
-### func \(\*Cli\) [StringPrompt](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L437>)
+### func \(\*Cli\) [StringPrompt](<https://github.com/effective-security/trustyca/blob/main/api/cli/cli.go#L439>)
 
 ```go
 func (c *Cli) StringPrompt(label string) string

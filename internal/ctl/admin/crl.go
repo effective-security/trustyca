@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/privpb"
 )
 
 // CrlCmd is the base command of the CRLs
@@ -18,11 +18,11 @@ type CrlGetCmd struct {
 
 // Run the command
 func (a *CrlGetCmd) Run(app App) error {
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.GetCRL(app.Context(), &pb.GetCrlRequest{
+	res, err := client.GetCRL(app.Context(), &privpb.GetCrlRequest{
 		OrgID: a.Org,
 		IKID:  a.IKID,
 	})
@@ -44,11 +44,11 @@ type CrlPublishCmd struct {
 
 // Run the command
 func (a *CrlPublishCmd) Run(app App) error {
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.PublishCrls(app.Context(), &pb.PublishCrlsRequest{
+	res, err := client.PublishCrls(app.Context(), &privpb.PublishCrlsRequest{
 		OrgID:     a.Org,
 		ProjectID: a.Project,
 		IKID:      a.IKID,

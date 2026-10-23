@@ -16,6 +16,7 @@ import "github.com/effective-security/trustyca/server/service/auth"
 - [type Service](<#Service>)
   - [func \(s \*Service\) AuthDoneHandler\(\) restserver.Handle](<#Service.AuthDoneHandler>)
   - [func \(s \*Service\) AuthHTTPHandler\(\) restserver.Handle](<#Service.AuthHTTPHandler>)
+  - [func \(s \*Service\) AuthOrgHandler\(\) restserver.Handle](<#Service.AuthOrgHandler>)
   - [func \(s \*Service\) AuthProvider\(ctx context.Context, provider pb.IDP\_Enum\) \(\*oauth2client.Client, error\)](<#Service.AuthProvider>)
   - [func \(s \*Service\) AuthProviderForEmail\(ctx context.Context, email string\) \(cl \*oauth2client.Client, err error\)](<#Service.AuthProviderForEmail>)
   - [func \(s \*Service\) AuthProvidersHandler\(\) restserver.Handle](<#Service.AuthProvidersHandler>)
@@ -77,7 +78,7 @@ func Factory(server gserver.GServer) any
 Factory returns a factory of the service
 
 <a name="OTCState"></a>
-## type [OTCState](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L286-L291>)
+## type [OTCState](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L308-L313>)
 
 
 
@@ -91,7 +92,7 @@ type OTCState struct {
 ```
 
 <a name="Request"></a>
-## type [Request](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L240-L250>)
+## type [Request](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L262-L272>)
 
 Request specifies Authorization request
 
@@ -110,7 +111,7 @@ type Request struct {
 ```
 
 <a name="Request.Validate"></a>
-### func \(\*Request\) [Validate](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L253>)
+### func \(\*Request\) [Validate](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L275>)
 
 ```go
 func (c *Request) Validate() error
@@ -151,8 +152,17 @@ func (s *Service) AuthHTTPHandler() restserver.Handle
 
 
 
+<a name="Service.AuthOrgHandler"></a>
+### func \(\*Service\) [AuthOrgHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/tenant.go#L249>)
+
+```go
+func (s *Service) AuthOrgHandler() restserver.Handle
+```
+
+AuthOrgHandler handles pb.PathForAuthOrg: the org switch of a REST caller, the one a cookie session uses. A cookie session \(the auth cookie and no Authorization header\) receives the new token in the auth cookie, with a new CSRF cookie, and the response omits AccessToken; the cookies last until the token expires with RememberMe, else for the browser session. A caller with an Authorization header receives AccessToken, and its cookies are not replaced.
+
 <a name="Service.AuthProvider"></a>
-### func \(\*Service\) [AuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L177>)
+### func \(\*Service\) [AuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L180>)
 
 ```go
 func (s *Service) AuthProvider(ctx context.Context, provider pb.IDP_Enum) (*oauth2client.Client, error)
@@ -161,13 +171,13 @@ func (s *Service) AuthProvider(ctx context.Context, provider pb.IDP_Enum) (*oaut
 OAuthConfig returns oauth2client.Config, to be used in tests
 
 <a name="Service.AuthProviderForEmail"></a>
-### func \(\*Service\) [AuthProviderForEmail](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L194>)
+### func \(\*Service\) [AuthProviderForEmail](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L200>)
 
 ```go
 func (s *Service) AuthProviderForEmail(ctx context.Context, email string) (cl *oauth2client.Client, err error)
 ```
 
-AuthProviderForEmail checks if the email is allowed to login, and returns oauth2client.Client for the provider
+AuthProviderForEmail checks if the email is allowed to login, and returns oauth2client.Client for the provider. On a local instance \(config.Service.IsLocal\) an address with the localEmailPrefix signs in through the \`local\` provider, which needs no invitation; elsewhere it is an ordinary address.
 
 <a name="Service.AuthProvidersHandler"></a>
 ### func \(\*Service\) [AuthProvidersHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L68>)
@@ -197,7 +207,7 @@ func (s *Service) AuthenticateAPIKeyHandler() restserver.Handle
 AuthenticateAPIKeyHandler is the handler for the AuthenticateAPIKey endpoint It is used to authenticate API keys. It expects the following headers: Date: \<timestamp\> Authorization: APIKey \<key\_id\>:\<signature\>
 
 <a name="Service.AuthorizeHandler"></a>
-### func \(\*Service\) [AuthorizeHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L27>)
+### func \(\*Service\) [AuthorizeHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L35>)
 
 ```go
 func (s *Service) AuthorizeHandler() restserver.Handle
@@ -233,7 +243,7 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.Db"></a>
-### func \(\*Service\) [Db](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L165>)
+### func \(\*Service\) [Db](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L168>)
 
 ```go
 func (s *Service) Db() db.OrgsDb
@@ -242,7 +252,7 @@ func (s *Service) Db() db.OrgsDb
 Db returns OrgsDb for unit tests
 
 <a name="Service.ExchangeCode"></a>
-### func \(\*Service\) [ExchangeCode](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L723>)
+### func \(\*Service\) [ExchangeCode](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L745>)
 
 ```go
 func (s *Service) ExchangeCode(ctx context.Context, req *pb.ExchangeCodeRequest) (*pb.Token, error)
@@ -251,7 +261,7 @@ func (s *Service) ExchangeCode(ctx context.Context, req *pb.ExchangeCodeRequest)
 
 
 <a name="Service.GetAllowedMethods"></a>
-### func \(\*Service\) [GetAllowedMethods](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L200>)
+### func \(\*Service\) [GetAllowedMethods](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L208>)
 
 ```go
 func (s *Service) GetAllowedMethods(ctx context.Context, req *emptypb.Empty) (*pb.ServiceAccessInfo, error)
@@ -260,7 +270,7 @@ func (s *Service) GetAllowedMethods(ctx context.Context, req *emptypb.Empty) (*p
 GetAllowedMethods returns the allowed methods for the caller
 
 <a name="Service.GetCallerScope"></a>
-### func \(\*Service\) [GetCallerScope](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L205>)
+### func \(\*Service\) [GetCallerScope](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L213>)
 
 ```go
 func (s *Service) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.CallerScope, error)
@@ -278,7 +288,7 @@ func (s *Service) GetProviders(ctx context.Context, req *pb.AuthProvidersRequest
 GetProviders returns the list of supported providers
 
 <a name="Service.GetUserInfo"></a>
-### func \(\*Service\) [GetUserInfo](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L627>)
+### func \(\*Service\) [GetUserInfo](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L649>)
 
 ```go
 func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oauth2client.ClientConfig, _ *oauth2.Config, token *oauth2.Token) (*pb.UserInfo, jwt.MapClaims, error)
@@ -314,7 +324,7 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.OAuthProvider"></a>
-### func \(\*Service\) [OAuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L171>)
+### func \(\*Service\) [OAuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L174>)
 
 ```go
 func (s *Service) OAuthProvider() *oauth2client.Provider
@@ -332,7 +342,7 @@ func (s *Service) OnStarted() error
 OnStarted is called when the server started and is ready to serve requests
 
 <a name="Service.Protect"></a>
-### func \(\*Service\) [Protect](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L155>)
+### func \(\*Service\) [Protect](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L158>)
 
 ```go
 func (s *Service) Protect(ctx context.Context, v any) (string, error)
@@ -341,7 +351,7 @@ func (s *Service) Protect(ctx context.Context, v any) (string, error)
 Protect returns encrypted value in base64url encoded format
 
 <a name="Service.RegisterGRPC"></a>
-### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L150>)
+### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L153>)
 
 ```go
 func (s *Service) RegisterGRPC(r *grpc.Server)
@@ -377,25 +387,27 @@ func (s *Service) RevokeToken(ctx context.Context, _ *emptypb.Empty) (*emptypb.E
 RevokeToken revokes the user token
 
 <a name="Service.RevokeTokenHandler"></a>
-### func \(\*Service\) [RevokeTokenHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L183>)
+### func \(\*Service\) [RevokeTokenHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L189>)
 
 ```go
 func (s *Service) RevokeTokenHandler() restserver.Handle
 ```
 
-RevokeTokenHandler returns handler for revoking the user token
+RevokeTokenHandler handles DELETE /pb.Auth/RevokeToken, the sign\-out of a REST caller and of a cookie session: it removes the auth and CSRF cookies whatever the outcome, then revokes the caller's token
 
 <a name="Service.SelectOrg"></a>
-### func \(\*Service\) [SelectOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/tenant.go#L135>)
+### func \(\*Service\) [SelectOrg](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/tenant.go#L143>)
 
 ```go
 func (s *Service) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.UserTokenResponse, error)
 ```
 
-SelectOrg verifies the caller's access to the org and returns a new token scoped to it. Access requires an active org\-wide or project grant.
+SelectOrg verifies the caller's access to the org and returns a new token scoped to it, with the original expiry. Access requires an active org\-wide or project grant.
+
+A cookie session does not receive AccessToken, and gRPC cannot set a cookie: such a session switches the org with POST pb.PathForAuthOrg \(AuthOrgHandler\), which writes the new token into the auth cookie.
 
 <a name="Service.SetAuthProvider"></a>
-### func \(\*Service\) [SetAuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L188>)
+### func \(\*Service\) [SetAuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L191>)
 
 ```go
 func (s *Service) SetAuthProvider(ctx context.Context, cfg *oauth2client.ClientConfig) error
@@ -404,7 +416,7 @@ func (s *Service) SetAuthProvider(ctx context.Context, cfg *oauth2client.ClientC
 SetAuthProvider sets the OAuth2 client for the provider, override the existing client if it exists. to be used in tests
 
 <a name="Service.Unprotect"></a>
-### func \(\*Service\) [Unprotect](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L160>)
+### func \(\*Service\) [Unprotect](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L163>)
 
 ```go
 func (s *Service) Unprotect(ctx context.Context, protected string, v any) error
@@ -431,7 +443,7 @@ func (s *Service) UserinfoHandler() restserver.Handle
 UserinfoHandler returns handler for returning the user info
 
 <a name="State"></a>
-## type [State](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L267-L284>)
+## type [State](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L289-L306>)
 
 State is OAuth state provided by an authenticating client
 

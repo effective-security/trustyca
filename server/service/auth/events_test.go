@@ -206,17 +206,13 @@ func Test_RevokeToken_Events(t *testing.T) {
 		authctx.ClaimOrgRole: pb.Role_Owner.String(),
 	})
 
-	// the unit test configuration has no revocation
-	_, err := service.RevokeToken(ctx, &emptypb.Empty{})
-	assert.EqualError(t, err, "not_implemented: revocation not supported")
-
 	orig := service.JwtParser.GetRevocation()
 	rev := &fakeRevocation{}
 	service.JwtParser.SetRevocation(rev)
 	t.Cleanup(func() { service.JwtParser.SetRevocation(orig) })
 
 	// a user signs out
-	_, err = service.RevokeToken(ctx, &emptypb.Empty{})
+	_, err := service.RevokeToken(ctx, &emptypb.Empty{})
 	require.NoError(t, err)
 	assert.Equal(t, []string{userJTI}, rev.revoked)
 	requireEvent(t, wantEvent{

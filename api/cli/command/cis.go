@@ -161,7 +161,7 @@ func (a *RootListCmd) Run(app App) error {
 	if err != nil {
 		return err
 	}
-	res, err := client.GetRoots(app.Context(), &pb.ListRootsRequest{
+	res, err := client.GetRoots(app.Context(), &pb.GetRootsRequest{
 		OrgID:  a.Org,
 		Limit:  a.Limit,
 		Offset: a.Offset,

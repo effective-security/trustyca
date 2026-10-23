@@ -3,41 +3,485 @@ package privpb;
 
 option go_package = "github.com/effective-security/trustyca/privpb";
 
+import "google/protobuf/empty.proto";
+import "es/api/annotations.proto";
 import "ca.proto";
 import "pkix.proto";
 
-// Backend is the signing plane of the CA (DESIGN.md section 2.1): the
-// methods of pb.CA that use an issuer key or change the issuer registry.
-// It is served over gRPC only, by the backend listener, to service
-// identities over mTLS: the CA service of a WFE forwards the calls of its
-// callers with their context (trustyca-peer), and the AIA forwards OCSP
-// requests (trustyca-aia). Every method takes the messages of the pb.CA
-// method of the same name, which name the org and the project explicitly,
-// and behaves as that method for the caller: the backend authorizes a
-// forwarded caller again with the roles and scopes of the pb.CA method.
+// Backend is the CA of the service identities and the signing plane
+// (DESIGN.md section 2.1): every method of pb.CA, with the org of a request
+// named explicitly. It holds the issuer keys and is served over gRPC only,
+// by the backend listener, to service identities over mTLS: the CA service
+// of a WFE forwards the calls of its callers with their context and the
+// org of their token (trustyca-peer), the RA and the operator name the org
+// of every request (trustyca-ra, trustyca-admin), and the AIA forwards
+// OCSP requests (trustyca-aia). A method behaves as the pb.CA method of the
+// same name: the backend authorizes a forwarded caller again with the roles
+// and scopes of that method. The requests are copies of the pb.CA requests
+// with OrgID: the field numbers of the other fields are the same, since
+// the CA service converts a public request into its copy.
 service Backend {
     // RegisterIssuer creates an issuer of the org: the key is generated in
     // the crypto provider, and the certificate is self-signed for a Root,
     // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
-    rpc RegisterIssuer(pb.RegisterIssuerRequest) returns (pb.Issuer);
+    rpc RegisterIssuer(RegisterIssuerRequest) returns (pb.Issuer);
     // ImportIssuer registers an issuer from an existing certificate and a
     // key URI of a crypto provider or a PEM key stored protected
     // (CA.ImportIssuer)
-    rpc ImportIssuer(pb.ImportIssuerRequest) returns (pb.Issuer);
+    rpc ImportIssuer(ImportIssuerRequest) returns (pb.Issuer);
     // ActivateIssuer sets the externally signed certificate of a Pending
     // issuer, which must be for the issuer's key (CA.ActivateIssuer)
-    rpc ActivateIssuer(pb.ActivateIssuerRequest) returns (pb.Issuer);
+    rpc ActivateIssuer(ActivateIssuerRequest) returns (pb.Issuer);
     // UpdateIssuer updates the runtime configuration or the status of an
     // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
-    rpc UpdateIssuer(pb.UpdateIssuerRequest) returns (pb.Issuer);
+    rpc UpdateIssuer(UpdateIssuerRequest) returns (pb.Issuer);
+    // GetIssuer returns an issuer of the org by ID, label or IKID
+    // (CA.GetIssuer)
+    rpc GetIssuer(GetIssuerRequest) returns (pb.Issuer);
+    // ListIssuers returns the issuers of the org (CA.ListIssuers)
+    rpc ListIssuers(ListIssuersRequest) returns (pb.IssuersResponse);
+    // RegisterRoot registers an external trust anchor of the org
+    // (CA.RegisterRoot)
+    rpc RegisterRoot(RegisterRootRequest) returns (pb.RootCertificate);
+    // ListRoots returns the trust anchors of the org, or of the
+    // platform (CA.ListRoots)
+    rpc ListRoots(ListRootsRequest) returns (pb.RootsResponse);
+    // RegisterProfile creates or replaces a certificate profile, keyed
+    // by (OrgID, ProjectID, Label) (CA.RegisterProfile)
+    rpc RegisterProfile(RegisterProfileRequest) returns (pb.CertProfile);
+    // GetProfile returns a profile of the org by ID or label (CA.GetProfile)
+    rpc GetProfile(GetProfileRequest) returns (pb.CertProfile);
+    // ListProfiles returns the profiles of the org (CA.ListProfiles)
+    rpc ListProfiles(ListProfilesRequest) returns (pb.ProfilesResponse);
+    // DeleteProfile deletes a profile of the org (CA.DeleteProfile)
+    rpc DeleteProfile(DeleteProfileRequest) returns (google.protobuf.Empty);
     // SignCertificate signs a certificate request with the issuer of the
     // profile and registers the certificate (CA.SignCertificate)
-    rpc SignCertificate(pb.SignCertificateRequest)
+    rpc SignCertificate(SignCertificateRequest)
         returns (pb.CertificateResponse);
-    // PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
-    // of the issuers in scope (CA.PublishCrls)
-    rpc PublishCrls(pb.PublishCrlsRequest) returns (pb.CrlsResponse);
-    // SignOCSP signs the OCSP response of a DER request; the request names
-    // the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+    // GetCertificate returns a certificate of the org by ID, SKID,
+    // Sha256 or issuer and serial number (CA.GetCertificate)
+    rpc GetCertificate(GetCertificateRequest) returns (pb.CertificateResponse);
+    // ListCertificates returns the certificates of the org, newest
+    // first (CA.ListCertificates)
+    rpc ListCertificates(ListCertificatesRequest)
+        returns (pb.CertificatesResponse);
+    // UpdateCertificateLabel updates the client-provided label and
+    // metadata of a certificate (CA.UpdateCertificateLabel)
+    rpc UpdateCertificateLabel(UpdateCertificateLabelRequest)
+        returns (pb.CertificateResponse);
+    // RevokeCertificate revokes a certificate of the org (CA.RevokeCertificate)
+    rpc RevokeCertificate(RevokeCertificateRequest)
+        returns (pb.RevokedCertificateResponse);
+    // ListRevokedCertificates returns the revoked certificates of
+    // the org (CA.ListRevokedCertificates)
+    rpc ListRevokedCertificates(ListRevokedCertificatesRequest)
+        returns (pb.RevokedCertificatesResponse);
+    // GetCRL returns the current CRL of an issuer (CA.GetCRL)
+    rpc GetCRL(GetCrlRequest) returns (pb.CrlResponse);
+    // PublishCrls signs and publishes the CRL of an issuer, or the due
+    // CRLs of the issuers in scope (CA.PublishCrls)
+    rpc PublishCrls(PublishCrlsRequest) returns (pb.CrlsResponse);
+    // SignOCSP signs the OCSP response of a DER request; the request
+    // names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
     rpc SignOCSP(pb.OCSPRequest) returns (pb.OCSPResponse);
+}
+
+// RegisterIssuerRequest specifies a request to create a new issuer
+// with the org named explicitly: the request of Backend.RegisterIssuer
+message RegisterIssuerRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; empty for an org-wide issuer
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Label of the issuer, unique per (Org, Project)
+    string Label = 3
+        [json_name = "Label", (es.api.required) = true, (es.api.max) = 64];
+    // Type of the authority
+    pb.AuthorityType.Enum Type = 4
+        [json_name = "Type", (es.api.required) = true];
+    // Subject of the issuer certificate
+    pb.X509Subject Subject = 5
+        [json_name = "Subject", (es.api.required) = true];
+    // KeySpec of the key to generate; defaults to ECDSA P-256
+    pb.KeySpec KeySpec = 6 [json_name = "KeySpec"];
+    // KeyProvider selects the crypto provider; empty for the server default
+    string KeyProvider = 7 [json_name = "KeyProvider"];
+    // ParentID specifies the signing issuer. It must belong to the same org,
+    // or be a platform issuer that allows the Profile.
+    // Empty for Root type, or to create a Pending issuer with a CSR.
+    string ParentID = 8 [json_name = "ParentID"];
+    // Profile specifies the CA profile the parent uses to sign the issuer
+    // certificate. Required when ParentID is set or Type is Root.
+    string Profile = 9 [json_name = "Profile"];
+    // Config provides runtime settings
+    pb.IssuerConfig Config = 10 [json_name = "Config"];
+    // SAN specifies Subject Alternative Names for the issuer certificate
+    repeated string SAN = 11 [json_name = "SAN"];
+    // Extensions specifies additional extensions for the issuer certificate
+    repeated pb.X509Extension Extensions = 12 [json_name = "Extensions"];
+}
+
+// ImportIssuerRequest specifies a request to import an existing issuer
+// with the org named explicitly: the request of Backend.ImportIssuer
+message ImportIssuerRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; empty for an org-wide issuer
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Label of the issuer, unique per (Org, Project)
+    string Label = 3
+        [json_name = "Label", (es.api.required) = true, (es.api.max) = 64];
+    // Type of the authority
+    pb.AuthorityType.Enum Type = 4
+        [json_name = "Type", (es.api.required) = true];
+    // Certificate provides the issuer certificate in PEM format
+    string Certificate = 5
+        [json_name = "Certificate", (es.api.required) = true];
+    // Intermediates provides the intermediate CA certificates in PEM format
+    string Intermediates = 6 [json_name = "Intermediates"];
+    // Root provides the Root CA certificate in PEM format
+    string Root = 7 [json_name = "Root"];
+    // KeyURI references an existing key in a crypto provider,
+    // e.g. awskms://..., gcpkms://..., pkcs11:...
+    string KeyURI = 8 [json_name = "KeyURI", (es.api.required_or) = "KeyPem"];
+    // KeyPem provides the private key in PEM format.
+    // It is stored protected by the data protection provider.
+    string KeyPem = 9 [json_name = "KeyPem", (es.api.required_or) = "KeyURI"];
+    // Config provides runtime settings
+    pb.IssuerConfig Config = 10 [json_name = "Config"];
+}
+
+// ActivateIssuerRequest specifies the externally signed certificate for a
+// Pending issuer
+// with the org named explicitly: the request of Backend.ActivateIssuer
+message ActivateIssuerRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID of the Pending issuer
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
+    // Certificate provides the issuer certificate in PEM format
+    string Certificate = 3
+        [json_name = "Certificate", (es.api.required) = true];
+    // Intermediates provides the intermediate CA certificates in PEM format
+    string Intermediates = 4 [json_name = "Intermediates"];
+    // Root provides the Root CA certificate in PEM format
+    string Root = 5 [json_name = "Root"];
+}
+
+// GetIssuerRequest specifies an issuer by ID, label or IKID
+// with the org named explicitly: the request of Backend.GetIssuer
+message GetIssuerRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; used with Label
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // ID of the issuer
+    string ID = 3 [json_name = "ID", (es.api.required_or) = "Label,IKID"];
+    // Label of the issuer, resolved as (Org, Project) then (Org)
+    string Label = 4 [json_name = "Label", (es.api.required_or) = "ID,IKID"];
+    // IKID specifies Issuer Key ID
+    string IKID = 5 [json_name = "IKID", (es.api.required_or) = "ID,Label"];
+}
+
+// ListIssuersRequest specifies a paginated list of issuers
+// with the org named explicitly: the request of Backend.ListIssuers
+message ListIssuersRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID filters by project; empty returns org-wide and all project
+    // issuers
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Status filters by status; Unknown returns all
+    pb.IssuerStatus.Enum Status = 3 [json_name = "Status"];
+    // Type filters by authority type; Unknown returns all
+    pb.AuthorityType.Enum Type = 4 [json_name = "Type"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 5 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 6 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    string Cursor = 7 [json_name = "Cursor"];
+}
+
+// UpdateIssuerRequest updates issuer config or status
+// with the org named explicitly: the request of Backend.UpdateIssuer
+message UpdateIssuerRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID of the issuer
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
+    // Config replaces runtime settings when provided
+    pb.IssuerConfig Config = 3 [json_name = "Config"];
+    // Status changes the status when provided: Archived or Destroyed
+    pb.IssuerStatus.Enum Status = 4 [json_name = "Status"];
+}
+
+// RegisterRootRequest registers an external trust anchor
+// with the org named explicitly: the request of Backend.RegisterRoot
+message RegisterRootRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // Pem encoded root certificate
+    string Pem = 2 [json_name = "Pem", (es.api.required) = true];
+    // Trust scope
+    pb.Trust.Enum Trust = 3 [json_name = "Trust"];
+}
+
+// ListRootsRequest specifies a list of trust anchors
+// with the org named explicitly: the request of Backend.ListRoots
+message ListRootsRequest {
+    // OrgID of the org; empty lists the platform anchors, for a service
+    // identity only
+    string OrgID = 1 [json_name = "OrgID"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 2 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 3 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination
+    string Cursor = 4 [json_name = "Cursor"];
+}
+
+// RegisterProfileRequest creates or replaces a profile
+// with the org named explicitly: the request of Backend.RegisterProfile
+message RegisterProfileRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; empty for an org-wide profile
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Profile provides the profile definition.
+    // Profile.Label and Profile.IssuerLabel are required.
+    pb.CertProfile Profile = 3
+        [json_name = "Profile", (es.api.required) = true];
+}
+
+// GetProfileRequest specifies a profile by ID or label
+// with the org named explicitly: the request of Backend.GetProfile
+message GetProfileRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; used with Label
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // ID of the profile
+    string ID = 3 [json_name = "ID", (es.api.required_or) = "Label"];
+    // Label of the profile, resolved as (Org, Project) then (Org)
+    string Label = 4 [json_name = "Label", (es.api.required_or) = "ID"];
+}
+
+// ListProfilesRequest specifies a paginated list of profiles
+// with the org named explicitly: the request of Backend.ListProfiles
+message ListProfilesRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID filters by project; empty returns org-wide and all project
+    // profiles
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // IssuerLabel filters by issuer label
+    string IssuerLabel = 3 [json_name = "IssuerLabel"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 4 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 5 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination
+    string Cursor = 6 [json_name = "Cursor"];
+}
+
+// DeleteProfileRequest deletes a profile
+// with the org named explicitly: the request of Backend.DeleteProfile
+message DeleteProfileRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID of the profile
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
+}
+
+// SignCertificateRequest specifies certificate sign request
+// with the org named explicitly: the request of Backend.SignCertificate
+message SignCertificateRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID of the owning project; recorded on the certificate and used to
+    // resolve project-scoped profiles and issuers
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // Profile specifies the certificate profile label
+    string Profile = 3 [json_name = "Profile", (es.api.required) = true];
+    // IssuerLabel selects the issuer when the profile binds to "*";
+    // otherwise it must match the profile's issuer
+    string IssuerLabel = 4 [json_name = "IssuerLabel"];
+    // RequestFormat provides the certificate request format: PEM or DER
+    pb.EncodingFormat.Enum RequestFormat = 5 [json_name = "RequestFormat"];
+    // Request provides the PKCS#10 certificate request
+    bytes Request = 6 [json_name = "Request", (es.api.required) = true];
+    // SAN specifies Subject Alternative Names to add or override
+    repeated string SAN = 7 [json_name = "SAN"];
+    // Subject overrides the subject name from the request
+    pb.X509Subject Subject = 8 [json_name = "Subject"];
+    // NotBefore overrides the validity start in RFC3339 format;
+    // no backdate is applied when provided
+    string NotBefore = 9 [json_name = "NotBefore"];
+    // NotAfter overrides the validity end in RFC3339 format;
+    // it must not exceed the profile expiry
+    string NotAfter = 10 [json_name = "NotAfter"];
+    // Extensions specifies additional extensions to include, subject to the
+    // profile's AllowedExtensions
+    repeated pb.X509Extension Extensions = 11 [json_name = "Extensions"];
+    // Label is provided by the client for search and display
+    string Label = 12 [json_name = "Label", (es.api.max) = 260];
+    // Metadata is provided by the client
+    map<string, string> Metadata = 13 [json_name = "Metadata"];
+}
+
+// UpdateCertificateLabelRequest specifies certificate label update request
+// with the org named explicitly: the request of Backend.UpdateCertificateLabel
+message UpdateCertificateLabelRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID specifies certificate ID
+    string ID = 2 [json_name = "ID", (es.api.required) = true];
+    // Label is provided by the client
+    string Label = 3 [json_name = "Label", (es.api.max) = 260];
+    // Metadata replaces the client metadata when provided
+    map<string, string> Metadata = 4 [json_name = "Metadata"];
+    // ProjectID of the certificate's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the certificate must belong to it.
+    string ProjectID = 5 [json_name = "ProjectID"];
+}
+
+// GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer
+// and serial number
+// with the org named explicitly: the request of Backend.GetCertificate
+message GetCertificateRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID specifies certificate ID
+    string ID = 2
+        [json_name = "ID", (es.api.required_or) = "SKID,Sha256,IssuerSerial"];
+    // SKID specifies Subject Key ID to search
+    string SKID = 3
+        [json_name = "SKID", (es.api.required_or) = "ID,Sha256,IssuerSerial"];
+    // Sha256 specifies the certificate thumbprint to search
+    string Sha256 = 4
+        [json_name = "Sha256", (es.api.required_or) = "ID,SKID,IssuerSerial"];
+    // IssuerSerial specifies Issuer Key ID and certificate serial number
+    pb.IssuerSerial IssuerSerial = 5
+        [json_name = "IssuerSerial", (es.api.required_or) = "ID,SKID,Sha256"];
+}
+
+// ListCertificatesRequest specifies a paginated list of certificates,
+// sorted by ID descending (newest first)
+// with the org named explicitly: the request of Backend.ListCertificates
+message ListCertificatesRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID filters by project; empty returns org-wide and all project
+    // certificates
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // IKID filters by issuer
+    string IKID = 3 [json_name = "IKID"];
+    // Profile filters by profile label
+    string Profile = 4 [json_name = "Profile"];
+    // Status filters by status; Unknown returns all
+    pb.CertificateStatus.Enum Status = 5 [json_name = "Status"];
+    // ExpiringBefore filters certificates with NotAfter before the time,
+    // in RFC3339 format
+    string ExpiringBefore = 6 [json_name = "ExpiringBefore"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 7 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 8 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination.
+    // Use "initial" to start the pagination or pass the cursor returned from
+    // the previous request.
+    string Cursor = 9 [json_name = "Cursor"];
+}
+
+// ListRevokedCertificatesRequest specifies a paginated list of revoked
+// certificates, sorted by revocation ID descending
+// with the org named explicitly: the request of Backend.ListRevokedCertificates
+message ListRevokedCertificatesRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID filters by project
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // IKID filters by issuer
+    string IKID = 3 [json_name = "IKID"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 4 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 5 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination
+    string Cursor = 6 [json_name = "Cursor"];
+}
+
+// RevokeCertificateRequest specifies revocation request
+// with the org named explicitly: the request of Backend.RevokeCertificate
+message RevokeCertificateRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ID specifies certificate ID
+    string ID = 2
+        [json_name = "ID", (es.api.required_or) = "SKID,IssuerSerial"];
+    // SKID specifies Subject Key ID to search
+    string SKID = 3
+        [json_name = "SKID", (es.api.required_or) = "ID,IssuerSerial"];
+    // IssuerSerial specifies Issuer Key ID and certificate serial number
+    pb.IssuerSerial IssuerSerial = 4
+        [json_name = "IssuerSerial", (es.api.required_or) = "ID,SKID"];
+    // Reason for revocation; RemoveFromCRL is refused, since it releases a
+    // certificate from hold instead of revoking it
+    pb.ReasonCode.Enum Reason = 5 [json_name = "Reason"];
+    // ReasonText provides optional free-form revocation note
+    string ReasonText = 6 [json_name = "ReasonText", (es.api.max) = 260];
+    // ProjectID of the certificate's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the certificate must belong to it.
+    string ProjectID = 7 [json_name = "ProjectID"];
+}
+
+// GetCrlRequest specifies CRL request by IKID
+// with the org named explicitly: the request of Backend.GetCRL
+message GetCrlRequest {
+    // OrgID of the org of the issuer; empty reads the CRL of any issuer,
+    // for a service identity only
+    string OrgID = 1 [json_name = "OrgID"];
+    // IKID specifies Issuer Key ID
+    string IKID = 2 [json_name = "IKID", (es.api.required) = true];
+}
+
+// PublishCrlsRequest allows to publish CRLs on demand
+// with the org named explicitly: the request of Backend.PublishCrls
+message PublishCrlsRequest {
+    // OrgID of the org; empty publishes for every org and the platform,
+    // for a service identity only
+    string OrgID = 1 [json_name = "OrgID"];
+    // ProjectID limits the scope to the project: the issuer of the IKID
+    // must belong to it, and without an IKID the issuers of the project
+    // publish. Empty publishes for the org-wide issuers and the projects the
+    // caller may read; a project Admin names the project, and an API key
+    // restricted to a project publishes for its project.
+    string ProjectID = 2 [json_name = "ProjectID"];
+    // IKID specifies Issuer Key ID; empty to publish for all issuers in scope
+    string IKID = 3 [json_name = "IKID"];
+    // Force specifies to publish even if the current CRL is not due for renewal
+    bool Force = 4 [json_name = "Force"];
 }

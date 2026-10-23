@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# Headless stand-in for the desktop browser that `trustyca auth login` opens.
+#
+# The CLI starts the OAuth code flow, listens on http://localhost:38987/login
+# and shells out to xdg-open with the authorize URL. This walks the same
+# redirect chain with curl:
+#
+#   GET  /v1/auth/authorize  -> 303 to the callback (the local provider)
+#   GET  /v1/auth/callback   -> 200 with the form_post page a browser submits
+#   POST http://localhost:38987/login  -> the CLI exchanges the code
+#   GET  .../login/done      -> the CLI stops waiting
+#
+# Everything is appended to ${TRUSTYCA_WORKDIR}/xdg-open.log: the CLI only
+# sees that the command started, so a failure here shows up as a login
+# timeout and the log is the only place that says why.
+
+set -uo pipefail
+
+url="${1:-}"
+workdir="${TRUSTYCA_WORKDIR:-/tmp/trustyca}"
+mkdir -p "$workdir"
+exec >>"${workdir}/xdg-open.log" 2>&1
+
+echo "=== $(date -u +%FT%TZ) xdg-open ${url%%\?*}"
+
+if [[ -z "$url" ]]; then
+    echo "no URL given"
+    exit 2
+fi
+
+curl_opts=(--silent --show-error --location --max-redirs 10 --max-time 30)
+if [[ -n "${TRUSTYCA_TRUSTED_CA:-}" && -f "${TRUSTYCA_TRUSTED_CA}" ]]; then
+    curl_opts+=(--cacert "${TRUSTYCA_TRUSTED_CA}")
+else
+    echo "warning: TRUSTYCA_TRUSTED_CA is not set, skipping server verification"
+    curl_opts+=(--insecure)
+fi
+
+page=$(curl "${curl_opts[@]}" "$url")
+rc=$?
+if [[ $rc -ne 0 ]]; then
+    echo "authorize request failed with curl exit ${rc}"
+    exit 1
+fi
+
+# html/template escapes the attribute values, so undo that before posting them
+unescape() {
+    sed -e 's/&#34;/"/g' -e "s/&#39;/'/g" -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&amp;/\&/g'
+}
+
+action=$(printf '%s' "$page" | grep -o 'action="[^"]*"' | head -1 |
+    sed -e 's/^action="//' -e 's/"$//' | unescape)
+if [[ -z "$action" ]]; then
+    echo "no form_post page in the response:"
+    printf '%s\n' "$page"
+    exit 1
+fi
+
+post_args=()
+while IFS=$'\t' read -r name value; do
+    [[ -z "$name" ]] && continue
+    post_args+=(--data-urlencode "${name}=${value}")
+    # the code is a one time credential that expires in seconds, but keep it
+    # out of the log anyway
+    echo "form field: ${name}"
+done < <(printf '%s' "$page" | grep -o 'name="[^"]*" value="[^"]*"' |
+    sed -e 's/name="\([^"]*\)" value="\([^"]*\)"/\1\t\2/' | unescape)
+
+if [[ ${#post_args[@]} -eq 0 ]]; then
+    echo "form_post page has no fields:"
+    printf '%s\n' "$page"
+    exit 1
+fi
+
+echo "posting to ${action}"
+curl "${curl_opts[@]}" "${post_args[@]}" "$action"
+rc=$?
+echo
+echo "callback post finished with curl exit ${rc}"
+exit $rc

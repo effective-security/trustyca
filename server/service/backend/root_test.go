@@ -1,8 +1,10 @@
-package ca
+package backend
 
 import (
 	"context"
 	"testing"
+
+	"github.com/effective-security/trustyca/privpb"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
@@ -30,13 +32,13 @@ func TestService_RegisterRoot(t *testing.T) {
 
 	_, err = svc.RegisterRoot(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing certificate")
-	_, err = svc.RegisterRoot(ctx, &pb.RegisterRootRequest{Pem: " "})
+	_, err = svc.RegisterRoot(ctx, &privpb.RegisterRootRequest{Pem: " "})
 	assert.EqualError(t, err, "bad_request: missing certificate")
-	_, err = svc.RegisterRoot(testCtx("42", ""), &pb.RegisterRootRequest{Pem: testutils.CertPEM(root.Cert)})
+	_, err = svc.RegisterRoot(testCtx("42", ""), &privpb.RegisterRootRequest{Pem: testutils.CertPEM(root.Cert)})
 	assert.EqualError(t, err, "forbidden: org not selected")
-	_, err = svc.RegisterRoot(ctx, &pb.RegisterRootRequest{Pem: "junk"})
+	_, err = svc.RegisterRoot(ctx, &privpb.RegisterRootRequest{Pem: "junk"})
 	assert.EqualError(t, err, "bad_request: invalid certificate")
-	_, err = svc.RegisterRoot(ctx, &pb.RegisterRootRequest{Pem: tca.issuer.Pem})
+	_, err = svc.RegisterRoot(ctx, &privpb.RegisterRootRequest{Pem: tca.issuer.Pem})
 	assert.EqualError(t, err, "bad_request: certificate is not a self-signed CA certificate")
 
 	tca.cadb.EXPECT().RegisterRoot(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -50,7 +52,7 @@ func TestService_RegisterRoot(t *testing.T) {
 			res.ID = xdb.NewID(77)
 			return &res, nil
 		})
-	res, err := svc.RegisterRoot(ctx, &pb.RegisterRootRequest{Pem: testutils.CertPEM(root.Cert), Trust: pb.Trust_Public})
+	res, err := svc.RegisterRoot(ctx, &privpb.RegisterRootRequest{Pem: testutils.CertPEM(root.Cert), Trust: pb.Trust_Public})
 	require.NoError(t, err)
 	assert.Equal(t, "77", res.ID)
 	assert.Equal(t, "1", res.OrgID)
@@ -62,10 +64,10 @@ func TestService_RegisterRoot(t *testing.T) {
 	assert.Equal(t, uint64(1), evt.OrgID.UInt64())
 
 	tca.cadb.EXPECT().RegisterRoot(gomock.Any(), gomock.Any()).Return(nil, errors.WithStack(db.ErrRootConflict))
-	_, err = svc.RegisterRoot(ctx, &pb.RegisterRootRequest{Pem: testutils.CertPEM(root.Cert)})
+	_, err = svc.RegisterRoot(ctx, &privpb.RegisterRootRequest{Pem: testutils.CertPEM(root.Cert)})
 	assert.EqualError(t, err, "conflict: certificate is registered in another scope")
 	tca.cadb.EXPECT().RegisterRoot(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
-	_, err = svc.RegisterRoot(ctx, &pb.RegisterRootRequest{Pem: testutils.CertPEM(root.Cert)})
+	_, err = svc.RegisterRoot(ctx, &privpb.RegisterRootRequest{Pem: testutils.CertPEM(root.Cert)})
 	assert.EqualError(t, err, "unexpected: failed to register root")
 }
 
@@ -87,15 +89,15 @@ func TestService_ListRoots(t *testing.T) {
 
 	_, err := svc.ListRoots(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = svc.ListRoots(ctx, &pb.ListRootsRequest{Cursor: "zzz"})
+	_, err = svc.ListRoots(ctx, &privpb.ListRootsRequest{Cursor: "zzz"})
 	assert.EqualError(t, err, "bad_request: invalid cursor")
-	_, err = svc.ListRoots(testCtx("42", ""), &pb.ListRootsRequest{})
+	_, err = svc.ListRoots(testCtx("42", ""), &privpb.ListRootsRequest{})
 	assert.EqualError(t, err, "forbidden: org not selected")
 
 	// a tenant lists the anchors of its org
 	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: defaultListLimit}).
 		Return(&model.RootCertificateResult{Rows: []*model.RootCertificate{anchor}}, nil)
-	res, err := svc.ListRoots(ctx, &pb.ListRootsRequest{})
+	res, err := svc.ListRoots(ctx, &privpb.ListRootsRequest{})
 	require.NoError(t, err)
 	require.Len(t, res.Roots, 1)
 	assert.Equal(t, "77", res.Roots[0].ID)
@@ -106,16 +108,16 @@ func TestService_ListRoots(t *testing.T) {
 	svcCaller := serviceCtx("trustyca-admin")
 	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{Platform: true, Limit: 10, Offset: 20}).
 		Return(&model.RootCertificateResult{}, nil)
-	res, err = svc.ListRoots(svcCaller, &pb.ListRootsRequest{Limit: 10, Offset: 20})
+	res, err = svc.ListRoots(svcCaller, &privpb.ListRootsRequest{Limit: 10, Offset: 20})
 	require.NoError(t, err)
 	assert.Empty(t, res.Roots)
 	tca.orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
 	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: defaultListLimit}).
 		Return(&model.RootCertificateResult{}, nil)
-	_, err = svc.ListRoots(svcCaller, &pb.ListRootsRequest{OrgID: "1"})
+	_, err = svc.ListRoots(svcCaller, &privpb.ListRootsRequest{OrgID: "1"})
 	require.NoError(t, err)
 
 	tca.cadb.EXPECT().ListRoots(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
-	_, err = svc.ListRoots(ctx, &pb.ListRootsRequest{})
+	_, err = svc.ListRoots(ctx, &privpb.ListRootsRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list roots")
 }

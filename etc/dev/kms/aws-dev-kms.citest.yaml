@@ -1,0 +1,6 @@
+---
+# the KMS emulator of the integration test stack
+# (tests/integration/docker-compose.tester.yml)
+manufacturer: AWSKMS
+model: trustyca
+attributes: Endpoint=http://kms.local.trustyca.io:54551,Region=us-west-2

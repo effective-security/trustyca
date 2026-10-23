@@ -158,16 +158,16 @@ func (s *testSuiteGrpc) Test_IssuerListCmd() {
 }
 
 func (s *testSuiteGrpc) Test_IssuerGetCmd() {
-	s.MockCA.SetResponse(ctlIssuer())
+	s.MockBackend.SetResponse(ctlIssuer())
 	cmd := &admin.IssuerGetCmd{OrgScope: admin.OrgScope{Org: "5"}, ID: "10"}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	// a pending issuer prints its CSR
 	pending := ctlIssuer()
 	pending.Status = pb.IssuerStatus_Pending
 	pending.Certificate = ""
 	pending.Csr = "-----BEGIN CERTIFICATE REQUEST-----\nMIIBcsr\n-----END CERTIFICATE REQUEST-----\n"
-	s.MockCA.SetResponse(pending)
+	s.MockBackend.SetResponse(pending)
 	s.Out.Reset()
 	s.Require().NoError((&admin.IssuerGetCmd{OrgScope: admin.OrgScope{Org: "5"}, Label: "issuing"}).Run(s.Ctl))
 	s.CapturePrint()
@@ -176,7 +176,7 @@ func (s *testSuiteGrpc) Test_IssuerGetCmd() {
 }
 
 func (s *testSuiteGrpc) Test_IssuerRegisterCmd() {
-	s.MockCA.SetResponse(ctlIssuer())
+	s.MockBackend.SetResponse(ctlIssuer())
 	cmd := &admin.IssuerRegisterCmd{
 		OrgScope:     admin.OrgScope{Org: "5"},
 		Label:        "issuing",
@@ -190,7 +190,7 @@ func (s *testSuiteGrpc) Test_IssuerRegisterCmd() {
 			AllowedProfiles: []string{"ocsp"},
 		},
 	}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	s.EqualError((&admin.IssuerRegisterCmd{Label: "root", Type: "Nope"}).Run(s.Ctl), "invalid type: Nope")
 	s.EqualError((&admin.IssuerRegisterCmd{Label: "root"}).Run(s.Ctl), "type is required")
@@ -198,7 +198,7 @@ func (s *testSuiteGrpc) Test_IssuerRegisterCmd() {
 }
 
 func (s *testSuiteGrpc) Test_IssuerImportCmd() {
-	s.MockCA.SetResponse(ctlIssuer())
+	s.MockBackend.SetResponse(ctlIssuer())
 	cert := s.tempPEM("issuer.pem")
 	key := s.tempPEM("issuer.key")
 	cmd := &admin.IssuerImportCmd{
@@ -208,7 +208,7 @@ func (s *testSuiteGrpc) Test_IssuerImportCmd() {
 		Certificate: cert,
 		KeyFile:     key,
 	}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	cmd.KeyURI = "pkcs11:id=1"
 	s.EqualError(cmd.Run(s.Ctl), "one of --key-uri and --key-file is required")
@@ -220,9 +220,9 @@ func (s *testSuiteGrpc) Test_IssuerImportCmd() {
 }
 
 func (s *testSuiteGrpc) Test_IssuerActivateCmd() {
-	s.MockCA.SetResponse(ctlIssuer())
+	s.MockBackend.SetResponse(ctlIssuer())
 	cmd := &admin.IssuerActivateCmd{Org: "5", ID: "10", Certificate: s.tempPEM("signed.pem"), Root: s.tempPEM("root.pem")}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	cmd.Certificate = filepath.Join(s.T().TempDir(), "missing.pem")
 	s.ErrorContains(cmd.Run(s.Ctl), "unable to read the certificate")
@@ -231,48 +231,48 @@ func (s *testSuiteGrpc) Test_IssuerActivateCmd() {
 func (s *testSuiteGrpc) Test_IssuerArchiveDestroyCmd() {
 	archived := ctlIssuer()
 	archived.Status = pb.IssuerStatus_Archived
-	s.MockCA.SetResponse(archived)
+	s.MockBackend.SetResponse(archived)
 	cmd := &admin.IssuerArchiveCmd{Org: "5", ID: "10"}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	destroyed := ctlIssuer()
 	destroyed.Status = pb.IssuerStatus_Destroyed
-	s.MockCA.SetResponse(destroyed)
+	s.MockBackend.SetResponse(destroyed)
 	destroy := &admin.IssuerDestroyCmd{Org: "5", ID: "10"}
-	s.runPrinted(func() error { return destroy.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return destroy.Run(s.Ctl) }, &s.MockBackend.Err)
 }
 
 func (s *testSuiteGrpc) Test_ProfileListCmd() {
-	s.MockCA.SetResponse(&pb.ProfilesResponse{
+	s.MockBackend.SetResponse(&pb.ProfilesResponse{
 		Profiles: []*pb.CertProfile{ctlProfile("server", "issuing"), ctlProfile("ocsp", "*")},
 		NextPage: &pb.NextPage{Offset: 2},
 	})
 	cmd := &admin.ProfileListCmd{OrgScope: admin.OrgScope{Org: "5"}, Issuer: "issuing"}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 }
 
 func (s *testSuiteGrpc) Test_ProfileGetCmd() {
-	s.MockCA.SetResponse(ctlProfile("server", "issuing"))
+	s.MockBackend.SetResponse(ctlProfile("server", "issuing"))
 	cmd := &admin.ProfileGetCmd{OrgScope: admin.OrgScope{Org: "5"}, Label: "server"}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	s.EqualError((&admin.ProfileGetCmd{OrgScope: admin.OrgScope{Org: "5"}}).Run(s.Ctl), "profile ID or label is required")
 }
 
 func (s *testSuiteGrpc) Test_ProfileRegisterCmd() {
-	s.MockCA.SetResponse(ctlProfile("server", "issuing"))
+	s.MockBackend.SetResponse(ctlProfile("server", "issuing"))
 	cmd := &admin.ProfileRegisterCmd{
 		OrgScope: admin.OrgScope{Org: "5"},
 		File:     filepath.Join(templatesDir, "server.yaml"),
 		Issuer:   "issuing",
 	}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	// the template binds to no issuer
 	cmd.Issuer = ""
 	s.EqualError(cmd.Run(s.Ctl), "profile server: the issuer label is required: issuer_label of the file, or --issuer")
 	// the OCSP template binds to any issuer
-	s.MockCA.SetResponse(ctlProfile("ocsp", "*"))
+	s.MockBackend.SetResponse(ctlProfile("ocsp", "*"))
 	s.Require().NoError((&admin.ProfileRegisterCmd{OrgScope: admin.OrgScope{Org: "5"}, File: filepath.Join(templatesDir, "ocsp.yaml")}).Run(s.Ctl))
 
 	s.ErrorContains((&admin.ProfileRegisterCmd{File: filepath.Join(s.T().TempDir(), "missing.yaml")}).Run(s.Ctl), "unable to read profile missing")
@@ -282,13 +282,13 @@ func (s *testSuiteGrpc) Test_ProfileRegisterCmd() {
 }
 
 func (s *testSuiteGrpc) Test_ProfileDeleteCmd() {
-	s.MockCA.SetResponse(&emptypb.Empty{})
+	s.MockBackend.SetResponse(&emptypb.Empty{})
 	cmd := &admin.ProfileDeleteCmd{Org: "5", ID: "20"}
 	s.Require().NoError(cmd.Run(s.Ctl))
 	s.Empty(s.Out.String())
 
-	s.MockCA.Err = errors.New("something happened")
-	defer func() { s.MockCA.Err = nil }()
+	s.MockBackend.Err = errors.New("something happened")
+	defer func() { s.MockBackend.Err = nil }()
 	s.EqualError(cmd.Run(s.Ctl), "unexpected: something happened")
 }
 
@@ -304,13 +304,13 @@ func (s *testSuiteGrpc) Test_RootCmds() {
 		Pem:       testPEM,
 		CreatedAt: "2026-01-01T00:00:00Z",
 	}
-	s.MockCA.SetResponse(&pb.RootsResponse{Roots: []*pb.RootCertificate{root}})
+	s.MockBackend.SetResponse(&pb.RootsResponse{Roots: []*pb.RootCertificate{root}})
 	list := &admin.RootListCmd{}
-	s.runPrinted(func() error { return list.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return list.Run(s.Ctl) }, &s.MockBackend.Err)
 
-	s.MockCA.SetResponse(root)
+	s.MockBackend.SetResponse(root)
 	register := &admin.RootRegisterCmd{Org: "5", Certificate: s.tempPEM("root.pem"), Trust: "Private"}
-	s.runPrinted(func() error { return register.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return register.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	register.Trust = "Nope"
 	s.EqualError(register.Run(s.Ctl), "invalid trust: Nope")
@@ -328,23 +328,23 @@ func (s *testSuiteGrpc) Test_CertListCmd() {
 }
 
 func (s *testSuiteGrpc) Test_CertGetCmd() {
-	s.MockCA.SetResponse(&pb.CertificateResponse{Certificate: ctlCertificate()})
+	s.MockBackend.SetResponse(&pb.CertificateResponse{Certificate: ctlCertificate()})
 	cmd := &admin.CertGetCmd{Org: "5", CertSelector: admin.CertSelector{IKID: "0a1b2c", Serial: "98765"}}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	s.EqualError((&admin.CertGetCmd{Org: "5"}).Run(s.Ctl), "certificate ID, --skid, --sha256 or --ikid with --serial is required")
 	s.EqualError((&admin.CertGetCmd{Org: "5", CertSelector: admin.CertSelector{IKID: "0a1b2c"}}).Run(s.Ctl), "--ikid and --serial are used together")
 }
 
 func (s *testSuiteGrpc) Test_CertRevokeCmd() {
-	s.MockCA.SetResponse(&pb.RevokedCertificateResponse{Revoked: &pb.RevokedCertificate{
+	s.MockBackend.SetResponse(&pb.RevokedCertificateResponse{Revoked: &pb.RevokedCertificate{
 		Certificate: ctlCertificate(),
 		RevokedAt:   "2026-02-01T00:00:00Z",
 		Reason:      pb.ReasonCode_KeyCompromise,
 		ReasonText:  "leaked",
 	}})
 	cmd := &admin.CertRevokeCmd{OrgScope: admin.OrgScope{Org: "5"}, CertSelector: admin.CertSelector{ID: "30"}, Reason: "KeyCompromise", ReasonText: "leaked"}
-	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	s.Require().NoError((&admin.CertRevokeCmd{OrgScope: admin.OrgScope{Org: "5"}, CertSelector: admin.CertSelector{ID: "30"}, Reason: "Unspecified"}).Run(s.Ctl))
 	s.EqualError((&admin.CertRevokeCmd{OrgScope: admin.OrgScope{Org: "5"}, CertSelector: admin.CertSelector{ID: "30"}, Reason: "Nope"}).Run(s.Ctl), "invalid reason: Nope")
@@ -353,19 +353,19 @@ func (s *testSuiteGrpc) Test_CertRevokeCmd() {
 }
 
 func (s *testSuiteGrpc) Test_CrlCmds() {
-	s.MockCA.SetResponse(&pb.CrlResponse{Crl: ctlCrl()})
+	s.MockBackend.SetResponse(&pb.CrlResponse{Crl: ctlCrl()})
 	get := &admin.CrlGetCmd{Org: "5", IKID: "0a1b2c"}
-	s.runPrinted(func() error { return get.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return get.Run(s.Ctl) }, &s.MockBackend.Err)
 
-	s.MockCA.SetResponse(&pb.CrlsResponse{Crls: []*pb.Crl{ctlCrl()}})
+	s.MockBackend.SetResponse(&pb.CrlsResponse{Crls: []*pb.Crl{ctlCrl()}})
 	publish := &admin.CrlPublishCmd{Org: "5", IKID: "0a1b2c", Force: true}
-	s.runPrinted(func() error { return publish.Run(s.Ctl) }, &s.MockCA.Err)
+	s.runPrinted(func() error { return publish.Run(s.Ctl) }, &s.MockBackend.Err)
 }
 
 func (s *testSuiteGrpc) Test_OrgBootstrapCmd() {
 	// the parent by label, through the support list
 	s.MockAdmin.SetResponse(&pb.IssuersResponse{Issuers: []*pb.Issuer{ctlPlatformIssuer()}})
-	s.MockCA.SetResponses([]proto.Message{
+	s.MockBackend.SetResponses([]proto.Message{
 		ctlIssuer(),
 		ctlProfile("client", "issuing"),
 		ctlProfile("ocsp", "*"),
@@ -391,7 +391,7 @@ func (s *testSuiteGrpc) Test_OrgBootstrapCmd() {
 	s.MockAdmin.Err = errors.New("not called")
 	defer func() { s.MockAdmin.Err = nil }()
 	cmd.Parent = "1"
-	s.MockCA.Index = 0
+	s.MockBackend.Index = 0
 	s.Out.Reset()
 	s.Require().NoError(cmd.Run(s.Ctl))
 	cmd.Parent = "trusty.l1"
@@ -405,10 +405,10 @@ func (s *testSuiteGrpc) Test_OrgBootstrapCmd() {
 	s.MockAdmin.SetResponse(&pb.IssuersResponse{Issuers: []*pb.Issuer{ctlPlatformIssuer(), ctlPlatformIssuer()}})
 	s.EqualError(cmd.Run(s.Ctl), "platform issuer label is ambiguous: trusty.l1")
 	s.MockAdmin.SetResponse(&pb.IssuersResponse{Issuers: []*pb.Issuer{ctlPlatformIssuer()}})
-	s.MockCA.SetResponse(ctlIssuer())
-	s.MockCA.Err = httperror.NewGrpc(codes.AlreadyExists, "issuer exists")
+	s.MockBackend.SetResponse(ctlIssuer())
+	s.MockBackend.Err = httperror.NewGrpc(codes.AlreadyExists, "issuer exists")
 	s.EqualError(cmd.Run(s.Ctl), "conflict: issuer exists")
-	s.MockCA.Err = nil
+	s.MockBackend.Err = nil
 
 	// templates
 	empty := s.T().TempDir()

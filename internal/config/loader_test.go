@@ -62,9 +62,21 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, "https://localhost:8881", clients[client.ClientNameAIA].ServerURL[BackendServerName])
 
+	// the dev instance offers the local identity provider
+	assert.True(t, c.Service.IsLocal())
+
 	wfe := c.HTTPServers["wfe"]
 	require.NotNil(t, wfe)
 	require.NotNil(t, wfe.CORS)
+	require.NoError(t, wfe.CORS.Validate())
+	// the console in bearer mode, and in cookie mode on a host under the
+	// cookie domain
+	assert.Contains(t, wfe.CORS.AllowedOrigins, "http://localhost:4200")
+	assert.Contains(t, wfe.CORS.AllowedOrigins, "https://app.local.trustyca.io:4200")
+	ccfg := wfe.IdentityMap.GetCookiesConfig()
+	assert.Equal(t, ".local.trustyca.io", ccfg.Domain)
+	assert.NotEmpty(t, ccfg.Auth)
+	assert.NotEmpty(t, ccfg.CSRF)
 }
 
 func TestLoadYAML(t *testing.T) {
@@ -151,4 +163,72 @@ func TestLoadYAMLWithOverride(t *testing.T) {
 	require.NotEmpty(t, c.HTTPServers)
 
 	assert.True(t, c.Metrics.GetDisabled())
+}
+
+func TestService_IsLocal(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		env, cluster string
+		want         bool
+	}{
+		{env: EnvironmentLocal, cluster: ClusterLocal, want: true},
+		// every other environment or cluster fails closed
+		{env: EnvironmentDev, cluster: ClusterLocal},
+		{env: EnvironmentProd, cluster: ClusterLocal},
+		{env: "UNIT_TEST", cluster: ClusterLocal},
+		{env: "", cluster: ClusterLocal},
+		{env: EnvironmentLocal, cluster: "dev"},
+		{env: EnvironmentLocal, cluster: ""},
+		{env: "LOCAL", cluster: ClusterLocal},
+	}
+	for _, tc := range tests {
+		got := Service{Environment: tc.env, ClusterName: tc.cluster}.IsLocal()
+		assert.Equal(t, tc.want, got, "env=%q cluster=%q", tc.env, tc.cluster)
+	}
+}
+
+func TestLoadCitestOverride(t *testing.T) {
+	// a host name without an entry in the hostmap, so the unit test
+	// override of an earlier test does not apply
+	t.Setenv("TRUSTYCA_HOSTNAME", "citest")
+	// the compose file of the stack sets it
+	const sqlConn = "postgres://trustyca@sql:55432?sslmode=disable&dbname=trustycadb"
+	t.Setenv("TRUSTYCA_SQL_CONN", sqlConn)
+
+	cfgFile, err := configloader.GetAbsFilename("etc/dev/"+ConfigFileName, projFolder)
+	require.NoError(t, err)
+	overrideFile, err := configloader.GetAbsFilename("etc/dev/trustyca-config.citest.yaml", projFolder)
+	require.NoError(t, err)
+
+	var c Configuration
+	require.NoError(t, LoadWithOverride(cfgFile, overrideFile, &c, nil))
+
+	// the integration test stack offers the local identity provider
+	assert.True(t, c.Service.IsLocal())
+	assert.Empty(t, c.Tasks)
+	assert.True(t, c.Metrics.GetDisabled())
+	assert.Equal(t, "https://api.local.trustyca.io:8880/v1/auth/authorize", c.Auth.AuthURL)
+	assert.Equal(t, sqlConn, c.SQL.DataSource)
+
+	require.NotNil(t, c.Cache.Redis)
+	assert.Equal(t, "redis://redis.local.trustyca.io:6379", c.Cache.Redis.Server)
+	assert.Equal(t, "redis", c.Cache.Redis.Password)
+	require.NotNil(t, c.Cache.Redis.ClientTLS)
+	assert.True(t, strings.HasSuffix(c.Cache.Redis.ClientTLS.TrustedCAFile, "/.trustyca/certs/trustyca_root.pem"))
+
+	assert.FileExists(t, c.CryptoProv.Default)
+	assert.True(t, strings.HasSuffix(c.CryptoProv.Default, "/kms/aws-dev-kms.citest.yaml"))
+
+	// the rest of the wfe is the dev configuration: the cookie session of
+	// the console is tested with its cookies and CORS
+	wfe := c.HTTPServers[WFEServerName]
+	require.NotNil(t, wfe)
+	assert.Equal(t, 15*time.Second, wfe.Timeout.Request)
+	assert.True(t, strings.HasSuffix(wfe.ServerTLS.CertFile, "/.trustyca/certs/trustyca_server.pem"))
+	assert.Contains(t, wfe.CORS.AllowedOrigins, "https://app.local.trustyca.io:4200")
+	ccfg := wfe.IdentityMap.GetCookiesConfig()
+	assert.True(t, strings.HasSuffix("api.local.trustyca.io", ccfg.Domain), "the API host is under the cookie domain %s", ccfg.Domain)
+	assert.NotEmpty(t, ccfg.Auth)
+	assert.NotEmpty(t, ccfg.CSRF)
 }

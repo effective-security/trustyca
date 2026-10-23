@@ -3,6 +3,7 @@ package admin
 import (
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/privpb"
 )
 
 // RootCmd is the base command of the trust anchors
@@ -19,11 +20,11 @@ type RootListCmd struct {
 
 // Run the command
 func (a *RootListCmd) Run(app App) error {
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.ListRoots(app.Context(), &pb.ListRootsRequest{
+	res, err := client.ListRoots(app.Context(), &privpb.ListRootsRequest{
 		OrgID:  a.Org,
 		Limit:  a.Limit,
 		Offset: a.Offset,
@@ -54,11 +55,11 @@ func (a *RootRegisterCmd) Run(app App) error {
 	if err != nil {
 		return err
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.RegisterRoot(app.Context(), &pb.RegisterRootRequest{
+	res, err := client.RegisterRoot(app.Context(), &privpb.RegisterRootRequest{
 		OrgID: a.Org,
 		Pem:   pem,
 		Trust: trust,

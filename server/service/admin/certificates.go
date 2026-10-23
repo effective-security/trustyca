@@ -14,7 +14,7 @@ import (
 // ListCertificates lists the certificates of the org the request names, of
 // the platform, or of every org and the platform, newest first, for
 // support staff
-func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListAllCertificatesRequest) (*pb.CertificatesResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}

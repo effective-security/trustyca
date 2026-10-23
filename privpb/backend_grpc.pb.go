@@ -13,6 +13,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -21,51 +22,104 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Backend_RegisterIssuer_FullMethodName  = "/privpb.Backend/RegisterIssuer"
-	Backend_ImportIssuer_FullMethodName    = "/privpb.Backend/ImportIssuer"
-	Backend_ActivateIssuer_FullMethodName  = "/privpb.Backend/ActivateIssuer"
-	Backend_UpdateIssuer_FullMethodName    = "/privpb.Backend/UpdateIssuer"
-	Backend_SignCertificate_FullMethodName = "/privpb.Backend/SignCertificate"
-	Backend_PublishCrls_FullMethodName     = "/privpb.Backend/PublishCrls"
-	Backend_SignOCSP_FullMethodName        = "/privpb.Backend/SignOCSP"
+	Backend_RegisterIssuer_FullMethodName          = "/privpb.Backend/RegisterIssuer"
+	Backend_ImportIssuer_FullMethodName            = "/privpb.Backend/ImportIssuer"
+	Backend_ActivateIssuer_FullMethodName          = "/privpb.Backend/ActivateIssuer"
+	Backend_UpdateIssuer_FullMethodName            = "/privpb.Backend/UpdateIssuer"
+	Backend_GetIssuer_FullMethodName               = "/privpb.Backend/GetIssuer"
+	Backend_ListIssuers_FullMethodName             = "/privpb.Backend/ListIssuers"
+	Backend_RegisterRoot_FullMethodName            = "/privpb.Backend/RegisterRoot"
+	Backend_ListRoots_FullMethodName               = "/privpb.Backend/ListRoots"
+	Backend_RegisterProfile_FullMethodName         = "/privpb.Backend/RegisterProfile"
+	Backend_GetProfile_FullMethodName              = "/privpb.Backend/GetProfile"
+	Backend_ListProfiles_FullMethodName            = "/privpb.Backend/ListProfiles"
+	Backend_DeleteProfile_FullMethodName           = "/privpb.Backend/DeleteProfile"
+	Backend_SignCertificate_FullMethodName         = "/privpb.Backend/SignCertificate"
+	Backend_GetCertificate_FullMethodName          = "/privpb.Backend/GetCertificate"
+	Backend_ListCertificates_FullMethodName        = "/privpb.Backend/ListCertificates"
+	Backend_UpdateCertificateLabel_FullMethodName  = "/privpb.Backend/UpdateCertificateLabel"
+	Backend_RevokeCertificate_FullMethodName       = "/privpb.Backend/RevokeCertificate"
+	Backend_ListRevokedCertificates_FullMethodName = "/privpb.Backend/ListRevokedCertificates"
+	Backend_GetCRL_FullMethodName                  = "/privpb.Backend/GetCRL"
+	Backend_PublishCrls_FullMethodName             = "/privpb.Backend/PublishCrls"
+	Backend_SignOCSP_FullMethodName                = "/privpb.Backend/SignOCSP"
 )
 
 // BackendClient is the client API for Backend service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Backend is the signing plane of the CA (DESIGN.md section 2.1): the
-// methods of pb.CA that use an issuer key or change the issuer registry.
-// It is served over gRPC only, by the backend listener, to service
-// identities over mTLS: the CA service of a WFE forwards the calls of its
-// callers with their context (trustyca-peer), and the AIA forwards OCSP
-// requests (trustyca-aia). Every method takes the messages of the pb.CA
-// method of the same name, which name the org and the project explicitly,
-// and behaves as that method for the caller: the backend authorizes a
-// forwarded caller again with the roles and scopes of the pb.CA method.
+// Backend is the CA of the service identities and the signing plane
+// (DESIGN.md section 2.1): every method of pb.CA, with the org of a request
+// named explicitly. It holds the issuer keys and is served over gRPC only,
+// by the backend listener, to service identities over mTLS: the CA service
+// of a WFE forwards the calls of its callers with their context and the
+// org of their token (trustyca-peer), the RA and the operator name the org
+// of every request (trustyca-ra, trustyca-admin), and the AIA forwards
+// OCSP requests (trustyca-aia). A method behaves as the pb.CA method of the
+// same name: the backend authorizes a forwarded caller again with the roles
+// and scopes of that method. The requests are copies of the pb.CA requests
+// with OrgID: the field numbers of the other fields are the same, since
+// the CA service converts a public request into its copy.
 type BackendClient interface {
 	// RegisterIssuer creates an issuer of the org: the key is generated in
 	// the crypto provider, and the certificate is self-signed for a Root,
 	// signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
-	RegisterIssuer(ctx context.Context, in *pb.RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+	RegisterIssuer(ctx context.Context, in *RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
 	// ImportIssuer registers an issuer from an existing certificate and a
 	// key URI of a crypto provider or a PEM key stored protected
 	// (CA.ImportIssuer)
-	ImportIssuer(ctx context.Context, in *pb.ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+	ImportIssuer(ctx context.Context, in *ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
 	// ActivateIssuer sets the externally signed certificate of a Pending
 	// issuer, which must be for the issuer's key (CA.ActivateIssuer)
-	ActivateIssuer(ctx context.Context, in *pb.ActivateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+	ActivateIssuer(ctx context.Context, in *ActivateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
 	// UpdateIssuer updates the runtime configuration or the status of an
 	// issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
-	UpdateIssuer(ctx context.Context, in *pb.UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+	UpdateIssuer(ctx context.Context, in *UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+	// GetIssuer returns an issuer of the org by ID, label or IKID
+	// (CA.GetIssuer)
+	GetIssuer(ctx context.Context, in *GetIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error)
+	// ListIssuers returns the issuers of the org (CA.ListIssuers)
+	ListIssuers(ctx context.Context, in *ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error)
+	// RegisterRoot registers an external trust anchor of the org
+	// (CA.RegisterRoot)
+	RegisterRoot(ctx context.Context, in *RegisterRootRequest, opts ...grpc.CallOption) (*pb.RootCertificate, error)
+	// ListRoots returns the trust anchors of the org, or of the
+	// platform (CA.ListRoots)
+	ListRoots(ctx context.Context, in *ListRootsRequest, opts ...grpc.CallOption) (*pb.RootsResponse, error)
+	// RegisterProfile creates or replaces a certificate profile, keyed
+	// by (OrgID, ProjectID, Label) (CA.RegisterProfile)
+	RegisterProfile(ctx context.Context, in *RegisterProfileRequest, opts ...grpc.CallOption) (*pb.CertProfile, error)
+	// GetProfile returns a profile of the org by ID or label (CA.GetProfile)
+	GetProfile(ctx context.Context, in *GetProfileRequest, opts ...grpc.CallOption) (*pb.CertProfile, error)
+	// ListProfiles returns the profiles of the org (CA.ListProfiles)
+	ListProfiles(ctx context.Context, in *ListProfilesRequest, opts ...grpc.CallOption) (*pb.ProfilesResponse, error)
+	// DeleteProfile deletes a profile of the org (CA.DeleteProfile)
+	DeleteProfile(ctx context.Context, in *DeleteProfileRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// SignCertificate signs a certificate request with the issuer of the
 	// profile and registers the certificate (CA.SignCertificate)
-	SignCertificate(ctx context.Context, in *pb.SignCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error)
-	// PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
-	// of the issuers in scope (CA.PublishCrls)
-	PublishCrls(ctx context.Context, in *pb.PublishCrlsRequest, opts ...grpc.CallOption) (*pb.CrlsResponse, error)
-	// SignOCSP signs the OCSP response of a DER request; the request names
-	// the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+	SignCertificate(ctx context.Context, in *SignCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error)
+	// GetCertificate returns a certificate of the org by ID, SKID,
+	// Sha256 or issuer and serial number (CA.GetCertificate)
+	GetCertificate(ctx context.Context, in *GetCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error)
+	// ListCertificates returns the certificates of the org, newest
+	// first (CA.ListCertificates)
+	ListCertificates(ctx context.Context, in *ListCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error)
+	// UpdateCertificateLabel updates the client-provided label and
+	// metadata of a certificate (CA.UpdateCertificateLabel)
+	UpdateCertificateLabel(ctx context.Context, in *UpdateCertificateLabelRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error)
+	// RevokeCertificate revokes a certificate of the org (CA.RevokeCertificate)
+	RevokeCertificate(ctx context.Context, in *RevokeCertificateRequest, opts ...grpc.CallOption) (*pb.RevokedCertificateResponse, error)
+	// ListRevokedCertificates returns the revoked certificates of
+	// the org (CA.ListRevokedCertificates)
+	ListRevokedCertificates(ctx context.Context, in *ListRevokedCertificatesRequest, opts ...grpc.CallOption) (*pb.RevokedCertificatesResponse, error)
+	// GetCRL returns the current CRL of an issuer (CA.GetCRL)
+	GetCRL(ctx context.Context, in *GetCrlRequest, opts ...grpc.CallOption) (*pb.CrlResponse, error)
+	// PublishCrls signs and publishes the CRL of an issuer, or the due
+	// CRLs of the issuers in scope (CA.PublishCrls)
+	PublishCrls(ctx context.Context, in *PublishCrlsRequest, opts ...grpc.CallOption) (*pb.CrlsResponse, error)
+	// SignOCSP signs the OCSP response of a DER request; the request
+	// names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
 	SignOCSP(ctx context.Context, in *pb.OCSPRequest, opts ...grpc.CallOption) (*pb.OCSPResponse, error)
 }
 
@@ -77,7 +131,7 @@ func NewBackendClient(cc grpc.ClientConnInterface) BackendClient {
 	return &backendClient{cc}
 }
 
-func (c *backendClient) RegisterIssuer(ctx context.Context, in *pb.RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+func (c *backendClient) RegisterIssuer(ctx context.Context, in *RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.Issuer)
 	err := c.cc.Invoke(ctx, Backend_RegisterIssuer_FullMethodName, in, out, cOpts...)
@@ -87,7 +141,7 @@ func (c *backendClient) RegisterIssuer(ctx context.Context, in *pb.RegisterIssue
 	return out, nil
 }
 
-func (c *backendClient) ImportIssuer(ctx context.Context, in *pb.ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+func (c *backendClient) ImportIssuer(ctx context.Context, in *ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.Issuer)
 	err := c.cc.Invoke(ctx, Backend_ImportIssuer_FullMethodName, in, out, cOpts...)
@@ -97,7 +151,7 @@ func (c *backendClient) ImportIssuer(ctx context.Context, in *pb.ImportIssuerReq
 	return out, nil
 }
 
-func (c *backendClient) ActivateIssuer(ctx context.Context, in *pb.ActivateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+func (c *backendClient) ActivateIssuer(ctx context.Context, in *ActivateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.Issuer)
 	err := c.cc.Invoke(ctx, Backend_ActivateIssuer_FullMethodName, in, out, cOpts...)
@@ -107,7 +161,7 @@ func (c *backendClient) ActivateIssuer(ctx context.Context, in *pb.ActivateIssue
 	return out, nil
 }
 
-func (c *backendClient) UpdateIssuer(ctx context.Context, in *pb.UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+func (c *backendClient) UpdateIssuer(ctx context.Context, in *UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.Issuer)
 	err := c.cc.Invoke(ctx, Backend_UpdateIssuer_FullMethodName, in, out, cOpts...)
@@ -117,7 +171,87 @@ func (c *backendClient) UpdateIssuer(ctx context.Context, in *pb.UpdateIssuerReq
 	return out, nil
 }
 
-func (c *backendClient) SignCertificate(ctx context.Context, in *pb.SignCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error) {
+func (c *backendClient) GetIssuer(ctx context.Context, in *GetIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.Issuer)
+	err := c.cc.Invoke(ctx, Backend_GetIssuer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) ListIssuers(ctx context.Context, in *ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.IssuersResponse)
+	err := c.cc.Invoke(ctx, Backend_ListIssuers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) RegisterRoot(ctx context.Context, in *RegisterRootRequest, opts ...grpc.CallOption) (*pb.RootCertificate, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.RootCertificate)
+	err := c.cc.Invoke(ctx, Backend_RegisterRoot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) ListRoots(ctx context.Context, in *ListRootsRequest, opts ...grpc.CallOption) (*pb.RootsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.RootsResponse)
+	err := c.cc.Invoke(ctx, Backend_ListRoots_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) RegisterProfile(ctx context.Context, in *RegisterProfileRequest, opts ...grpc.CallOption) (*pb.CertProfile, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.CertProfile)
+	err := c.cc.Invoke(ctx, Backend_RegisterProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) GetProfile(ctx context.Context, in *GetProfileRequest, opts ...grpc.CallOption) (*pb.CertProfile, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.CertProfile)
+	err := c.cc.Invoke(ctx, Backend_GetProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) ListProfiles(ctx context.Context, in *ListProfilesRequest, opts ...grpc.CallOption) (*pb.ProfilesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.ProfilesResponse)
+	err := c.cc.Invoke(ctx, Backend_ListProfiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) DeleteProfile(ctx context.Context, in *DeleteProfileRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Backend_DeleteProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) SignCertificate(ctx context.Context, in *SignCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.CertificateResponse)
 	err := c.cc.Invoke(ctx, Backend_SignCertificate_FullMethodName, in, out, cOpts...)
@@ -127,7 +261,67 @@ func (c *backendClient) SignCertificate(ctx context.Context, in *pb.SignCertific
 	return out, nil
 }
 
-func (c *backendClient) PublishCrls(ctx context.Context, in *pb.PublishCrlsRequest, opts ...grpc.CallOption) (*pb.CrlsResponse, error) {
+func (c *backendClient) GetCertificate(ctx context.Context, in *GetCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.CertificateResponse)
+	err := c.cc.Invoke(ctx, Backend_GetCertificate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) ListCertificates(ctx context.Context, in *ListCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.CertificatesResponse)
+	err := c.cc.Invoke(ctx, Backend_ListCertificates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) UpdateCertificateLabel(ctx context.Context, in *UpdateCertificateLabelRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.CertificateResponse)
+	err := c.cc.Invoke(ctx, Backend_UpdateCertificateLabel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) RevokeCertificate(ctx context.Context, in *RevokeCertificateRequest, opts ...grpc.CallOption) (*pb.RevokedCertificateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.RevokedCertificateResponse)
+	err := c.cc.Invoke(ctx, Backend_RevokeCertificate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) ListRevokedCertificates(ctx context.Context, in *ListRevokedCertificatesRequest, opts ...grpc.CallOption) (*pb.RevokedCertificatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.RevokedCertificatesResponse)
+	err := c.cc.Invoke(ctx, Backend_ListRevokedCertificates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) GetCRL(ctx context.Context, in *GetCrlRequest, opts ...grpc.CallOption) (*pb.CrlResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.CrlResponse)
+	err := c.cc.Invoke(ctx, Backend_GetCRL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendClient) PublishCrls(ctx context.Context, in *PublishCrlsRequest, opts ...grpc.CallOption) (*pb.CrlsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.CrlsResponse)
 	err := c.cc.Invoke(ctx, Backend_PublishCrls_FullMethodName, in, out, cOpts...)
@@ -151,38 +345,77 @@ func (c *backendClient) SignOCSP(ctx context.Context, in *pb.OCSPRequest, opts .
 // All implementations should embed UnimplementedBackendServer
 // for forward compatibility.
 //
-// Backend is the signing plane of the CA (DESIGN.md section 2.1): the
-// methods of pb.CA that use an issuer key or change the issuer registry.
-// It is served over gRPC only, by the backend listener, to service
-// identities over mTLS: the CA service of a WFE forwards the calls of its
-// callers with their context (trustyca-peer), and the AIA forwards OCSP
-// requests (trustyca-aia). Every method takes the messages of the pb.CA
-// method of the same name, which name the org and the project explicitly,
-// and behaves as that method for the caller: the backend authorizes a
-// forwarded caller again with the roles and scopes of the pb.CA method.
+// Backend is the CA of the service identities and the signing plane
+// (DESIGN.md section 2.1): every method of pb.CA, with the org of a request
+// named explicitly. It holds the issuer keys and is served over gRPC only,
+// by the backend listener, to service identities over mTLS: the CA service
+// of a WFE forwards the calls of its callers with their context and the
+// org of their token (trustyca-peer), the RA and the operator name the org
+// of every request (trustyca-ra, trustyca-admin), and the AIA forwards
+// OCSP requests (trustyca-aia). A method behaves as the pb.CA method of the
+// same name: the backend authorizes a forwarded caller again with the roles
+// and scopes of that method. The requests are copies of the pb.CA requests
+// with OrgID: the field numbers of the other fields are the same, since
+// the CA service converts a public request into its copy.
 type BackendServer interface {
 	// RegisterIssuer creates an issuer of the org: the key is generated in
 	// the crypto provider, and the certificate is self-signed for a Root,
 	// signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
-	RegisterIssuer(context.Context, *pb.RegisterIssuerRequest) (*pb.Issuer, error)
+	RegisterIssuer(context.Context, *RegisterIssuerRequest) (*pb.Issuer, error)
 	// ImportIssuer registers an issuer from an existing certificate and a
 	// key URI of a crypto provider or a PEM key stored protected
 	// (CA.ImportIssuer)
-	ImportIssuer(context.Context, *pb.ImportIssuerRequest) (*pb.Issuer, error)
+	ImportIssuer(context.Context, *ImportIssuerRequest) (*pb.Issuer, error)
 	// ActivateIssuer sets the externally signed certificate of a Pending
 	// issuer, which must be for the issuer's key (CA.ActivateIssuer)
-	ActivateIssuer(context.Context, *pb.ActivateIssuerRequest) (*pb.Issuer, error)
+	ActivateIssuer(context.Context, *ActivateIssuerRequest) (*pb.Issuer, error)
 	// UpdateIssuer updates the runtime configuration or the status of an
 	// issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
-	UpdateIssuer(context.Context, *pb.UpdateIssuerRequest) (*pb.Issuer, error)
+	UpdateIssuer(context.Context, *UpdateIssuerRequest) (*pb.Issuer, error)
+	// GetIssuer returns an issuer of the org by ID, label or IKID
+	// (CA.GetIssuer)
+	GetIssuer(context.Context, *GetIssuerRequest) (*pb.Issuer, error)
+	// ListIssuers returns the issuers of the org (CA.ListIssuers)
+	ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error)
+	// RegisterRoot registers an external trust anchor of the org
+	// (CA.RegisterRoot)
+	RegisterRoot(context.Context, *RegisterRootRequest) (*pb.RootCertificate, error)
+	// ListRoots returns the trust anchors of the org, or of the
+	// platform (CA.ListRoots)
+	ListRoots(context.Context, *ListRootsRequest) (*pb.RootsResponse, error)
+	// RegisterProfile creates or replaces a certificate profile, keyed
+	// by (OrgID, ProjectID, Label) (CA.RegisterProfile)
+	RegisterProfile(context.Context, *RegisterProfileRequest) (*pb.CertProfile, error)
+	// GetProfile returns a profile of the org by ID or label (CA.GetProfile)
+	GetProfile(context.Context, *GetProfileRequest) (*pb.CertProfile, error)
+	// ListProfiles returns the profiles of the org (CA.ListProfiles)
+	ListProfiles(context.Context, *ListProfilesRequest) (*pb.ProfilesResponse, error)
+	// DeleteProfile deletes a profile of the org (CA.DeleteProfile)
+	DeleteProfile(context.Context, *DeleteProfileRequest) (*emptypb.Empty, error)
 	// SignCertificate signs a certificate request with the issuer of the
 	// profile and registers the certificate (CA.SignCertificate)
-	SignCertificate(context.Context, *pb.SignCertificateRequest) (*pb.CertificateResponse, error)
-	// PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
-	// of the issuers in scope (CA.PublishCrls)
-	PublishCrls(context.Context, *pb.PublishCrlsRequest) (*pb.CrlsResponse, error)
-	// SignOCSP signs the OCSP response of a DER request; the request names
-	// the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+	SignCertificate(context.Context, *SignCertificateRequest) (*pb.CertificateResponse, error)
+	// GetCertificate returns a certificate of the org by ID, SKID,
+	// Sha256 or issuer and serial number (CA.GetCertificate)
+	GetCertificate(context.Context, *GetCertificateRequest) (*pb.CertificateResponse, error)
+	// ListCertificates returns the certificates of the org, newest
+	// first (CA.ListCertificates)
+	ListCertificates(context.Context, *ListCertificatesRequest) (*pb.CertificatesResponse, error)
+	// UpdateCertificateLabel updates the client-provided label and
+	// metadata of a certificate (CA.UpdateCertificateLabel)
+	UpdateCertificateLabel(context.Context, *UpdateCertificateLabelRequest) (*pb.CertificateResponse, error)
+	// RevokeCertificate revokes a certificate of the org (CA.RevokeCertificate)
+	RevokeCertificate(context.Context, *RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error)
+	// ListRevokedCertificates returns the revoked certificates of
+	// the org (CA.ListRevokedCertificates)
+	ListRevokedCertificates(context.Context, *ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error)
+	// GetCRL returns the current CRL of an issuer (CA.GetCRL)
+	GetCRL(context.Context, *GetCrlRequest) (*pb.CrlResponse, error)
+	// PublishCrls signs and publishes the CRL of an issuer, or the due
+	// CRLs of the issuers in scope (CA.PublishCrls)
+	PublishCrls(context.Context, *PublishCrlsRequest) (*pb.CrlsResponse, error)
+	// SignOCSP signs the OCSP response of a DER request; the request
+	// names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
 	SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error)
 }
 
@@ -193,22 +426,64 @@ type BackendServer interface {
 // pointer dereference when methods are called.
 type UnimplementedBackendServer struct{}
 
-func (UnimplementedBackendServer) RegisterIssuer(context.Context, *pb.RegisterIssuerRequest) (*pb.Issuer, error) {
+func (UnimplementedBackendServer) RegisterIssuer(context.Context, *RegisterIssuerRequest) (*pb.Issuer, error) {
 	return nil, status.Error(codes.Unimplemented, "method RegisterIssuer not implemented")
 }
-func (UnimplementedBackendServer) ImportIssuer(context.Context, *pb.ImportIssuerRequest) (*pb.Issuer, error) {
+func (UnimplementedBackendServer) ImportIssuer(context.Context, *ImportIssuerRequest) (*pb.Issuer, error) {
 	return nil, status.Error(codes.Unimplemented, "method ImportIssuer not implemented")
 }
-func (UnimplementedBackendServer) ActivateIssuer(context.Context, *pb.ActivateIssuerRequest) (*pb.Issuer, error) {
+func (UnimplementedBackendServer) ActivateIssuer(context.Context, *ActivateIssuerRequest) (*pb.Issuer, error) {
 	return nil, status.Error(codes.Unimplemented, "method ActivateIssuer not implemented")
 }
-func (UnimplementedBackendServer) UpdateIssuer(context.Context, *pb.UpdateIssuerRequest) (*pb.Issuer, error) {
+func (UnimplementedBackendServer) UpdateIssuer(context.Context, *UpdateIssuerRequest) (*pb.Issuer, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateIssuer not implemented")
 }
-func (UnimplementedBackendServer) SignCertificate(context.Context, *pb.SignCertificateRequest) (*pb.CertificateResponse, error) {
+func (UnimplementedBackendServer) GetIssuer(context.Context, *GetIssuerRequest) (*pb.Issuer, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetIssuer not implemented")
+}
+func (UnimplementedBackendServer) ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListIssuers not implemented")
+}
+func (UnimplementedBackendServer) RegisterRoot(context.Context, *RegisterRootRequest) (*pb.RootCertificate, error) {
+	return nil, status.Error(codes.Unimplemented, "method RegisterRoot not implemented")
+}
+func (UnimplementedBackendServer) ListRoots(context.Context, *ListRootsRequest) (*pb.RootsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRoots not implemented")
+}
+func (UnimplementedBackendServer) RegisterProfile(context.Context, *RegisterProfileRequest) (*pb.CertProfile, error) {
+	return nil, status.Error(codes.Unimplemented, "method RegisterProfile not implemented")
+}
+func (UnimplementedBackendServer) GetProfile(context.Context, *GetProfileRequest) (*pb.CertProfile, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProfile not implemented")
+}
+func (UnimplementedBackendServer) ListProfiles(context.Context, *ListProfilesRequest) (*pb.ProfilesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListProfiles not implemented")
+}
+func (UnimplementedBackendServer) DeleteProfile(context.Context, *DeleteProfileRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteProfile not implemented")
+}
+func (UnimplementedBackendServer) SignCertificate(context.Context, *SignCertificateRequest) (*pb.CertificateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignCertificate not implemented")
 }
-func (UnimplementedBackendServer) PublishCrls(context.Context, *pb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
+func (UnimplementedBackendServer) GetCertificate(context.Context, *GetCertificateRequest) (*pb.CertificateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCertificate not implemented")
+}
+func (UnimplementedBackendServer) ListCertificates(context.Context, *ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCertificates not implemented")
+}
+func (UnimplementedBackendServer) UpdateCertificateLabel(context.Context, *UpdateCertificateLabelRequest) (*pb.CertificateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateCertificateLabel not implemented")
+}
+func (UnimplementedBackendServer) RevokeCertificate(context.Context, *RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeCertificate not implemented")
+}
+func (UnimplementedBackendServer) ListRevokedCertificates(context.Context, *ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRevokedCertificates not implemented")
+}
+func (UnimplementedBackendServer) GetCRL(context.Context, *GetCrlRequest) (*pb.CrlResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCRL not implemented")
+}
+func (UnimplementedBackendServer) PublishCrls(context.Context, *PublishCrlsRequest) (*pb.CrlsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method PublishCrls not implemented")
 }
 func (UnimplementedBackendServer) SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error) {
@@ -235,7 +510,7 @@ func RegisterBackendServer(s grpc.ServiceRegistrar, srv BackendServer) {
 }
 
 func _Backend_RegisterIssuer_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(pb.RegisterIssuerRequest)
+	in := new(RegisterIssuerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -247,13 +522,13 @@ func _Backend_RegisterIssuer_Handler(srv any, ctx context.Context, dec func(any)
 		FullMethod: Backend_RegisterIssuer_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(BackendServer).RegisterIssuer(ctx, req.(*pb.RegisterIssuerRequest))
+		return srv.(BackendServer).RegisterIssuer(ctx, req.(*RegisterIssuerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Backend_ImportIssuer_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(pb.ImportIssuerRequest)
+	in := new(ImportIssuerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -265,13 +540,13 @@ func _Backend_ImportIssuer_Handler(srv any, ctx context.Context, dec func(any) e
 		FullMethod: Backend_ImportIssuer_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(BackendServer).ImportIssuer(ctx, req.(*pb.ImportIssuerRequest))
+		return srv.(BackendServer).ImportIssuer(ctx, req.(*ImportIssuerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Backend_ActivateIssuer_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(pb.ActivateIssuerRequest)
+	in := new(ActivateIssuerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -283,13 +558,13 @@ func _Backend_ActivateIssuer_Handler(srv any, ctx context.Context, dec func(any)
 		FullMethod: Backend_ActivateIssuer_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(BackendServer).ActivateIssuer(ctx, req.(*pb.ActivateIssuerRequest))
+		return srv.(BackendServer).ActivateIssuer(ctx, req.(*ActivateIssuerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Backend_UpdateIssuer_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(pb.UpdateIssuerRequest)
+	in := new(UpdateIssuerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -301,13 +576,157 @@ func _Backend_UpdateIssuer_Handler(srv any, ctx context.Context, dec func(any) e
 		FullMethod: Backend_UpdateIssuer_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(BackendServer).UpdateIssuer(ctx, req.(*pb.UpdateIssuerRequest))
+		return srv.(BackendServer).UpdateIssuer(ctx, req.(*UpdateIssuerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_GetIssuer_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(GetIssuerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).GetIssuer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_GetIssuer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).GetIssuer(ctx, req.(*GetIssuerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_ListIssuers_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListIssuersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).ListIssuers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_ListIssuers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).ListIssuers(ctx, req.(*ListIssuersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_RegisterRoot_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(RegisterRootRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).RegisterRoot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_RegisterRoot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).RegisterRoot(ctx, req.(*RegisterRootRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_ListRoots_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListRootsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).ListRoots(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_ListRoots_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).ListRoots(ctx, req.(*ListRootsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_RegisterProfile_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(RegisterProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).RegisterProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_RegisterProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).RegisterProfile(ctx, req.(*RegisterProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_GetProfile_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(GetProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).GetProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_GetProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).GetProfile(ctx, req.(*GetProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_ListProfiles_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListProfilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).ListProfiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_ListProfiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).ListProfiles(ctx, req.(*ListProfilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_DeleteProfile_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(DeleteProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).DeleteProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_DeleteProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).DeleteProfile(ctx, req.(*DeleteProfileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Backend_SignCertificate_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(pb.SignCertificateRequest)
+	in := new(SignCertificateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -319,13 +738,121 @@ func _Backend_SignCertificate_Handler(srv any, ctx context.Context, dec func(any
 		FullMethod: Backend_SignCertificate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(BackendServer).SignCertificate(ctx, req.(*pb.SignCertificateRequest))
+		return srv.(BackendServer).SignCertificate(ctx, req.(*SignCertificateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_GetCertificate_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(GetCertificateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).GetCertificate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_GetCertificate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).GetCertificate(ctx, req.(*GetCertificateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_ListCertificates_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListCertificatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).ListCertificates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_ListCertificates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).ListCertificates(ctx, req.(*ListCertificatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_UpdateCertificateLabel_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(UpdateCertificateLabelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).UpdateCertificateLabel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_UpdateCertificateLabel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).UpdateCertificateLabel(ctx, req.(*UpdateCertificateLabelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_RevokeCertificate_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(RevokeCertificateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).RevokeCertificate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_RevokeCertificate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).RevokeCertificate(ctx, req.(*RevokeCertificateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_ListRevokedCertificates_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListRevokedCertificatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).ListRevokedCertificates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_ListRevokedCertificates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).ListRevokedCertificates(ctx, req.(*ListRevokedCertificatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Backend_GetCRL_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(GetCrlRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).GetCRL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_GetCRL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).GetCRL(ctx, req.(*GetCrlRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Backend_PublishCrls_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(pb.PublishCrlsRequest)
+	in := new(PublishCrlsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -337,7 +864,7 @@ func _Backend_PublishCrls_Handler(srv any, ctx context.Context, dec func(any) er
 		FullMethod: Backend_PublishCrls_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(BackendServer).PublishCrls(ctx, req.(*pb.PublishCrlsRequest))
+		return srv.(BackendServer).PublishCrls(ctx, req.(*PublishCrlsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -384,8 +911,64 @@ var Backend_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Backend_UpdateIssuer_Handler,
 		},
 		{
+			MethodName: "GetIssuer",
+			Handler:    _Backend_GetIssuer_Handler,
+		},
+		{
+			MethodName: "ListIssuers",
+			Handler:    _Backend_ListIssuers_Handler,
+		},
+		{
+			MethodName: "RegisterRoot",
+			Handler:    _Backend_RegisterRoot_Handler,
+		},
+		{
+			MethodName: "ListRoots",
+			Handler:    _Backend_ListRoots_Handler,
+		},
+		{
+			MethodName: "RegisterProfile",
+			Handler:    _Backend_RegisterProfile_Handler,
+		},
+		{
+			MethodName: "GetProfile",
+			Handler:    _Backend_GetProfile_Handler,
+		},
+		{
+			MethodName: "ListProfiles",
+			Handler:    _Backend_ListProfiles_Handler,
+		},
+		{
+			MethodName: "DeleteProfile",
+			Handler:    _Backend_DeleteProfile_Handler,
+		},
+		{
 			MethodName: "SignCertificate",
 			Handler:    _Backend_SignCertificate_Handler,
+		},
+		{
+			MethodName: "GetCertificate",
+			Handler:    _Backend_GetCertificate_Handler,
+		},
+		{
+			MethodName: "ListCertificates",
+			Handler:    _Backend_ListCertificates_Handler,
+		},
+		{
+			MethodName: "UpdateCertificateLabel",
+			Handler:    _Backend_UpdateCertificateLabel_Handler,
+		},
+		{
+			MethodName: "RevokeCertificate",
+			Handler:    _Backend_RevokeCertificate_Handler,
+		},
+		{
+			MethodName: "ListRevokedCertificates",
+			Handler:    _Backend_ListRevokedCertificates_Handler,
+		},
+		{
+			MethodName: "GetCRL",
+			Handler:    _Backend_GetCRL_Handler,
 		},
 		{
 			MethodName: "PublishCrls",

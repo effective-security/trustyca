@@ -13,7 +13,7 @@ import "github.com/effective-security/trustyca/internal/ctl"
   - [func \(c \*Cli\) AdminClient\(\) \(privpb.AdminServer, error\)](<#Cli.AdminClient>)
   - [func \(c \*Cli\) AfterApply\(app \*kong.Kong, vars kong.Vars\) error](<#Cli.AfterApply>)
   - [func \(c \*Cli\) AuthClient\(skipAuth bool\) \(pb.AuthServer, error\)](<#Cli.AuthClient>)
-  - [func \(c \*Cli\) CAClient\(\) \(pb.CAServer, error\)](<#Cli.CAClient>)
+  - [func \(c \*Cli\) BackendClient\(\) \(privpb.BackendServer, error\)](<#Cli.BackendClient>)
   - [func \(c \*Cli\) CISClient\(\) \(pb.CISServer, error\)](<#Cli.CISClient>)
   - [func \(c \*Cli\) Context\(\) context.Context](<#Cli.Context>)
   - [func \(c \*Cli\) ErrWriter\(\) io.Writer](<#Cli.ErrWriter>)
@@ -74,7 +74,7 @@ type Cli struct {
 ```
 
 <a name="Cli.AdminClient"></a>
-### func \(\*Cli\) [AdminClient](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L505>)
+### func \(\*Cli\) [AdminClient](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L506>)
 
 ```go
 func (c *Cli) AdminClient() (privpb.AdminServer, error)
@@ -100,14 +100,14 @@ func (c *Cli) AuthClient(skipAuth bool) (pb.AuthServer, error)
 
 AuthClient returns Auth client from connection
 
-<a name="Cli.CAClient"></a>
-### func \(\*Cli\) [CAClient](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L493>)
+<a name="Cli.BackendClient"></a>
+### func \(\*Cli\) [BackendClient](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L494>)
 
 ```go
-func (c *Cli) CAClient() (pb.CAServer, error)
+func (c *Cli) BackendClient() (privpb.BackendServer, error)
 ```
 
-CAClient returns the CA client of the connection. The CA API is served by the backend listener over gRPC only, to the trustyca\-admin identity of the client certificate \(\-\-cert, \-\-cert\-key\).
+BackendClient returns the CA client of the connection: the CA of the service identities \(privpb.Backend\), which names the org of every request. It is served by the backend listener over gRPC only, to the trustyca\-admin identity of the client certificate \(\-\-cert, \-\-cert\-key\).
 
 <a name="Cli.CISClient"></a>
 ### func \(\*Cli\) [CISClient](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L475>)
@@ -164,7 +164,7 @@ func (c *Cli) OrgsClient() (pb.OrgsServer, error)
 OrgsClient returns Orgs client from connection
 
 <a name="Cli.Print"></a>
-### func \(\*Cli\) [Print](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L517>)
+### func \(\*Cli\) [Print](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L518>)
 
 ```go
 func (c *Cli) Print(value any) error
@@ -191,7 +191,7 @@ func (c *Cli) Reader() io.Reader
 Reader is the source to read from, typically set to os.Stdin
 
 <a name="Cli.Resolve"></a>
-### func \(\*Cli\) [Resolve](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L522>)
+### func \(\*Cli\) [Resolve](<https://github.com/effective-security/trustyca/blob/main/internal/ctl/ctl.go#L523>)
 
 ```go
 func (c *Cli) Resolve(val string) (string, error)

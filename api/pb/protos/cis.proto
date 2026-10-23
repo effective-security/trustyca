@@ -5,7 +5,6 @@ option go_package = "github.com/effective-security/trustyca/api/pb";
 
 import "google/api/annotations.proto";
 import "es/api/annotations.proto";
-import "types.proto";
 import "pkix.proto";
 import "ca.proto";
 
@@ -20,7 +19,7 @@ import "ca.proto";
 // aia service, served over plain HTTP to any caller.
 service CIS {
     // GetRoots returns the published trust anchors
-    rpc GetRoots(ListRootsRequest) returns (RootsResponse) {
+    rpc GetRoots(GetRootsRequest) returns (RootsResponse) {
         option (google.api.http) = {
             post: "/pb.CIS/GetRoots",
             body: "*"
@@ -61,6 +60,20 @@ service CIS {
             body: "*"
         };
     }
+}
+
+// GetRootsRequest specifies a list of the published trust anchors
+message GetRootsRequest {
+    // OrgID selects the anchors of an org; empty lists the platform
+    // anchors. It is a lookup, not a tenant scope: the anchors are public
+    // and any authenticated caller reads those of any org.
+    string OrgID = 1 [json_name = "OrgID"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 2 [json_name = "Limit"];
+    // Offset specifies offset for the offset-based pagination
+    uint32 Offset = 3 [json_name = "Offset"];
+    // Cursor specifies cursor for the cursor-based pagination
+    string Cursor = 4 [json_name = "Cursor"];
 }
 
 // GetIssuerInfoRequest specifies an issuer by IKID

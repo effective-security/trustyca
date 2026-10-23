@@ -39,7 +39,7 @@ func GetCISHTTPHandler(s pb.CISServer, withAccessCheck pb.CheckAccessFunc) rests
 		switch action {
 
 		case pb.CIS_GetRoots_FullMethodName:
-			res, err = s.GetRoots(ctx, req.(*pb.ListRootsRequest))
+			res, err = s.GetRoots(ctx, req.(*pb.GetRootsRequest))
 
 		case pb.CIS_GetIssuer_FullMethodName:
 			res, err = s.GetIssuer(ctx, req.(*pb.GetIssuerInfoRequest))

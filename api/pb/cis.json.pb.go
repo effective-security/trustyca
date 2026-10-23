@@ -4,6 +4,16 @@
 package pb
 
 // MarshalJSON implements json.Marshaler
+func (msg *GetRootsRequest) MarshalJSON() ([]byte, error) {
+	return JsonMarshalOptions.Marshal(msg)
+}
+
+// UnmarshalJSON implements json.Unmarshaler
+func (msg *GetRootsRequest) UnmarshalJSON(b []byte) error {
+	return JsonUnmarshalOptions.Unmarshal(b, msg)
+}
+
+// MarshalJSON implements json.Marshaler
 func (msg *GetIssuerInfoRequest) MarshalJSON() ([]byte, error) {
 	return JsonMarshalOptions.Marshal(msg)
 }

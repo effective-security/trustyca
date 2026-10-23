@@ -270,6 +270,10 @@ Package boundaries and direct internal imports are listed in
   and `Documentation/cli/`; run `make build` first
 - `make all` : clean, tools, generate, certificates, local stack, recreated
   SQL database, build, dry-run and test (see `Makefile`)
+- `make docker-citest` : build the service and test runner images and run
+  the container integration tests of `tests/integration` (the CLI and the
+  cookie session of the Web UI) in a compose stack of their own; run it when
+  the server, the CLI or the configuration of the wfe change
 
 If the proto changes and needs to be updated `make proto` for types and `make proto generate` for services.
 
@@ -281,10 +285,10 @@ make gen-sql-schema
 ```
 
 CI (`.github/workflows/build.yml`) builds and prepares the local stack, runs
-`make test` on pushes and `make covtest` on PRs, and publishes a coverage
-status against `MIN_TESTCOV`, which the workflow does not set yet. CI does
-not run `make lint`, the race detector or `make docker-citest`; run lint and
-race locally. Pushes to `main` that change `.VERSION` create a tag
+`make test` on pushes and `make covtest` on PRs, then `make docker-citest`,
+and publishes a coverage status against `MIN_TESTCOV`, which the workflow
+does not set yet. CI does not run `make lint` or the race detector; run them
+locally. Pushes to `main` that change `.VERSION` create a tag
 `<.VERSION>.<commit count>`.
 
 ### Documentation

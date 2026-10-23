@@ -30,8 +30,8 @@ const (
 	// the backend with: the trustyca-aia identity
 	ClientNameAIA = "aia"
 	// ClientNameCA is the client the CA service of a process without the
-	// backend service forwards the key operations with: the identity of the
-	// WFE (trustyca-peer)
+	// backend service forwards the calls of its tenants with: the identity
+	// of the WFE (trustyca-peer)
 	ClientNameCA = "ca"
 )
 

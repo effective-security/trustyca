@@ -14,7 +14,7 @@ import (
 // ListIssuers lists the issuers of the org the request names, of the
 // platform, or of every org and the platform, newest first, for support
 // staff. Private key material is never part of the rows' API view.
-func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListAllIssuersRequest) (*pb.IssuersResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}

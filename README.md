@@ -62,7 +62,75 @@ Review coverage report:
 
 ## Integration test
 
-    make docker docker-citest
+    make docker-citest
+
+builds the service and test runner images (`make docker docker-tester`) and
+runs [tests/integration](tests/integration/README.md) against the service in
+a compose stack of its own: its own database, Redis, KMS emulator and a
+throw-away PKI, so `~/.trustyca` and the dev DB are never touched. It needs
+Docker, `hsm-tool` (`make tools`) and the module cache of a `make build`.
+`ITEST_KEEP_UP=1 make docker-citest` leaves the stack running for debugging.
+
+## Web UI sessions
+
+The console (`trustyca-ui`) signs users in through `/v1/auth/authorize` and
+calls the `wfe` over gRPC-Web, in one of two modes:
+
+- bearer (`response_type=code`): the console exchanges a one-time code for
+  the token and sends `Authorization: Bearer`. It works from
+  `http://localhost:4200`.
+- cookie (`response_type=cookie`): the callback sets an HttpOnly auth cookie
+  and a readable CSRF cookie on `identity_map.cookies.domain`
+  (`.local.trustyca.io` in dev), `Secure` and `SameSite=None`, and lands on
+  the console with `cookie_set=true&csrf=<CSRF cookie name>`. The console
+  sends every call with `credentials: 'include'` and the CSRF cookie in the
+  `X-CSRF-Token` header (every gRPC-Web call, every REST call but GET):
+  without it the cookie is ignored and the caller is a guest. The org
+  switch is `POST /v1/auth/org` (`{"OrgID": ..., "RememberMe": ...}`),
+  which replaces both cookies; the sign-out is `DELETE /pb.Auth/RevokeToken`,
+  which revokes the token and removes the cookies.
+
+The cookie mode needs the console and the API on hosts under the cookie
+domain, over https: the console reads the CSRF cookie from its own page,
+and the browser stores the cookies of the callback only for a host under
+the domain. In dev:
+
+    # /etc/hosts
+    127.0.0.1 app.local.trustyca.io api.local.trustyca.io
+
+- serve the console at `https://app.local.trustyca.io:4200` (an origin of
+  the wfe CORS configuration), for example
+  `ng serve --host app.local.trustyca.io --ssl`;
+- point it at `https://api.local.trustyca.io:8880` and start the login
+  there: the callback that sets the cookies runs on the host of the
+  authorize request. `auth.auth_url` stays on localhost for the CLI;
+- trust `etc/dev/certs/root/trustyca_root.pem` in the browser. The server
+  certificate of `make gen_test_certs` names `api.local.trustyca.io`
+  (`TEST_CERTS_SAN`); a dev certificate issued before that has no such
+  name. Issue a new server certificate alone, never with `--force` (which
+  `make gen_test_certs` passes), since that rotates the CA keys of the
+  platform issuers of the dev DB:
+
+```sh
+rm ~/.trustyca/certs/trustyca_server.*
+PATH="$PWD/bin:$PATH" .project/gen_certs.sh --hsm-config inmem \
+    --ca-config etc/dev/certs/ca-config.bootstrap.yaml \
+    --output-dir ~/.trustyca/certs --csr-dir etc/dev/certs/csr_profile \
+    --csr-prefix trustyca_ --out-prefix trustyca_ --key-label test_ \
+    --san 127.0.0.1,api.local.trustyca.io \
+    --root-ca etc/dev/certs/root/trustyca_root.pem \
+    --root-ca-key etc/dev/certs/root/trustyca_root.key \
+    --server
+```
+
+### Local identity provider
+
+The dev configuration (`service.environment: local` in `service.cluster:
+local`) offers the `local` provider, which needs no external IdP and no
+invitation: `trustyca auth login local+user1@trustyca.io`, or a console
+login with `idpuser.email=local+user1@trustyca.io`, signs in as
+`user1@trustyca.io`. Any other environment refuses the provider, and an
+address with `local+` is an ordinary address there.
 
 ## Certificate Information Service
 
@@ -110,29 +178,30 @@ a ca-config file, `Config` of `RegisterIssuer`) name the AIA routes with
 
 ## Certification Authority
 
-The `ca` service is the CA API: the issuers, profiles, trust anchors,
-certificates, revocations and CRLs of every org. The `wfe` listener serves
-it to the tenants with their token (the Web UI, the CLI, API keys); the
-`backend` listener serves it to the Registration Authority with the
-`trustyca-ra` identity and to the operator with `trustyca-admin`, both TLS
-client certificates mapped by `identity_map.tls` of the listener
-(`make gen_test_certs` creates `trustyca_ra` and `trustyca_admin`). The
-issuer keys stay in the `backend` service of the backend listener (the
-signing plane, `privpb.Backend`), which is never exposed to the internet:
-the `ca` service forwards the key operations (issuer registration, import,
-activation and updates, signing, CRL publishing, OCSP) to it, in process or
-with the `ca` service client of the `clients` section (the `trustyca-peer`
-identity), and the backend authorizes the forwarded caller again. A pod
-runs the listeners of its role (DESIGN.md sections 2.1 and 2.2): a web pod
-without the `backend` listener loads no crypto provider. The `ca`
+The CA manages the issuers, profiles, trust anchors, certificates,
+revocations and CRLs of every org, and has two APIs with the same methods.
+The tenants (the Web UI, the CLI, API keys) call `pb.CA` on the `wfe`
+listener with their token, and their requests carry no org: it is the org
+of the token. The Registration Authority (`trustyca-ra`) and the operator
+(`trustyca-admin`) call `privpb.Backend` on the `backend` listener and name
+the org of every request; both identities are TLS client certificates
+mapped by `identity_map.tls` of the listener (`make gen_test_certs`
+creates `trustyca_ra` and `trustyca_admin`). The `backend` service holds
+the issuer keys and is never exposed to the internet: the `ca` service of
+the `wfe` forwards every call to it with the org of the token, in process
+or with the `ca` service client of the `clients` section (the
+`trustyca-peer` identity), and the backend authorizes the forwarded caller
+again. A pod runs the listeners of its role (DESIGN.md sections 2.1 and
+2.2): a web pod without the `backend` listener loads no crypto provider.
+The `ca`
 section of the configuration names the ca-config of the platform issuers
 (`bootstrap_config`), mirrored into the CA tables at startup: in
 `etc/dev/ca-config.local.yaml` the L1 CA `trusty.l1` signs the issuing CAs
 of the orgs with the `tenant_ca` profile, and the L2 CA `trusty.svc` the
 platform's own certificates.
 
-`trustycactl ca ...` operates the CA with the admin certificate; every
-request names the org:
+`trustycactl ca ...` operates the CA through `privpb.Backend` with the
+admin certificate; every request names the org:
 
     alias trustycactl='bin/trustycactl -s https://localhost:8881 -c ~/.trustyca/certs/trustyca_admin.pem -k ~/.trustyca/certs/trustyca_admin.key -r ~/.trustyca/certs/trustyca_root.pem'
     # the platform issuers and anchors, the certificates of every org
@@ -265,3 +334,7 @@ clients:
       timeout: 6s
     storage_folder: ~/.trustyca
 ```
+
+## Dashboard
+
+`Documentation/login_page.png`

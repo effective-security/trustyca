@@ -28,7 +28,6 @@ import (
 	"github.com/effective-security/trustyca/privpb"
 	"github.com/effective-security/trustyca/server/appcontainer"
 	adminsvc "github.com/effective-security/trustyca/server/service/admin"
-	casvc "github.com/effective-security/trustyca/server/service/ca"
 	"github.com/effective-security/trustyca/tests/testutils"
 	xctl "github.com/effective-security/x/ctl"
 	"github.com/effective-security/xdb"
@@ -75,21 +74,20 @@ func TestCA_EndToEnd(t *testing.T) {
 
 	server, err := gserver.Start("CTLTest", &gserver.Config{
 		ListenURLs: []string{testutils.CreateURL("http", "")},
-		Services:   []string{casvc.ServiceName, backend.ServiceName, adminsvc.ServiceName},
+		Services:   []string{backend.ServiceName, adminsvc.ServiceName},
 	}, container, map[string]gserver.ServiceFactory{
-		casvc.ServiceName:    casvc.Factory,
 		backend.ServiceName:  backend.Factory,
 		adminsvc.ServiceName: adminsvc.Factory,
 	})
 	require.NoError(t, err)
 	t.Cleanup(server.Close)
-	addr := backendServer(t, server.Service(casvc.ServiceName).(pb.CAServer), server.Service(adminsvc.ServiceName).(privpb.AdminServer))
+	addr := backendServer(t, server.Service(backend.ServiceName).(privpb.BackendServer), server.Service(adminsvc.ServiceName).(privpb.AdminServer))
 
 	// the API client the test verifies with
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
-	client := pb.NewCAClient(conn)
+	client := privpb.NewBackendClient(conn)
 
 	// the CTL
 	var out bytes.Buffer
@@ -161,13 +159,13 @@ func TestCA_EndToEnd(t *testing.T) {
 		},
 	})
 	assert.Contains(t, printed, "4 profiles registered")
-	issuer, err := client.GetIssuer(ctx, &pb.GetIssuerRequest{OrgID: orgID, Label: e2eIssuerLabel})
+	issuer, err := client.GetIssuer(ctx, &privpb.GetIssuerRequest{OrgID: orgID, Label: e2eIssuerLabel})
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		// the key is destroyed in its provider through the service, then
 		// the rows are removed; the CRL follows the issuer
-		_, _ = client.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: issuer.ID, Status: pb.IssuerStatus_Archived})
-		_, _ = client.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: issuer.ID, Status: pb.IssuerStatus_Destroyed})
+		_, _ = client.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{OrgID: orgID, ID: issuer.ID, Status: pb.IssuerStatus_Archived})
+		_, _ = client.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{OrgID: orgID, ID: issuer.ID, Status: pb.IssuerStatus_Destroyed})
 		_, _ = provider.DeleteIssuer(ctx, org.ID.UInt64(), mustID(t, issuer.ID))
 	})
 	assert.Equal(t, pb.IssuerStatus_Active, issuer.Status)
@@ -185,7 +183,7 @@ func TestCA_EndToEnd(t *testing.T) {
 	assert.NotEmpty(t, issuer.Intermediates, "the chain to the root")
 	assert.NotEmpty(t, issuer.Root)
 
-	profiles, err := client.ListProfiles(ctx, &pb.ListProfilesRequest{OrgID: orgID})
+	profiles, err := client.ListProfiles(ctx, &privpb.ListProfilesRequest{OrgID: orgID})
 	require.NoError(t, err)
 	require.Len(t, profiles.Profiles, 4)
 	t.Cleanup(func() {
@@ -221,7 +219,7 @@ func TestCA_EndToEnd(t *testing.T) {
 
 	// the issuing CA signs with a copied profile
 	csrPEM := newCSR(t, "edge.ctl.example.com")
-	signed, err := client.SignCertificate(ctx, &pb.SignCertificateRequest{
+	signed, err := client.SignCertificate(ctx, &privpb.SignCertificateRequest{
 		OrgID:   orgID,
 		Profile: "server",
 		Request: csrPEM,
@@ -307,15 +305,15 @@ func TestCA_EndToEnd(t *testing.T) {
 	assert.Contains(t, printed, "Archived")
 	printed = run(&admin.IssuerDestroyCmd{Org: orgID, ID: issuer.ID})
 	assert.Contains(t, printed, "Destroyed")
-	got, err := client.GetIssuer(ctx, &pb.GetIssuerRequest{OrgID: orgID, ID: issuer.ID})
+	got, err := client.GetIssuer(ctx, &privpb.GetIssuerRequest{OrgID: orgID, ID: issuer.ID})
 	require.NoError(t, err)
 	assert.Equal(t, pb.IssuerStatus_Destroyed, got.Status)
 }
 
-// backendServer serves the CA and Admin services on a TCP listener whose
+// backendServer serves the backend and Admin services on a TCP listener whose
 // interceptor sets the trustyca-admin identity of every call, as the
 // backend listener maps the operator's client certificate
-func backendServer(t *testing.T, ca pb.CAServer, adm privpb.AdminServer) string {
+func backendServer(t *testing.T, be privpb.BackendServer, adm privpb.AdminServer) string {
 	t.Helper()
 	lis, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
@@ -324,7 +322,7 @@ func backendServer(t *testing.T, ca pb.CAServer, adm privpb.AdminServer) string 
 			uid := identity.NewIdentity(e2eRole, "spiffe://trustyca/admin", "", map[string]any{}, "", "", identity.MethodCertificate)
 			return handler(authctx.NewTrustyCtx(ctx, identity.NewRequestContext(uid, info.FullMethod)), req)
 		}))
-	pb.RegisterCAServer(srv, ca)
+	privpb.RegisterBackendServer(srv, be)
 	privpb.RegisterAdminServer(srv, adm)
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(srv.Stop)

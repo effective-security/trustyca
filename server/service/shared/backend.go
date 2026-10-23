@@ -8,26 +8,12 @@ import (
 	"github.com/effective-security/porto/pkg/discovery"
 	"github.com/effective-security/trustyca/api/client"
 	"github.com/effective-security/trustyca/privpb"
-	"github.com/effective-security/xdb"
 )
 
-// LocalBackend is the backend service (privpb.Backend) as porto discovery
-// finds it in the process that runs it. The CA service that forwards to the
-// backend has the methods of privpb.BackendServer too, so discovery looks
-// the backend up by this interface, which the forwarding service does not
-// implement.
-type LocalBackend interface {
-	privpb.BackendServer
-
-	// InvalidateProfile drops the cached resolutions of the profile label
-	// in the scope, after the profile changed
-	InvalidateProfile(orgID, projectID xdb.ID, label string)
-}
-
-// BackendLocator returns the backend a service forwards the key operations
-// or the OCSP requests to (DESIGN.md section 2.1): the backend service of
-// the same process when discovery has one, else a client of the backend
-// listener dialed with the named service client. The lookup runs on the
+// BackendLocator returns the backend the CA service forwards every call
+// to, and the AIA its OCSP requests (DESIGN.md section 2.1): the backend
+// service of the same process when discovery has one, else a client of the
+// backend listener dialed with the named service client. The lookup runs on the
 // first call, never at startup, because the gRPC client blocks until the
 // backend is reachable and the listeners start in any order; a failure is
 // returned and the next call tries again. The backend found is kept until
@@ -40,7 +26,6 @@ type BackendLocator struct {
 
 	lock   sync.Mutex
 	srv    privpb.BackendServer
-	local  LocalBackend
 	closer io.Closer
 }
 
@@ -58,13 +43,10 @@ func NewBackendLocator(disco func() discovery.Discovery, clients client.Factory,
 }
 
 // NewStaticBackendLocator returns a locator that always returns srv, for
-// a service wired to its backend explicitly; profiles are invalidated in
-// srv when it is a LocalBackend
+// a service wired to its backend explicitly
 func NewStaticBackendLocator(srv privpb.BackendServer) *BackendLocator {
-	local, _ := srv.(LocalBackend)
 	return &BackendLocator{
-		srv:   srv,
-		local: local,
+		srv: srv,
 	}
 }
 
@@ -78,7 +60,6 @@ func (l *BackendLocator) Backend() (privpb.BackendServer, error) {
 	}
 
 	if local := l.findLocal(); local != nil {
-		l.local = local
 		l.srv = local
 		return l.srv, nil
 	}
@@ -95,21 +76,6 @@ func (l *BackendLocator) Backend() (privpb.BackendServer, error) {
 	return srv, nil
 }
 
-// InvalidateProfile invalidates the profile in the backend of the process,
-// when the process runs one; a remote backend learns of the change after
-// the TTL of its cache
-func (l *BackendLocator) InvalidateProfile(orgID, projectID xdb.ID, label string) {
-	l.lock.Lock()
-	local := l.local
-	if local == nil && l.srv == nil {
-		local = l.findLocal()
-	}
-	l.lock.Unlock()
-	if local != nil {
-		local.InvalidateProfile(orgID, projectID, label)
-	}
-}
-
 // Close closes the client of a remote backend; the next call of Backend
 // looks the backend up again
 func (l *BackendLocator) Close() error {
@@ -124,8 +90,10 @@ func (l *BackendLocator) Close() error {
 	return err
 }
 
-// findLocal returns the backend service of the process, or nil
-func (l *BackendLocator) findLocal() LocalBackend {
+// findLocal returns the backend service of the process, or nil. Only the
+// backend service implements privpb.BackendServer: the CA service that
+// forwards to it takes the public requests.
+func (l *BackendLocator) findLocal() privpb.BackendServer {
 	if l.disco == nil {
 		return nil
 	}
@@ -133,7 +101,7 @@ func (l *BackendLocator) findLocal() LocalBackend {
 	if disco == nil {
 		return nil
 	}
-	var local LocalBackend
+	var local privpb.BackendServer
 	if err := disco.Find("", &local); err != nil {
 		return nil
 	}

@@ -52,7 +52,7 @@ func TestService_ListIssuers(t *testing.T) {
 		assert.Equal(t, &query.ListIssuersRequest{AllOrgs: true, Status: pb.IssuerStatus_Active, Limit: 10}, req)
 		return rows, nil
 	})
-	res, err := svc.ListIssuers(ctx, &privpb.ListIssuersRequest{Status: pb.IssuerStatus_Active, Limit: 10})
+	res, err := svc.ListIssuers(ctx, &privpb.ListAllIssuersRequest{Status: pb.IssuerStatus_Active, Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, res.Issuers, 2)
 	assert.Equal(t, "100", res.Issuers[0].OrgID)
@@ -66,7 +66,7 @@ func TestService_ListIssuers(t *testing.T) {
 		assert.Equal(t, &query.ListIssuersRequest{Platform: true, Label: "trusty.l1", Limit: 1}, req)
 		return &model.IssuerResult{Rows: rows.Rows[1:]}, nil
 	})
-	res, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{Platform: true, Label: "trusty.l1", Limit: 1})
+	res, err = svc.ListIssuers(ctx, &privpb.ListAllIssuersRequest{Platform: true, Label: "trusty.l1", Limit: 1})
 	require.NoError(t, err)
 	require.Len(t, res.Issuers, 1)
 	assert.Nil(t, res.NextPage)
@@ -83,30 +83,30 @@ func TestService_ListIssuers(t *testing.T) {
 		assert.Equal(t, uint64(2), req.Cursor.LastID())
 		return &model.IssuerResult{Rows: rows.Rows[:1]}, nil
 	})
-	res, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{OrgID: "100", ProjectID: "201", Platform: true, Type: pb.AuthorityType_Issuing, Cursor: cursor})
+	res, err = svc.ListIssuers(ctx, &privpb.ListAllIssuersRequest{OrgID: "100", ProjectID: "201", Platform: true, Type: pb.AuthorityType_Issuing, Cursor: cursor})
 	require.NoError(t, err)
 	require.Len(t, res.Issuers, 1)
 
 	// the requests the service refuses
 	for _, tc := range []struct {
-		req *privpb.ListIssuersRequest
+		req *privpb.ListAllIssuersRequest
 		err string
 	}{
 		{req: nil, err: "bad_request: missing request"},
-		{req: &privpb.ListIssuersRequest{OrgID: "nope"}, err: "bad_request: invalid org ID"},
-		{req: &privpb.ListIssuersRequest{ProjectID: "201"}, err: "bad_request: org ID is required with a project ID"},
-		{req: &privpb.ListIssuersRequest{OrgID: "100", ProjectID: "nope"}, err: "bad_request: invalid project ID"},
-		{req: &privpb.ListIssuersRequest{Cursor: "nope"}, err: "bad_request: invalid cursor"},
+		{req: &privpb.ListAllIssuersRequest{OrgID: "nope"}, err: "bad_request: invalid org ID"},
+		{req: &privpb.ListAllIssuersRequest{ProjectID: "201"}, err: "bad_request: org ID is required with a project ID"},
+		{req: &privpb.ListAllIssuersRequest{OrgID: "100", ProjectID: "nope"}, err: "bad_request: invalid project ID"},
+		{req: &privpb.ListAllIssuersRequest{Cursor: "nope"}, err: "bad_request: invalid cursor"},
 	} {
 		_, err := svc.ListIssuers(ctx, tc.req)
 		assert.EqualError(t, err, tc.err)
 	}
 
 	caDb.EXPECT().ListIssuers(ctx, gomock.Any()).Return(nil, errors.New("something happened"))
-	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{})
+	_, err = svc.ListIssuers(ctx, &privpb.ListAllIssuersRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list issuers")
 
 	caDb.EXPECT().ListIssuers(ctx, gomock.Any()).Return(&model.IssuerResult{Rows: []*model.Issuer{{ID: xdb.NewID(3), Config: []byte(`nope`)}}}, nil)
-	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{})
+	_, err = svc.ListIssuers(ctx, &privpb.ListAllIssuersRequest{})
 	assert.EqualError(t, err, "unexpected: unable to read issuers")
 }

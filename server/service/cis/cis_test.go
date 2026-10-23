@@ -37,13 +37,13 @@ func TestService_GetRoots(t *testing.T) {
 
 	_, err := e.svc.GetRoots(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = e.svc.GetRoots(ctx, &pb.ListRootsRequest{OrgID: "nope"})
+	_, err = e.svc.GetRoots(ctx, &pb.GetRootsRequest{OrgID: "nope"})
 	assert.EqualError(t, err, "bad_request: invalid org ID")
-	_, err = e.svc.GetRoots(ctx, &pb.ListRootsRequest{Cursor: "!!"})
+	_, err = e.svc.GetRoots(ctx, &pb.GetRootsRequest{Cursor: "!!"})
 	assert.EqualError(t, err, "bad_request: invalid cursor")
 
 	// the platform anchors without an org, the anchors of the org with one
-	res, err := e.svc.GetRoots(ctx, &pb.ListRootsRequest{})
+	res, err := e.svc.GetRoots(ctx, &pb.GetRootsRequest{})
 	require.NoError(t, err)
 	require.Len(t, res.Roots, 1)
 	assert.Equal(t, "", res.Roots[0].OrgID)
@@ -51,17 +51,17 @@ func TestService_GetRoots(t *testing.T) {
 	assert.Equal(t, pb.Trust_Public, res.Roots[0].Trust)
 	assert.NotEmpty(t, res.Roots[0].Pem)
 	assert.Nil(t, res.NextPage)
-	res, err = e.svc.GetRoots(ctx, &pb.ListRootsRequest{OrgID: "1"})
+	res, err = e.svc.GetRoots(ctx, &pb.GetRootsRequest{OrgID: "1"})
 	require.NoError(t, err)
 	require.Len(t, res.Roots, 1)
 	assert.Equal(t, "1", res.Roots[0].OrgID)
 	assert.Equal(t, "CN=Org Root,O=trustyca tests", res.Roots[0].Subject)
-	res, err = e.svc.GetRoots(ctx, &pb.ListRootsRequest{OrgID: "2"})
+	res, err = e.svc.GetRoots(ctx, &pb.GetRootsRequest{OrgID: "2"})
 	require.NoError(t, err)
 	assert.Empty(t, res.Roots, "an unknown org has no anchors")
 
 	e.store.setFail(errors.New("db down"))
-	_, err = e.svc.GetRoots(ctx, &pb.ListRootsRequest{})
+	_, err = e.svc.GetRoots(ctx, &pb.GetRootsRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list roots")
 }
 
@@ -238,9 +238,9 @@ func TestService_GetCRL(t *testing.T) {
 	_, err = e.svc.GetCRL(ctx, &pb.GetCrlRequest{IKID: "nope"})
 	assert.EqualError(t, err, "not_found: CRL not found")
 
-	// the org of the CRL is not part of the view; an OrgID in the request
-	// is ignored, since the CRL is the issuer's
-	res, err := e.svc.GetCRL(ctx, &pb.GetCrlRequest{IKID: e.crl.Ikid, OrgID: "2"})
+	// the org of the CRL is not part of the view, and the request names
+	// none, since the CRL is the issuer's
+	res, err := e.svc.GetCRL(ctx, &pb.GetCrlRequest{IKID: e.crl.Ikid})
 	require.NoError(t, err)
 	require.NotNil(t, res.Crl)
 	assert.Equal(t, e.crl.ID.String(), res.Crl.ID)

@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/effective-security/trustyca/privpb"
+
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/ca/pbconv"
@@ -30,11 +32,11 @@ type ProfileListCmd struct {
 
 // Run the command
 func (a *ProfileListCmd) Run(app App) error {
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.ListProfiles(app.Context(), &pb.ListProfilesRequest{
+	res, err := client.ListProfiles(app.Context(), &privpb.ListProfilesRequest{
 		OrgID:       a.Org,
 		ProjectID:   a.Project,
 		IssuerLabel: a.Issuer,
@@ -60,11 +62,11 @@ func (a *ProfileGetCmd) Run(app App) error {
 	if a.ID == "" && a.Label == "" {
 		return errors.New("profile ID or label is required")
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.GetProfile(app.Context(), &pb.GetProfileRequest{
+	res, err := client.GetProfile(app.Context(), &privpb.GetProfileRequest{
 		OrgID:     a.Org,
 		ProjectID: a.Project,
 		ID:        a.ID,
@@ -98,11 +100,11 @@ func (a *ProfileRegisterCmd) Run(app App) error {
 	if def.IssuerLabel == "" {
 		return errors.Errorf("profile %s: the issuer label is required: issuer_label of the file, or --issuer", def.Label)
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.RegisterProfile(app.Context(), &pb.RegisterProfileRequest{
+	res, err := client.RegisterProfile(app.Context(), &privpb.RegisterProfileRequest{
 		OrgID:     a.Org,
 		ProjectID: a.Project,
 		Profile:   def,
@@ -121,11 +123,11 @@ type ProfileDeleteCmd struct {
 
 // Run the command
 func (a *ProfileDeleteCmd) Run(app App) error {
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	_, err = client.DeleteProfile(app.Context(), &pb.DeleteProfileRequest{
+	_, err = client.DeleteProfile(app.Context(), &privpb.DeleteProfileRequest{
 		OrgID: a.Org,
 		ID:    a.ID,
 	})

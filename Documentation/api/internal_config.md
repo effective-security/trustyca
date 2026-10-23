@@ -23,6 +23,7 @@ import "github.com/effective-security/trustyca/internal/config"
 - [type Retention](<#Retention>)
 - [type SQL](<#SQL>)
 - [type Service](<#Service>)
+  - [func \(s Service\) IsLocal\(\) bool](<#Service.IsLocal>)
 - [type Task](<#Task>)
 
 
@@ -46,12 +47,17 @@ const (
     // EnvironmentProd is the service.environment of a production instance: it
     // refuses the settings of development, such as software issuer keys
     EnvironmentProd = "prod"
-    // EnvironmentDev is the service.environment of a development instance it
-    // refuses the settings of development, such as software issuer keys
+    // EnvironmentDev is the service.environment of the deployed development
+    // instance
     EnvironmentDev = "dev"
-    // EnvironmentLocal is the service.environment of a local instance: it
-    // allows software issuer keys
+    // EnvironmentLocal is the service.environment of an instance on a
+    // developer machine or in the integration test stack: with ClusterLocal
+    // it enables the `local` identity provider (Service.IsLocal)
     EnvironmentLocal = "local"
+
+    // ClusterLocal is the service.cluster of an instance on a developer
+    // machine or in the integration test stack
+    ClusterLocal = "local"
 )
 ```
 
@@ -92,7 +98,7 @@ func LoadWithOverride(configFile, configOverride string, config any, sc configlo
 LoadWithOverride will load the configuration from the named config and optional override file
 
 <a name="AIA"></a>
-## type [AIA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L203-L209>)
+## type [AIA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L217-L223>)
 
 AIA specifies the Authority Information Access service configuration: the public, read\-only service over plain HTTP that serves the issuer certificates, CRLs and OCSP responses the issued certificates point at. It holds no keys: OCSP requests are forwarded to the backend service, in process when it runs in the same process, else with the \`aia\` service client \(\`clients\`, \`server\_url.backend\`\).
 
@@ -107,7 +113,7 @@ type AIA struct {
 ```
 
 <a name="Auth"></a>
-## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L98-L118>)
+## type [Auth](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L112-L132>)
 
 Auth specifies the authentication configuration
 
@@ -136,7 +142,7 @@ type Auth struct {
 ```
 
 <a name="CA"></a>
-## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L168-L195>)
+## type [CA](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L182-L209>)
 
 CA specifies the Certification Authority configuration
 
@@ -172,7 +178,7 @@ type CA struct {
 ```
 
 <a name="Cache"></a>
-## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L121-L131>)
+## type [Cache](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L135-L145>)
 
 Cache specifies configuration of the cache.
 
@@ -191,7 +197,7 @@ type Cache struct {
 ```
 
 <a name="Configuration"></a>
-## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L37-L80>)
+## type [Configuration](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L42-L85>)
 
 Configuration contains the user configurable data for the service
 
@@ -249,7 +255,7 @@ func Load(configFile string) (*Configuration, error)
 Load will load the configuration from the named config file, apply any overrides, and resolve relative directory locations.
 
 <a name="CryptoProv"></a>
-## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L156-L165>)
+## type [CryptoProv](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L170-L179>)
 
 CryptoProv specifies the configuration for crypto providers
 
@@ -267,7 +273,7 @@ type CryptoProv struct {
 ```
 
 <a name="Orgs"></a>
-## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L146-L153>)
+## type [Orgs](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L160-L167>)
 
 Orgs specifies the Orgs configuration
 
@@ -283,7 +289,7 @@ type Orgs struct {
 ```
 
 <a name="Retention"></a>
-## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L212-L217>)
+## type [Retention](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L226-L231>)
 
 Retention specifies the retention of expired certificates
 
@@ -322,7 +328,7 @@ type SQL struct {
 ```
 
 <a name="Service"></a>
-## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L83-L95>)
+## type [Service](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L88-L100>)
 
 Service specifies the basic service info
 
@@ -334,7 +340,7 @@ type Service struct {
     // Region specifies the Region / Datacenter where the instance is running
     Region string `json:"region,omitempty" yaml:"region,omitempty"`
 
-    // Environment specifies the environment where the instance is running: prod|stage|dev
+    // Environment specifies the environment where the instance is running: prod|stage|dev|local
     Environment string `json:"environment,omitempty" yaml:"environment,omitempty"`
 
     // ClusterName specifies the cluster name
@@ -342,8 +348,17 @@ type Service struct {
 }
 ```
 
+<a name="Service.IsLocal"></a>
+### func \(Service\) [IsLocal](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L107>)
+
+```go
+func (s Service) IsLocal() bool
+```
+
+IsLocal reports whether the instance runs on a developer machine or in the integration test stack: environment EnvironmentLocal in cluster ClusterLocal. Functionality for development and tests only, such as the \`local\` identity provider, checks it and fails closed in every other environment and cluster.
+
 <a name="Task"></a>
-## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L134-L143>)
+## type [Task](<https://github.com/effective-security/trustyca/blob/main/internal/config/config.go#L148-L157>)
 
 Task specifies configuration of a single task.
 

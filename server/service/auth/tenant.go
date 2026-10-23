@@ -2,15 +2,18 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"time"
 
+	"github.com/effective-security/porto/restserver"
+	"github.com/effective-security/porto/xhttp/header"
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/porto/xhttp/identity"
+	"github.com/effective-security/porto/xhttp/marshal"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/authctx"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/events"
-	"github.com/effective-security/x/values"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/jwt"
@@ -131,8 +134,27 @@ func (s *Service) initialOrg(ctx context.Context, user *model.User) *orgSelectio
 }
 
 // SelectOrg verifies the caller's access to the org and returns a new token
-// scoped to it. Access requires an active org-wide or project grant.
+// scoped to it, with the original expiry. Access requires an active
+// org-wide or project grant.
+//
+// A cookie session does not receive AccessToken, and gRPC cannot set a
+// cookie: such a session switches the org with POST pb.PathForAuthOrg
+// (AuthOrgHandler), which writes the new token into the auth cookie.
 func (s *Service) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.UserTokenResponse, error) {
+	res, err := s.selectOrgToken(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	// gRPC has no Authorization header of its own: the auth method of the
+	// identity tells a cookie session
+	omitCookieAccessToken(ctx, res, "")
+	return res, nil
+}
+
+// selectOrgToken verifies the caller's access to the org and returns a new
+// token scoped to it. AccessToken is always set; the callers omit it from
+// the response of a cookie session.
+func (s *Service) selectOrgToken(ctx context.Context, req *pb.SelectOrgRequest) (*pb.UserTokenResponse, error) {
 	orgID, err := xdb.ParseID(req.OrgID)
 	if err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid org ID")
@@ -193,9 +215,8 @@ func (s *Service) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.
 
 	res := &pb.UserTokenResponse{
 		Token: &pb.Token{
-			TokenType: caller.TokenType(),
-			// If the authentication method is JWT Cookie, do not return the access token
-			AccessToken: values.Select(trustyCtx.AuthMethod() == identity.MethodJWTCookie, "", tokenStr),
+			TokenType:   caller.TokenType(),
+			AccessToken: tokenStr,
 			ExpiresAt:   claims.TimeVal("exp").Format(time.RFC3339),
 			IssuedAt:    claims.TimeVal("iat").Format(time.RFC3339),
 			Issuer:      claims.String("iss"),
@@ -216,4 +237,53 @@ func (s *Service) SelectOrg(ctx context.Context, req *pb.SelectOrgRequest) (*pb.
 		Emit(s.db)
 
 	return res, nil
+}
+
+// AuthOrgHandler handles pb.PathForAuthOrg: the org switch of a REST
+// caller, the one a cookie session uses. A cookie session (the auth cookie
+// and no Authorization header) receives the new token in the auth cookie,
+// with a new CSRF cookie, and the response omits AccessToken; the cookies
+// last until the token expires with RememberMe, else for the browser
+// session. A caller with an Authorization header receives AccessToken, and
+// its cookies are not replaced.
+func (s *Service) AuthOrgHandler() restserver.Handle {
+	return func(w http.ResponseWriter, r *http.Request, _ restserver.Params) {
+		var req pb.SelectOrgRequest
+		if err := marshal.DecodeBody(w, r, &req); err != nil {
+			return
+		}
+
+		ctx := r.Context()
+		res, err := s.selectOrgToken(ctx, &req)
+		if err != nil {
+			marshal.WriteJSON(w, r, err)
+			return
+		}
+
+		authorization := r.Header.Get(header.Authorization)
+		if authorization == "" && authctx.FromContext(ctx).AuthMethod() == identity.MethodJWTCookie {
+			var validFor time.Duration
+			if req.RememberMe {
+				if exp, err := time.Parse(time.RFC3339, res.Token.ExpiresAt); err == nil {
+					validFor = time.Until(exp)
+				}
+			}
+			ccfg := s.server.Configuration().IdentityMap.GetCookiesConfig()
+			setAuthCookie(w, ccfg, res.Token.AccessToken, validFor)
+		}
+		omitCookieAccessToken(ctx, res, authorization)
+		marshal.WriteJSON(w, r, res)
+	}
+}
+
+// omitCookieAccessToken drops the token from the response of a cookie
+// session, which never reads it: the cookie that carries it is HttpOnly.
+// A request with an Authorization header uses the token itself and keeps it.
+func omitCookieAccessToken(ctx context.Context, res *pb.UserTokenResponse, authorization string) {
+	if res == nil || res.Token == nil || authorization != "" {
+		return
+	}
+	if authctx.FromContext(ctx).AuthMethod() == identity.MethodJWTCookie {
+		res.Token.AccessToken = ""
+	}
 }

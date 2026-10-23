@@ -1,10 +1,10 @@
-package ca
+package backend
 
 import (
 	"context"
 	"strings"
 
-	"github.com/effective-security/trustyca/server/service/internal/caapi"
+	"github.com/effective-security/trustyca/privpb"
 
 	"github.com/effective-security/porto/xhttp/httperror"
 	"github.com/effective-security/trustyca/api/pb"
@@ -22,7 +22,7 @@ import (
 // replaces the one with the same label in the same scope. The profile is
 // validated as the authority will sign with it; its issuer label binds it
 // to an issuer of the org, or to any issuer that allows it.
-func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRequest) (*pb.CertProfile, error) {
+func (s *Service) RegisterProfile(ctx context.Context, req *privpb.RegisterProfileRequest) (*pb.CertProfile, error) {
 	if req == nil || req.Profile == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing profile")
 	}
@@ -69,7 +69,7 @@ func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRe
 		"project_id", res.ProjectID.UnderscoreString(),
 		"profile", res.Label,
 		"issuer", res.IssuerLabel)
-	events.New(ctx, caapi.EventSource, pb.EventType_ProfileRegistered, "Profile registered").
+	events.New(ctx, EventSource, pb.EventType_ProfileRegistered, "Profile registered").
 		Org(orgID).
 		Project(projectID).
 		Reference(res.ID).
@@ -80,7 +80,7 @@ func (s *Service) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRe
 
 // GetProfile returns a profile of the org by ID, or by label resolved in
 // the project then in the org
-func (s *Service) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*pb.CertProfile, error) {
+func (s *Service) GetProfile(ctx context.Context, req *privpb.GetProfileRequest) (*pb.CertProfile, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -112,7 +112,7 @@ func (s *Service) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*p
 // limits the result to its own profiles. Without a project, a member with
 // project grants only lists the org-wide profiles and those of its
 // projects.
-func (s *Service) ListProfiles(ctx context.Context, req *pb.ListProfilesRequest) (*pb.ProfilesResponse, error) {
+func (s *Service) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequest) (*pb.ProfilesResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -154,7 +154,7 @@ func (s *Service) ListProfiles(ctx context.Context, req *pb.ListProfilesRequest)
 }
 
 // DeleteProfile deletes a profile of the org
-func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileRequest) (*emptypb.Empty, error) {
+func (s *Service) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRequest) (*emptypb.Empty, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -180,7 +180,7 @@ func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileReques
 		"org_id", row.OrgID.UnderscoreString(),
 		"project_id", row.ProjectID.UnderscoreString(),
 		"profile", row.Label)
-	events.New(ctx, caapi.EventSource, pb.EventType_ProfileDeleted, "Profile deleted").
+	events.New(ctx, EventSource, pb.EventType_ProfileDeleted, "Profile deleted").
 		Org(orgID).
 		Project(row.ProjectID).
 		Reference(row.ID).
@@ -190,11 +190,11 @@ func (s *Service) DeleteProfile(ctx context.Context, req *pb.DeleteProfileReques
 }
 
 // invalidateProfile drops the cached resolutions of the profile in the
-// backend of the process; a remote backend sees the change after the TTL of
-// its issuer registry (DESIGN.md section 2.1)
+// issuer registry of this instance; another backend instance sees the
+// change after ca.issuer_cache_ttl (DESIGN.md section 5.1)
 func (s *Service) invalidateProfile(orgID, projectID xdb.ID, label string) {
-	if s.backend != nil {
-		s.backend.InvalidateProfile(orgID, projectID, label)
+	if s.registry != nil {
+		s.registry.InvalidateProfile(orgID, projectID, label)
 	}
 }
 

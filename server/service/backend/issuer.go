@@ -15,7 +15,7 @@ import (
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/events"
-	"github.com/effective-security/trustyca/server/service/internal/caapi"
+	"github.com/effective-security/trustyca/privpb"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/authority"
@@ -38,7 +38,7 @@ var issuerTransitions = map[pb.IssuerStatus_Enum]pb.IssuerStatus_Enum{
 // when ParentID is set, otherwise a Pending issuer with its CSR. The key is
 // generated in the crypto provider and never leaves it; a software key is
 // stored wrapped.
-func (s *Service) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequest) (*pb.Issuer, error) {
+func (s *Service) RegisterIssuer(ctx context.Context, req *privpb.RegisterIssuerRequest) (*pb.Issuer, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -146,19 +146,19 @@ func (s *Service) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequ
 		"issuer_status", registered.Status.String(),
 		"skid", registered.Skid,
 		"key_provider", registered.KeyProvider)
-	events.New(ctx, caapi.EventSource, pb.EventType_IssuerRegistered, "Issuer registered").
+	events.New(ctx, EventSource, pb.EventType_IssuerRegistered, "Issuer registered").
 		Org(orgID).
 		Project(projectID).
 		Reference(registered.ID).
 		Description("issuer %q registered with status %s", registered.Label, registered.Status.String()).
 		Emit(s.orgs)
-	return caapi.IssuerPb(ctx, registered)
+	return issuerPb(ctx, registered)
 }
 
 // ImportIssuer registers an issuer from an existing certificate and key:
 // a key in a crypto provider by its URI, or a PEM key that is stored
 // wrapped. The chain must verify to the given or the self-signed root.
-func (s *Service) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest) (*pb.Issuer, error) {
+func (s *Service) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest) (*pb.Issuer, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -219,19 +219,19 @@ func (s *Service) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest)
 		"type", registered.Type.String(),
 		"skid", registered.Skid,
 		"key_provider", registered.KeyProvider)
-	events.New(ctx, caapi.EventSource, pb.EventType_IssuerRegistered, "Issuer imported").
+	events.New(ctx, EventSource, pb.EventType_IssuerRegistered, "Issuer imported").
 		Org(orgID).
 		Project(projectID).
 		Reference(registered.ID).
 		Description("issuer %q imported", registered.Label).
 		Emit(s.orgs)
-	return caapi.IssuerPb(ctx, registered)
+	return issuerPb(ctx, registered)
 }
 
 // ActivateIssuer sets the externally signed certificate of a Pending
 // issuer of the org and activates it; the certificate must be for the key
 // of the issuer and its chain must verify
-func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequest) (*pb.Issuer, error) {
+func (s *Service) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuerRequest) (*pb.Issuer, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -251,7 +251,7 @@ func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequ
 		return nil, err
 	}
 	if row.Status != pb.IssuerStatus_Pending {
-		return nil, caapi.PreconditionFailed(ctx, "issuer is not pending")
+		return nil, preconditionFailed(ctx, "issuer is not pending")
 	}
 	activated, err := s.registry.Keys().ActivatedIssuer(ctx, row, req.Certificate, req.Intermediates, req.Root)
 	if err != nil {
@@ -261,7 +261,7 @@ func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequ
 	if err != nil {
 		switch {
 		case xdb.IsNotFoundError(err):
-			return nil, caapi.PreconditionFailed(ctx, "issuer is not pending")
+			return nil, preconditionFailed(ctx, "issuer is not pending")
 		case db.IsUniqueViolation(err, db.UniqueIssuerSkid):
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "issuer key is already registered")
 		}
@@ -274,20 +274,20 @@ func (s *Service) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequ
 		"org_id", res.OrgID.UnderscoreString(),
 		"issuer", res.Label,
 		"skid", res.Skid)
-	events.New(ctx, caapi.EventSource, pb.EventType_IssuerActivated, "Issuer activated").
+	events.New(ctx, EventSource, pb.EventType_IssuerActivated, "Issuer activated").
 		Org(orgID).
 		Project(res.ProjectID).
 		Reference(res.ID).
 		Description("issuer %q activated", res.Label).
 		Emit(s.orgs)
-	return caapi.IssuerPb(ctx, res)
+	return issuerPb(ctx, res)
 }
 
 // UpdateIssuer replaces the runtime settings of an issuer of the org, or
 // moves it along its lifecycle: Active to Archived, Archived to Destroyed.
 // Destroying an issuer removes its key from the crypto provider when the
 // provider manages keys, and clears a wrapped software key.
-func (s *Service) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest) (*pb.Issuer, error) {
+func (s *Service) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequest) (*pb.Issuer, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -312,7 +312,7 @@ func (s *Service) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest)
 	}
 	if req.Status != pb.IssuerStatus_Unknown {
 		if issuerTransitions[row.Status] != req.Status {
-			return nil, caapi.PreconditionFailed(ctx, "issuer status %s cannot change to %s", row.Status.String(), req.Status.String())
+			return nil, preconditionFailed(ctx, "issuer status %s cannot change to %s", row.Status.String(), req.Status.String())
 		}
 		update.Status = req.Status
 	}
@@ -354,13 +354,13 @@ func (s *Service) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest)
 		"org_id", updated.OrgID.UnderscoreString(),
 		"issuer", updated.Label,
 		"issuer_status", updated.Status.String())
-	events.New(ctx, caapi.EventSource, pb.EventType_IssuerUpdated, "Issuer updated").
+	events.New(ctx, EventSource, pb.EventType_IssuerUpdated, "Issuer updated").
 		Org(orgID).
 		Project(updated.ProjectID).
 		Reference(updated.ID).
 		Description("issuer %q updated: status %s", updated.Label, updated.Status.String()).
 		Emit(s.orgs)
-	return caapi.IssuerPb(ctx, updated)
+	return issuerPb(ctx, updated)
 }
 
 // parentIssuer resolves the parent of a new issuer of the scope with the CA
@@ -370,7 +370,7 @@ func (s *Service) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest)
 // of another org or project is not found. The profile is resolved in the
 // scope of the parent and must be a CA profile.
 func (s *Service) parentIssuer(ctx context.Context, orgID, projectID xdb.ID, parentID, profile string) (*core.Resolution, error) {
-	id, err := caapi.ParseID(ctx, parentID, "parent ID")
+	id, err := parseID(ctx, parentID, "parent ID")
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +389,7 @@ func (s *Service) parentIssuer(ctx context.Context, orgID, projectID xdb.ID, par
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "parent issuer not found")
 	}
 	if parent.Status != pb.IssuerStatus_Active {
-		return nil, caapi.PreconditionFailed(ctx, "parent issuer is not active")
+		return nil, preconditionFailed(ctx, "parent issuer is not active")
 	}
 	if platform {
 		cfg, err := parent.GetConfig()
@@ -479,4 +479,89 @@ func (s *Service) registerRootAnchor(ctx context.Context, row *model.Issuer) {
 			"org_id", row.OrgID.UnderscoreString(),
 			"err", err.Error())
 	}
+}
+
+// GetIssuer returns an issuer of the org by ID, by label resolved in the
+// project then in the org, or by IKID. An issuer found by ID or IKID must
+// be of a project the caller can read, or org-wide (tenantScope.RowAccess).
+func (s *Service) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error) {
+	if req == nil {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
+	}
+	orgID, err := s.scope.Org(ctx, req.OrgID)
+	if err != nil {
+		return nil, err
+	}
+	var row *model.Issuer
+	switch {
+	case req.ID != "":
+		row, err = s.scope.Issuer(ctx, orgID, req.ID, pb.CA_GetIssuer_FullMethodName)
+	case req.Label != "":
+		var projectID xdb.ID
+		projectID, err = s.scope.Project(ctx, orgID, req.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+		row, err = s.scope.IssuerByLabel(ctx, orgID, projectID, req.Label)
+	case req.IKID != "":
+		row, err = s.db.GetIssuerBySKID(ctx, req.IKID)
+		if err != nil {
+			if xdb.IsNotFoundError(err) {
+				return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found")
+			}
+			return nil, httperror.WrapWithCtx(ctx, err, "unable to find issuer")
+		}
+		row, err = s.scope.VisibleIssuer(ctx, orgID, row, pb.CA_GetIssuer_FullMethodName)
+	default:
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer ID, label or IKID is required")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return issuerPb(ctx, row)
+}
+
+// ListIssuers returns the issuers of the org, newest first; a project
+// limits the result to its own issuers. Without a project, a member with
+// project grants only lists the org-wide issuers and those of its projects.
+func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+	if req == nil {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
+	}
+	orgID, err := s.scope.Org(ctx, req.OrgID)
+	if err != nil {
+		return nil, err
+	}
+	projectID, err := s.scope.Project(ctx, orgID, req.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	cursor, err := listCursor(ctx, req.Cursor)
+	if err != nil {
+		return nil, err
+	}
+	q := &query.ListIssuersRequest{
+		OrgID:     orgID.UInt64(),
+		ProjectID: projectID.UInt64(),
+		Status:    req.Status,
+		Type:      req.Type,
+		Limit:     listLimit(req.Limit),
+		Offset:    req.Offset,
+		Cursor:    cursor,
+	}
+	if projectID.IsZero() {
+		q.ProjectIDs, err = s.scope.ListProjects(ctx, orgID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	res, err := s.db.ListIssuers(ctx, q)
+	if err != nil {
+		return nil, httperror.WrapWithCtx(ctx, err, "failed to list issuers")
+	}
+	list, err := res.Pb()
+	if err != nil {
+		return nil, httperror.WrapWithCtx(ctx, err, "invalid issuer config")
+	}
+	return list, nil
 }

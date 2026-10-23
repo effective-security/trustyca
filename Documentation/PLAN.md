@@ -1,722 +1,100 @@
 # Trusty CA Implementation Plan
 
 Execution plan for [DESIGN.md](design/DESIGN.md). Phases are ordered by dependency;
-each phase ends with a green `make build test lint`.
+each phase ends with a green `make build test lint`. A finished phase keeps a
+one-line summary here: its steps, decisions and tests are in the git history
+of this file (`git log -p -- Documentation/PLAN.md`) and in the
+[codemap](codemap.md).
 
-## Phase 0: design artifacts (done)
+## Completed phases
 
-- `Documentation/design/DESIGN.md`, this plan.
-- `sql/trustycadb/migrations/1_tables.up.sql` and `1_tables.down.sql`: `project`,
-  `issuer`, `root_certificate`, `certificate_profile`, `certificate`, `revoked`,
-  `crl`; nullable `(org_id, project_id)` tenancy with `UNIQUE NULLS NOT DISTINCT`
-  and composite FKs `(org_id, project_id) -> project (org_id, id)` on
-  `membership` and `invite`. Verified with up and down runs on a scratch DB.
-- Protos: `pkix.proto`, `ca.proto`, `cis.proto`, `orgs.proto`, `types.proto`,
-  `auth.proto`. Tenant requests carry no `OrgID`; methods declare the minimum
-  roles with `(es.api.allowed_roles)` and, where `APIKey` is allowed, the
-  scopes with `(es.api.scopes)`. Generated with `make proto`, mocks with
-  `go generate`.
+| Phase | Delivered |
+| ----- | --------- |
+| 0     | Design artifacts: DESIGN.md, this plan, the tables of `sql/trustycadb/migrations/1_tables.up.sql` with nullable `(org_id, project_id)` tenancy, the protos with `(es.api.allowed_roles)` and `(es.api.scopes)` |
+| 1     | Orgs, projects, memberships, invites, API keys and the authorization layer (`internal/authctx`: roles, grants, scopes, the Authorizer, CheckAccess), DESIGN.md section 3 |
+| 2     | The CA tables in `internal/db` and the CA core library (`internal/ca`: keys, issuer creation, the platform bootstrap) |
+| 2a    | Multi-tenant issuer resolution: the issuer registry keyed by row ID with scoped label resolution and its caches (DESIGN.md section 5.1), with the warm and cold resolution benchmark |
+| 3     | The CA gRPC service: issuers, profiles, roots, signing, certificates, revocation and the current CRL, the `trustyca-ra` and `trustyca-aia` identities |
+| 4     | The revocation pipeline: CRL publishing (`internal/ca.CrlPublisher`, `PublishCrls`, the `crl_renewal` task) and the `cert_status` task (expiry and retention) |
+| 5     | The CIS service (`server/service/cis`): the read-only JSON and gRPC API of authenticated callers |
+| 6     | Operator tooling: the `ca` commands of `trustycactl`, `ca org bootstrap`, the `privpb.Admin` support lists, the CIS commands of `trustyca` |
+| 7     | Hardening: the metrics of DESIGN.md section 11, deny by default on the backend listener, the load test of the CA tables (`tests/load`, Documentation/perf/load-certificates.md) |
+| 8     | The AIA listener (`server/service/aia`): the issuer certificate, CRL and OCSP routes of the issued certificates over plain HTTP, the OCSP response cache |
+| 9     | The signing plane (steps 1 to 3, 5 and 6): named service clients, `privpb.Backend` on the backend listener with every CA method and an explicit `OrgID`, `pb.CA` on the wfe as a proxy that takes the org of the token (DESIGN.md sections 2.1 and 2.2); step 4 is open below |
+| 10    | Web UI sessions: the cookie session of the console, the `local` identity provider, token revocation and the container integration tests (section below) |
 
-## Phase 1: org, project, membership and authorization layer (done)
+## Phase 10: Web UI sessions (done)
 
-Implements the spec end to end; see DESIGN.md section 3.
+The console (`trustyca-ui`) calls the `wfe` over gRPC-Web in bearer mode or
+in cookie mode (its DESIGN.md section 4.2). The cookie mode, its CORS, the
+`local` provider of the tests and the integration suite were compared with
+cynos, whose console runs the same porto stack, and brought in line.
 
-- `internal/authctx`: role hierarchy (`CanAssumeRoles`, `CanAssumeRole`),
-  `Grants` with additive resolution per scope (`Roles`, `HighestRole`), derived
-  org Viewer, grantability rules, scopes (`HasScopes`, `IsKnownScope`),
-  `Authorizer` (cached grants and projects, `CheckRole`), `CheckAccess` driven
-  by `allowed_roles` and `scopes`, API key path, token context with `org`,
-  `org_role`, `org_role_source`, `scope`, `project` claims, `ProjectRequester`,
-  `GetAllowedMethods`, `GetCallerScope`. The DB layer has no dependency on
-  authorization code.
-- DB layer: project CRUD, scope-aware membership and invite queries with
-  `IS NULL`/`IS NOT NULL` predicates, `expires_at` on invites,
-  `GetUserMemberships`, `GetUserOrgs` deduplicated, `TryCreateEvent` on the
-  interface, `apikey` CRUD (`RegisterAPIKey`, `GetAPIKey`, `ListAPIKeys` with
-  project, key, scopes and status filters, `UseAPIKey`, `DeleteAPIKey`).
-- Auth service: `SelectOrg`, initial org selection at login, default org and
-  project creation, `UserInfo` with org fields, `AuthenticateAPIKey`,
-  `GetAllowedMethods`, `GetCallerScope`, user lifecycle events (sign-up,
-  sign-in, sign-out, accepted invites, API key sign-in).
-- `internal/events`: the event builder every service emits audit events
-  with (DESIGN.md section 11).
-- Orgs service: token-scoped org RPCs, `GetUserOrgs`, `GetUserMemberships`,
-  project RPCs with grant-filtered `ListProjects`, member RPCs with
-  grantability checks and last-Owner protection, `CreateAPIKey`,
-  `ListAPIKeys`, `DeleteAPIKey`, audit events.
-- CLI: `auth org|allowed|scope`, `org list|access|get|update|delete`,
-  `member ...` for org-wide grants, `project ...`, `project member ...`,
-  `api-key create|list|delete`.
-- Tests: `internal/authctx` (hierarchy, grants, scopes, authorizer,
-  `CheckAccess` for users, API keys, scoped tokens and service roles,
-  `GetAllowedMethods`, `GetCallerScope`), query builders, DB integration
-  (`Test_ProjectMembership`, `Test_APIKey`, `Test_EventWithoutMetadata`),
-  service tests with a fake authorizer including API keys and the exact
-  event of each mutation, auth event integration tests, CLI with golden
-  output.
+1. Cookie session: `POST /v1/auth/org` (`AuthOrgHandler`, the BE-2 item of
+   the console plan) runs the org switch of `Auth.SelectOrg` and writes the
+   new token into the auth cookie with a new CSRF cookie; `SelectOrg` (gRPC)
+   keeps returning no token to a cookie session. `GET /pb.Auth/RevokeToken`
+   went: a GET passes porto without the CSRF check, so any page could sign
+   a cookie session out; the sign-out is `DELETE /pb.Auth/RevokeToken`,
+   which removes the cookies first.
+2. Token revocation: the JWT parser of the container has porto's
+   revocation over the cache (Redis), as cynos does. Before it every
+   `RevokeToken` answered Unimplemented, so a signed-out token stayed valid
+   until it expired. A guest is refused (`no token to revoke`).
+3. The `local` identity provider: offered only by `service.environment:
+   local` in `service.cluster: local` (`config.Service.IsLocal`, the dev
+   configuration; every other environment fails closed). `local+<user>@<domain>`
+   signs in as `<user>@<domain>` without an invitation, and the authorize
+   end-point sends the browser to the callback of its own host, so the
+   cookies are set for the host the console logs in on.
+4. Configuration: the wfe CORS admits the console in cookie mode
+   (`https://app.local.trustyca.io:4200`, under the cookie domain
+   `.local.trustyca.io`); the server certificate of `make gen_test_certs`
+   names `api.local.trustyca.io` (`TEST_CERTS_SAN`); the `"*"` exposed
+   header went (a credentialed response never honors it).
+5. The `trustyca` CLI sends the stored token over gRPC to every server, not
+   only to the hosts of its config file, as its HTTP client does.
+6. `tests/integration` and `make docker-citest`, also in CI: the service
+   image in a compose stack with its own PKI, PostgreSQL, Redis and the KMS
+   emulator; the CLI signs users in through the `local` provider
+   (`test_auth.sh`), and curl plays the browser and the console in cookie
+   mode (`test_cookies.sh`: CORS, the cookies, the CSRF double submit over
+   gRPC-Web and REST, the org switch, the sign-out). The binaries link the
+   PKCS#11 provider with cgo, so `make docker-build` compiles them in the
+   golang image of the Debian release the images run on.
 
-Acceptance criteria from the spec covered by tests: 1, 2, 3, 4, 5, 6, 7, 8, 9,
-11, 12, 13, 14. Criterion 10 (revocation bound) is the 3 minute cache TTL
-plus invalidation after every membership mutation.
+## Open work
 
-Follow-ups in this area:
-
-1. Most recently used org at login; today the first accessible org is selected.
-2. `privpb.Admin` support views across orgs (`ListProjects`, `ListMemberships`).
-3. Cookie refresh on `SelectOrg` for browser sessions (`RememberMe`).
-4. API key rotation and a client helper that signs requests with the key
-   (HMAC over method and timestamp) for `AuthenticateAPIKey`.
-5. Done in phase 2: `issuer.config` and `certificate_profile.config` map to
-   `model.JSON` (`internal/db/model/json.go`) in `typesmap.yaml`, because
-   `xdb.Metadata` is `map[string]string` and cannot hold the nested
-   `pb.IssuerConfig`/`pb.CertProfile`.
-6. Regeneration note: `make drop-sql start-sql gen-sql-schema docs` emits the two
-   `*.gen.go` files without imports; run `goimports -w` on them afterwards.
-
-## Phase 2: CA core library (`internal/ca`, done)
-
-1. `internal/db` (done): `CaReadonlyDb` and `CaDb` interfaces and `pgsql`
-   implementations in lifecycle order (Register/Upsert, Get, List, Delete) for
-   issuers, roots, profiles, certificates, revoked, CRLs. Requests use
-   `QueryParams()` structs; lists order by `id DESC` and paginate by offset or
-   with a cursor on `id` (`query.Cursor`, `query.ParseCursor`).
-   - `RegisterCertificate` with an event, `RevokeCertificate` and
-     `PublishCrl` are single transactions; `PublishCrl` only accepts a CRL
-     whose IKID is the issuer's SKID and whose number is greater than the
-     issuer's (`ErrStaleCrlNumber`), and a revoked certificate fails with
-     `ErrAlreadyRevoked`.
-   - `ListCertificates` supports `ProjectID`, `IKID`, `SKID`, `Profile`,
-     `Status`, `ExpiringBefore`; `ListRevoked` supports `IKID` and `ValidAfter`
-     for CRL generation.
-   - Migration `2_revoked_view` adds `vw_revoked_certificate` (revocation
-     joined with its certificate) for `ListRevokedCertificates`; the
-     `model.RevokedCertificate` row is generated from it. Migration
-     `3_revoked_index` adds the unique `(ikid, serial_number)` index of
-     `revoked` for `GetRevoked` by issuer and serial (OCSP).
-   - Tenancy fails closed: a list names `OrgID`, `Platform` (`org_id IS
-NULL`) or `AllOrgs` (`ErrOrgScopeRequired` otherwise), and every
-     mutation of a row names its exact org, so another org's row is not
-     found; `FindIssuer`/`FindProfile` take an exact scope and the label,
-     the resolution `(org, project, label) -> (org, 0, label)` belongs to
-     `internal/ca`.
-   - Tests: query SQL goldens, model conversions, and DB integration tests
-     with real certificates from `tests/testutils.NewTestCA`
-     (`Test_Issuer`, `Test_Issuer_Activate`, `Test_Root`, `Test_Profile`,
-     `Test_Certificate`, `Test_Crl`).
-2. `internal/ca/keys.go` (done): `Keys` over the `crypto_provider`
-   registry (`cryptoprov.Load`, provided by `appcontainer`) and the
-   `dataprotection.Provider`; `KeySpec` defaults and limits; key labels
-   `trustyca/{org}/{project}/{label}`; `KeyRef` with the key URI of a
-   provider key or the wrapped PEM of a software key; `Signer` loads either;
-   `ImportKey`, `Destroy`, `SubjectKeyID`.
-3. `internal/ca/profile.go`, `config.go` (done): `ProfileFromPb` with
-   `authority.CertProfile.Validate`, `ProfileToPb`, `ExtensionsFromPb`,
-   `IssuerConfigFromPb` (the AIA section is always present, so the CRL and
-   OCSP timings fall back to the authority defaults), `IssuerConfigToPb`.
-4. `internal/ca/registry.go`, `bootstrap.go` (done): the `Registry` of
-   phase 2a resolves `(org, project, label) -> (org, 0, label)` for profiles
-   and issuers, builds `authority.Issuer` from a row with
-   `authority.CreateIssuer` and the signer of `Keys`, and caches it by row
-   ID with a TTL. `Bootstrap` mirrors an `authority.Config` into platform
-   rows. The decisions the loader needed: a registered issuer with the same
-   SKID only has its settings refreshed in place (`UpdateIssuer` with the
-   config, never `crl_number`); a certificate for a new key is an error,
-   because the label is unique per scope in every status (ROADMAP.md);
-   `RegisterIssuer(Type=Root)` registers the `root_certificate` row after
-   the issuer, not in one transaction, and the service logs a failure since
-   `RegisterRoot` is idempotent.
-5. `internal/ca/issuer.go` (done for issuers): `NewRootIssuer`,
-   `NewSignedIssuer`, `NewPendingIssuer` (DESIGN.md section 5.2),
-   `ImportIssuer`, `ActivatedIssuer`. `SignCertificate` and `SignOCSP` stay
-   in the service on top of `Registry.Resolve` and `IssuerByKeyHash`;
-   `Revoke` and `BuildCRL` are phase 4.
-6. Tests (done): `internal/ca` over a map-backed fake DB and the `inmem`
-   provider, with the fixtures created through the package itself; profile
-   conversion tables; parent authorization and scope shadowing of the
-   registry; concurrency under the race detector.
-
-## Phase 2a: multi-tenant issuer resolution (done)
-
-Replaces the single bootstrap `*authority.Authority` the CA service signed
-with, which collided on issuer labels across orgs and loaded every issuer at
-startup. The decision is recorded in DESIGN.md section 5.1: an issuer
-registry keyed by row ID with scoped resolution, not an `Authority` per org,
-because labels are unique per `(org, project)` and project profiles shadow
-org profiles.
-
-1. `internal/ca.Registry`: `Resolve` (profile of the scope, the issuer it
-   binds to or the requested one for `*` profiles, Active only, profile
-   registered on the issuer under a versioned name), `FindProfile`,
-   `FindIssuer`, `Issuer`, `IssuerBySKID`, `IssuerByKeyHash`,
-   `IssuerByNameHash`, `InvalidateIssuer`, `InvalidateProfile`. Caches are
-   `hashicorp/golang-lru/v2/expirable` with `ca.issuer_cache_ttl` and
-   `ca.issuer_cache_size`; one build per issuer under a striped lock.
-2. `server/appcontainer.provideCA` provides `*ca.Registry` and runs
-   `Registry.Bootstrap` on `ca.bootstrap_config` (the `authority` config key
-   became the `ca` section): a `disabled` issuer is archived and enabled
-   again by the configuration, the anchor of a root issuer is registered on
-   every start, and every enabled issuer is loaded, so a platform issuer
-   that does not load fails the start.
-3. `server/service/ca`: `SignCertificate` resolves through the registry
-   (profile not found, issuer not found, label required, mismatch, not
-   allowed, not active are mapped to the API codes), `SignOCSP` through
-   `IssuerByKeyHash` and `IssuerByNameHash`; `RegisterIssuer`,
-   `ImportIssuer`, `ActivateIssuer`, `UpdateIssuer`, `GetIssuer`,
-   `ListIssuers`, `RegisterProfile`, `GetProfile`, `ListProfiles`,
-   `DeleteProfile`, `RegisterRoot`, `ListRoots` are implemented, with audit
-   events and registry invalidation after every mutation. A row resolved by
-   ID or IKID is authorized against its own project (`rowAccess`), a list
-   without a project is limited to the projects of a member with project
-   grants only (`listProjects`, `ProjectIDs` of the list queries), and the
-   parent of a new issuer must be visible from the new issuer's scope
-   (DESIGN.md section 6).
-4. Benchmarks (`internal/ca/bench_test.go`, `server/service/ca/bench_test.go`;
-   `go test -bench . -benchmem`), measured on 2026-10-18 on a 16-thread
-   desktop with the `inmem` provider, an in-memory fake DB and mocked
-   registration; the figures are a guide to the shape of the cost, not a
-   target:
-
-   | Benchmark                                                   | ns/op   | allocs/op |
-   | ----------------------------------------------------------- | ------- | --------- |
-   | `Registry.Resolve`, warm                                    | 294     | 3         |
-   | `Registry.Resolve`, warm, rotating over 16 orgs             | 310     | 3         |
-   | `Registry.Resolve`, cold (lookups, key load, construction)  | 206,145 | 466       |
-   | `Registry.Resolve` + `Issuer.Sign`                          | 193,959 | 431       |
-   | option A: `Authority.GetIssuerByProfile` + `Issuer.Sign`    | 191,999 | 428       |
-   | option A: `Authority.GetIssuerByProfile` alone              | 8       | 0         |
-   | `Service.SignCertificate`, warm                             | 211,389 | 539       |
-   | `Service.SignOCSP`, warm                                    | 53,531  | 283       |
-
-   The warm resolution adds about 0.3 µs to a signature of about 190 µs
-   (a KMS signature adds a network round trip of milliseconds), so the
-   registry costs nothing measurable on the hot path compared with the
-   single authority. A cold issuer pays its DB lookups (two to four
-   queries) and about 0.2 ms of construction once per TTL and instance.
-
-Follow-ups:
-
-1. Issuer renewal under one label (ROADMAP.md).
-2. `OCSPRequest.IKID` from the CIS route (ROADMAP.md); until then an issuer
-   that is not in memory is found by a SHA-1 key hash only.
-3. `pb.Issuer.Profiles` is not populated; `GetIssuer` could list the
-   profiles bound to the issuer.
-4. Negative resolutions are not cached: an unknown profile costs DB lookups
-   on every request.
-5. Tenants list only the trust anchors of their org; platform anchors are
-   served by CIS.
-6. `UpdateIssuer`, `ActivateIssuer` and `DeleteProfile` carry no
-   `ProjectID`, so a project Admin cannot manage the rows of its project
-   through them (ROADMAP.md).
-
-## Phase 3: CA gRPC service (done)
-
-The issuer, profile, root and signing methods are done in phase 2a
-(`server/service/ca/issuer.go`, `profile.go`, `root.go`, `signer.go`,
-`tenant.go`): the org comes from the token or, for a `trustyca-*` service
-caller, from the request and is verified through `db.OrgsDb`; the project
-is verified with the authorizer; the certificate and its
-`CertificateIssued` event are one transaction; OCSP answers good, revoked
-(reason and time from `GetRevoked`) or unknown. The service tests build the
-CA through `internal/ca` with the `inmem` provider over a mock DB whose
-reads serve in-memory rows (`service_test.go`).
-
-1. `server/service/ca/cert.go` (done): `GetCertificate` by ID, by issuer
-   and serial number, by SHA-256 thumbprint, or by SKID (the newest
-   certificate of the key among the org-wide rows and the projects the
-   caller may read, since a renewed key keeps its SKID); `ListCertificates`
-   and `ListRevokedCertificates` with every filter of the request and the
-   `ProjectIDs` of a member with project grants only
-   (`query.ListCertificatesRequest.ProjectIDs` and
-   `ListRevokedCertificatesRequest.ProjectIDs` were added for it);
-   `UpdateCertificateLabel` replaces the label and, when the request carries
-   a map, the metadata; `RevokeCertificate` by ID, SKID or issuer and
-   serial writes the revocation and the status in the one transaction of
-   `db.RevokeCertificate`, records `CertificateRevoked` after it, refuses
-   a revoked certificate with a precondition failure (HTTP 409) and the
-   reason `RemoveFromCRL` (hold removal is not a revocation). Both
-   mutations take an optional `ProjectID`, the scope the interceptor
-   authorizes for a member whose role is granted in the project only; the
-   certificate must belong to it. Every row is authorized against its own
-   project with `rowAccess`, where an API key restricted to a project reads
-   an org-wide row but may not change it. `crl.go`:
-   `GetCRL` serves a tenant the CRLs of its org and a service caller that
-   names no org (CIS) any CRL; `PublishCrls` answers Unimplemented until
-   phase 4, instead of the empty success of the stub.
-2. `authctx.CheckAccess` already enforces `allowed_roles` for user tokens and
-   the `ca:*`/`certs:*` scopes for API keys, and passes `trustyca-*` service
-   roles through; `tenantOrg` and `tenantProject` verify that an explicit
-   `OrgID` from a service caller is an active org and that `ProjectID`
-   belongs to it (done).
-3. Config (done): the backend listener of `etc/dev/trustyca-config.yaml`
-   maps `spiffe://trustyca/ra` and `spiffe://trustyca/cis` to the
-   `trustyca-ra` and `trustyca-cis` TLS roles and allows
-   `/pb.CA:trustyca-ra,trustyca-admin`; `SignOCSP`, `GetCRL` and
-   `ListRoots` list `trustyca-cis` too (porto authz takes the roles of the
-   deepest matching path, so they repeat the other two). The backend
-   interceptor builds the caller context from the identity the listener
-   authenticated when the WFE forwarded none, so these roles reach the
-   service as `trustyca-*` callers.
-4. Client (done): `client.Factory.CAClient` returns `pb.CAServer` over the
-   gRPC connection; `make generate` regenerates `mocks/mockclient`.
-5. Tests (done): `cert_test.go` (an in-memory `certStore` behind the mock
-   DB, row access per project and API key, events, DB failures) and
-   `crl_test.go`; `e2e_test.go` runs the CA service of the app container
-   over the configured database with the bootstrap `trusty.svc` issuer and
-   calls it over gRPC (bufconn, identity `trustyca-ra`): the bootstrap
-   issuer signs OCSP for the dev client certificate it issued outside the
-   service (unknown), and a new org registers a CA profile and a root, signs
-   a certificate, reads it by every selector, lists, relabels and revokes
-   it, lists the revocation, checks OCSP before (good) and after (revoked,
-   key compromise), and gets not found for its CRL and Unimplemented for
-   `PublishCrls`. The bootstrap L2 issuer has path length 0, so the tenant
-   CA is a root of the org, with a key in the default provider (the KMS
-   emulator of the local stack) that the test destroys through
-   `UpdateIssuer`; the test uses the data protection seed of the
-   environment (`testutils.SetDataProtectionSeed`), as the container test
-   does.
-
-Follow-ups:
-
-1. `UpdateCertificateLabel` has no event type: the change is logged only.
-2. Done in phase 5: `.project/gen_certs.sh --ra --cis` generates the
-   certificates of `spiffe://trustyca/ra` and `spiffe://trustyca/cis`
-   (`make gen_test_certs`).
-3. An empty metadata map cannot be sent over gRPC (an empty map is not
-   serialized), so clearing the metadata of a certificate works through
-   JSON only.
-4. The CIS routes: the issuer and CRL paths stay `/v1/cert/:ikid` and
-   `/v1/crl/:ikid`, the AIA and CDP templates of the issuers; OCSP by
-   issuer moved under `/v1/ocspi`, so that the GET with the request in the
-   path (`/v1/ocsp/*body`) does not conflict with it; the request of both
-   GET routes is a catch-all, since its base64 has '/' in it. The `ocsp_url`
-   template of `etc/dev/ca-config.local.yaml` points at
-   `/v1/ocspi/:ISSUER_ID` (phase 5).
-
-## Phase 4: revocation pipeline (done)
-
-1. `internal/ca/crl.go` (done): `CrlPublisher` over `db.CaDb` and the
-   `Registry`, shared by the service and the renewal task. `PublishCrl`
-   signs the CRL of an Active or Archived issuer row when it is due
-   (`CrlDue`: no current CRL, or `next_update` within the `crl_renewal` of
-   the issuer settings), or when forced: the entries are the revocations of
-   the issuer whose certificate is still valid (`ListRevoked` with `IKID`
-   and `ValidAfter`, paged by cursor across every org, since the CRL is the
-   issuer's), with their reason codes; the validity is the `crl_expiry` of
-   the settings, capped at the expiry of the issuer certificate; the number
-   is the issuer's `crl_number + 1` and `db.PublishCrl` stores the CRL and
-   the number in one transaction. When another instance publishes first
-   (`ErrStaleCrlNumber`), the row is read again and the CRL signed once
-   more with the next number, unless the other instance's CRL is fresh and
-   the publish is not forced. `PublishCrls` runs over the Active, then the
-   Archived issuers of a scope (`ListIssuers` by status, paged by cursor),
-   reads the current CRLs of each page in one query (`db.GetCrls`) and
-   decides from the row settings whether a CRL is due before it loads the
-   issuer and its key, and counts the issuers it skipped (not due, or
-   whose certificate has expired) and those that failed (logged, the run
-   continues); the joined query of the plan was not needed.
-   `ErrIssuerExpired` names an issuer whose certificate no longer signs
-   CRLs.
-2. `server/service/ca/crl.go` (done): `PublishCrls` (`Admin,Security,APIKey`
-   with `ca:write`) publishes for the one issuer of the request's IKID,
-   authorized against its project with `rowAccess` and refused with a
-   precondition failure when it is Pending, Destroyed or expired, or for
-   the Active and Archived issuers of the project the request names
-   (`ProjectID`, which a project Admin and an API key restricted to a
-   project need, since the interceptor authorizes the request at that
-   project), or else of the org-wide scope and the projects the caller may
-   read; a `trustyca-*` caller that names no org publishes for every org
-   and the platform. Every published CRL records a `CrlPublished` event; a
-   run whose issuers failed, or whose listing failed after some CRLs were
-   published, records the events of the published CRLs, then fails with
-   Internal.
-3. `server/tasks/crlrenewal` (done): the `crl_renewal` task publishes the
-   due CRLs of every org and the platform through the same publisher,
-   records the `CrlPublished` events with the task as the source, and runs
-   at once when scheduled. `server/tasks/certstatus` (done): the
-   `cert_status` task marks expired Active certificates as Expired
-   (`db.ExpireCertificates`) and, with `ca.retention.expired_after`,
-   deletes the certificates of any status that expired longer ago than
-   that with their revocations (`db.DeleteExpiredCertificates`), in batches
-   of the lowest IDs (`UPDATE ... WHERE status = ? AND id IN (SELECT id ...
-   ORDER BY id LIMIT ?)`, the changed rows leave the set, so no offset; the
-   status outside the subquery is rechecked on the row a concurrent
-   revocation committed, so the revocation is kept) that the index
-   `idx_certificate_notafter` of migration 1 serves, bounded per run. The
-   dev configuration schedules both (`tasks:` of
-   `etc/dev/trustyca-config.yaml`).
-4. `SignOCSP` (done): the delegated responder is xpki's: an issuer whose
-   settings name `delegated_ocsp_profile` signs with a responder certificate
-   it issues lazily and renews before the OCSP expiry; a serial the issuer
-   never registered is `unknown`. Covered by `TestService_SignOCSP_Delegated`.
-5. Tests (done): `internal/ca/crl_test.go` over the fake DB (CRL contents
-   and reasons after revocations, expired entries left out, paging of the
-   entries, the renewal boundary, the number after a stale publish, the
-   failures, the run over a scope and its one CRL query per page);
-   `server/service/ca/crl_test.go` (`crlStore` behind the mock DB: the
-   authorization matrix, the project selector, events, Force, the scope of
-   every caller kind, a failing issuer, a listing that fails after a
-   publish, and the interceptor's `CheckAccess` for project Admins and API
-   keys); `server/tasks/crlrenewal` and `certstatus` (a run, the factory's
-   immediate run under a real scheduler, an invalid schedule); the DB tests
-   `Test_Certificate_Expiry` (batches, retention, the revocation follows
-   the certificate) and `Test_Certificate_Expiry_Revoked` (a revocation
-   the expiry statement waited for is kept); `e2e_test.go` publishes and reads the CRL of the
-   tenant root, verifies its signature, number and entry, and the number
-   after a forced publish.
-
-Follow-ups:
-
-1. A revocation does not publish a CRL: the certificate appears in the CRL
-   at the next due publish (the task schedule, or `crl_renewal` before
-   `next_update`), OCSP answers at once. Publishing in the background after
-   `RevokeCertificate`, or shortening the schedule, is a product choice.
-2. A new issuer has no CRL until the task runs (ten minutes in the dev
-   configuration); `RegisterIssuer` and `ActivateIssuer` could publish the
-   first CRL.
-3. `PublishCrls` over a scope hides the published CRLs when one issuer
-   fails, since gRPC returns either; the CRLs are stored and `GetCRL`
-   serves them.
-4. CRL `locations` stay empty until CRLs are published to object storage
-   (phase 7).
-
-## Phase 5: CIS service (done; the binary routes moved to the AIA service in phase 8)
-
-1. `server/service/cis` (done): `pb.CISServer` over `db.CaReadonlyDb`, with
-   no access check since the data is public (DESIGN.md section 9.3).
-   `GetRoots` lists the platform anchors, or those of the org the request
-   names; `GetIssuer` returns the chain, status and the AIA, CRL and OCSP
-   URLs of an issued issuer with the SKID in place of the placeholder
-   (`internal/ca.ExpandIssuerURL`; a Pending issuer is not found);
-   `GetCertificate` and `GetCertificateStatus` resolve the certificate of
-   any org by ID, issuer and serial, thumbprint or SKID (the newest of the
-   key), the status reporting an expired Active row as Expired and a
-   revoked one with its reason and time; `GetCRL` by IKID. The public
-   views carry no tenancy and no client-owned fields (org, project,
-   profile, label, metadata). The binary routes `/v1/cert/{ikid}` and
-   `/v1/crl/{ikid}` serve DER with `Cache-Control`, `Expires`,
-   `Last-Modified` and `ETag` (304 to `If-None-Match`): the certificate for
-   a day, the CRL until its `NextUpdate`.
-2. OCSP (done): GET with the request in the path (`/v1/ocsp/*body`,
-   `/v1/ocspi/:ikid/*body`) and POST (`/v1/ocsp`, `/v1/ocspi/:ikid`, bounded
-   to 8 KiB), parsed before anything is forwarded to `CA.SignOCSP` over the
-   backend gRPC client, which the service creates on the first request with
-   the certificate of `cis.client_tls` (the client blocks until the backend
-   is reachable, so it is never created at startup). The signed responses
-   are cached in an LRU (`cis.ocsp_cache_size`, default 10000) keyed by the
-   SHA-256 of the request until the `NextUpdate` the CA signed, and served
-   with the cache headers of the binary routes; the errors of the CA are
-   OCSP error responses with the HTTP status (400 malformedRequest, 404
-   unauthorized, 503 tryLater, 500 internalError) and are not cached.
-   Metrics: `cis_cache_hit`/`cis_cache_miss` by type, the `aia_download_*`
-   counters.
-3. Config (done): `cis` was already a service of the `wfe` listener;
-   `/pb.CIS` joins `authz.allow_any` (`/v1` covers the binary routes), the
-   fixed CIS paths `identity_map.skip_auth`, and `client.server_url` names
-   the listeners with their https URLs, and the backend listener enables
-   its TLS identity mapping (`identity_map.tls.enabled`, off by default in
-   porto, so every mTLS caller was a guest and `/pb.CA` refused it). The
-   `cis` section carries `client_tls` and `ocsp_cache_size`. The `ocsp_url` template of
-   `etc/dev/ca-config.local.yaml` points at `/v1/ocspi/:ISSUER_ID`.
-   `.project/gen_certs.sh --ra --cis` (in `make gen_test_certs`) generates
-   `trustyca_ra` and `trustyca_cis` with the CSR profiles of
-   `etc/dev/certs/csr_profile/`. `client.Factory` ignored the TLS
-   configuration of its `WithTLS` option and dialed the https backend in
-   plaintext; fixed (`TestFactory_WithTLS`), and the OCSP forwarding was
-   verified against the dev server with the `trustyca_cis` identity.
-4. Tests (done): `server/service/cis` over a mock `CaReadonlyDb` and a fake
-   CA that signs OCSP with a test key (the JSON methods, every route and
-   media type, the cache headers and conditional requests, the OCSP matrix
-   and error mapping with `golang.org/x/crypto/ocsp`, the lazy client);
-   `e2e_test.go` runs the CA and the CIS of the app container over the
-   configured database, registers a root whose URL templates point at the
-   CIS listener, and follows the AIA, CDP and OCSP URLs of the
-   certificates it signs, then runs `openssl verify -crl_check` on the CRL
-   the CIS served when openssl is installed. The container integration
-   test (`make docker-citest`) has no script, so the openssl check lives in
-   the Go test.
-
-Follow-ups:
-
-1. `OCSPRequest.IKID` from the `/v1/ocspi/{ikid}` routes (ROADMAP.md
-   RM-003): the issuer segment is not used yet.
-2. A cached `good` response is served until its `NextUpdate` after a
-   revocation; a shorter `ocsp_expiry`, or invalidating the cache of a
-   serial on `RevokeCertificate`, is a product choice.
-3. The certificate and CRL routes read the DB on every request; an
-   in-memory cache of the CRLs, like the OCSP one, is open.
-4. No rate limit on the public routes beyond the listener's.
-
-## Phase 6: operator tooling (done)
-
-1. `internal/ctl/admin` (done): the `ca` tree of `trustycactl`, over the
-   backend listener with the `trustyca-admin` client certificate
-   (`make gen_test_certs` generates `trustyca_admin` with the
-   `spiffe://trustyca/admin` identity; `--cert` makes the auth token
-   optional). `ca issuer list|get|register|import|activate|archive|destroy`,
-   `ca profile list|get|register --file profile.yaml|delete`,
-   `ca root list|register`, `ca cert list|get|revoke`,
-   `ca crl get|publish`. Every CA request names its org (`--org`, with
-   `--project` for the rows of a project); a PEM argument is a file; a
-   profile file is one profile in the YAML shape of a ca-config file,
-   labelled after the file (`internal/ca/pbconv`, the API conversions moved
-   out of `internal/ca` into a leaf package so the CLI links no DB driver).
-   `privpb/protos/admin.proto` gained `ListIssuers` and `ListCertificates`
-   (an org and its project, the platform, or every org and the platform;
-   `query.ListIssuersRequest.Label` filters by label), served by
-   `server/service/admin` over `db.CaReadonlyDb`: `ca issuer list` and
-   `ca cert list` are these support views. `api/pb/print.go` prints the CA
-   and CIS objects as tables with their PEM.
-2. `trustyca` CLI (done): the `project` commands existed; `cert get|status`,
-   `issuer get`, `crl get` and `root list` read the public CIS through
-   `Cli.CISClient` without a token, over gRPC or HTTP (`-H`). The CA is not
-   served by the wfe listener (the RA is its caller), so the user CLI has no
-   `cert list`.
-3. Onboarding (done): `ca org bootstrap --org <id> --parent <platform
-   issuer label or ID> --templates <dir>` registers the issuing CA of the
-   org under the platform intermediate with the CA profile the parent
-   allows (`--profile`, default `tenant_ca`), then copies the template
-   profiles: a template without `issuer_label` is bound to the new issuer,
-   one bound to `*` (the `ocsp` responder) is listed in its allowed
-   profiles. `etc/dev/ca-config.local.yaml` registers the dev L1 CA as
-   `trusty.l1` (path length 1, `allowed_profiles: ocsp, tenant_ca`) with the
-   `tenant_ca` profile, since the L2 `trusty.svc` has path length zero and
-   signs no CA; `etc/dev/profiles` holds the dev templates (server, client,
-   peer, ocsp). The issuer is registered before the profiles: a failed
-   profile leaves the issuer in place and names the profile.
-4. Docs (done): `Documentation/cli/*.md` and `Documentation/api/*.md`
-   regenerated; README sections on the CA, the operator commands and the
-   onboarding; `TestHelp` of both binaries parses the whole command tree
-   (kong expands `${...}` in help text: a placeholder is written `$${...}`).
-5. Tests (done): `internal/ctl/admin/ca_test.go` runs every command over the
-   gRPC mocks with the dev templates and records the table and JSON output
-   in a golden file; `e2e_test.go` runs the CA and Admin services of the app
-   container behind a gRPC server with the `trustyca-admin` identity and
-   drives them with the commands (onboarding under `trusty.l1`, a
-   certificate of the copied `server` profile, revocation, OCSP through the
-   delegated responder of the `ocsp` template, the CRL, archive and
-   destroy); `server/service/admin` asserts the query requests of the
-   support lists; the CLI commands run over `MockCIS`. Verified against the
-   dev server with `bin/trustycactl` and the admin certificate, and
-   `bin/trustyca` over gRPC and HTTP.
-
-6. Fix (done): the bootstrap raced on a fresh DB. Several processes
-   bootstrap one DB at once (the service instances; the test packages of
-   `make test` after `make drop-sql start-sql`): each missed the lookup of
-   a platform issuer and the second insert failed the start with a unique
-   violation of the label. `Registry.Bootstrap` now continues with the row
-   another instance registered when the key matches
-   (`db.IsUniqueViolation`, shared with the CA service's conflict mapping);
-   `TestBootstrap_LostRace` and `TestBootstrap_ConcurrentStart` cover it.
-
-Follow-ups:
-
-1. `UpdateIssuer` and `DeleteProfile` carry no `ProjectID` (ROADMAP.md
-   RM-004), so `ca issuer archive|destroy` and `ca profile delete` name the
-   org only.
-2. No `ca issuer update` of the runtime settings (URLs, timings, allowed
-   profiles) after registration, though `UpdateIssuer` supports it.
-3. `ca org bootstrap` has no default URL templates: the operator passes
-   `--crl-url`, `--ocsp-url` and `--aia-url`, or the certificates carry none.
-4. The CA and Admin clients of the CTL are gRPC only; the CIS commands are
-   the only ones with an HTTP transport.
-5. The dev wfe listener serves no CA to users; a user who may sign
-   (`certs:issue`) has no CLI command for it until an RA exists.
-
-## Phase 7: hardening (done)
-
-1. Metrics (done): `internal/metricskey` carries the metrics of DESIGN.md
-   section 11 under the names the services emit: `ca_cert_issued` and
-   `ca_fail_sign_cert` gained the `org` tag, `ca_sign_latency{ca,profile}`
-   samples SignCertificate from the signature to the registered certificate
-   and its event; `ca_cert_revoked`, `ca_crl_published`,
-   `ca_fail_publish_crl`, `ca_ocsp_signed`, `cis_cache_hit`,
-   `cis_cache_miss` and the `aia_download_*` counters were in place. The
-   design text names the real metrics now.
-2. Load test (done): `tests/load` fills a disposable database
-   (`trustycadb_load`) with synthetic certificates and revocations, runs
-   every query of the CA through the provider and through
-   `EXPLAIN (ANALYZE, BUFFERS)`, and registers certificates as
-   SignCertificate does. The 10M-row run and the decisions it led to are in
-   [perf/load-certificates.md](perf/load-certificates.md): the lookups,
-   the lists of a project or by issuer and the CRL entries were index
-   scans bounded by the tenant, but the org-wide list of a small tenant
-   walked the primary key backwards through the whole table (3.9 s for a
-   tenant with ten rows) and the list by issuer mis-planned into a 64 ms
-   bitmap scan. Two indexes fixed both: `(org_id, id DESC)`, and
-   `(org_id, ikid, id DESC)` in place of `(ikid, id DESC)`, which also makes
-   a list by another org's issuer return nothing without a scan; the
-   support list by issuer resolves the org of the issuer first. Inserting
-   a certificate with its event costs 0.85 ms at 10M rows; the expiry
-   batches of the status task cost 93 ms per 1,000 rows (a fillfactor of 90
-   gained a fifth and was not adopted). Partitioning is not needed and
-   stays an open item beyond roughly 100M rows per tenant. The dev
-   database is recreated to pick the indexes up.
-3. Security review (done): no log statement carries key material, tokens
-   or request bodies (`server/service/ca` TestService_KeyMaterialNeverLogged
-   imports and generates issuers at TRACE and checks the log for the PEM
-   and the wrapped key); software keys (`key_protected`: the `inmem`
-   provider, PEM imports, bootstrap key files) are admitted by
-   `ca.allow_software_keys` only, on in the dev config, refused by
-   `Keys.DisableSoftwareKeys` otherwise and refused at the start of a
-   `service.environment: prod` instance (provideCA); every `/pb.CA` method
-   declares its roles and scopes and passes the access check for the RA,
-   CIS and admin identities (TestService_EveryMethod_Access), and
-   `server/app` Test_Authz_CAMethods evaluates the authz rules of the dev
-   configuration with porto's interceptor for every CA and Admin method
-   and every backend identity. The review found that `allow_any: /` opened
-   every path without a rule on both listeners: the backend now denies by
-   default (`/v1/status` and the status routes are its public paths), the
-   wfe keeps `/` for the UI index page (ROADMAP.md RM-005).
-4. Optional items (not done): CRL and certificate publishing to S3/GCS,
-   idempotency keys on SignCertificate and certificate hold removal stay
-   open items of DESIGN.md section 12.
-
-Follow-ups:
-
-1. RM-005: deny by default on the wfe listener once the UI pages move
-   under a listed prefix.
-2. The `inmem` platform issuers of the dev configuration are software keys;
-   a stage or prod ca-config references provider keys (`key:` with a key
-   URI), and `allow_software_keys` stays off there.
-3. The load tool measures the DB half of SignCertificate; the signing half
-   is `server/service/ca` bench_test.go.
-
-## Phase 8: AIA listener (done)
-
-1. `server/service/aia` (done): the binary routes of the issued
-   certificates (`/v1/cert/{ikid}`, `/v1/crl/{ikid}`, the OCSP routes) and
-   the OCSP response cache moved out of `server/service/cis` into a REST
-   only service on its own plain HTTP listener (`servers.aia`,
-   `http://0.0.0.0:8888` in the dev configuration). RFC 5280 AIA and CRL
-   Distribution Point URLs are fetched over HTTP by verifiers that cannot
-   authenticate and have not validated anything yet, so they belong
-   neither on the TLS listener of the UI nor behind its authorization. The
-   listener has no identity map and denies by default: only the AIA and
-   status routes are under `authz.allow_any`. The service forwards OCSP to
-   the CA with the `aia.client_tls` certificate: the `cis` configuration
-   section became `aia`, the `trustyca-cis` identity became `trustyca-aia`
-   (`spiffe://trustyca/aia`, `.project/gen_certs.sh --aia`,
-   `trustyca_aia`) and is allowed `SignOCSP` only on the backend listener,
-   and the cache metrics became `aia_cache_hit` and `aia_cache_miss`.
-2. `server/service/cis` (done): `pb.CIS` over `db.CaReadonlyDb` only, over
-   gRPC and the JSON API of the `wfe` listener, for authenticated callers:
-   `/pb.CIS` moved from `authz.allow_any` to `authz.allow_any_role` and its
-   methods left `identity_map.skip_auth`, so a guest is refused at the
-   listener; the methods declare no roles, since the views carry no
-   tenancy. `trustyca cert|issuer|crl|root` send the token of the login
-   (`Cli.CISClient`). The service needs no configuration.
-3. Tests (done): `server/service/aia` keeps the route, OCSP, cache and lazy
-   client tests over the mock `CaReadonlyDb` and the fake CA, and an
-   `e2e_test.go` that follows the URLs of the certificates a new org
-   issues to the AIA over plain HTTP (with `openssl verify -crl_check`);
-   `server/service/cis` keeps the JSON method tests and an `e2e_test.go`
-   that reads the same objects back through the JSON API; `server/app`
-   Test_Authz_CAMethods evaluates the rules of the three listeners: the
-   AIA identity reaches `SignOCSP` only, the wfe CIS refuses a guest and
-   admits any role, the aia listener opens its routes to a guest and
-   refuses every other path.
-
-Follow-ups:
-
-1. The AIA listener has no rate limit beyond porto's defaults and no
-   in-memory cache of the certificates and CRLs it serves (phase 5
-   follow-ups 3 and 4 moved here).
-2. `OCSPRequest.IKID` from the `/v1/ocspi/{ikid}` routes (ROADMAP.md
-   RM-003) is still open.
-
-## Phase 9: signing plane and service clients (steps 1 to 3 done, 4 in part)
-
-DESIGN.md sections 2.1 and 2.2: tenants manage their CA through `pb.CA` on
-the `wfe` (the Web UI), while the issuer keys stay in the `backend`
-service on the backend listener, and pods of different roles reach each
-other with named service clients. Each step ends green.
-
-1. Service clients and the backend listener (done):
-   - `api/client`: `Config.Name`; `NewFactory(clients)` refuses an unnamed
-     or duplicate client, and every client method takes the client name
-     and the listener name, so a process dials with several identities.
-     `config.Configuration.Clients` replaces `client`; `aia.client_tls`
-     went, the `aia` client carries the AIA certificate. The dev
-     configuration names `default`, `ca` (`trustyca_peer`) and `aia`
-     (`trustyca_aia`); the `cis` client of the first draft went, since no
-     service dials with it and `make gen_test_certs` generates no
-     `trustyca_cis`. porto's `--client-cert`, `--client-key` and
-     `--client-trusted-ca` fail the start: there is no single client to
-     override.
-   - The `backend` listener is back (`config.BackendServerName`,
-     `--backend-listen-url`), verifying a client certificate when given so
-     that probes reach its status routes; the TLS identity map is on the
-     backend only. The `wfe` keeps `client_cert_auth: false`, so browsers
-     connect, and maps no TLS identity, so no `trustyca-*` role is
-     reachable there. The `router` listener went.
-   - Tests: the factory (names, an unknown client and listener, the TLS
-     files of each client), the role matrix of the three listeners, the app
-     tests pass a URL for each listener, so they bind no fixed port.
-2. `privpb.Backend` (done): `privpb/protos/backend.proto` with
-   `RegisterIssuer`, `ImportIssuer`, `ActivateIssuer`, `UpdateIssuer`,
-   `SignCertificate`, `PublishCrls` and `SignOCSP` over the `pb` messages
-   of `pb.CA`; every request of these methods carries `OrgID`, so no
-   `privpb` copy was needed. `make proto-priv` generates the server, the
-   proxy client and the mock (the HTTP handler is generated and not
-   registered). `server/service/backend` (service `backend`) owns the
-   issuer registry and the CRL publisher and runs the code `ca.Service`
-   ran; both services use the tenant checks of
-   `server/service/internal/caapi` (Scope). Every issuer
-   mutation runs there, archiving included, so the registry stops an
-   issuer at once. `client.Factory.BackendClient` dials it; the AIA calls
-   `Backend.SignOCSP` through `client.BackendLocator`. Backend authz:
-   `/privpb.Backend:trustyca-peer` and `/privpb.Backend/SignOCSP` for
-   `trustyca-aia` as well; the AIA's `/pb.CA/SignOCSP` rule went.
-3. The forwarding `ca` service (done): `ca.Service` has no registry and
-   forwards the key methods (`forward`) through `client.BackendLocator`:
-   the backend of the process found by discovery under
-   `client.LocalBackend` (the forwarding service has the methods of
-   `privpb.BackendServer` too and would otherwise find itself), called
-   directly, else the `ca` client. A profile change invalidates an
-   in-process backend; a remote one waits for its TTL. A FailedPrecondition
-   from a remote backend is HTTP 409 conflict again (`forwardedError`):
-   the pinned porto converts it to 400. NewAuthUnaryBackendInterceptor
-   takes the authorizer, accepts a forwarded context from `trustyca-peer`
-   only, authorizes it with CheckAccess for the `pb.CA` method of the same
-   name, ignores one from another role and refuses one that does not
-   parse. The `wfe` serves `ca` (`/pb.CA` under `authz.allow_any_role`).
-   Tests: the CA service tests run through the forwarding over an
-   in-process backend; the interceptor matrix; the locator (local, the
-   forwarding service not found, remote retries and close, concurrent
-   lookups under the race detector); TestService_ForwardOverMTLS: a web
-   process's CA service against the backend listener of the dev
-   configuration over mTLS, with the DB grants, the actor of the event,
-   the AIA identity and the 409 of a refusal.
-4. Pod roles (in part): only the backend service and the `crl_renewal`
-   task build the registry; Test_AppInstance_WebRole starts the wfe and
-   aia listeners under a crypto provider and bootstrap that do not exist,
-   and a process with the backend fails on them. Open: an integration test
-   of two apps in one test process, a web app (wfe, aia, the `ca` and `aia`
-   clients pointing at the other) and a signing app (backend), where a
-   tenant token signs, revokes and publishes through the wfe and the AIA
-   answers OCSP through its client.
-5. Documentation (done): DESIGN.md sections 1, 2, 3.5, 5.1, 7, 8, 9.2, 10
-   and 12, the codemap, the README, ROADMAP.md (RM-006 to RM-009), the
-   `doc.go` of `api/client` and `server/service/ca`.
-
-Follow-ups (ROADMAP.md):
-
-1. Profile invalidation broadcast to every backend instance (Redis pub/sub
+1. Two apps in one stack (phase 9 step 4): a web pod (wfe and aia
+   listeners, the `ca` and `aia` clients pointing at the other) and a
+   signing pod (backend), where a tenant token signs, revokes and publishes
+   through the wfe and the AIA answers OCSP through its client. The stack of
+   `tests/integration` can run the service image twice with
+   `--backend-listen-url none` and `--wfe-listen-url none`; the CA flows of
+   the console (onboarding with `trustycactl ca org bootstrap`, signing and
+   revoking through `pb.CA` with a cookie session) belong in it.
+2. A failed login after the callback has decoded the state answers JSON on
+   the API host; answer it on the client's redirect URI with
+   `error`/`error_description`, which the console and the CLI listener
+   expect.
+3. Profile invalidation broadcast to every backend instance (Redis pub/sub
    or PostgreSQL NOTIFY); until then a profile change reaches a remote
-   backend after `ca.issuer_cache_ttl` (RM-007).
-2. Least privilege of the signing plane: a data protection key for issuer
+   backend after `ca.issuer_cache_ttl` (ROADMAP RM-007). A token revocation
+   reaches the other instances within porto's snapshot of the revoked IDs
+   (5 minutes) for the same reason.
+4. Least privilege of the signing plane: a data protection key for issuer
    keys that the web pods do not hold, DB roles per pod role, name
    constraints on tenant issuing CAs, a method allowlist per service role
-   in `authctx` (RM-008).
-3. Dropping `OrgID` from the public `pb.CA` requests, with `privpb` copies
-   for the RA and the operator (RM-009).
-4. The Web UI calls the CA over gRPC: `ca` registers no JSON route on the
-   wfe (`httppb.GetCAHTTPHandler` with the access check), as `cis` does.
+   in `authctx` (ROADMAP RM-008).
+5. `ca` registers no JSON route on the wfe (`httppb.GetCAHTTPHandler` with
+   the access check), as `cis` does; the console speaks gRPC-Web and does
+   not need it.
 
 ## Verification checklist per phase
 
 - `make proto` (when protos change), `go generate ./...`, `make build`,
-  `make test`, `make lint`.
+  `make test`, `make lint`, `make docker-citest` (when the server, the CLI
+  or the configuration of the wfe change).
 - Schema changes: `make drop-sql start-sql gen-sql-schema docs` and commit the
   regenerated `internal/db/model`, `internal/db/schema`, `internal/db/README.md`
   and `Documentation/api/internal_db_*.md`.

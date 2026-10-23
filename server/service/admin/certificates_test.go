@@ -53,7 +53,7 @@ func TestService_ListCertificates(t *testing.T) {
 		assert.Equal(t, &query.ListCertificatesRequest{AllOrgs: true, Limit: 10}, req)
 		return rows, nil
 	})
-	res, err := svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{Limit: 10})
+	res, err := svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, res.Certificates, 2)
 	assert.Equal(t, "100", res.Certificates[0].OrgID)
@@ -77,7 +77,7 @@ func TestService_ListCertificates(t *testing.T) {
 		}, req)
 		return &model.CertificateResult{Rows: rows.Rows[:1]}, nil
 	})
-	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{
+	res, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{
 		OrgID:          "100",
 		IKID:           "ikid-1",
 		Profile:        "server",
@@ -96,7 +96,7 @@ func TestService_ListCertificates(t *testing.T) {
 		assert.False(t, req.AllOrgs)
 		return &model.CertificateResult{}, nil
 	})
-	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{Platform: true})
+	res, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{Platform: true})
 	require.NoError(t, err)
 	assert.Empty(t, res.Certificates)
 
@@ -106,7 +106,7 @@ func TestService_ListCertificates(t *testing.T) {
 		assert.Equal(t, &query.ListCertificatesRequest{OrgID: 100, IKID: "ikid-1", Limit: 10}, req)
 		return &model.CertificateResult{Rows: rows.Rows[:1]}, nil
 	})
-	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{IKID: "ikid-1", Limit: 10})
+	res, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{IKID: "ikid-1", Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, res.Certificates, 1)
 	// a platform issuer
@@ -115,7 +115,7 @@ func TestService_ListCertificates(t *testing.T) {
 		assert.Equal(t, &query.ListCertificatesRequest{Platform: true, IKID: "ikid-0", Limit: 10}, req)
 		return &model.CertificateResult{Rows: rows.Rows[1:]}, nil
 	})
-	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{IKID: "ikid-0", Limit: 10})
+	res, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{IKID: "ikid-0", Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, res.Certificates, 1)
 	// no registered issuer has the key identifier: the certificates of a
@@ -125,36 +125,36 @@ func TestService_ListCertificates(t *testing.T) {
 		assert.Equal(t, &query.ListCertificatesRequest{AllOrgs: true, IKID: "deleted"}, req)
 		return &model.CertificateResult{Rows: rows.Rows[:1]}, nil
 	})
-	res, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{IKID: "deleted"})
+	res, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{IKID: "deleted"})
 	require.NoError(t, err)
 	require.Len(t, res.Certificates, 1)
 	caDb.EXPECT().GetIssuerBySKID(ctx, "ikid-1").Return(nil, errors.New("db down"))
-	_, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{IKID: "ikid-1"})
+	_, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{IKID: "ikid-1"})
 	assert.EqualError(t, err, "unexpected: unable to find issuer")
 	// with an org the issuer is not resolved
 	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {
 		assert.Equal(t, &query.ListCertificatesRequest{OrgID: 100, IKID: "ikid-9"}, req)
 		return &model.CertificateResult{}, nil
 	})
-	_, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{OrgID: "100", IKID: "ikid-9"})
+	_, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{OrgID: "100", IKID: "ikid-9"})
 	require.NoError(t, err)
 
 	// the requests the service refuses
 	for _, tc := range []struct {
-		req *privpb.ListCertificatesRequest
+		req *privpb.ListAllCertificatesRequest
 		err string
 	}{
 		{req: nil, err: "bad_request: missing request"},
-		{req: &privpb.ListCertificatesRequest{OrgID: "nope"}, err: "bad_request: invalid org ID"},
-		{req: &privpb.ListCertificatesRequest{ProjectID: "201"}, err: "bad_request: org ID is required with a project ID"},
-		{req: &privpb.ListCertificatesRequest{Cursor: "nope"}, err: "bad_request: invalid cursor"},
-		{req: &privpb.ListCertificatesRequest{ExpiringBefore: "tomorrow"}, err: "bad_request: invalid ExpiringBefore: RFC3339 time expected"},
+		{req: &privpb.ListAllCertificatesRequest{OrgID: "nope"}, err: "bad_request: invalid org ID"},
+		{req: &privpb.ListAllCertificatesRequest{ProjectID: "201"}, err: "bad_request: org ID is required with a project ID"},
+		{req: &privpb.ListAllCertificatesRequest{Cursor: "nope"}, err: "bad_request: invalid cursor"},
+		{req: &privpb.ListAllCertificatesRequest{ExpiringBefore: "tomorrow"}, err: "bad_request: invalid ExpiringBefore: RFC3339 time expected"},
 	} {
 		_, err := svc.ListCertificates(ctx, tc.req)
 		assert.EqualError(t, err, tc.err)
 	}
 
 	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).Return(nil, errors.New("something happened"))
-	_, err = svc.ListCertificates(ctx, &privpb.ListCertificatesRequest{})
+	_, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list certificates")
 }

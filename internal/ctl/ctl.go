@@ -487,10 +487,11 @@ func (c *Cli) CISClient() (pb.CISServer, error) {
 	return proxypb.NewCISClient(r.Conn(), r.Opts()), nil
 }
 
-// CAClient returns the CA client of the connection. The CA API is served
-// by the backend listener over gRPC only, to the trustyca-admin identity of
-// the client certificate (--cert, --cert-key).
-func (c *Cli) CAClient() (pb.CAServer, error) {
+// BackendClient returns the CA client of the connection: the CA of the
+// service identities (privpb.Backend), which names the org of every
+// request. It is served by the backend listener over gRPC only, to the
+// trustyca-admin identity of the client certificate (--cert, --cert-key).
+func (c *Cli) BackendClient() (privpb.BackendServer, error) {
 	if c.HTTP {
 		return nil, errors.New("CA endpoint is allowed only over gRPC")
 	}
@@ -498,7 +499,7 @@ func (c *Cli) CAClient() (pb.CAServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return proxypb.NewCAClient(r.Conn(), r.Opts()), nil
+	return privproxypb.NewBackendClient(r.Conn(), r.Opts()), nil
 }
 
 // AdminClient returns Admin client from connection

@@ -33,3 +33,6 @@ etc/dev/sql-conn-trustycadb.txt
 api/version/current.go
 api/pb/ts/
 mocks/
+
+# the PKI of the integration test stack (tests/integration/setup.sh)
+tests/integration/.citest/

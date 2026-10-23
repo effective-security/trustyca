@@ -54,7 +54,7 @@ func NewHTTPCISClient(client retriable.PostRequester) pb.CISServer {
 }
 
 // GetRoots returns the published trust anchors
-func (s *proxyCISServer) GetRoots(ctx context.Context, req *pb.ListRootsRequest, opts ...grpc.CallOption) (*pb.RootsResponse, error) {
+func (s *proxyCISServer) GetRoots(ctx context.Context, req *pb.GetRootsRequest, opts ...grpc.CallOption) (*pb.RootsResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.srv.GetRoots(ctx, req)
@@ -65,7 +65,7 @@ func (s *proxyCISServer) GetRoots(ctx context.Context, req *pb.ListRootsRequest,
 }
 
 // GetRoots returns the published trust anchors
-func (s *proxyCISClient) GetRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.RootsResponse, error) {
+func (s *proxyCISClient) GetRoots(ctx context.Context, req *pb.GetRootsRequest) (*pb.RootsResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.remote.GetRoots(ctx, req, s.callOpts...)
@@ -76,7 +76,7 @@ func (s *proxyCISClient) GetRoots(ctx context.Context, req *pb.ListRootsRequest)
 }
 
 // GetRoots returns the published trust anchors
-func (s *postproxyCISClient) GetRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.RootsResponse, error) {
+func (s *postproxyCISClient) GetRoots(ctx context.Context, req *pb.GetRootsRequest) (*pb.RootsResponse, error) {
 	var res pb.RootsResponse
 	path := pb.CIS_GetRoots_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)

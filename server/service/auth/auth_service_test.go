@@ -16,6 +16,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/gserver"
+	"github.com/effective-security/porto/gserver/roles"
 	"github.com/effective-security/porto/pkg/retriable"
 	"github.com/effective-security/porto/xhttp/header"
 	"github.com/effective-security/porto/xhttp/identity"
@@ -51,6 +52,12 @@ var (
 	// server, for fixtures and to read the events it records
 	testDb db.OrgsDb
 	testDp dataprotection.Provider
+	// testCfg is the configuration of the service. A test that changes it
+	// must not call t.Parallel, as for BaseURL.
+	testCfg *config.Configuration
+	// testCookies are the cookies of the wfe of the dev configuration,
+	// which the test server sets
+	testCookies roles.CookiesConfig
 )
 
 var jsonContentHeaders = map[string]string{
@@ -73,11 +80,6 @@ func TestMain(m *testing.M) {
 
 	httpAddr = testutils.CreateURL("http", "")
 
-	cfg := &gserver.Config{
-		ListenURLs: []string{httpAddr},
-		Services:   []string{auth.ServiceName},
-	}
-
 	closer := appcontainer.NewCloser(4)
 	f := appcontainer.NewContainerFactory(closer).
 		WithConfigurationProvider(func() (*config.Configuration, error) {
@@ -87,12 +89,22 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(errors.WithStack(err))
 	}
-	err = container.Invoke(func(orgsDb db.OrgsDb, dp dataprotection.Provider) {
+	err = container.Invoke(func(orgsDb db.OrgsDb, dp dataprotection.Provider, svcCfg *config.Configuration) {
 		testDb = orgsDb
 		testDp = dp
+		testCfg = svcCfg
 	})
 	if err != nil {
 		panic(errors.WithStack(err))
+	}
+
+	testCookies = testCfg.HTTPServers[config.WFEServerName].IdentityMap.GetCookiesConfig()
+	cfg := &gserver.Config{
+		ListenURLs: []string{httpAddr},
+		Services:   []string{auth.ServiceName},
+		IdentityMap: &roles.IdentityMap{
+			Cookies: testCookies,
+		},
 	}
 
 	testServer, err = gserver.Start("AuthTest", cfg, container, serviceFactories)

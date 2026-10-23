@@ -100,7 +100,7 @@ const (
 )
 ```
 
-<a name="PeerRoleName"></a>PeerRoleName is the role of a trustyca instance that calls the backend listener for its callers: the WFE forwards the key operations of the CA with the context of the end user \(DESIGN.md section 2.1\). It is the only role whose forwarded context the backend accepts.
+<a name="PeerRoleName"></a>PeerRoleName is the role of a trustyca instance that calls the backend listener for its callers: the CA service of the WFE forwards every call of its tenants with the context of the end user \(DESIGN.md section 2.1\). It is the only role whose forwarded context the backend accepts.
 
 ```go
 const PeerRoleName = "trustyca-peer"

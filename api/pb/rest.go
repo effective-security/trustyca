@@ -57,6 +57,14 @@ const (
 	// Response: 200
 	PathForAuthDone = "/v1/auth/done"
 
+	// PathForAuthOrg selects the org of the session, as Auth.SelectOrg does,
+	// and writes the new token into the auth cookie of a cookie session
+	//
+	// Verbs: POST
+	// Request: SelectOrgRequest
+	// Response: UserTokenResponse
+	PathForAuthOrg = "/v1/auth/org"
+
 	// PathForAuthUserinfo returns UserInfo for the caller
 	// Verbs: GET
 	// Response: JWT token or JSON encoded claims

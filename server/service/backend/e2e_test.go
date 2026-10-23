@@ -1,4 +1,4 @@
-package ca_test
+package backend_test
 
 import (
 	"context"
@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/effective-security/trustyca/privpb"
+
 	"github.com/effective-security/trustyca/server/service/backend"
 
 	"github.com/effective-security/porto/gserver"
@@ -24,7 +26,6 @@ import (
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/server/appcontainer"
-	"github.com/effective-security/trustyca/server/service/ca"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
@@ -48,14 +49,13 @@ const (
 	e2eRole = "trustyca-ra"
 )
 
-// TestService_EndToEnd runs the CA service of the app container over the
-// configured database, with the backend service of the same process and the
-// platform issuer of ca.bootstrap_config, and calls it over gRPC as the RA
-// (the key operations reach the backend in process): it registers a root of its own in a new
-// org, signs, reads, lists, relabels and revokes a certificate, checks the
-// revocation status through OCSP, publishes and reads the CRL of the root,
-// and asks the bootstrap issuer for the status of a certificate it issued
-// outside the service. The data
+// TestService_EndToEnd runs the backend service of the app container over
+// the configured database, with the platform issuer of ca.bootstrap_config,
+// and calls it over gRPC as the RA, which names the org of every request: it
+// registers a root of its own in a new org, signs, reads, lists, relabels
+// and revokes a certificate, checks the revocation status through OCSP,
+// publishes and reads the CRL of the root, and asks the bootstrap issuer
+// for the status of a certificate it issued outside the service. The data
 // protection seed is the environment's, as for every process that uses the
 // dev DB: the platform issuer in it is wrapped under that seed.
 func TestService_EndToEnd(t *testing.T) {
@@ -73,18 +73,15 @@ func TestService_EndToEnd(t *testing.T) {
 	var provider db.Provider
 	require.NoError(t, container.Invoke(func(p db.Provider) { provider = p }))
 
-	// the CA service forwards the key operations to the backend service of
-	// the same process, which it finds through discovery
-	server, err := gserver.Start("CATest", &gserver.Config{
+	server, err := gserver.Start("BackendTest", &gserver.Config{
 		ListenURLs: []string{testutils.CreateURL("http", "")},
-		Services:   []string{ca.ServiceName, backend.ServiceName},
+		Services:   []string{backend.ServiceName},
 	}, container, map[string]gserver.ServiceFactory{
-		ca.ServiceName:      ca.Factory,
 		backend.ServiceName: backend.Factory,
 	})
 	require.NoError(t, err)
 	t.Cleanup(server.Close)
-	client := grpcClient(t, server.Service(ca.ServiceName).(pb.CAServer))
+	client := grpcClient(t, server.Service(backend.ServiceName).(privpb.BackendServer))
 
 	// the org of the test
 	ownerID := provider.NextID()
@@ -116,7 +113,7 @@ func TestService_EndToEnd(t *testing.T) {
 	assert.Equal(t, ocsp.Unknown, parsed.Status, "the bootstrap issuer never registered the dev client certificate")
 
 	// a root of the org and the profiles it serves
-	rootProfile, err := client.RegisterProfile(ctx, &pb.RegisterProfileRequest{
+	rootProfile, err := client.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
 		OrgID: orgID,
 		Profile: &pb.CertProfile{
 			Label:       e2eRootProfile,
@@ -132,7 +129,7 @@ func TestService_EndToEnd(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, rootProfile.ID)) })
-	root, err := client.RegisterIssuer(ctx, &pb.RegisterIssuerRequest{
+	root, err := client.RegisterIssuer(ctx, &privpb.RegisterIssuerRequest{
 		OrgID:   orgID,
 		Label:   e2eRootLabel,
 		Type:    pb.AuthorityType_Root,
@@ -143,9 +140,9 @@ func TestService_EndToEnd(t *testing.T) {
 	t.Cleanup(func() {
 		// the key of the root is destroyed in its provider through the
 		// service, then the rows are removed
-		_, _ = client.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Archived})
-		_, _ = client.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Destroyed})
-		roots, err := client.ListRoots(ctx, &pb.ListRootsRequest{OrgID: orgID})
+		_, _ = client.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Archived})
+		_, _ = client.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Destroyed})
+		roots, err := client.ListRoots(ctx, &privpb.ListRootsRequest{OrgID: orgID})
 		if err == nil {
 			for _, r := range roots.Roots {
 				_, _ = provider.DeleteRoot(ctx, org.ID.UInt64(), mustID(t, r.ID))
@@ -156,7 +153,7 @@ func TestService_EndToEnd(t *testing.T) {
 	assert.Equal(t, pb.IssuerStatus_Active, root.Status)
 	rootCert, err := certutil.ParseFromPEM([]byte(root.Certificate))
 	require.NoError(t, err)
-	peerProfile, err := client.RegisterProfile(ctx, &pb.RegisterProfileRequest{
+	peerProfile, err := client.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
 		OrgID: orgID,
 		Profile: &pb.CertProfile{
 			Label:             e2ePeerProfile,
@@ -172,7 +169,7 @@ func TestService_EndToEnd(t *testing.T) {
 
 	// sign
 	csrPEM := newCSR(t, "e2e.example.com")
-	signed, err := client.SignCertificate(ctx, &pb.SignCertificateRequest{
+	signed, err := client.SignCertificate(ctx, &privpb.SignCertificateRequest{
 		OrgID:    orgID,
 		Profile:  e2ePeerProfile,
 		Request:  csrPEM,
@@ -194,33 +191,33 @@ func TestService_EndToEnd(t *testing.T) {
 	require.NoError(t, x509Cert.CheckSignatureFrom(rootCert), "signed by the root of the org")
 
 	// get, by every selector
-	got, err := client.GetCertificate(ctx, &pb.GetCertificateRequest{OrgID: orgID, ID: crt.ID})
+	got, err := client.GetCertificate(ctx, &privpb.GetCertificateRequest{OrgID: orgID, ID: crt.ID})
 	require.NoError(t, err)
 	assert.Equal(t, crt.Sha256, got.Certificate.Sha256)
-	got, err = client.GetCertificate(ctx, &pb.GetCertificateRequest{OrgID: orgID, SKID: crt.SKID})
+	got, err = client.GetCertificate(ctx, &privpb.GetCertificateRequest{OrgID: orgID, SKID: crt.SKID})
 	require.NoError(t, err)
 	assert.Equal(t, crt.ID, got.Certificate.ID)
-	got, err = client.GetCertificate(ctx, &pb.GetCertificateRequest{OrgID: orgID, Sha256: crt.Sha256})
+	got, err = client.GetCertificate(ctx, &privpb.GetCertificateRequest{OrgID: orgID, Sha256: crt.Sha256})
 	require.NoError(t, err)
 	assert.Equal(t, crt.ID, got.Certificate.ID)
-	got, err = client.GetCertificate(ctx, &pb.GetCertificateRequest{OrgID: orgID, IssuerSerial: &pb.IssuerSerial{IKID: crt.IKID, SerialNumber: crt.SerialNumber}})
+	got, err = client.GetCertificate(ctx, &privpb.GetCertificateRequest{OrgID: orgID, IssuerSerial: &pb.IssuerSerial{IKID: crt.IKID, SerialNumber: crt.SerialNumber}})
 	require.NoError(t, err)
 	assert.Equal(t, crt.ID, got.Certificate.ID)
-	_, err = client.GetCertificate(ctx, &pb.GetCertificateRequest{OrgID: orgID, ID: "1"})
+	_, err = client.GetCertificate(ctx, &privpb.GetCertificateRequest{OrgID: orgID, ID: "1"})
 	requireStatus(t, err, codes.NotFound, "certificate not found")
 
 	// list
-	list, err := client.ListCertificates(ctx, &pb.ListCertificatesRequest{OrgID: orgID, IKID: root.SKID, Status: pb.CertificateStatus_Active})
+	list, err := client.ListCertificates(ctx, &privpb.ListCertificatesRequest{OrgID: orgID, IKID: root.SKID, Status: pb.CertificateStatus_Active})
 	require.NoError(t, err)
 	require.Len(t, list.Certificates, 1)
 	assert.Equal(t, crt.ID, list.Certificates[0].ID)
 	assert.Nil(t, list.NextPage)
-	list, err = client.ListCertificates(ctx, &pb.ListCertificatesRequest{OrgID: orgID, Status: pb.CertificateStatus_Revoked})
+	list, err = client.ListCertificates(ctx, &privpb.ListCertificatesRequest{OrgID: orgID, Status: pb.CertificateStatus_Revoked})
 	require.NoError(t, err)
 	assert.Empty(t, list.Certificates)
 
 	// relabel
-	upd, err := client.UpdateCertificateLabel(ctx, &pb.UpdateCertificateLabelRequest{OrgID: orgID, ID: crt.ID, Label: "edge-2"})
+	upd, err := client.UpdateCertificateLabel(ctx, &privpb.UpdateCertificateLabelRequest{OrgID: orgID, ID: crt.ID, Label: "edge-2"})
 	require.NoError(t, err)
 	assert.Equal(t, "edge-2", upd.Certificate.Label)
 	assert.Equal(t, map[string]string{"requester": "e2e"}, upd.Certificate.Metadata, "kept")
@@ -235,7 +232,7 @@ func TestService_EndToEnd(t *testing.T) {
 	assert.Equal(t, ocsp.Good, parsed.Status)
 
 	// revoke: the certificate, its revocation and OCSP agree
-	revoked, err := client.RevokeCertificate(ctx, &pb.RevokeCertificateRequest{
+	revoked, err := client.RevokeCertificate(ctx, &privpb.RevokeCertificateRequest{
 		OrgID:      orgID,
 		ID:         crt.ID,
 		Reason:     pb.ReasonCode_KeyCompromise,
@@ -246,12 +243,12 @@ func TestService_EndToEnd(t *testing.T) {
 	assert.Equal(t, pb.CertificateStatus_Revoked, revoked.Revoked.Certificate.Status)
 	assert.Equal(t, pb.ReasonCode_KeyCompromise, revoked.Revoked.Reason)
 	assert.Equal(t, "edge-2", revoked.Revoked.Certificate.Label)
-	_, err = client.RevokeCertificate(ctx, &pb.RevokeCertificateRequest{OrgID: orgID, ID: crt.ID})
+	_, err = client.RevokeCertificate(ctx, &privpb.RevokeCertificateRequest{OrgID: orgID, ID: crt.ID})
 	requireStatus(t, err, codes.FailedPrecondition, "certificate is already revoked")
-	got, err = client.GetCertificate(ctx, &pb.GetCertificateRequest{OrgID: orgID, ID: crt.ID})
+	got, err = client.GetCertificate(ctx, &privpb.GetCertificateRequest{OrgID: orgID, ID: crt.ID})
 	require.NoError(t, err)
 	assert.Equal(t, pb.CertificateStatus_Revoked, got.Certificate.Status)
-	revokedList, err := client.ListRevokedCertificates(ctx, &pb.ListRevokedCertificatesRequest{OrgID: orgID, IKID: root.SKID})
+	revokedList, err := client.ListRevokedCertificates(ctx, &privpb.ListRevokedCertificatesRequest{OrgID: orgID, IKID: root.SKID})
 	require.NoError(t, err)
 	require.Len(t, revokedList.RevokedCertificates, 1)
 	assert.Equal(t, crt.ID, revokedList.RevokedCertificates[0].Certificate.ID)
@@ -266,16 +263,16 @@ func TestService_EndToEnd(t *testing.T) {
 
 	// the CRL of the root: none until it is published, then the revoked
 	// certificate is listed with its reason, signed by the root
-	_, err = client.GetCRL(ctx, &pb.GetCrlRequest{OrgID: orgID, IKID: root.SKID})
+	_, err = client.GetCRL(ctx, &privpb.GetCrlRequest{OrgID: orgID, IKID: root.SKID})
 	requireStatus(t, err, codes.NotFound, "CRL not found")
-	published, err := client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
+	published, err := client.PublishCrls(ctx, &privpb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
 	require.NoError(t, err)
 	require.Len(t, published.Crls, 1)
 	assert.Equal(t, "1", published.Crls[0].Number)
 	assert.Equal(t, root.SKID, published.Crls[0].IKID)
 	assert.Equal(t, root.ID, published.Crls[0].IssuerID)
 	assert.Equal(t, orgID, published.Crls[0].OrgID)
-	crlRes, err := client.GetCRL(ctx, &pb.GetCrlRequest{OrgID: orgID, IKID: root.SKID})
+	crlRes, err := client.GetCRL(ctx, &privpb.GetCrlRequest{OrgID: orgID, IKID: root.SKID})
 	require.NoError(t, err)
 	assert.Equal(t, published.Crls[0].ID, crlRes.Crl.ID)
 	assert.Equal(t, published.Crls[0].Pem, crlRes.Crl.Pem)
@@ -290,26 +287,26 @@ func TestService_EndToEnd(t *testing.T) {
 	assert.Equal(t, 0, x509Cert.SerialNumber.Cmp(crl.RevokedCertificateEntries[0].SerialNumber))
 	assert.Equal(t, ocsp.KeyCompromise, crl.RevokedCertificateEntries[0].ReasonCode)
 	assert.WithinDuration(t, time.Now(), crl.RevokedCertificateEntries[0].RevocationTime, time.Minute)
-	gotRoot, err := client.GetIssuer(ctx, &pb.GetIssuerRequest{OrgID: orgID, ID: root.ID})
+	gotRoot, err := client.GetIssuer(ctx, &privpb.GetIssuerRequest{OrgID: orgID, ID: root.ID})
 	require.NoError(t, err)
 	assert.Equal(t, "1", gotRoot.CrlNumber, "the issuer records the number")
 
 	// a fresh CRL is not published again unless forced; the number grows
-	published, err = client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
+	published, err = client.PublishCrls(ctx, &privpb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
 	require.NoError(t, err)
 	assert.Empty(t, published.Crls)
-	published, err = client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, Force: true})
+	published, err = client.PublishCrls(ctx, &privpb.PublishCrlsRequest{OrgID: orgID, Force: true})
 	require.NoError(t, err)
 	require.Len(t, published.Crls, 1, "every issuer of the org")
 	assert.Equal(t, "2", published.Crls[0].Number)
 	assert.Equal(t, root.SKID, published.Crls[0].IKID)
-	_, err = client.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: certutil.GetSubjectKeyID(l2Cert)})
+	_, err = client.PublishCrls(ctx, &privpb.PublishCrlsRequest{OrgID: orgID, IKID: certutil.GetSubjectKeyID(l2Cert)})
 	requireStatus(t, err, codes.NotFound, "issuer not found", "the platform issuer is not the org's")
 }
 
-// grpcClient serves the CA over an in-memory gRPC connection, as the RA
-// calls it: the auth interceptor sets the service identity of the caller
-func grpcClient(t *testing.T, svc pb.CAServer) pb.CAClient {
+// grpcClient serves the backend over an in-memory gRPC connection, as the
+// RA calls it: the auth interceptor sets the service identity of the caller
+func grpcClient(t *testing.T, svc privpb.BackendServer) privpb.BackendClient {
 	t.Helper()
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer(grpc.UnaryInterceptor(
@@ -317,7 +314,7 @@ func grpcClient(t *testing.T, svc pb.CAServer) pb.CAClient {
 			uid := identity.NewIdentity(e2eRole, "spiffe://trustyca/ra", "", map[string]any{}, "", "", identity.MethodCertificate)
 			return handler(authctx.NewTrustyCtx(ctx, identity.NewRequestContext(uid, info.FullMethod)), req)
 		}))
-	pb.RegisterCAServer(srv, svc)
+	privpb.RegisterBackendServer(srv, svc)
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(srv.Stop)
 
@@ -326,7 +323,7 @@ func grpcClient(t *testing.T, svc pb.CAServer) pb.CAClient {
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
-	return pb.NewCAClient(conn)
+	return privpb.NewBackendClient(conn)
 }
 
 // requireStatus asserts the gRPC status of an error

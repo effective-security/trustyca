@@ -1,4 +1,4 @@
-package ca
+package backend
 
 import (
 	"context"
@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/effective-security/trustyca/privpb"
+
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
 	core "github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
-	"github.com/effective-security/trustyca/server/service/internal/caapi"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
@@ -40,78 +41,76 @@ func TestService_SignCertificate(t *testing.T) {
 	// validation
 	_, err := svc.SignCertificate(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Profile: testProfile})
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM})
 	assert.EqualError(t, err, "bad_request: missing profile")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, Label: string(make([]byte, 261))})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, Label: string(make([]byte, 261))})
 	assert.EqualError(t, err, "bad_request: invalid label length")
-	noCA, noKeys := tca.noCA()
-	_, err = noCA.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
-	assert.EqualError(t, err, "unavailable: CA is not configured")
-	_, err = noKeys.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
+	noCA := tca.noCA()
+	_, err = noCA.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 
 	// tenancy of a user token
-	_, err = svc.SignCertificate(testCtx("42", ""), &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(testCtx("42", ""), &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "forbidden: org not selected")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{OrgID: "2", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{OrgID: "2", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "forbidden: org mismatch")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{ProjectID: "bad", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{ProjectID: "bad", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "bad_request: invalid project ID")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{ProjectID: "301", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{ProjectID: "301", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "not_found: project not found", "project of another org")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{ProjectID: "203", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{ProjectID: "203", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "not_found: project not found", "inactive project")
 
 	// tenancy of a service caller: the org is explicit and verified
 	ra := serviceCtx("trustyca-ra")
-	_, err = svc.SignCertificate(ra, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ra, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "bad_request: org ID is required")
-	_, err = svc.SignCertificate(ra, &pb.SignCertificateRequest{OrgID: "bad", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ra, &privpb.SignCertificateRequest{OrgID: "bad", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "bad_request: invalid org ID")
 	orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(9)).Return(nil, notFoundErr("org", 9))
-	_, err = svc.SignCertificate(ra, &pb.SignCertificateRequest{OrgID: "9", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ra, &privpb.SignCertificateRequest{OrgID: "9", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "not_found: org not found")
 	orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(3)).Return(inactiveOrg, nil)
-	_, err = svc.SignCertificate(ra, &pb.SignCertificateRequest{OrgID: "3", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ra, &privpb.SignCertificateRequest{OrgID: "3", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "conflict: org is deleted")
 	orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(nil, errors.New("db down"))
-	_, err = svc.SignCertificate(ra, &pb.SignCertificateRequest{OrgID: "1", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ra, &privpb.SignCertificateRequest{OrgID: "1", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "unexpected: unable to find org")
 
 	// issuer resolution in the scope of the request (DESIGN.md section 6)
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "nope"})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: "nope"})
 	assert.EqualError(t, err, "not_found: profile not found: nope")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: testIssuerLabel, Request: csrPEM, Profile: "nope"})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{IssuerLabel: testIssuerLabel, Request: csrPEM, Profile: "nope"})
 	assert.EqualError(t, err, "not_found: profile not found: nope")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "nope", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{IssuerLabel: "nope", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, `bad_request: issuer "nope" does not serve the profile: peer`)
 	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("orphan", "NOPE", "1h"))
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "orphan"})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: "orphan"})
 	assert.EqualError(t, err, "not_found: issuer not found for profile: orphan")
 	tca.addProfile(testOrgID(), xdb.ID(0), ocspProfileDef(testOCSPProfile))
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testOCSPProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testOCSPProfile})
 	assert.EqualError(t, err, "bad_request: issuer label is required for profile: ocsp")
 	tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "L3", pb.AuthorityType_Issuing, nil)
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "L3", Request: csrPEM, Profile: testOCSPProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{IssuerLabel: "L3", Request: csrPEM, Profile: testOCSPProfile})
 	assert.EqualError(t, err, `bad_request: issuer "L3" does not support the profile: ocsp`)
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{IssuerLabel: "L3", Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{IssuerLabel: "L3", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, `bad_request: issuer "L3" does not serve the profile: peer`)
 	// another org has no access to the profiles and issuers of org 1
-	_, err = svc.SignCertificate(testCtx("42", "2"), &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(testCtx("42", "2"), &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "not_found: profile not found: peer")
 	// an archived issuer does not sign
 	archived := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "OLD", pb.AuthorityType_Issuing, nil)
 	tca.rows.update(archived.ID, func(m *model.Issuer) { m.Status = pb.IssuerStatus_Archived })
 	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("old-peer", "OLD", "1h"))
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "old-peer"})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: "old-peer"})
 	assert.EqualError(t, err, "conflict: issuer is not active")
 	// an issuer that does not load is a server error
 	broken := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "BROKEN", pb.AuthorityType_Issuing, nil)
 	tca.rows.update(broken.ID, func(m *model.Issuer) { m.KeyProtected = "AAAA" })
 	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("broken-peer", "BROKEN", "1h"))
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "broken-peer"})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: "broken-peer"})
 	assert.EqualError(t, err, "unexpected: unable to load issuer")
 	// so is one whose delegated OCSP profile is missing: the profile of the
 	// request exists
@@ -119,24 +118,24 @@ func TestService_SignCertificate(t *testing.T) {
 		DelegatedOcspProfile: "nope",
 	})
 	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("noresp-peer", "NORESP", "1h"))
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: "noresp-peer"})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: "noresp-peer"})
 	assert.EqualError(t, err, "unexpected: unable to load issuer")
 
 	// request shape
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{RequestFormat: pb.EncodingFormat_PKCS7, Request: csrPEM, Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{RequestFormat: pb.EncodingFormat_PKCS7, Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "bad_request: unsupported request format: PKCS7")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, NotAfter: "tomorrow"})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, NotAfter: "tomorrow"})
 	assert.EqualError(t, err, "bad_request: invalid NotAfter: RFC3339 time expected")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, NotBefore: "yesterday"})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, NotBefore: "yesterday"})
 	assert.EqualError(t, err, "bad_request: invalid NotBefore: RFC3339 time expected")
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, Extensions: []*pb.X509Extension{{ID: "x"}}})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, Extensions: []*pb.X509Extension{{ID: "x"}}})
 	assert.EqualError(t, err, "bad_request: invalid extension OID: x")
 
 	// signing errors the request causes are the client's
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: []byte("not a csr"), Profile: testProfile})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: []byte("not a csr"), Profile: testProfile})
 	assert.ErrorContains(t, err, "bad_request: failed to sign certificate: ")
 	farFuture := time.Now().AddDate(10, 0, 0).UTC().Format(time.RFC3339)
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, NotAfter: farFuture})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile, NotAfter: farFuture})
 	assert.ErrorContains(t, err, "bad_request: failed to sign certificate: ")
 	assert.ErrorContains(t, err, "exceeds profile expiry")
 
@@ -160,7 +159,7 @@ func TestService_SignCertificate(t *testing.T) {
 			assert.Equal(t, uint64(201), evt.ProjectID.UInt64())
 			assert.True(t, evt.ReferenceID.IsZero(), "the DB references the certificate")
 			assert.Equal(t, "Certificate issued", evt.Title)
-			assert.Equal(t, caapi.EventSource, evt.Source.String())
+			assert.Equal(t, EventSource, evt.Source.String())
 			assert.Equal(t, testCallerEmail, evt.Email.String())
 			assert.Contains(t, evt.Description.String(), `issued by "L2_CA" with profile "peer"`)
 
@@ -169,7 +168,7 @@ func TestService_SignCertificate(t *testing.T) {
 			res.Status = pb.CertificateStatus_Active
 			return &res, nil
 		})
-	res, err := svc.SignCertificate(ctx, &pb.SignCertificateRequest{
+	res, err := svc.SignCertificate(ctx, &privpb.SignCertificateRequest{
 		OrgID:     "1",
 		ProjectID: "201",
 		Profile:   testProfile,
@@ -200,7 +199,7 @@ func TestService_SignCertificate(t *testing.T) {
 			res.ID = xdb.NewID(779)
 			return &res, nil
 		})
-	res, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{ProjectID: "201", Profile: testProfile, Request: csrPEM})
+	res, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{ProjectID: "201", Profile: testProfile, Request: csrPEM})
 	require.NoError(t, err)
 	crt, err = certutil.ParseFromPEM([]byte(res.Certificate.Pem))
 	require.NoError(t, err)
@@ -217,7 +216,7 @@ func TestService_SignCertificate(t *testing.T) {
 			res.ID = xdb.NewID(778)
 			return &res, nil
 		})
-	res, err = svc.SignCertificate(ra, &pb.SignCertificateRequest{
+	res, err = svc.SignCertificate(ra, &privpb.SignCertificateRequest{
 		OrgID:         "1",
 		Profile:       testProfile,
 		RequestFormat: pb.EncodingFormat_DER,
@@ -231,10 +230,10 @@ func TestService_SignCertificate(t *testing.T) {
 	// registration failures
 	cadb.EXPECT().RegisterCertificate(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil, errors.New(`pq: duplicate key value violates unique constraint "unique_certificate_sha256"`))
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: testProfile, Request: csrPEM})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Profile: testProfile, Request: csrPEM})
 	assert.EqualError(t, err, "conflict: certificate is already registered")
 	cadb.EXPECT().RegisterCertificate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: testProfile, Request: csrPEM})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Profile: testProfile, Request: csrPEM})
 	assert.EqualError(t, err, "unexpected: failed to register certificate")
 }
 
@@ -264,7 +263,7 @@ func TestService_SignCertificate_Concurrent(t *testing.T) {
 			defer wg.Done()
 			// a request context of its own, as every request has
 			ctx := testCtx(orgAdminUser, "1")
-			req := &pb.SignCertificateRequest{Profile: testProfile, Request: csrPEM}
+			req := &privpb.SignCertificateRequest{Profile: testProfile, Request: csrPEM}
 			if i%2 == 0 {
 				req.ProjectID = "201"
 			}
@@ -303,10 +302,8 @@ func TestService_SignOCSP(t *testing.T) {
 	assert.EqualError(t, err, "bad_request: missing request")
 	_, err = svc.SignOCSP(ctx, &pb.OCSPRequest{Der: []byte("junk")})
 	assert.EqualError(t, err, "bad_request: invalid request")
-	noCA, noKeys := tca.noCA()
+	noCA := tca.noCA()
 	_, err = noCA.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
-	assert.EqualError(t, err, "unavailable: CA is not configured")
-	_, err = noKeys.SignOCSP(ctx, &pb.OCSPRequest{Der: der})
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 
 	// a certificate of an issuer the CA does not know
