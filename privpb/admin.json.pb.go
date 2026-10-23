@@ -50,21 +50,21 @@ func (msg *ListProjectsRequest) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON implements json.Marshaler
-func (msg *ListIssuersRequest) MarshalJSON() ([]byte, error) {
+func (msg *ListAllIssuersRequest) MarshalJSON() ([]byte, error) {
 	return JsonMarshalOptions.Marshal(msg)
 }
 
 // UnmarshalJSON implements json.Unmarshaler
-func (msg *ListIssuersRequest) UnmarshalJSON(b []byte) error {
+func (msg *ListAllIssuersRequest) UnmarshalJSON(b []byte) error {
 	return JsonUnmarshalOptions.Unmarshal(b, msg)
 }
 
 // MarshalJSON implements json.Marshaler
-func (msg *ListCertificatesRequest) MarshalJSON() ([]byte, error) {
+func (msg *ListAllCertificatesRequest) MarshalJSON() ([]byte, error) {
 	return JsonMarshalOptions.Marshal(msg)
 }
 
 // UnmarshalJSON implements json.Unmarshaler
-func (msg *ListCertificatesRequest) UnmarshalJSON(b []byte) error {
+func (msg *ListAllCertificatesRequest) UnmarshalJSON(b []byte) error {
 	return JsonUnmarshalOptions.Unmarshal(b, msg)
 }

@@ -2,7 +2,6 @@ package shared_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/effective-security/trustyca/mocks/mockclient"
 	"github.com/effective-security/trustyca/privpb"
 	"github.com/effective-security/trustyca/server/service/shared"
-	"github.com/effective-security/xdb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -22,34 +20,19 @@ import (
 // backendName is the listener the tests dial
 const backendName = "backend"
 
-// forwarder has the methods of privpb.BackendServer, as the CA service that
-// forwards to the backend has them, but is not a LocalBackend
+// forwarder takes the public requests, as the CA service that forwards to
+// the backend does: it is not a privpb.BackendServer
 type forwarder struct {
-	privpb.UnimplementedBackendServer
+	pb.UnimplementedCAServer
 }
 
-// localBackend is the backend service of the process: it answers OCSP and
-// records the profiles it invalidates
+// localBackend is the backend service of the process: it answers OCSP
 type localBackend struct {
 	privpb.UnimplementedBackendServer
-	mu          sync.Mutex
-	invalidated []string
 }
 
 func (b *localBackend) SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error) {
 	return &pb.OCSPResponse{Der: []byte("local")}, nil
-}
-
-func (b *localBackend) InvalidateProfile(orgID, projectID xdb.ID, label string) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.invalidated = append(b.invalidated, fmt.Sprintf("%d/%d/%s", orgID.UInt64(), projectID.UInt64(), label))
-}
-
-func (b *localBackend) profiles() []string {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return append([]string(nil), b.invalidated...)
 }
 
 // closeCounter counts its closes
@@ -63,9 +46,8 @@ func (c *closeCounter) Close() error {
 }
 
 // TestBackendLocator_Local covers the backend of the process: discovery
-// finds it by client.LocalBackend, never the forwarding service registered
-// beside it, it is called directly and invalidates the profiles; the
-// factory is not used
+// finds it by privpb.BackendServer, never the forwarding CA service
+// registered beside it, and it is called directly; the factory is not used
 func TestBackendLocator_Local(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)
@@ -77,18 +59,12 @@ func TestBackendLocator_Local(t *testing.T) {
 	require.NoError(t, disco.Register(backendName, local))
 	l := shared.NewBackendLocator(func() discovery.Discovery { return disco }, factory, client.ClientNameCA, backendName)
 
-	// a profile is invalidated before the first call too
-	l.InvalidateProfile(xdb.NewID(1), xdb.NewID(0), "server")
-	assert.Equal(t, []string{"1/0/server"}, local.profiles())
-
 	srv, err := l.Backend()
 	require.NoError(t, err)
 	assert.Same(t, local, srv)
 	res, err := srv.SignOCSP(context.Background(), &pb.OCSPRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, []byte("local"), res.Der)
-	l.InvalidateProfile(xdb.NewID(1), xdb.NewID(201), "peer")
-	assert.Equal(t, []string{"1/0/server", "1/201/peer"}, local.profiles())
 	assert.NoError(t, l.Close())
 
 	// the forwarding service alone is not a backend: with no factory there
@@ -106,9 +82,8 @@ func TestBackendLocator_Local(t *testing.T) {
 }
 
 // TestBackendLocator_Remote covers the client of the backend listener: a
-// factory that fails is tried again on the next call, the client is kept
-// until Close, which closes it, and a profile change is not sent to a
-// remote backend
+// factory that fails is tried again on the next call, and the client is
+// kept until Close, which closes it
 func TestBackendLocator_Remote(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)
@@ -129,8 +104,6 @@ func TestBackendLocator_Remote(t *testing.T) {
 		require.NoError(t, err)
 		assert.Same(t, remote, srv)
 	}
-	l.InvalidateProfile(xdb.NewID(1), xdb.NewID(0), "server")
-	assert.Empty(t, remote.profiles(), "a remote backend learns of the change after its cache TTL")
 
 	require.NoError(t, l.Close())
 	assert.Equal(t, 1, closer.closed)
@@ -146,7 +119,7 @@ func TestBackendLocator_Remote(t *testing.T) {
 }
 
 // TestBackendLocator_Static covers a locator wired to its backend: the
-// backend is returned as is, and profiles are invalidated in a local one
+// backend is returned as is, also after Close
 func TestBackendLocator_Static(t *testing.T) {
 	t.Parallel()
 	local := &localBackend{}
@@ -154,19 +127,10 @@ func TestBackendLocator_Static(t *testing.T) {
 	srv, err := l.Backend()
 	require.NoError(t, err)
 	assert.Same(t, local, srv)
-	l.InvalidateProfile(xdb.NewID(2), xdb.NewID(0), "server")
-	assert.Equal(t, []string{"2/0/server"}, local.profiles())
 	assert.NoError(t, l.Close())
 	srv, err = l.Backend()
 	require.NoError(t, err)
 	assert.Same(t, local, srv, "a static backend is kept after Close")
-
-	fwd := &forwarder{}
-	l = shared.NewStaticBackendLocator(fwd)
-	srv, err = l.Backend()
-	require.NoError(t, err)
-	assert.Same(t, fwd, srv)
-	l.InvalidateProfile(xdb.NewID(2), xdb.NewID(0), "server")
 }
 
 // TestBackendLocator_Concurrent looks the backend up from many goroutines
@@ -185,7 +149,6 @@ func TestBackendLocator_Concurrent(t *testing.T) {
 			srv, err := l.Backend()
 			assert.NoError(t, err)
 			assert.Same(t, remote, srv)
-			l.InvalidateProfile(xdb.NewID(1), xdb.NewID(0), "server")
 		})
 	}
 	wg.Wait()

@@ -194,30 +194,41 @@ servers:
       max_age: 600
       allow_credentials: true
       allowed_origins:
-        - http://localhost:3000
+        - http://localhost:4200 # Angular app
       allowed_methods:
         - HEAD
         - OPTIONS
         - GET
         - POST
         - DELETE
+      exposed_headers:
+        - "*"
+        - Grpc-Status
+        - Grpc-Message
+        - X-Correlation-ID
       allowed_headers:
         - Accept
-        - Content-Type
-        - Content-Length
         - Accept-Encoding
         - Accept-Language
         - Authorization
-        - User-Agent
-        - Referer
-        - X-Device-ID
-        - Location
+        - Content-Length
+        - Content-Type
+        - Grpc-Timeout
         - Link
+        - Location
+        - Referer
         - Replay-Nonce
         - sec-ch-ua
         - sec-ch-ua-mobile
         - sec-fetch-dest
         - sec-fetch-mode
+        - User-Agent
+        - X-Device-ID
+        - X-CSRF-Token
+        - X-Correlation-ID
+        - X-Grpc-Stream
+        - X-Grpc-Web
+        - X-User-Agent
     # configuration for the authorization module
     authz:
       # allow any non-authenticated request access to this path and its children
@@ -237,7 +248,8 @@ servers:
         # the AIA routes of the issued certificates are the aia listener's
         - /pb.CIS
         # the CA of the tenants: every method requires its roles and scopes
-        # (authctx.CheckAccess); the key operations run in the backend
+        # (authctx.CheckAccess), and runs in the backend with the org of the
+        # token
         - /pb.CA
       # allow the specified roles access to this path and its children, in format: ${path}:${role},${role}
       allow:
@@ -296,8 +308,9 @@ servers:
             - denis@effectivesecurity.pt
 
   # the signing plane (DESIGN.md section 2.1): the backend service holds the
-  # issuer keys; the RA and the operator call the CA here, the WFE and the
-  # AIA forward the key operations. Service identities over mTLS only.
+  # issuer keys and is the CA of the service identities: the RA and the
+  # operator call it with the org of every request, the WFE forwards the CA
+  # calls of its tenants, the AIA its OCSP requests. mTLS only.
   backend:
     description: Backend service
     disabled: false
@@ -315,7 +328,6 @@ servers:
       - status
       - admin
       - backend
-      - ca
     timeout:
       request: 3s
     cors: *cors
@@ -336,13 +348,12 @@ servers:
       # allow the specified roles access to this path and its children, in format: ${path}:${role},${role}
       allow:
         - /privpb.Admin:trustyca-admin,trustyca-peer
-        # the CA API: the RA signs and reads for its tenants, the admin operates it
-        - /pb.CA:trustyca-ra,trustyca-admin
-        # the signing plane: the WFE forwards the key operations of its callers,
-        # the AIA forwards OCSP requests only. A deeper path replaces the roles of
-        # /privpb.Backend, so the OCSP method lists the peer as well.
-        - /privpb.Backend:trustyca-peer
-        - /privpb.Backend/SignOCSP:trustyca-aia,trustyca-peer
+        # the CA of the service identities: the WFE forwards the calls of its
+        # callers, the RA signs and reads for its tenants, the admin operates
+        # it, and the AIA forwards OCSP requests only. A deeper path replaces
+        # the roles of /privpb.Backend, so the OCSP method lists all four.
+        - /privpb.Backend:trustyca-peer,trustyca-ra,trustyca-admin
+        - /privpb.Backend/SignOCSP:trustyca-aia,trustyca-peer,trustyca-ra,trustyca-admin
       # specifies to log allowed access to Any role
       log_allowed_any: true
       # specifies to log allowed access
@@ -387,8 +398,8 @@ clients:
     dial_timeout: 30s
     dial_keep_alive_time: 300s
     dial_keep_alive_timeout: 30s
-  # the CA service of a process without the backend service forwards the key
-  # operations of its callers to the backend: the WFE identity, trustyca-peer
+  # the CA service of a process without the backend service forwards the
+  # calls of its tenants to the backend: the WFE identity, trustyca-peer
   - name: ca
     client_tls:
       cert: ${HOME}/.trustyca/certs/trustyca_peer.pem

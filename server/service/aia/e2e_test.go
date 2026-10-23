@@ -36,7 +36,6 @@ import (
 	privproxypb "github.com/effective-security/trustyca/privpb/proxypb"
 	"github.com/effective-security/trustyca/server/appcontainer"
 	"github.com/effective-security/trustyca/server/service/aia"
-	"github.com/effective-security/trustyca/server/service/ca"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
@@ -84,20 +83,18 @@ func TestService_EndToEnd(t *testing.T) {
 	var provider db.Provider
 	require.NoError(t, container.Invoke(func(p db.Provider) { provider = p }))
 
-	// the CA and its backend, called over gRPC: the CA as the RA, the
-	// backend as the AIA
+	// the CA of the service identities, called over gRPC as the RA, which
+	// names the org of every request, and as the AIA
 	caServer, err := gserver.Start("AIATestCA", &gserver.Config{
 		ListenURLs: []string{testutils.CreateURL("http", "")},
-		Services:   []string{ca.ServiceName, backend.ServiceName},
+		Services:   []string{backend.ServiceName},
 	}, container, map[string]gserver.ServiceFactory{
-		ca.ServiceName:      ca.Factory,
 		backend.ServiceName: backend.Factory,
 	})
 	require.NoError(t, err)
 	t.Cleanup(caServer.Close)
-	caSvc := caServer.Service(ca.ServiceName).(pb.CAServer)
 	backendSvc := caServer.Service(backend.ServiceName).(privpb.BackendServer)
-	raClient := pb.NewCAClient(grpcConn(t, e2eRARole, func(srv *grpc.Server) { pb.RegisterCAServer(srv, caSvc) }))
+	raClient := privpb.NewBackendClient(grpcConn(t, e2eRARole, func(srv *grpc.Server) { privpb.RegisterBackendServer(srv, backendSvc) }))
 	aiaClient := privproxypb.NewBackendClient(grpcConn(t, e2eAIARole, func(srv *grpc.Server) { privpb.RegisterBackendServer(srv, backendSvc) }), nil)
 
 	// the AIA over plain HTTP, forwarding OCSP to the backend as the AIA
@@ -141,7 +138,7 @@ func TestService_EndToEnd(t *testing.T) {
 
 	// a root of the org whose URLs point at the AIA, and the profiles it
 	// serves
-	rootProfile, err := raClient.RegisterProfile(ctx, &pb.RegisterProfileRequest{
+	rootProfile, err := raClient.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
 		OrgID: orgID,
 		Profile: &pb.CertProfile{
 			Label:       e2eRootProfile,
@@ -157,7 +154,7 @@ func TestService_EndToEnd(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, rootProfile.ID)) })
-	root, err := raClient.RegisterIssuer(ctx, &pb.RegisterIssuerRequest{
+	root, err := raClient.RegisterIssuer(ctx, &privpb.RegisterIssuerRequest{
 		OrgID:   orgID,
 		Label:   e2eRootLabel,
 		Type:    pb.AuthorityType_Root,
@@ -176,9 +173,9 @@ func TestService_EndToEnd(t *testing.T) {
 	t.Cleanup(func() {
 		// the key of the root is destroyed in its provider through the
 		// service, then the rows are removed
-		_, _ = raClient.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Archived})
-		_, _ = raClient.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Destroyed})
-		roots, err := raClient.ListRoots(ctx, &pb.ListRootsRequest{OrgID: orgID})
+		_, _ = raClient.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Archived})
+		_, _ = raClient.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Destroyed})
+		roots, err := raClient.ListRoots(ctx, &privpb.ListRootsRequest{OrgID: orgID})
 		if err == nil {
 			for _, r := range roots.Roots {
 				_, _ = provider.DeleteRoot(ctx, org.ID.UInt64(), mustID(t, r.ID))
@@ -188,7 +185,7 @@ func TestService_EndToEnd(t *testing.T) {
 	})
 	rootCert, err := certutil.ParseFromPEM([]byte(root.Certificate))
 	require.NoError(t, err)
-	peerProfile, err := raClient.RegisterProfile(ctx, &pb.RegisterProfileRequest{
+	peerProfile, err := raClient.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
 		OrgID: orgID,
 		Profile: &pb.CertProfile{
 			Label:             e2ePeerProfile,
@@ -205,7 +202,7 @@ func TestService_EndToEnd(t *testing.T) {
 	// two certificates, one of which is revoked
 	sign := func(cn string) *x509.Certificate {
 		t.Helper()
-		signed, err := raClient.SignCertificate(ctx, &pb.SignCertificateRequest{
+		signed, err := raClient.SignCertificate(ctx, &privpb.SignCertificateRequest{
 			OrgID:    orgID,
 			Profile:  e2ePeerProfile,
 			Request:  newCSR(t, cn),
@@ -222,13 +219,13 @@ func TestService_EndToEnd(t *testing.T) {
 	}
 	goodCert := sign("good.example.com")
 	revokedCert := sign("revoked.example.com")
-	_, err = raClient.RevokeCertificate(ctx, &pb.RevokeCertificateRequest{
+	_, err = raClient.RevokeCertificate(ctx, &privpb.RevokeCertificateRequest{
 		OrgID:        orgID,
 		IssuerSerial: &pb.IssuerSerial{IKID: root.SKID, SerialNumber: revokedCert.SerialNumber.String()},
 		Reason:       pb.ReasonCode_KeyCompromise,
 	})
 	require.NoError(t, err)
-	published, err := raClient.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
+	published, err := raClient.PublishCrls(ctx, &privpb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
 	require.NoError(t, err)
 	require.Len(t, published.Crls, 1)
 

@@ -1,10 +1,10 @@
-package ca
+package backend
 
 import (
 	"context"
 	"time"
 
-	"github.com/effective-security/trustyca/server/service/internal/caapi"
+	"github.com/effective-security/trustyca/privpb"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/xhttp/httperror"
@@ -35,7 +35,7 @@ type certificateSelector struct {
 // Key Identifier (the newest one of the key), its SHA-256 thumbprint, or
 // the key identifier of its issuer and its serial number. A certificate of
 // another org, or of a project the caller cannot read, is not found.
-func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateRequest) (*pb.CertificateResponse, error) {
+func (s *Service) GetCertificate(ctx context.Context, req *privpb.GetCertificateRequest) (*pb.CertificateResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -60,7 +60,7 @@ func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateRequ
 // ListCertificates returns the certificates of the org, newest first: of
 // the project of the request, or of the org-wide scope and every project
 // the caller may read (DESIGN.md section 3.3)
-func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -76,7 +76,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificates
 	if err != nil {
 		return nil, err
 	}
-	expiringBefore, err := caapi.ParseTime(ctx, req.ExpiringBefore, "ExpiringBefore")
+	expiringBefore, err := parseTime(ctx, req.ExpiringBefore, "ExpiringBefore")
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *pb.ListCertificates
 // only (the interceptor authorizes that scope); a certificate of another
 // project is then not found. There is no event type for the change: it is
 // logged, not recorded in the audit trail.
-func (s *Service) UpdateCertificateLabel(ctx context.Context, req *pb.UpdateCertificateLabelRequest) (*pb.CertificateResponse, error) {
+func (s *Service) UpdateCertificateLabel(ctx context.Context, req *privpb.UpdateCertificateLabelRequest) (*pb.CertificateResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -173,7 +173,7 @@ func (s *Service) UpdateCertificateLabel(ctx context.Context, req *pb.UpdateCert
 // section 5.3.1), is refused since hold removal is not implemented. The
 // request names the project of the certificate when the caller's role is
 // granted there only; a certificate of another project is then not found.
-func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error) {
+func (s *Service) RevokeCertificate(ctx context.Context, req *privpb.RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -204,7 +204,7 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 		return nil, err
 	}
 	if row.Status == pb.CertificateStatus_Revoked {
-		return nil, caapi.PreconditionFailed(ctx, "certificate is already revoked")
+		return nil, preconditionFailed(ctx, "certificate is already revoked")
 	}
 	res, err := s.db.RevokeCertificate(ctx, &query.RevokeCertificateRequest{
 		CertificateID: row.ID.UInt64(),
@@ -216,7 +216,7 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 	if err != nil {
 		switch {
 		case errors.Is(err, db.ErrAlreadyRevoked):
-			return nil, caapi.PreconditionFailed(ctx, "certificate is already revoked")
+			return nil, preconditionFailed(ctx, "certificate is already revoked")
 		case xdb.IsNotFoundError(err):
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "certificate not found")
 		}
@@ -239,7 +239,7 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 		"serial", res.SerialNumber,
 		"subject", res.Subject,
 		"revocation_reason", res.Reason.String())
-	events.New(ctx, caapi.EventSource, pb.EventType_CertificateRevoked, "Certificate revoked").
+	events.New(ctx, EventSource, pb.EventType_CertificateRevoked, "Certificate revoked").
 		Org(orgID).
 		Project(res.ProjectID).
 		Reference(res.CertificateID).
@@ -253,7 +253,7 @@ func (s *Service) RevokeCertificate(ctx context.Context, req *pb.RevokeCertifica
 // ListRevokedCertificates returns the revoked certificates of the org with
 // their revocation, newest revocation first, in the scope of the request
 // as ListCertificates does
-func (s *Service) ListRevokedCertificates(ctx context.Context, req *pb.ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error) {
+func (s *Service) ListRevokedCertificates(ctx context.Context, req *privpb.ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
@@ -291,7 +291,7 @@ func (s *Service) ListRevokedCertificates(ctx context.Context, req *pb.ListRevok
 }
 
 // findCertificate returns the certificate of the org the selector names,
-// when the caller may call the method on it (Scope.RowAccess): by ID, by
+// when the caller may call the method on it (tenantScope.RowAccess): by ID, by
 // issuer and serial number, by thumbprint, or the newest certificate of a
 // Subject Key Identifier among those the caller may read. A certificate of
 // another org, of the platform, of a project the caller cannot read or,
@@ -302,7 +302,7 @@ func (s *Service) findCertificate(ctx context.Context, orgID xdb.ID, sel *certif
 	switch {
 	case sel.id != "":
 		var id xdb.ID
-		id, err = caapi.ParseID(ctx, sel.id, "certificate ID")
+		id, err = parseID(ctx, sel.id, "certificate ID")
 		if err != nil {
 			return nil, err
 		}

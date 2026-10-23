@@ -39,7 +39,9 @@ func TestNewAuthUnaryBackendInterceptor(t *testing.T) {
 	t.Parallel()
 	interceptor := authctx.NewAuthUnaryBackendInterceptor(authctx.NewAuthorizer(specGrants()))
 	signMethod := privpb.Backend_SignCertificate_FullMethodName
-	signReq := &pb.SignCertificateRequest{
+	// the backend receives the privpb counterpart of a CA request, with the
+	// org of the caller's token
+	signReq := &privpb.SignCertificateRequest{
 		OrgID: orgID().String(),
 	}
 	// call runs the interceptor and returns the context the handler sees,
@@ -100,7 +102,7 @@ func TestNewAuthUnaryBackendInterceptor(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, viewerID().UInt64(), tctx.UserID().UInt64())
 	// a forwarded user of another org than the request's is refused
-	tctx, err = call(forwardedFrom(t, authctx.PeerRoleName, signMethod, user), signMethod, &pb.SignCertificateRequest{OrgID: otherOrgID().String()})
+	tctx, err = call(forwardedFrom(t, authctx.PeerRoleName, signMethod, user), signMethod, &privpb.SignCertificateRequest{OrgID: otherOrgID().String()})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "org mismatch")
 	assert.Nil(t, tctx)

@@ -128,7 +128,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/ListRootsRequest'
+                            $ref: '#/components/schemas/GetRootsRequest'
                 required: true
             responses:
                 "200":
@@ -305,9 +305,6 @@ components:
         GetCrlRequest:
             type: object
             properties:
-                OrgID:
-                    type: string
-                    description: OrgID of the owning org; empty allows lookup across orgs for CIS
                 IKID:
                     type: string
                     description: IKID specifies Issuer Key ID
@@ -319,6 +316,27 @@ components:
                     type: string
                     description: IKID specifies Issuer Key ID
             description: GetIssuerInfoRequest specifies an issuer by IKID
+        GetRootsRequest:
+            type: object
+            properties:
+                OrgID:
+                    type: string
+                    description: |-
+                        OrgID selects the anchors of an org; empty lists the platform
+                         anchors. It is a lookup, not a tenant scope: the anchors are public
+                         and any authenticated caller reads those of any org.
+                Limit:
+                    type: integer
+                    description: Limit specifies maximum number of records to return
+                    format: uint32
+                Offset:
+                    type: integer
+                    description: Offset specifies offset for the offset-based pagination
+                    format: uint32
+                Cursor:
+                    type: string
+                    description: Cursor specifies cursor for the cursor-based pagination
+            description: GetRootsRequest specifies a list of the published trust anchors
         GoogleProtobufAny:
             type: object
             properties:
@@ -382,24 +400,6 @@ components:
                     type: string
                     description: SerialNumber provides certificate's serial number
             description: IssuerSerial identifies a certificate by its issuer and serial number
-        ListRootsRequest:
-            type: object
-            properties:
-                OrgID:
-                    type: string
-                    description: OrgID of the owning org; empty for platform roots
-                Limit:
-                    type: integer
-                    description: Limit specifies maximum number of records to return
-                    format: uint32
-                Offset:
-                    type: integer
-                    description: Offset specifies offset for the offset-based pagination
-                    format: uint32
-                Cursor:
-                    type: string
-                    description: Cursor specifies cursor for the cursor-based pagination
-            description: ListRootsRequest specifies a list of trust anchors
         NextPage:
             type: object
             properties:

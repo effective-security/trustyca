@@ -40,22 +40,64 @@ func GetBackendHTTPHandler(s privpb.BackendServer, withAccessCheck privpb.CheckA
 		switch action {
 
 		case privpb.Backend_RegisterIssuer_FullMethodName:
-			res, err = s.RegisterIssuer(ctx, req.(*pb.RegisterIssuerRequest))
+			res, err = s.RegisterIssuer(ctx, req.(*privpb.RegisterIssuerRequest))
 
 		case privpb.Backend_ImportIssuer_FullMethodName:
-			res, err = s.ImportIssuer(ctx, req.(*pb.ImportIssuerRequest))
+			res, err = s.ImportIssuer(ctx, req.(*privpb.ImportIssuerRequest))
 
 		case privpb.Backend_ActivateIssuer_FullMethodName:
-			res, err = s.ActivateIssuer(ctx, req.(*pb.ActivateIssuerRequest))
+			res, err = s.ActivateIssuer(ctx, req.(*privpb.ActivateIssuerRequest))
 
 		case privpb.Backend_UpdateIssuer_FullMethodName:
-			res, err = s.UpdateIssuer(ctx, req.(*pb.UpdateIssuerRequest))
+			res, err = s.UpdateIssuer(ctx, req.(*privpb.UpdateIssuerRequest))
+
+		case privpb.Backend_GetIssuer_FullMethodName:
+			res, err = s.GetIssuer(ctx, req.(*privpb.GetIssuerRequest))
+
+		case privpb.Backend_ListIssuers_FullMethodName:
+			res, err = s.ListIssuers(ctx, req.(*privpb.ListIssuersRequest))
+
+		case privpb.Backend_RegisterRoot_FullMethodName:
+			res, err = s.RegisterRoot(ctx, req.(*privpb.RegisterRootRequest))
+
+		case privpb.Backend_ListRoots_FullMethodName:
+			res, err = s.ListRoots(ctx, req.(*privpb.ListRootsRequest))
+
+		case privpb.Backend_RegisterProfile_FullMethodName:
+			res, err = s.RegisterProfile(ctx, req.(*privpb.RegisterProfileRequest))
+
+		case privpb.Backend_GetProfile_FullMethodName:
+			res, err = s.GetProfile(ctx, req.(*privpb.GetProfileRequest))
+
+		case privpb.Backend_ListProfiles_FullMethodName:
+			res, err = s.ListProfiles(ctx, req.(*privpb.ListProfilesRequest))
+
+		case privpb.Backend_DeleteProfile_FullMethodName:
+			res, err = s.DeleteProfile(ctx, req.(*privpb.DeleteProfileRequest))
 
 		case privpb.Backend_SignCertificate_FullMethodName:
-			res, err = s.SignCertificate(ctx, req.(*pb.SignCertificateRequest))
+			res, err = s.SignCertificate(ctx, req.(*privpb.SignCertificateRequest))
+
+		case privpb.Backend_GetCertificate_FullMethodName:
+			res, err = s.GetCertificate(ctx, req.(*privpb.GetCertificateRequest))
+
+		case privpb.Backend_ListCertificates_FullMethodName:
+			res, err = s.ListCertificates(ctx, req.(*privpb.ListCertificatesRequest))
+
+		case privpb.Backend_UpdateCertificateLabel_FullMethodName:
+			res, err = s.UpdateCertificateLabel(ctx, req.(*privpb.UpdateCertificateLabelRequest))
+
+		case privpb.Backend_RevokeCertificate_FullMethodName:
+			res, err = s.RevokeCertificate(ctx, req.(*privpb.RevokeCertificateRequest))
+
+		case privpb.Backend_ListRevokedCertificates_FullMethodName:
+			res, err = s.ListRevokedCertificates(ctx, req.(*privpb.ListRevokedCertificatesRequest))
+
+		case privpb.Backend_GetCRL_FullMethodName:
+			res, err = s.GetCRL(ctx, req.(*privpb.GetCrlRequest))
 
 		case privpb.Backend_PublishCrls_FullMethodName:
-			res, err = s.PublishCrls(ctx, req.(*pb.PublishCrlsRequest))
+			res, err = s.PublishCrls(ctx, req.(*privpb.PublishCrlsRequest))
 
 		case privpb.Backend_SignOCSP_FullMethodName:
 			res, err = s.SignOCSP(ctx, req.(*pb.OCSPRequest))

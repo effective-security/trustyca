@@ -32,7 +32,7 @@ svc.RegisterRoute(router)
   - [func \(s \*Service\) GetCertificate\(ctx context.Context, req \*pb.GetCertificateInfoRequest\) \(\*pb.CertificateResponse, error\)](<#Service.GetCertificate>)
   - [func \(s \*Service\) GetCertificateStatus\(ctx context.Context, req \*pb.GetCertificateInfoRequest\) \(\*pb.CertificateStatusResponse, error\)](<#Service.GetCertificateStatus>)
   - [func \(s \*Service\) GetIssuer\(ctx context.Context, req \*pb.GetIssuerInfoRequest\) \(\*pb.IssuerInfo, error\)](<#Service.GetIssuer>)
-  - [func \(s \*Service\) GetRoots\(ctx context.Context, req \*pb.ListRootsRequest\) \(\*pb.RootsResponse, error\)](<#Service.GetRoots>)
+  - [func \(s \*Service\) GetRoots\(ctx context.Context, req \*pb.GetRootsRequest\) \(\*pb.RootsResponse, error\)](<#Service.GetRoots>)
   - [func \(s \*Service\) IsReady\(\) bool](<#Service.IsReady>)
   - [func \(s \*Service\) Name\(\) string](<#Service.Name>)
   - [func \(s \*Service\) RegisterGRPC\(r \*grpc.Server\)](<#Service.RegisterGRPC>)
@@ -134,7 +134,7 @@ GetIssuer returns the public view of the issuer with the key identifier: its cha
 ### func \(\*Service\) [GetRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L25>)
 
 ```go
-func (s *Service) GetRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.RootsResponse, error)
+func (s *Service) GetRoots(ctx context.Context, req *pb.GetRootsRequest) (*pb.RootsResponse, error)
 ```
 
 GetRoots returns the published trust anchors, newest first: of the platform when the request names no org, else of the org. An unknown org has none.

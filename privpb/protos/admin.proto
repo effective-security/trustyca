@@ -70,7 +70,7 @@ service Admin {
     // ListIssuers lists the issuers of every org and of the platform, newest
     // first, for support staff; the tenant view of an org is CA.ListIssuers.
     // Private key material is never returned.
-    rpc ListIssuers(ListIssuersRequest) returns (pb.IssuersResponse) {
+    rpc ListIssuers(ListAllIssuersRequest) returns (pb.IssuersResponse) {
         option (google.api.http) = {
             post: "/privpb.Admin/ListIssuers",
             body: "*"
@@ -81,7 +81,7 @@ service Admin {
     // ListCertificates lists the certificates of every org and of the
     // platform, newest first, for support staff; the tenant view of an org
     // is CA.ListCertificates
-    rpc ListCertificates(ListCertificatesRequest)
+    rpc ListCertificates(ListAllCertificatesRequest)
         returns (pb.CertificatesResponse) {
         option (google.api.http) = {
             post: "/privpb.Admin/ListCertificates",
@@ -129,8 +129,8 @@ message ListProjectsRequest {
     string OrgID = 5 [json_name = "OrgID"];
 }
 
-// ListIssuersRequest specifies a paginated list of issuers across orgs
-message ListIssuersRequest {
+// ListAllIssuersRequest specifies a paginated list of issuers across orgs
+message ListAllIssuersRequest {
     // Limit specifies maximum number of records to return
     uint32 Limit = 1 [json_name = "Limit"];
     // Offset specifies offset for the offset-based pagination
@@ -156,9 +156,9 @@ message ListIssuersRequest {
     pb.AuthorityType.Enum Type = 9 [json_name = "Type"];
 }
 
-// ListCertificatesRequest specifies a paginated list of certificates across
+// ListAllCertificatesRequest specifies a paginated list of certificates across
 // orgs, newest first
-message ListCertificatesRequest {
+message ListAllCertificatesRequest {
     // Limit specifies maximum number of records to return
     uint32 Limit = 1 [json_name = "Limit"];
     // Offset specifies offset for the offset-based pagination

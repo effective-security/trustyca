@@ -50,7 +50,7 @@ func (m *MockCISServer) next() proto.Message {
 
 // GetRoots returns the published trust anchors
 
-func (m *MockCISServer) GetRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.RootsResponse, error) {
+func (m *MockCISServer) GetRoots(ctx context.Context, req *pb.GetRootsRequest) (*pb.RootsResponse, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}

@@ -48,13 +48,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// CA is the Certification Authority service.
-// It is served over gRPC only on the backend and is not exposed to the
-// internet. The Registration Authority (RA) is the trusted caller and is
-// responsible for tenant mapping and end-user authorization.
-// Every request is scoped by OrgID and optional ProjectID. Trusted service
-// callers (mTLS) pass OrgID explicitly; user tokens are checked against the
-// permission named by (es.api.scopes).
+// CA is the Certification Authority service of the tenants: the users and
+// the API keys of an org, on the wfe listener. Every request is scoped by
+// the org of the caller's token and an optional ProjectID; the requests
+// carry no OrgID. The service holds no issuer key: it forwards every call
+// to privpb.Backend with the org of the token (DESIGN.md section 2.1),
+// which is also the API of the service identities (the RA, the operator).
+// Methods declare the roles and the API key scopes they require.
 type CAClient interface {
 	// RegisterIssuer creates a new issuing authority for the tenant.
 	// The private key is generated in the configured crypto provider and
@@ -82,7 +82,7 @@ type CAClient interface {
 	// ListRoots returns the tenant's trust anchors
 	ListRoots(ctx context.Context, in *ListRootsRequest, opts ...grpc.CallOption) (*RootsResponse, error)
 	// RegisterProfile creates or replaces a certificate profile, keyed by
-	// (OrgID, ProjectID, Label)
+	// (org, ProjectID, Label)
 	RegisterProfile(ctx context.Context, in *RegisterProfileRequest, opts ...grpc.CallOption) (*CertProfile, error)
 	// GetProfile returns the profile by ID or label
 	GetProfile(ctx context.Context, in *GetProfileRequest, opts ...grpc.CallOption) (*CertProfile, error)
@@ -111,7 +111,8 @@ type CAClient interface {
 	// The scheduled CRL renewal task publishes the due CRLs of every org
 	// in-process.
 	PublishCrls(ctx context.Context, in *PublishCrlsRequest, opts ...grpc.CallOption) (*CrlsResponse, error)
-	// SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
+	// SignOCSP signs an OCSP response; the AIA OCSP responder calls
+	// Backend.SignOCSP.
 	SignOCSP(ctx context.Context, in *OCSPRequest, opts ...grpc.CallOption) (*OCSPResponse, error)
 }
 
@@ -337,13 +338,13 @@ func (c *cAClient) SignOCSP(ctx context.Context, in *OCSPRequest, opts ...grpc.C
 // All implementations should embed UnimplementedCAServer
 // for forward compatibility.
 //
-// CA is the Certification Authority service.
-// It is served over gRPC only on the backend and is not exposed to the
-// internet. The Registration Authority (RA) is the trusted caller and is
-// responsible for tenant mapping and end-user authorization.
-// Every request is scoped by OrgID and optional ProjectID. Trusted service
-// callers (mTLS) pass OrgID explicitly; user tokens are checked against the
-// permission named by (es.api.scopes).
+// CA is the Certification Authority service of the tenants: the users and
+// the API keys of an org, on the wfe listener. Every request is scoped by
+// the org of the caller's token and an optional ProjectID; the requests
+// carry no OrgID. The service holds no issuer key: it forwards every call
+// to privpb.Backend with the org of the token (DESIGN.md section 2.1),
+// which is also the API of the service identities (the RA, the operator).
+// Methods declare the roles and the API key scopes they require.
 type CAServer interface {
 	// RegisterIssuer creates a new issuing authority for the tenant.
 	// The private key is generated in the configured crypto provider and
@@ -371,7 +372,7 @@ type CAServer interface {
 	// ListRoots returns the tenant's trust anchors
 	ListRoots(context.Context, *ListRootsRequest) (*RootsResponse, error)
 	// RegisterProfile creates or replaces a certificate profile, keyed by
-	// (OrgID, ProjectID, Label)
+	// (org, ProjectID, Label)
 	RegisterProfile(context.Context, *RegisterProfileRequest) (*CertProfile, error)
 	// GetProfile returns the profile by ID or label
 	GetProfile(context.Context, *GetProfileRequest) (*CertProfile, error)
@@ -400,7 +401,8 @@ type CAServer interface {
 	// The scheduled CRL renewal task publishes the due CRLs of every org
 	// in-process.
 	PublishCrls(context.Context, *PublishCrlsRequest) (*CrlsResponse, error)
-	// SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
+	// SignOCSP signs an OCSP response; the AIA OCSP responder calls
+	// Backend.SignOCSP.
 	SignOCSP(context.Context, *OCSPRequest) (*OCSPResponse, error)
 }
 

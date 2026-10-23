@@ -624,7 +624,7 @@ Follow-ups:
 2. `OCSPRequest.IKID` from the `/v1/ocspi/{ikid}` routes (ROADMAP.md
    RM-003) is still open.
 
-## Phase 9: signing plane and service clients (steps 1 to 3 done, 4 in part)
+## Phase 9: signing plane and service clients (steps 1 to 3 and 5 done, 4 in part)
 
 DESIGN.md sections 2.1 and 2.2: tenants manage their CA through `pb.CA` on
 the `wfe` (the Web UI), while the issuer keys stay in the `backend`
@@ -652,7 +652,8 @@ other with named service clients. Each step ends green.
    - Tests: the factory (names, an unknown client and listener, the TLS
      files of each client), the role matrix of the three listeners, the app
      tests pass a URL for each listener, so they bind no fixed port.
-2. `privpb.Backend` (done): `privpb/protos/backend.proto` with
+2. `privpb.Backend` (done; extended to every CA method in step 5):
+   `privpb/protos/backend.proto` with
    `RegisterIssuer`, `ImportIssuer`, `ActivateIssuer`, `UpdateIssuer`,
    `SignCertificate`, `PublishCrls` and `SignOCSP` over the `pb` messages
    of `pb.CA`; every request of these methods carries `OrgID`, so no
@@ -667,7 +668,8 @@ other with named service clients. Each step ends green.
    `Backend.SignOCSP` through `client.BackendLocator`. Backend authz:
    `/privpb.Backend:trustyca-peer` and `/privpb.Backend/SignOCSP` for
    `trustyca-aia` as well; the AIA's `/pb.CA/SignOCSP` rule went.
-3. The forwarding `ca` service (done): `ca.Service` has no registry and
+3. The forwarding `ca` service (done; a proxy of every method since step
+   5): `ca.Service` has no registry and
    forwards the key methods (`forward`) through `client.BackendLocator`:
    the backend of the process found by discovery under
    `client.LocalBackend` (the forwarding service has the methods of
@@ -695,9 +697,36 @@ other with named service clients. Each step ends green.
    clients pointing at the other) and a signing app (backend), where a
    tenant token signs, revokes and publishes through the wfe and the AIA
    answers OCSP through its client.
-5. Documentation (done): DESIGN.md sections 1, 2, 3.5, 5.1, 7, 8, 9.2, 10
-   and 12, the codemap, the README, ROADMAP.md (RM-006 to RM-009), the
-   `doc.go` of `api/client` and `server/service/ca`.
+5. Token-scoped public CA (done; DESIGN.md section 2.1). The `pb.CA`
+   requests lost `OrgID` (field 1 and the name are reserved): the org is
+   the org of the token. `privpb.Backend` serves every CA method, with
+   copies of the `pb.CA` requests that add `OrgID` as field 1 and keep
+   every other field under its name and number; `SignOCSP` keeps
+   `pb.OCSPRequest`. The Admin support lists took the names
+   `ListAllIssuersRequest` and `ListAllCertificatesRequest`, and the CIS
+   `GetRoots` its own `GetRootsRequest`, whose `OrgID` is a lookup of
+   public anchors. All CA logic moved to `server/service/backend` (the
+   management methods with the key methods, the tenant checks as
+   `tenantScope`; `server/service/internal/caapi` went), which also
+   invalidates a changed profile in its own registry. `ca.Service` is a
+   proxy without DB or registry: every method encodes the public request
+   into its counterpart, sets `OrgID` from the token (a value the caller
+   encodes in field 1 never reaches the backend) and forwards it.
+   `shared.BackendLocator` finds the backend in process by
+   `privpb.BackendServer`, which the proxy no longer implements, so the
+   `LocalBackend` marker went. The backend listener serves `status`,
+   `admin` and `backend` (no `pb.CA`): `/privpb.Backend` for the peer, the
+   RA and the admin, `SignOCSP` for the AIA as well. `trustycactl` calls
+   `privpb.Backend` (`Cli.BackendClient`). Tests: the CA tests moved to
+   `server/service/backend` and call the backend with the `privpb`
+   requests; `server/service/ca` checks the request pairs
+   (TestRequests_Counterparts), forwards a request with every field set
+   for every method over gRPC (TestService_Forward), the org of the token
+   against field 1, nil requests and the errors; the e2e tests of the CA,
+   AIA, CIS and CTL call `privpb.Backend` as the RA or the operator.
+6. Documentation (done): DESIGN.md sections 1, 2, 3.5, 3.7, 5.1, 7, 8,
+   9.2, 9.3, 10 and 12, the codemap, the README, ROADMAP.md, the
+   `doc.go` of the changed packages.
 
 Follow-ups (ROADMAP.md):
 
@@ -708,9 +737,7 @@ Follow-ups (ROADMAP.md):
    keys that the web pods do not hold, DB roles per pod role, name
    constraints on tenant issuing CAs, a method allowlist per service role
    in `authctx` (RM-008).
-3. Dropping `OrgID` from the public `pb.CA` requests, with `privpb` copies
-   for the RA and the operator (RM-009).
-4. The Web UI calls the CA over gRPC: `ca` registers no JSON route on the
+3. The Web UI calls the CA over gRPC: `ca` registers no JSON route on the
    wfe (`httppb.GetCAHTTPHandler` with the access check), as `cis` does.
 
 ## Verification checklist per phase

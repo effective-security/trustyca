@@ -2,11 +2,19 @@ package ca_test
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"net/http"
 	"testing"
 
+	"github.com/effective-security/trustyca/privpb"
 	"github.com/effective-security/trustyca/server/service/backend"
-	"github.com/effective-security/trustyca/server/service/internal/caapi"
+	"github.com/effective-security/xdb"
+
 	"github.com/effective-security/trustyca/server/service/shared"
 
 	"github.com/effective-security/porto/gserver"
@@ -97,17 +105,9 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	factory, err := client.NewFactory(clients)
 	require.NoError(t, err)
 
-	// the CA service of a web process: the DB, and the backend over mTLS
-	var (
-		caDb   db.CaDb
-		orgsDb db.OrgsDb
-	)
-	require.NoError(t, container.Invoke(func(c db.CaDb, o db.OrgsDb) {
-		caDb = c
-		orgsDb = o
-	}))
+	// the CA service of a web process: the backend over mTLS, and no CA table
 	locator := shared.NewBackendLocator(nil, factory, client.ClientNameCA, config.BackendServerName)
-	wfe := ca.New(caDb, orgsDb, authorizer, locator)
+	wfe := ca.New(locator)
 	t.Cleanup(wfe.Close)
 
 	// the org of the test and its Owner, and a user without a grant in it
@@ -148,7 +148,6 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	// a profile is managed by the web process, the root is created by the
 	// backend for the Owner
 	rootProfile, err := wfe.RegisterProfile(ownerCtx, &pb.RegisterProfileRequest{
-		OrgID: orgID,
 		Profile: &pb.CertProfile{
 			Label:       fwdRootProfile,
 			IssuerLabel: model.AnyIssuerLabel,
@@ -164,7 +163,6 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, rootProfile.ID)) })
 	rootReq := &pb.RegisterIssuerRequest{
-		OrgID:   orgID,
 		Label:   fwdRootLabel,
 		Type:    pb.AuthorityType_Root,
 		Subject: &pb.X509Subject{CommonName: "Forward Root"},
@@ -181,9 +179,9 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	t.Cleanup(func() {
 		// the key of the root is destroyed in its provider through the
 		// backend, then the rows are removed
-		_, _ = wfe.UpdateIssuer(ownerCtx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Archived})
-		_, _ = wfe.UpdateIssuer(ownerCtx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Destroyed})
-		roots, err := wfe.ListRoots(ownerCtx, &pb.ListRootsRequest{OrgID: orgID})
+		_, _ = wfe.UpdateIssuer(ownerCtx, &pb.UpdateIssuerRequest{ID: root.ID, Status: pb.IssuerStatus_Archived})
+		_, _ = wfe.UpdateIssuer(ownerCtx, &pb.UpdateIssuerRequest{ID: root.ID, Status: pb.IssuerStatus_Destroyed})
+		roots, err := wfe.ListRoots(ownerCtx, &pb.ListRootsRequest{})
 		if err == nil {
 			for _, r := range roots.Roots {
 				_, _ = provider.DeleteRoot(ctx, org.ID.UInt64(), mustID(t, r.ID))
@@ -194,7 +192,7 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	assert.Equal(t, pb.IssuerStatus_Active, root.Status)
 
 	// a precondition refusal of the backend keeps HTTP 409 conflict
-	_, err = wfe.ActivateIssuer(ownerCtx, &pb.ActivateIssuerRequest{OrgID: orgID, ID: root.ID, Certificate: root.Certificate})
+	_, err = wfe.ActivateIssuer(ownerCtx, &pb.ActivateIssuerRequest{ID: root.ID, Certificate: root.Certificate})
 	require.Error(t, err)
 	herr := httperror.NewFromPb(err)
 	assert.Equal(t, codes.FailedPrecondition, herr.RPCStatus)
@@ -205,7 +203,6 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	// the Owner signs through the backend, which records the Owner as the
 	// actor of the issue event
 	peerProfile, err := wfe.RegisterProfile(ownerCtx, &pb.RegisterProfileRequest{
-		OrgID: orgID,
 		Profile: &pb.CertProfile{
 			Label:             fwdPeerProfile,
 			IssuerLabel:       fwdRootLabel,
@@ -218,7 +215,6 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, peerProfile.ID)) })
 	signed, err := wfe.SignCertificate(ownerCtx, &pb.SignCertificateRequest{
-		OrgID:   orgID,
 		Profile: fwdPeerProfile,
 		Request: newCSR(t, "fwd.example.com"),
 		SAN:     []string{"fwd.example.com"},
@@ -232,7 +228,7 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, issued.Rows, 1)
 	assert.Equal(t, owner.Email, issued.Rows[0].Email.String())
-	assert.Equal(t, caapi.EventSource, issued.Rows[0].Source.String())
+	assert.Equal(t, backend.EventSource, issued.Rows[0].Source.String())
 
 	// the AIA identity signs OCSP and nothing else
 	aia, aiaCloser, err := factory.BackendClient(client.ClientNameAIA, config.BackendServerName)
@@ -249,7 +245,27 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	parsed, err := ocsp.ParseResponseForCert(ocspRes.Der, x509Cert, rootCert)
 	require.NoError(t, err)
 	assert.Equal(t, ocsp.Good, parsed.Status)
-	_, err = aia.SignCertificate(ctx, &pb.SignCertificateRequest{OrgID: orgID, Profile: fwdPeerProfile, Request: newCSR(t, "aia.example.com")})
+	_, err = aia.SignCertificate(ctx, &privpb.SignCertificateRequest{OrgID: orgID, Profile: fwdPeerProfile, Request: newCSR(t, "aia.example.com")})
 	require.Error(t, err)
 	assert.Equal(t, codes.PermissionDenied, httperror.NewFromPb(err).RPCStatus, err.Error())
+}
+
+// newCSR returns the PEM encoding of a certificate request for a new key
+func newCSR(t *testing.T, cn string) []byte {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	der, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{
+		Subject: pkix.Name{CommonName: cn},
+	}, key)
+	require.NoError(t, err)
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: der})
+}
+
+// mustID parses an ID of the API
+func mustID(t *testing.T, id string) uint64 {
+	t.Helper()
+	v, err := xdb.ParseID(id)
+	require.NoError(t, err)
+	return v.UInt64()
 }

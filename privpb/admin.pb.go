@@ -193,8 +193,8 @@ func (x *ListProjectsRequest) GetOrgID() string {
 	return ""
 }
 
-// ListIssuersRequest specifies a paginated list of issuers across orgs
-type ListIssuersRequest struct {
+// ListAllIssuersRequest specifies a paginated list of issuers across orgs
+type ListAllIssuersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Limit specifies maximum number of records to return
 	Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
@@ -223,20 +223,20 @@ type ListIssuersRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListIssuersRequest) Reset() {
-	*x = ListIssuersRequest{}
+func (x *ListAllIssuersRequest) Reset() {
+	*x = ListAllIssuersRequest{}
 	mi := &file_admin_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListIssuersRequest) String() string {
+func (x *ListAllIssuersRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListIssuersRequest) ProtoMessage() {}
+func (*ListAllIssuersRequest) ProtoMessage() {}
 
-func (x *ListIssuersRequest) ProtoReflect() protoreflect.Message {
+func (x *ListAllIssuersRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_admin_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -248,77 +248,77 @@ func (x *ListIssuersRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListIssuersRequest.ProtoReflect.Descriptor instead.
-func (*ListIssuersRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListAllIssuersRequest.ProtoReflect.Descriptor instead.
+func (*ListAllIssuersRequest) Descriptor() ([]byte, []int) {
 	return file_admin_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListIssuersRequest) GetLimit() uint32 {
+func (x *ListAllIssuersRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
 	}
 	return 0
 }
 
-func (x *ListIssuersRequest) GetOffset() uint32 {
+func (x *ListAllIssuersRequest) GetOffset() uint32 {
 	if x != nil {
 		return x.Offset
 	}
 	return 0
 }
 
-func (x *ListIssuersRequest) GetCursor() string {
+func (x *ListAllIssuersRequest) GetCursor() string {
 	if x != nil {
 		return x.Cursor
 	}
 	return ""
 }
 
-func (x *ListIssuersRequest) GetOrgID() string {
+func (x *ListAllIssuersRequest) GetOrgID() string {
 	if x != nil {
 		return x.OrgID
 	}
 	return ""
 }
 
-func (x *ListIssuersRequest) GetPlatform() bool {
+func (x *ListAllIssuersRequest) GetPlatform() bool {
 	if x != nil {
 		return x.Platform
 	}
 	return false
 }
 
-func (x *ListIssuersRequest) GetProjectID() string {
+func (x *ListAllIssuersRequest) GetProjectID() string {
 	if x != nil {
 		return x.ProjectID
 	}
 	return ""
 }
 
-func (x *ListIssuersRequest) GetLabel() string {
+func (x *ListAllIssuersRequest) GetLabel() string {
 	if x != nil {
 		return x.Label
 	}
 	return ""
 }
 
-func (x *ListIssuersRequest) GetStatus() pb.IssuerStatus_Enum {
+func (x *ListAllIssuersRequest) GetStatus() pb.IssuerStatus_Enum {
 	if x != nil {
 		return x.Status
 	}
 	return pb.IssuerStatus_Enum(0)
 }
 
-func (x *ListIssuersRequest) GetType() pb.AuthorityType_Enum {
+func (x *ListAllIssuersRequest) GetType() pb.AuthorityType_Enum {
 	if x != nil {
 		return x.Type
 	}
 	return pb.AuthorityType_Enum(0)
 }
 
-// ListCertificatesRequest specifies a paginated list of certificates across
+// ListAllCertificatesRequest specifies a paginated list of certificates across
 // orgs, newest first
-type ListCertificatesRequest struct {
+type ListAllCertificatesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Limit specifies maximum number of records to return
 	Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
@@ -349,20 +349,20 @@ type ListCertificatesRequest struct {
 	sizeCache      protoimpl.SizeCache
 }
 
-func (x *ListCertificatesRequest) Reset() {
-	*x = ListCertificatesRequest{}
+func (x *ListAllCertificatesRequest) Reset() {
+	*x = ListAllCertificatesRequest{}
 	mi := &file_admin_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListCertificatesRequest) String() string {
+func (x *ListAllCertificatesRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListCertificatesRequest) ProtoMessage() {}
+func (*ListAllCertificatesRequest) ProtoMessage() {}
 
-func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message {
+func (x *ListAllCertificatesRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_admin_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -374,75 +374,75 @@ func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListCertificatesRequest.ProtoReflect.Descriptor instead.
-func (*ListCertificatesRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListAllCertificatesRequest.ProtoReflect.Descriptor instead.
+func (*ListAllCertificatesRequest) Descriptor() ([]byte, []int) {
 	return file_admin_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ListCertificatesRequest) GetLimit() uint32 {
+func (x *ListAllCertificatesRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
 	}
 	return 0
 }
 
-func (x *ListCertificatesRequest) GetOffset() uint32 {
+func (x *ListAllCertificatesRequest) GetOffset() uint32 {
 	if x != nil {
 		return x.Offset
 	}
 	return 0
 }
 
-func (x *ListCertificatesRequest) GetCursor() string {
+func (x *ListAllCertificatesRequest) GetCursor() string {
 	if x != nil {
 		return x.Cursor
 	}
 	return ""
 }
 
-func (x *ListCertificatesRequest) GetOrgID() string {
+func (x *ListAllCertificatesRequest) GetOrgID() string {
 	if x != nil {
 		return x.OrgID
 	}
 	return ""
 }
 
-func (x *ListCertificatesRequest) GetPlatform() bool {
+func (x *ListAllCertificatesRequest) GetPlatform() bool {
 	if x != nil {
 		return x.Platform
 	}
 	return false
 }
 
-func (x *ListCertificatesRequest) GetProjectID() string {
+func (x *ListAllCertificatesRequest) GetProjectID() string {
 	if x != nil {
 		return x.ProjectID
 	}
 	return ""
 }
 
-func (x *ListCertificatesRequest) GetIKID() string {
+func (x *ListAllCertificatesRequest) GetIKID() string {
 	if x != nil {
 		return x.IKID
 	}
 	return ""
 }
 
-func (x *ListCertificatesRequest) GetProfile() string {
+func (x *ListAllCertificatesRequest) GetProfile() string {
 	if x != nil {
 		return x.Profile
 	}
 	return ""
 }
 
-func (x *ListCertificatesRequest) GetStatus() pb.CertificateStatus_Enum {
+func (x *ListAllCertificatesRequest) GetStatus() pb.CertificateStatus_Enum {
 	if x != nil {
 		return x.Status
 	}
 	return pb.CertificateStatus_Enum(0)
 }
 
-func (x *ListCertificatesRequest) GetExpiringBefore() string {
+func (x *ListAllCertificatesRequest) GetExpiringBefore() string {
 	if x != nil {
 		return x.ExpiringBefore
 	}
@@ -466,8 +466,8 @@ const file_admin_proto_rawDesc = "" +
 	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12+\n" +
 	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\x12\x14\n" +
-	"\x05OrgID\x18\x05 \x01(\tR\x05OrgID\"\x9b\x02\n" +
-	"\x12ListIssuersRequest\x12\x14\n" +
+	"\x05OrgID\x18\x05 \x01(\tR\x05OrgID\"\x9e\x02\n" +
+	"\x15ListAllIssuersRequest\x12\x14\n" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12\x14\n" +
@@ -476,8 +476,8 @@ const file_admin_proto_rawDesc = "" +
 	"\tProjectID\x18\x06 \x01(\tR\tProjectID\x12\x14\n" +
 	"\x05Label\x18\a \x01(\tR\x05Label\x12-\n" +
 	"\x06Status\x18\b \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\x12*\n" +
-	"\x04Type\x18\t \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\"\xb9\x02\n" +
-	"\x17ListCertificatesRequest\x12\x14\n" +
+	"\x04Type\x18\t \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\"\xbc\x02\n" +
+	"\x1aListAllCertificatesRequest\x12\x14\n" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12\x14\n" +
@@ -488,12 +488,12 @@ const file_admin_proto_rawDesc = "" +
 	"\aProfile\x18\b \x01(\tR\aProfile\x122\n" +
 	"\x06Status\x18\t \x01(\x0e2\x1a.pb.CertificateStatus.EnumR\x06Status\x12&\n" +
 	"\x0eExpiringBefore\x18\n" +
-	" \x01(\tR\x0eExpiringBefore2\xe6\x03\n" +
+	" \x01(\tR\x0eExpiringBefore2\xec\x03\n" +
 	"\x05Admin\x12c\n" +
 	"\bListOrgs\x12\x17.privpb.ListOrgsRequest\x1a\x10.pb.OrgsResponse\",\x82C\borg list\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/privpb.Admin/ListOrgs\x12w\n" +
-	"\fListProjects\x12\x1b.privpb.ListProjectsRequest\x1a\x14.pb.ProjectsResponse\"4\x82C\fproject list\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/privpb.Admin/ListProjects\x12u\n" +
-	"\vListIssuers\x12\x1a.privpb.ListIssuersRequest\x1a\x13.pb.IssuersResponse\"5\x82C\x0eca issuer list\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/privpb.Admin/ListIssuers\x12\x87\x01\n" +
-	"\x10ListCertificates\x12\x1f.privpb.ListCertificatesRequest\x1a\x18.pb.CertificatesResponse\"8\x82C\fca cert list\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/privpb.Admin/ListCertificatesB/Z-github.com/effective-security/trustyca/privpbb\x06proto3"
+	"\fListProjects\x12\x1b.privpb.ListProjectsRequest\x1a\x14.pb.ProjectsResponse\"4\x82C\fproject list\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/privpb.Admin/ListProjects\x12x\n" +
+	"\vListIssuers\x12\x1d.privpb.ListAllIssuersRequest\x1a\x13.pb.IssuersResponse\"5\x82C\x0eca issuer list\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/privpb.Admin/ListIssuers\x12\x8a\x01\n" +
+	"\x10ListCertificates\x12\".privpb.ListAllCertificatesRequest\x1a\x18.pb.CertificatesResponse\"8\x82C\fca cert list\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/privpb.Admin/ListCertificatesB/Z-github.com/effective-security/trustyca/privpbb\x06proto3"
 
 var (
 	file_admin_proto_rawDescOnce sync.Once
@@ -509,29 +509,29 @@ func file_admin_proto_rawDescGZIP() []byte {
 
 var file_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_admin_proto_goTypes = []any{
-	(*ListOrgsRequest)(nil),         // 0: privpb.ListOrgsRequest
-	(*ListProjectsRequest)(nil),     // 1: privpb.ListProjectsRequest
-	(*ListIssuersRequest)(nil),      // 2: privpb.ListIssuersRequest
-	(*ListCertificatesRequest)(nil), // 3: privpb.ListCertificatesRequest
-	(pb.ItemStatus_Enum)(0),         // 4: pb.ItemStatus.Enum
-	(pb.IssuerStatus_Enum)(0),       // 5: pb.IssuerStatus.Enum
-	(pb.AuthorityType_Enum)(0),      // 6: pb.AuthorityType.Enum
-	(pb.CertificateStatus_Enum)(0),  // 7: pb.CertificateStatus.Enum
-	(*pb.OrgsResponse)(nil),         // 8: pb.OrgsResponse
-	(*pb.ProjectsResponse)(nil),     // 9: pb.ProjectsResponse
-	(*pb.IssuersResponse)(nil),      // 10: pb.IssuersResponse
-	(*pb.CertificatesResponse)(nil), // 11: pb.CertificatesResponse
+	(*ListOrgsRequest)(nil),            // 0: privpb.ListOrgsRequest
+	(*ListProjectsRequest)(nil),        // 1: privpb.ListProjectsRequest
+	(*ListAllIssuersRequest)(nil),      // 2: privpb.ListAllIssuersRequest
+	(*ListAllCertificatesRequest)(nil), // 3: privpb.ListAllCertificatesRequest
+	(pb.ItemStatus_Enum)(0),            // 4: pb.ItemStatus.Enum
+	(pb.IssuerStatus_Enum)(0),          // 5: pb.IssuerStatus.Enum
+	(pb.AuthorityType_Enum)(0),         // 6: pb.AuthorityType.Enum
+	(pb.CertificateStatus_Enum)(0),     // 7: pb.CertificateStatus.Enum
+	(*pb.OrgsResponse)(nil),            // 8: pb.OrgsResponse
+	(*pb.ProjectsResponse)(nil),        // 9: pb.ProjectsResponse
+	(*pb.IssuersResponse)(nil),         // 10: pb.IssuersResponse
+	(*pb.CertificatesResponse)(nil),    // 11: pb.CertificatesResponse
 }
 var file_admin_proto_depIdxs = []int32{
 	4,  // 0: privpb.ListOrgsRequest.Status:type_name -> pb.ItemStatus.Enum
 	4,  // 1: privpb.ListProjectsRequest.Status:type_name -> pb.ItemStatus.Enum
-	5,  // 2: privpb.ListIssuersRequest.Status:type_name -> pb.IssuerStatus.Enum
-	6,  // 3: privpb.ListIssuersRequest.Type:type_name -> pb.AuthorityType.Enum
-	7,  // 4: privpb.ListCertificatesRequest.Status:type_name -> pb.CertificateStatus.Enum
+	5,  // 2: privpb.ListAllIssuersRequest.Status:type_name -> pb.IssuerStatus.Enum
+	6,  // 3: privpb.ListAllIssuersRequest.Type:type_name -> pb.AuthorityType.Enum
+	7,  // 4: privpb.ListAllCertificatesRequest.Status:type_name -> pb.CertificateStatus.Enum
 	0,  // 5: privpb.Admin.ListOrgs:input_type -> privpb.ListOrgsRequest
 	1,  // 6: privpb.Admin.ListProjects:input_type -> privpb.ListProjectsRequest
-	2,  // 7: privpb.Admin.ListIssuers:input_type -> privpb.ListIssuersRequest
-	3,  // 8: privpb.Admin.ListCertificates:input_type -> privpb.ListCertificatesRequest
+	2,  // 7: privpb.Admin.ListIssuers:input_type -> privpb.ListAllIssuersRequest
+	3,  // 8: privpb.Admin.ListCertificates:input_type -> privpb.ListAllCertificatesRequest
 	8,  // 9: privpb.Admin.ListOrgs:output_type -> pb.OrgsResponse
 	9,  // 10: privpb.Admin.ListProjects:output_type -> pb.ProjectsResponse
 	10, // 11: privpb.Admin.ListIssuers:output_type -> pb.IssuersResponse

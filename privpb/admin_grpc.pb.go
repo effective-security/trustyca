@@ -73,11 +73,11 @@ type AdminClient interface {
 	// ListIssuers lists the issuers of every org and of the platform, newest
 	// first, for support staff; the tenant view of an org is CA.ListIssuers.
 	// Private key material is never returned.
-	ListIssuers(ctx context.Context, in *ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error)
+	ListIssuers(ctx context.Context, in *ListAllIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error)
 	// ListCertificates lists the certificates of every org and of the
 	// platform, newest first, for support staff; the tenant view of an org
 	// is CA.ListCertificates
-	ListCertificates(ctx context.Context, in *ListCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error)
+	ListCertificates(ctx context.Context, in *ListAllCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error)
 }
 
 type adminClient struct {
@@ -108,7 +108,7 @@ func (c *adminClient) ListProjects(ctx context.Context, in *ListProjectsRequest,
 	return out, nil
 }
 
-func (c *adminClient) ListIssuers(ctx context.Context, in *ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error) {
+func (c *adminClient) ListIssuers(ctx context.Context, in *ListAllIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.IssuersResponse)
 	err := c.cc.Invoke(ctx, Admin_ListIssuers_FullMethodName, in, out, cOpts...)
@@ -118,7 +118,7 @@ func (c *adminClient) ListIssuers(ctx context.Context, in *ListIssuersRequest, o
 	return out, nil
 }
 
-func (c *adminClient) ListCertificates(ctx context.Context, in *ListCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error) {
+func (c *adminClient) ListCertificates(ctx context.Context, in *ListAllCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(pb.CertificatesResponse)
 	err := c.cc.Invoke(ctx, Admin_ListCertificates_FullMethodName, in, out, cOpts...)
@@ -174,11 +174,11 @@ type AdminServer interface {
 	// ListIssuers lists the issuers of every org and of the platform, newest
 	// first, for support staff; the tenant view of an org is CA.ListIssuers.
 	// Private key material is never returned.
-	ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error)
+	ListIssuers(context.Context, *ListAllIssuersRequest) (*pb.IssuersResponse, error)
 	// ListCertificates lists the certificates of every org and of the
 	// platform, newest first, for support staff; the tenant view of an org
 	// is CA.ListCertificates
-	ListCertificates(context.Context, *ListCertificatesRequest) (*pb.CertificatesResponse, error)
+	ListCertificates(context.Context, *ListAllCertificatesRequest) (*pb.CertificatesResponse, error)
 }
 
 // UnimplementedAdminServer should be embedded to have
@@ -194,10 +194,10 @@ func (UnimplementedAdminServer) ListOrgs(context.Context, *ListOrgsRequest) (*pb
 func (UnimplementedAdminServer) ListProjects(context.Context, *ListProjectsRequest) (*pb.ProjectsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListProjects not implemented")
 }
-func (UnimplementedAdminServer) ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error) {
+func (UnimplementedAdminServer) ListIssuers(context.Context, *ListAllIssuersRequest) (*pb.IssuersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListIssuers not implemented")
 }
-func (UnimplementedAdminServer) ListCertificates(context.Context, *ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+func (UnimplementedAdminServer) ListCertificates(context.Context, *ListAllCertificatesRequest) (*pb.CertificatesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListCertificates not implemented")
 }
 func (UnimplementedAdminServer) testEmbeddedByValue() {}
@@ -257,7 +257,7 @@ func _Admin_ListProjects_Handler(srv any, ctx context.Context, dec func(any) err
 }
 
 func _Admin_ListIssuers_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(ListIssuersRequest)
+	in := new(ListAllIssuersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -269,13 +269,13 @@ func _Admin_ListIssuers_Handler(srv any, ctx context.Context, dec func(any) erro
 		FullMethod: Admin_ListIssuers_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(AdminServer).ListIssuers(ctx, req.(*ListIssuersRequest))
+		return srv.(AdminServer).ListIssuers(ctx, req.(*ListAllIssuersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Admin_ListCertificates_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(ListCertificatesRequest)
+	in := new(ListAllCertificatesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func _Admin_ListCertificates_Handler(srv any, ctx context.Context, dec func(any)
 		FullMethod: Admin_ListCertificates_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(AdminServer).ListCertificates(ctx, req.(*ListCertificatesRequest))
+		return srv.(AdminServer).ListCertificates(ctx, req.(*ListAllCertificatesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

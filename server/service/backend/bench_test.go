@@ -1,9 +1,11 @@
-package ca
+package backend
 
 import (
 	"context"
 	"crypto"
 	"testing"
+
+	"github.com/effective-security/trustyca/privpb"
 
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/model"
@@ -29,7 +31,7 @@ func BenchmarkService_SignCertificate(b *testing.B) {
 	svc := tca.service()
 	ctx := testCtx("42", "1")
 	_, csrPEM := newCSR(b, "bench.example.com")
-	req := &pb.SignCertificateRequest{
+	req := &privpb.SignCertificateRequest{
 		ProjectID: "201",
 		Profile:   testProfile,
 		Request:   csrPEM,

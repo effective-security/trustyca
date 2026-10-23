@@ -258,9 +258,9 @@ func NewTrustyCtx(ctx context.Context, idnCtx identity.Context) context.Context 
 const trustycaContextGRPCHeaderName = "x-trustyca-context"
 
 // PeerRoleName is the role of a trustyca instance that calls the backend
-// listener for its callers: the WFE forwards the key operations of the CA
-// with the context of the end user (DESIGN.md section 2.1). It is the only
-// role whose forwarded context the backend accepts.
+// listener for its callers: the CA service of the WFE forwards every call of
+// its tenants with the context of the end user (DESIGN.md section 2.1). It
+// is the only role whose forwarded context the backend accepts.
 const PeerRoleName = "trustyca-peer"
 
 // The methods of the backend service are the pb.CA methods of the same

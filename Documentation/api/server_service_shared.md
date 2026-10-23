@@ -6,15 +6,17 @@
 import "github.com/effective-security/trustyca/server/service/shared"
 ```
 
-Package shared contains shared utilities for the services. BackendLocator returns the backend service \(privpb.Backend\) that the CA and AIA services forward the key operations and OCSP requests to: the one of the same process when porto discovery has it \(LocalBackend\), else a client of the backend listener created on the first call.
+Package shared contains the helpers that several services use.
+
+BackendLocator returns the backend service \(privpb.Backend\) that the CA service forwards every call to and the AIA its OCSP requests: the one of the same process when porto discovery has a privpb.BackendServer, else a client of the backend listener created on the first call with the named service client.
 
 ```
-backend := client.NewBackendLocator(server.Discovery, factory, client.ClientNameCA, config.BackendServerName)
-signer, err := backend.Backend()
+backend := shared.NewBackendLocator(server.Discovery, factory, client.ClientNameCA, config.BackendServerName)
+srv, err := backend.Backend()
 if err != nil {
 	return err
 }
-res, err := signer.SignCertificate(ctx, req)
+res, err := srv.SignCertificate(ctx, req)
 ```
 
 ## Index
@@ -24,14 +26,12 @@ res, err := signer.SignCertificate(ctx, req)
   - [func NewStaticBackendLocator\(srv privpb.BackendServer\) \*BackendLocator](<#NewStaticBackendLocator>)
   - [func \(l \*BackendLocator\) Backend\(\) \(privpb.BackendServer, error\)](<#BackendLocator.Backend>)
   - [func \(l \*BackendLocator\) Close\(\) error](<#BackendLocator.Close>)
-  - [func \(l \*BackendLocator\) InvalidateProfile\(orgID, projectID xdb.ID, label string\)](<#BackendLocator.InvalidateProfile>)
-- [type LocalBackend](<#LocalBackend>)
 
 
 <a name="BackendLocator"></a>
-## type [BackendLocator](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L35-L45>)
+## type [BackendLocator](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L21-L30>)
 
-BackendLocator returns the backend a service forwards the key operations or the OCSP requests to \(DESIGN.md section 2.1\): the backend service of the same process when discovery has one, else a client of the backend listener dialed with the named service client. The lookup runs on the first call, never at startup, because the gRPC client blocks until the backend is reachable and the listeners start in any order; a failure is returned and the next call tries again. The backend found is kept until Close. A BackendLocator is safe for concurrent use.
+BackendLocator returns the backend the CA service forwards every call to, and the AIA its OCSP requests \(DESIGN.md section 2.1\): the backend service of the same process when discovery has one, else a client of the backend listener dialed with the named service client. The lookup runs on the first call, never at startup, because the gRPC client blocks until the backend is reachable and the listeners start in any order; a failure is returned and the next call tries again. The backend found is kept until Close. A BackendLocator is safe for concurrent use.
 
 ```go
 type BackendLocator struct {
@@ -40,7 +40,7 @@ type BackendLocator struct {
 ```
 
 <a name="NewBackendLocator"></a>
-### func [NewBackendLocator](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L51>)
+### func [NewBackendLocator](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L36>)
 
 ```go
 func NewBackendLocator(disco func() discovery.Discovery, clients client.Factory, clientName, server string) *BackendLocator
@@ -49,16 +49,16 @@ func NewBackendLocator(disco func() discovery.Discovery, clients client.Factory,
 NewBackendLocator returns the locator of the backend: disco returns the discovery of the process, or nil; clients dials the listener named server with the client named clientName when the process has no backend. Either may be nil.
 
 <a name="NewStaticBackendLocator"></a>
-### func [NewStaticBackendLocator](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L63>)
+### func [NewStaticBackendLocator](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L47>)
 
 ```go
 func NewStaticBackendLocator(srv privpb.BackendServer) *BackendLocator
 ```
 
-NewStaticBackendLocator returns a locator that always returns srv, for a service wired to its backend explicitly; profiles are invalidated in srv when it is a LocalBackend
+NewStaticBackendLocator returns a locator that always returns srv, for a service wired to its backend explicitly
 
 <a name="BackendLocator.Backend"></a>
-### func \(\*BackendLocator\) [Backend](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L73>)
+### func \(\*BackendLocator\) [Backend](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L55>)
 
 ```go
 func (l *BackendLocator) Backend() (privpb.BackendServer, error)
@@ -67,36 +67,12 @@ func (l *BackendLocator) Backend() (privpb.BackendServer, error)
 Backend returns the backend: the one of the process, called directly with the context of the caller, or a client of the backend listener
 
 <a name="BackendLocator.Close"></a>
-### func \(\*BackendLocator\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L115>)
+### func \(\*BackendLocator\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L81>)
 
 ```go
 func (l *BackendLocator) Close() error
 ```
 
 Close closes the client of a remote backend; the next call of Backend looks the backend up again
-
-<a name="BackendLocator.InvalidateProfile"></a>
-### func \(\*BackendLocator\) [InvalidateProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L101>)
-
-```go
-func (l *BackendLocator) InvalidateProfile(orgID, projectID xdb.ID, label string)
-```
-
-InvalidateProfile invalidates the profile in the backend of the process, when the process runs one; a remote backend learns of the change after the TTL of its cache
-
-<a name="LocalBackend"></a>
-## type [LocalBackend](<https://github.com/effective-security/trustyca/blob/main/server/service/shared/backend.go#L19-L25>)
-
-LocalBackend is the backend service \(privpb.Backend\) as porto discovery finds it in the process that runs it. The CA service that forwards to the backend has the methods of privpb.BackendServer too, so discovery looks the backend up by this interface, which the forwarding service does not implement.
-
-```go
-type LocalBackend interface {
-    privpb.BackendServer
-
-    // InvalidateProfile drops the cached resolutions of the profile label
-    // in the scope, after the profile changed
-    InvalidateProfile(orgID, projectID xdb.ID, label string)
-}
-```
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)

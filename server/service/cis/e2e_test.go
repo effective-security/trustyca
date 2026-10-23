@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/effective-security/trustyca/privpb"
+
 	"github.com/effective-security/trustyca/server/service/backend"
 
 	"github.com/effective-security/porto/gserver"
@@ -28,7 +30,6 @@ import (
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/server/appcontainer"
-	"github.com/effective-security/trustyca/server/service/ca"
 	"github.com/effective-security/trustyca/server/service/cis"
 	"github.com/effective-security/trustyca/tests/testutils"
 	"github.com/effective-security/xdb"
@@ -73,18 +74,18 @@ func TestService_EndToEnd(t *testing.T) {
 	var provider db.Provider
 	require.NoError(t, container.Invoke(func(p db.Provider) { provider = p }))
 
-	// the CA, called over gRPC as the RA
+	// the CA of the service identities, called over gRPC as the RA, which
+	// names the org of every request
 	caServer, err := gserver.Start("CISTestCA", &gserver.Config{
 		ListenURLs: []string{testutils.CreateURL("http", "")},
-		Services:   []string{ca.ServiceName, backend.ServiceName},
+		Services:   []string{backend.ServiceName},
 	}, container, map[string]gserver.ServiceFactory{
-		ca.ServiceName:      ca.Factory,
 		backend.ServiceName: backend.Factory,
 	})
 	require.NoError(t, err)
 	t.Cleanup(caServer.Close)
-	caSvc := caServer.Service(ca.ServiceName).(pb.CAServer)
-	raClient := pb.NewCAClient(grpcConn(t, caSvc, e2eRARole))
+	backendSvc := caServer.Service(backend.ServiceName).(privpb.BackendServer)
+	raClient := privpb.NewBackendClient(grpcConn(t, backendSvc, e2eRARole))
 
 	// the CIS over HTTP, built by its factory from the container
 	cisURL := testutils.CreateURL("http", "")
@@ -116,7 +117,7 @@ func TestService_EndToEnd(t *testing.T) {
 	orgID := org.ID.String()
 
 	// a root of the org and the profiles it serves
-	rootProfile, err := raClient.RegisterProfile(ctx, &pb.RegisterProfileRequest{
+	rootProfile, err := raClient.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
 		OrgID: orgID,
 		Profile: &pb.CertProfile{
 			Label:       e2eRootProfile,
@@ -132,7 +133,7 @@ func TestService_EndToEnd(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, rootProfile.ID)) })
-	root, err := raClient.RegisterIssuer(ctx, &pb.RegisterIssuerRequest{
+	root, err := raClient.RegisterIssuer(ctx, &privpb.RegisterIssuerRequest{
 		OrgID:   orgID,
 		Label:   e2eRootLabel,
 		Type:    pb.AuthorityType_Root,
@@ -151,9 +152,9 @@ func TestService_EndToEnd(t *testing.T) {
 	t.Cleanup(func() {
 		// the key of the root is destroyed in its provider through the
 		// service, then the rows are removed
-		_, _ = raClient.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Archived})
-		_, _ = raClient.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Destroyed})
-		roots, err := raClient.ListRoots(ctx, &pb.ListRootsRequest{OrgID: orgID})
+		_, _ = raClient.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Archived})
+		_, _ = raClient.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{OrgID: orgID, ID: root.ID, Status: pb.IssuerStatus_Destroyed})
+		roots, err := raClient.ListRoots(ctx, &privpb.ListRootsRequest{OrgID: orgID})
 		if err == nil {
 			for _, r := range roots.Roots {
 				_, _ = provider.DeleteRoot(ctx, org.ID.UInt64(), mustID(t, r.ID))
@@ -161,7 +162,7 @@ func TestService_EndToEnd(t *testing.T) {
 		}
 		_, _ = provider.DeleteIssuer(ctx, org.ID.UInt64(), mustID(t, root.ID))
 	})
-	peerProfile, err := raClient.RegisterProfile(ctx, &pb.RegisterProfileRequest{
+	peerProfile, err := raClient.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
 		OrgID: orgID,
 		Profile: &pb.CertProfile{
 			Label:             e2ePeerProfile,
@@ -178,7 +179,7 @@ func TestService_EndToEnd(t *testing.T) {
 	// two certificates, one of which is revoked
 	sign := func(cn string) *pb.Certificate {
 		t.Helper()
-		signed, err := raClient.SignCertificate(ctx, &pb.SignCertificateRequest{
+		signed, err := raClient.SignCertificate(ctx, &privpb.SignCertificateRequest{
 			OrgID:    orgID,
 			Profile:  e2ePeerProfile,
 			Request:  newCSR(t, cn),
@@ -193,13 +194,13 @@ func TestService_EndToEnd(t *testing.T) {
 	}
 	good := sign("good.example.com")
 	revoked := sign("revoked.example.com")
-	_, err = raClient.RevokeCertificate(ctx, &pb.RevokeCertificateRequest{
+	_, err = raClient.RevokeCertificate(ctx, &privpb.RevokeCertificateRequest{
 		OrgID:  orgID,
 		ID:     revoked.ID,
 		Reason: pb.ReasonCode_KeyCompromise,
 	})
 	require.NoError(t, err)
-	published, err := raClient.PublishCrls(ctx, &pb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
+	published, err := raClient.PublishCrls(ctx, &privpb.PublishCrlsRequest{OrgID: orgID, IKID: root.SKID})
 	require.NoError(t, err)
 	require.Len(t, published.Crls, 1)
 
@@ -248,10 +249,10 @@ func TestService_EndToEnd(t *testing.T) {
 
 	// the trust anchors of the org, and of the platform
 	var roots pb.RootsResponse
-	postJSON(t, httpClient, cisURL+pb.CIS_GetRoots_FullMethodName, &pb.ListRootsRequest{OrgID: orgID}, &roots)
+	postJSON(t, httpClient, cisURL+pb.CIS_GetRoots_FullMethodName, &pb.GetRootsRequest{OrgID: orgID}, &roots)
 	require.Len(t, roots.Roots, 1, "the anchor of the root issuer")
 	assert.Equal(t, skid, roots.Roots[0].SKID)
-	postJSON(t, httpClient, cisURL+pb.CIS_GetRoots_FullMethodName, &pb.ListRootsRequest{}, &roots)
+	postJSON(t, httpClient, cisURL+pb.CIS_GetRoots_FullMethodName, &pb.GetRootsRequest{}, &roots)
 	for _, r := range roots.Roots {
 		assert.Empty(t, r.OrgID, "platform anchors")
 	}
@@ -263,7 +264,7 @@ func TestService_EndToEnd(t *testing.T) {
 
 // grpcConn serves the CA over an in-memory gRPC connection as a service
 // identity: the auth interceptor sets the role of the caller
-func grpcConn(t *testing.T, svc pb.CAServer, role string) *grpc.ClientConn {
+func grpcConn(t *testing.T, svc privpb.BackendServer, role string) *grpc.ClientConn {
 	t.Helper()
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer(grpc.UnaryInterceptor(
@@ -271,7 +272,7 @@ func grpcConn(t *testing.T, svc pb.CAServer, role string) *grpc.ClientConn {
 			uid := identity.NewIdentity(role, "spiffe://trustyca/"+strings.TrimPrefix(role, "trustyca-"), "", map[string]any{}, "", "", identity.MethodCertificate)
 			return handler(authctx.NewTrustyCtx(ctx, identity.NewRequestContext(uid, info.FullMethod)), req)
 		}))
-	pb.RegisterCAServer(srv, svc)
+	privpb.RegisterBackendServer(srv, svc)
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(srv.Stop)
 

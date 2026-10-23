@@ -8,11 +8,14 @@ package privpb
 
 import (
 	reflect "reflect"
+	sync "sync"
 	unsafe "unsafe"
 
+	_ "github.com/effective-security/protoc-gen-go/api"
 	pb "github.com/effective-security/trustyca/api/pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -22,58 +25,2184 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// RegisterIssuerRequest specifies a request to create a new issuer
+// with the org named explicitly: the request of Backend.RegisterIssuer
+type RegisterIssuerRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID of the owning project; empty for an org-wide issuer
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// Label of the issuer, unique per (Org, Project)
+	Label string `protobuf:"bytes,3,opt,name=Label,proto3" json:"Label,omitempty"`
+	// Type of the authority
+	Type pb.AuthorityType_Enum `protobuf:"varint,4,opt,name=Type,proto3,enum=pb.AuthorityType_Enum" json:"Type,omitempty"`
+	// Subject of the issuer certificate
+	Subject *pb.X509Subject `protobuf:"bytes,5,opt,name=Subject,proto3" json:"Subject,omitempty"`
+	// KeySpec of the key to generate; defaults to ECDSA P-256
+	KeySpec *pb.KeySpec `protobuf:"bytes,6,opt,name=KeySpec,proto3" json:"KeySpec,omitempty"`
+	// KeyProvider selects the crypto provider; empty for the server default
+	KeyProvider string `protobuf:"bytes,7,opt,name=KeyProvider,proto3" json:"KeyProvider,omitempty"`
+	// ParentID specifies the signing issuer. It must belong to the same org,
+	// or be a platform issuer that allows the Profile.
+	// Empty for Root type, or to create a Pending issuer with a CSR.
+	ParentID string `protobuf:"bytes,8,opt,name=ParentID,proto3" json:"ParentID,omitempty"`
+	// Profile specifies the CA profile the parent uses to sign the issuer
+	// certificate. Required when ParentID is set or Type is Root.
+	Profile string `protobuf:"bytes,9,opt,name=Profile,proto3" json:"Profile,omitempty"`
+	// Config provides runtime settings
+	Config *pb.IssuerConfig `protobuf:"bytes,10,opt,name=Config,proto3" json:"Config,omitempty"`
+	// SAN specifies Subject Alternative Names for the issuer certificate
+	SAN []string `protobuf:"bytes,11,rep,name=SAN,proto3" json:"SAN,omitempty"`
+	// Extensions specifies additional extensions for the issuer certificate
+	Extensions    []*pb.X509Extension `protobuf:"bytes,12,rep,name=Extensions,proto3" json:"Extensions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterIssuerRequest) Reset() {
+	*x = RegisterIssuerRequest{}
+	mi := &file_backend_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterIssuerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterIssuerRequest) ProtoMessage() {}
+
+func (x *RegisterIssuerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterIssuerRequest.ProtoReflect.Descriptor instead.
+func (*RegisterIssuerRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *RegisterIssuerRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *RegisterIssuerRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *RegisterIssuerRequest) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *RegisterIssuerRequest) GetType() pb.AuthorityType_Enum {
+	if x != nil {
+		return x.Type
+	}
+	return pb.AuthorityType_Enum(0)
+}
+
+func (x *RegisterIssuerRequest) GetSubject() *pb.X509Subject {
+	if x != nil {
+		return x.Subject
+	}
+	return nil
+}
+
+func (x *RegisterIssuerRequest) GetKeySpec() *pb.KeySpec {
+	if x != nil {
+		return x.KeySpec
+	}
+	return nil
+}
+
+func (x *RegisterIssuerRequest) GetKeyProvider() string {
+	if x != nil {
+		return x.KeyProvider
+	}
+	return ""
+}
+
+func (x *RegisterIssuerRequest) GetParentID() string {
+	if x != nil {
+		return x.ParentID
+	}
+	return ""
+}
+
+func (x *RegisterIssuerRequest) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
+}
+
+func (x *RegisterIssuerRequest) GetConfig() *pb.IssuerConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *RegisterIssuerRequest) GetSAN() []string {
+	if x != nil {
+		return x.SAN
+	}
+	return nil
+}
+
+func (x *RegisterIssuerRequest) GetExtensions() []*pb.X509Extension {
+	if x != nil {
+		return x.Extensions
+	}
+	return nil
+}
+
+// ImportIssuerRequest specifies a request to import an existing issuer
+// with the org named explicitly: the request of Backend.ImportIssuer
+type ImportIssuerRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID of the owning project; empty for an org-wide issuer
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// Label of the issuer, unique per (Org, Project)
+	Label string `protobuf:"bytes,3,opt,name=Label,proto3" json:"Label,omitempty"`
+	// Type of the authority
+	Type pb.AuthorityType_Enum `protobuf:"varint,4,opt,name=Type,proto3,enum=pb.AuthorityType_Enum" json:"Type,omitempty"`
+	// Certificate provides the issuer certificate in PEM format
+	Certificate string `protobuf:"bytes,5,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
+	// Intermediates provides the intermediate CA certificates in PEM format
+	Intermediates string `protobuf:"bytes,6,opt,name=Intermediates,proto3" json:"Intermediates,omitempty"`
+	// Root provides the Root CA certificate in PEM format
+	Root string `protobuf:"bytes,7,opt,name=Root,proto3" json:"Root,omitempty"`
+	// KeyURI references an existing key in a crypto provider,
+	// e.g. awskms://..., gcpkms://..., pkcs11:...
+	KeyURI string `protobuf:"bytes,8,opt,name=KeyURI,proto3" json:"KeyURI,omitempty"`
+	// KeyPem provides the private key in PEM format.
+	// It is stored protected by the data protection provider.
+	KeyPem string `protobuf:"bytes,9,opt,name=KeyPem,proto3" json:"KeyPem,omitempty"`
+	// Config provides runtime settings
+	Config        *pb.IssuerConfig `protobuf:"bytes,10,opt,name=Config,proto3" json:"Config,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ImportIssuerRequest) Reset() {
+	*x = ImportIssuerRequest{}
+	mi := &file_backend_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportIssuerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportIssuerRequest) ProtoMessage() {}
+
+func (x *ImportIssuerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImportIssuerRequest.ProtoReflect.Descriptor instead.
+func (*ImportIssuerRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ImportIssuerRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *ImportIssuerRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *ImportIssuerRequest) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *ImportIssuerRequest) GetType() pb.AuthorityType_Enum {
+	if x != nil {
+		return x.Type
+	}
+	return pb.AuthorityType_Enum(0)
+}
+
+func (x *ImportIssuerRequest) GetCertificate() string {
+	if x != nil {
+		return x.Certificate
+	}
+	return ""
+}
+
+func (x *ImportIssuerRequest) GetIntermediates() string {
+	if x != nil {
+		return x.Intermediates
+	}
+	return ""
+}
+
+func (x *ImportIssuerRequest) GetRoot() string {
+	if x != nil {
+		return x.Root
+	}
+	return ""
+}
+
+func (x *ImportIssuerRequest) GetKeyURI() string {
+	if x != nil {
+		return x.KeyURI
+	}
+	return ""
+}
+
+func (x *ImportIssuerRequest) GetKeyPem() string {
+	if x != nil {
+		return x.KeyPem
+	}
+	return ""
+}
+
+func (x *ImportIssuerRequest) GetConfig() *pb.IssuerConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+// ActivateIssuerRequest specifies the externally signed certificate for a
+// Pending issuer
+// with the org named explicitly: the request of Backend.ActivateIssuer
+type ActivateIssuerRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ID of the Pending issuer
+	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	// Certificate provides the issuer certificate in PEM format
+	Certificate string `protobuf:"bytes,3,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
+	// Intermediates provides the intermediate CA certificates in PEM format
+	Intermediates string `protobuf:"bytes,4,opt,name=Intermediates,proto3" json:"Intermediates,omitempty"`
+	// Root provides the Root CA certificate in PEM format
+	Root          string `protobuf:"bytes,5,opt,name=Root,proto3" json:"Root,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActivateIssuerRequest) Reset() {
+	*x = ActivateIssuerRequest{}
+	mi := &file_backend_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivateIssuerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivateIssuerRequest) ProtoMessage() {}
+
+func (x *ActivateIssuerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivateIssuerRequest.ProtoReflect.Descriptor instead.
+func (*ActivateIssuerRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ActivateIssuerRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *ActivateIssuerRequest) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *ActivateIssuerRequest) GetCertificate() string {
+	if x != nil {
+		return x.Certificate
+	}
+	return ""
+}
+
+func (x *ActivateIssuerRequest) GetIntermediates() string {
+	if x != nil {
+		return x.Intermediates
+	}
+	return ""
+}
+
+func (x *ActivateIssuerRequest) GetRoot() string {
+	if x != nil {
+		return x.Root
+	}
+	return ""
+}
+
+// GetIssuerRequest specifies an issuer by ID, label or IKID
+// with the org named explicitly: the request of Backend.GetIssuer
+type GetIssuerRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID of the owning project; used with Label
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// ID of the issuer
+	ID string `protobuf:"bytes,3,opt,name=ID,proto3" json:"ID,omitempty"`
+	// Label of the issuer, resolved as (Org, Project) then (Org)
+	Label string `protobuf:"bytes,4,opt,name=Label,proto3" json:"Label,omitempty"`
+	// IKID specifies Issuer Key ID
+	IKID          string `protobuf:"bytes,5,opt,name=IKID,proto3" json:"IKID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetIssuerRequest) Reset() {
+	*x = GetIssuerRequest{}
+	mi := &file_backend_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetIssuerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetIssuerRequest) ProtoMessage() {}
+
+func (x *GetIssuerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetIssuerRequest.ProtoReflect.Descriptor instead.
+func (*GetIssuerRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetIssuerRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *GetIssuerRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *GetIssuerRequest) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *GetIssuerRequest) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *GetIssuerRequest) GetIKID() string {
+	if x != nil {
+		return x.IKID
+	}
+	return ""
+}
+
+// ListIssuersRequest specifies a paginated list of issuers
+// with the org named explicitly: the request of Backend.ListIssuers
+type ListIssuersRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID filters by project; empty returns org-wide and all project
+	// issuers
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// Status filters by status; Unknown returns all
+	Status pb.IssuerStatus_Enum `protobuf:"varint,3,opt,name=Status,proto3,enum=pb.IssuerStatus_Enum" json:"Status,omitempty"`
+	// Type filters by authority type; Unknown returns all
+	Type pb.AuthorityType_Enum `protobuf:"varint,4,opt,name=Type,proto3,enum=pb.AuthorityType_Enum" json:"Type,omitempty"`
+	// Limit specifies maximum number of records to return
+	Limit uint32 `protobuf:"varint,5,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Offset specifies offset for the offset-based pagination
+	Offset uint32 `protobuf:"varint,6,opt,name=Offset,proto3" json:"Offset,omitempty"`
+	// Cursor specifies cursor for the cursor-based pagination.
+	// Use "initial" to start the pagination or pass the cursor returned from
+	// the previous request.
+	Cursor        string `protobuf:"bytes,7,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListIssuersRequest) Reset() {
+	*x = ListIssuersRequest{}
+	mi := &file_backend_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListIssuersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListIssuersRequest) ProtoMessage() {}
+
+func (x *ListIssuersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListIssuersRequest.ProtoReflect.Descriptor instead.
+func (*ListIssuersRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ListIssuersRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *ListIssuersRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *ListIssuersRequest) GetStatus() pb.IssuerStatus_Enum {
+	if x != nil {
+		return x.Status
+	}
+	return pb.IssuerStatus_Enum(0)
+}
+
+func (x *ListIssuersRequest) GetType() pb.AuthorityType_Enum {
+	if x != nil {
+		return x.Type
+	}
+	return pb.AuthorityType_Enum(0)
+}
+
+func (x *ListIssuersRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListIssuersRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *ListIssuersRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+// UpdateIssuerRequest updates issuer config or status
+// with the org named explicitly: the request of Backend.UpdateIssuer
+type UpdateIssuerRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ID of the issuer
+	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	// Config replaces runtime settings when provided
+	Config *pb.IssuerConfig `protobuf:"bytes,3,opt,name=Config,proto3" json:"Config,omitempty"`
+	// Status changes the status when provided: Archived or Destroyed
+	Status        pb.IssuerStatus_Enum `protobuf:"varint,4,opt,name=Status,proto3,enum=pb.IssuerStatus_Enum" json:"Status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateIssuerRequest) Reset() {
+	*x = UpdateIssuerRequest{}
+	mi := &file_backend_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateIssuerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateIssuerRequest) ProtoMessage() {}
+
+func (x *UpdateIssuerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateIssuerRequest.ProtoReflect.Descriptor instead.
+func (*UpdateIssuerRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *UpdateIssuerRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *UpdateIssuerRequest) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *UpdateIssuerRequest) GetConfig() *pb.IssuerConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *UpdateIssuerRequest) GetStatus() pb.IssuerStatus_Enum {
+	if x != nil {
+		return x.Status
+	}
+	return pb.IssuerStatus_Enum(0)
+}
+
+// RegisterRootRequest registers an external trust anchor
+// with the org named explicitly: the request of Backend.RegisterRoot
+type RegisterRootRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// Pem encoded root certificate
+	Pem string `protobuf:"bytes,2,opt,name=Pem,proto3" json:"Pem,omitempty"`
+	// Trust scope
+	Trust         pb.Trust_Enum `protobuf:"varint,3,opt,name=Trust,proto3,enum=pb.Trust_Enum" json:"Trust,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterRootRequest) Reset() {
+	*x = RegisterRootRequest{}
+	mi := &file_backend_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterRootRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterRootRequest) ProtoMessage() {}
+
+func (x *RegisterRootRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterRootRequest.ProtoReflect.Descriptor instead.
+func (*RegisterRootRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *RegisterRootRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *RegisterRootRequest) GetPem() string {
+	if x != nil {
+		return x.Pem
+	}
+	return ""
+}
+
+func (x *RegisterRootRequest) GetTrust() pb.Trust_Enum {
+	if x != nil {
+		return x.Trust
+	}
+	return pb.Trust_Enum(0)
+}
+
+// ListRootsRequest specifies a list of trust anchors
+// with the org named explicitly: the request of Backend.ListRoots
+type ListRootsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the org; empty lists the platform anchors, for a service
+	// identity only
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// Limit specifies maximum number of records to return
+	Limit uint32 `protobuf:"varint,2,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Offset specifies offset for the offset-based pagination
+	Offset uint32 `protobuf:"varint,3,opt,name=Offset,proto3" json:"Offset,omitempty"`
+	// Cursor specifies cursor for the cursor-based pagination
+	Cursor        string `protobuf:"bytes,4,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRootsRequest) Reset() {
+	*x = ListRootsRequest{}
+	mi := &file_backend_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRootsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRootsRequest) ProtoMessage() {}
+
+func (x *ListRootsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRootsRequest.ProtoReflect.Descriptor instead.
+func (*ListRootsRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListRootsRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *ListRootsRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListRootsRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *ListRootsRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+// RegisterProfileRequest creates or replaces a profile
+// with the org named explicitly: the request of Backend.RegisterProfile
+type RegisterProfileRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID of the owning project; empty for an org-wide profile
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// Profile provides the profile definition.
+	// Profile.Label and Profile.IssuerLabel are required.
+	Profile       *pb.CertProfile `protobuf:"bytes,3,opt,name=Profile,proto3" json:"Profile,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterProfileRequest) Reset() {
+	*x = RegisterProfileRequest{}
+	mi := &file_backend_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterProfileRequest) ProtoMessage() {}
+
+func (x *RegisterProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterProfileRequest.ProtoReflect.Descriptor instead.
+func (*RegisterProfileRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RegisterProfileRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *RegisterProfileRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *RegisterProfileRequest) GetProfile() *pb.CertProfile {
+	if x != nil {
+		return x.Profile
+	}
+	return nil
+}
+
+// GetProfileRequest specifies a profile by ID or label
+// with the org named explicitly: the request of Backend.GetProfile
+type GetProfileRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID of the owning project; used with Label
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// ID of the profile
+	ID string `protobuf:"bytes,3,opt,name=ID,proto3" json:"ID,omitempty"`
+	// Label of the profile, resolved as (Org, Project) then (Org)
+	Label         string `protobuf:"bytes,4,opt,name=Label,proto3" json:"Label,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetProfileRequest) Reset() {
+	*x = GetProfileRequest{}
+	mi := &file_backend_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProfileRequest) ProtoMessage() {}
+
+func (x *GetProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProfileRequest.ProtoReflect.Descriptor instead.
+func (*GetProfileRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetProfileRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *GetProfileRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *GetProfileRequest) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *GetProfileRequest) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+// ListProfilesRequest specifies a paginated list of profiles
+// with the org named explicitly: the request of Backend.ListProfiles
+type ListProfilesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID filters by project; empty returns org-wide and all project
+	// profiles
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// IssuerLabel filters by issuer label
+	IssuerLabel string `protobuf:"bytes,3,opt,name=IssuerLabel,proto3" json:"IssuerLabel,omitempty"`
+	// Limit specifies maximum number of records to return
+	Limit uint32 `protobuf:"varint,4,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Offset specifies offset for the offset-based pagination
+	Offset uint32 `protobuf:"varint,5,opt,name=Offset,proto3" json:"Offset,omitempty"`
+	// Cursor specifies cursor for the cursor-based pagination
+	Cursor        string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProfilesRequest) Reset() {
+	*x = ListProfilesRequest{}
+	mi := &file_backend_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProfilesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProfilesRequest) ProtoMessage() {}
+
+func (x *ListProfilesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProfilesRequest.ProtoReflect.Descriptor instead.
+func (*ListProfilesRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListProfilesRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *ListProfilesRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *ListProfilesRequest) GetIssuerLabel() string {
+	if x != nil {
+		return x.IssuerLabel
+	}
+	return ""
+}
+
+func (x *ListProfilesRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListProfilesRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *ListProfilesRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+// DeleteProfileRequest deletes a profile
+// with the org named explicitly: the request of Backend.DeleteProfile
+type DeleteProfileRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ID of the profile
+	ID            string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteProfileRequest) Reset() {
+	*x = DeleteProfileRequest{}
+	mi := &file_backend_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteProfileRequest) ProtoMessage() {}
+
+func (x *DeleteProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteProfileRequest.ProtoReflect.Descriptor instead.
+func (*DeleteProfileRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DeleteProfileRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *DeleteProfileRequest) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+// SignCertificateRequest specifies certificate sign request
+// with the org named explicitly: the request of Backend.SignCertificate
+type SignCertificateRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID of the owning project; recorded on the certificate and used to
+	// resolve project-scoped profiles and issuers
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// Profile specifies the certificate profile label
+	Profile string `protobuf:"bytes,3,opt,name=Profile,proto3" json:"Profile,omitempty"`
+	// IssuerLabel selects the issuer when the profile binds to "*";
+	// otherwise it must match the profile's issuer
+	IssuerLabel string `protobuf:"bytes,4,opt,name=IssuerLabel,proto3" json:"IssuerLabel,omitempty"`
+	// RequestFormat provides the certificate request format: PEM or DER
+	RequestFormat pb.EncodingFormat_Enum `protobuf:"varint,5,opt,name=RequestFormat,proto3,enum=pb.EncodingFormat_Enum" json:"RequestFormat,omitempty"`
+	// Request provides the PKCS#10 certificate request
+	Request []byte `protobuf:"bytes,6,opt,name=Request,proto3" json:"Request,omitempty"`
+	// SAN specifies Subject Alternative Names to add or override
+	SAN []string `protobuf:"bytes,7,rep,name=SAN,proto3" json:"SAN,omitempty"`
+	// Subject overrides the subject name from the request
+	Subject *pb.X509Subject `protobuf:"bytes,8,opt,name=Subject,proto3" json:"Subject,omitempty"`
+	// NotBefore overrides the validity start in RFC3339 format;
+	// no backdate is applied when provided
+	NotBefore string `protobuf:"bytes,9,opt,name=NotBefore,proto3" json:"NotBefore,omitempty"`
+	// NotAfter overrides the validity end in RFC3339 format;
+	// it must not exceed the profile expiry
+	NotAfter string `protobuf:"bytes,10,opt,name=NotAfter,proto3" json:"NotAfter,omitempty"`
+	// Extensions specifies additional extensions to include, subject to the
+	// profile's AllowedExtensions
+	Extensions []*pb.X509Extension `protobuf:"bytes,11,rep,name=Extensions,proto3" json:"Extensions,omitempty"`
+	// Label is provided by the client for search and display
+	Label string `protobuf:"bytes,12,opt,name=Label,proto3" json:"Label,omitempty"`
+	// Metadata is provided by the client
+	Metadata      map[string]string `protobuf:"bytes,13,rep,name=Metadata,proto3" json:"Metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignCertificateRequest) Reset() {
+	*x = SignCertificateRequest{}
+	mi := &file_backend_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignCertificateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignCertificateRequest) ProtoMessage() {}
+
+func (x *SignCertificateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignCertificateRequest.ProtoReflect.Descriptor instead.
+func (*SignCertificateRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SignCertificateRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *SignCertificateRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *SignCertificateRequest) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
+}
+
+func (x *SignCertificateRequest) GetIssuerLabel() string {
+	if x != nil {
+		return x.IssuerLabel
+	}
+	return ""
+}
+
+func (x *SignCertificateRequest) GetRequestFormat() pb.EncodingFormat_Enum {
+	if x != nil {
+		return x.RequestFormat
+	}
+	return pb.EncodingFormat_Enum(0)
+}
+
+func (x *SignCertificateRequest) GetRequest() []byte {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *SignCertificateRequest) GetSAN() []string {
+	if x != nil {
+		return x.SAN
+	}
+	return nil
+}
+
+func (x *SignCertificateRequest) GetSubject() *pb.X509Subject {
+	if x != nil {
+		return x.Subject
+	}
+	return nil
+}
+
+func (x *SignCertificateRequest) GetNotBefore() string {
+	if x != nil {
+		return x.NotBefore
+	}
+	return ""
+}
+
+func (x *SignCertificateRequest) GetNotAfter() string {
+	if x != nil {
+		return x.NotAfter
+	}
+	return ""
+}
+
+func (x *SignCertificateRequest) GetExtensions() []*pb.X509Extension {
+	if x != nil {
+		return x.Extensions
+	}
+	return nil
+}
+
+func (x *SignCertificateRequest) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *SignCertificateRequest) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+// UpdateCertificateLabelRequest specifies certificate label update request
+// with the org named explicitly: the request of Backend.UpdateCertificateLabel
+type UpdateCertificateLabelRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ID specifies certificate ID
+	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	// Label is provided by the client
+	Label string `protobuf:"bytes,3,opt,name=Label,proto3" json:"Label,omitempty"`
+	// Metadata replaces the client metadata when provided
+	Metadata map[string]string `protobuf:"bytes,4,rep,name=Metadata,proto3" json:"Metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// ProjectID of the certificate's project. A caller whose role is granted
+	// in the project only must name it, since the request is authorized at
+	// that scope; the certificate must belong to it.
+	ProjectID     string `protobuf:"bytes,5,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateCertificateLabelRequest) Reset() {
+	*x = UpdateCertificateLabelRequest{}
+	mi := &file_backend_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCertificateLabelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCertificateLabelRequest) ProtoMessage() {}
+
+func (x *UpdateCertificateLabelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCertificateLabelRequest.ProtoReflect.Descriptor instead.
+func (*UpdateCertificateLabelRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *UpdateCertificateLabelRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *UpdateCertificateLabelRequest) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *UpdateCertificateLabelRequest) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *UpdateCertificateLabelRequest) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *UpdateCertificateLabelRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+// GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer
+// and serial number
+// with the org named explicitly: the request of Backend.GetCertificate
+type GetCertificateRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ID specifies certificate ID
+	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	// SKID specifies Subject Key ID to search
+	SKID string `protobuf:"bytes,3,opt,name=SKID,proto3" json:"SKID,omitempty"`
+	// Sha256 specifies the certificate thumbprint to search
+	Sha256 string `protobuf:"bytes,4,opt,name=Sha256,proto3" json:"Sha256,omitempty"`
+	// IssuerSerial specifies Issuer Key ID and certificate serial number
+	IssuerSerial  *pb.IssuerSerial `protobuf:"bytes,5,opt,name=IssuerSerial,proto3" json:"IssuerSerial,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCertificateRequest) Reset() {
+	*x = GetCertificateRequest{}
+	mi := &file_backend_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCertificateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCertificateRequest) ProtoMessage() {}
+
+func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCertificateRequest.ProtoReflect.Descriptor instead.
+func (*GetCertificateRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetCertificateRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *GetCertificateRequest) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *GetCertificateRequest) GetSKID() string {
+	if x != nil {
+		return x.SKID
+	}
+	return ""
+}
+
+func (x *GetCertificateRequest) GetSha256() string {
+	if x != nil {
+		return x.Sha256
+	}
+	return ""
+}
+
+func (x *GetCertificateRequest) GetIssuerSerial() *pb.IssuerSerial {
+	if x != nil {
+		return x.IssuerSerial
+	}
+	return nil
+}
+
+// ListCertificatesRequest specifies a paginated list of certificates,
+// sorted by ID descending (newest first)
+// with the org named explicitly: the request of Backend.ListCertificates
+type ListCertificatesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID filters by project; empty returns org-wide and all project
+	// certificates
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// IKID filters by issuer
+	IKID string `protobuf:"bytes,3,opt,name=IKID,proto3" json:"IKID,omitempty"`
+	// Profile filters by profile label
+	Profile string `protobuf:"bytes,4,opt,name=Profile,proto3" json:"Profile,omitempty"`
+	// Status filters by status; Unknown returns all
+	Status pb.CertificateStatus_Enum `protobuf:"varint,5,opt,name=Status,proto3,enum=pb.CertificateStatus_Enum" json:"Status,omitempty"`
+	// ExpiringBefore filters certificates with NotAfter before the time,
+	// in RFC3339 format
+	ExpiringBefore string `protobuf:"bytes,6,opt,name=ExpiringBefore,proto3" json:"ExpiringBefore,omitempty"`
+	// Limit specifies maximum number of records to return
+	Limit uint32 `protobuf:"varint,7,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Offset specifies offset for the offset-based pagination
+	Offset uint32 `protobuf:"varint,8,opt,name=Offset,proto3" json:"Offset,omitempty"`
+	// Cursor specifies cursor for the cursor-based pagination.
+	// Use "initial" to start the pagination or pass the cursor returned from
+	// the previous request.
+	Cursor        string `protobuf:"bytes,9,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCertificatesRequest) Reset() {
+	*x = ListCertificatesRequest{}
+	mi := &file_backend_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCertificatesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCertificatesRequest) ProtoMessage() {}
+
+func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCertificatesRequest.ProtoReflect.Descriptor instead.
+func (*ListCertificatesRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListCertificatesRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *ListCertificatesRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *ListCertificatesRequest) GetIKID() string {
+	if x != nil {
+		return x.IKID
+	}
+	return ""
+}
+
+func (x *ListCertificatesRequest) GetProfile() string {
+	if x != nil {
+		return x.Profile
+	}
+	return ""
+}
+
+func (x *ListCertificatesRequest) GetStatus() pb.CertificateStatus_Enum {
+	if x != nil {
+		return x.Status
+	}
+	return pb.CertificateStatus_Enum(0)
+}
+
+func (x *ListCertificatesRequest) GetExpiringBefore() string {
+	if x != nil {
+		return x.ExpiringBefore
+	}
+	return ""
+}
+
+func (x *ListCertificatesRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListCertificatesRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *ListCertificatesRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+// ListRevokedCertificatesRequest specifies a paginated list of revoked
+// certificates, sorted by revocation ID descending
+// with the org named explicitly: the request of Backend.ListRevokedCertificates
+type ListRevokedCertificatesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID filters by project
+	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// IKID filters by issuer
+	IKID string `protobuf:"bytes,3,opt,name=IKID,proto3" json:"IKID,omitempty"`
+	// Limit specifies maximum number of records to return
+	Limit uint32 `protobuf:"varint,4,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Offset specifies offset for the offset-based pagination
+	Offset uint32 `protobuf:"varint,5,opt,name=Offset,proto3" json:"Offset,omitempty"`
+	// Cursor specifies cursor for the cursor-based pagination
+	Cursor        string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRevokedCertificatesRequest) Reset() {
+	*x = ListRevokedCertificatesRequest{}
+	mi := &file_backend_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRevokedCertificatesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRevokedCertificatesRequest) ProtoMessage() {}
+
+func (x *ListRevokedCertificatesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRevokedCertificatesRequest.ProtoReflect.Descriptor instead.
+func (*ListRevokedCertificatesRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListRevokedCertificatesRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *ListRevokedCertificatesRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *ListRevokedCertificatesRequest) GetIKID() string {
+	if x != nil {
+		return x.IKID
+	}
+	return ""
+}
+
+func (x *ListRevokedCertificatesRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListRevokedCertificatesRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *ListRevokedCertificatesRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+// RevokeCertificateRequest specifies revocation request
+// with the org named explicitly: the request of Backend.RevokeCertificate
+type RevokeCertificateRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ID specifies certificate ID
+	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	// SKID specifies Subject Key ID to search
+	SKID string `protobuf:"bytes,3,opt,name=SKID,proto3" json:"SKID,omitempty"`
+	// IssuerSerial specifies Issuer Key ID and certificate serial number
+	IssuerSerial *pb.IssuerSerial `protobuf:"bytes,4,opt,name=IssuerSerial,proto3" json:"IssuerSerial,omitempty"`
+	// Reason for revocation; RemoveFromCRL is refused, since it releases a
+	// certificate from hold instead of revoking it
+	Reason pb.ReasonCode_Enum `protobuf:"varint,5,opt,name=Reason,proto3,enum=pb.ReasonCode_Enum" json:"Reason,omitempty"`
+	// ReasonText provides optional free-form revocation note
+	ReasonText string `protobuf:"bytes,6,opt,name=ReasonText,proto3" json:"ReasonText,omitempty"`
+	// ProjectID of the certificate's project. A caller whose role is granted
+	// in the project only must name it, since the request is authorized at
+	// that scope; the certificate must belong to it.
+	ProjectID     string `protobuf:"bytes,7,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeCertificateRequest) Reset() {
+	*x = RevokeCertificateRequest{}
+	mi := &file_backend_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeCertificateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeCertificateRequest) ProtoMessage() {}
+
+func (x *RevokeCertificateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeCertificateRequest.ProtoReflect.Descriptor instead.
+func (*RevokeCertificateRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *RevokeCertificateRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *RevokeCertificateRequest) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *RevokeCertificateRequest) GetSKID() string {
+	if x != nil {
+		return x.SKID
+	}
+	return ""
+}
+
+func (x *RevokeCertificateRequest) GetIssuerSerial() *pb.IssuerSerial {
+	if x != nil {
+		return x.IssuerSerial
+	}
+	return nil
+}
+
+func (x *RevokeCertificateRequest) GetReason() pb.ReasonCode_Enum {
+	if x != nil {
+		return x.Reason
+	}
+	return pb.ReasonCode_Enum(0)
+}
+
+func (x *RevokeCertificateRequest) GetReasonText() string {
+	if x != nil {
+		return x.ReasonText
+	}
+	return ""
+}
+
+func (x *RevokeCertificateRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+// GetCrlRequest specifies CRL request by IKID
+// with the org named explicitly: the request of Backend.GetCRL
+type GetCrlRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the org of the issuer; empty reads the CRL of any issuer,
+	// for a service identity only
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// IKID specifies Issuer Key ID
+	IKID          string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCrlRequest) Reset() {
+	*x = GetCrlRequest{}
+	mi := &file_backend_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCrlRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCrlRequest) ProtoMessage() {}
+
+func (x *GetCrlRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCrlRequest.ProtoReflect.Descriptor instead.
+func (*GetCrlRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetCrlRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *GetCrlRequest) GetIKID() string {
+	if x != nil {
+		return x.IKID
+	}
+	return ""
+}
+
+// PublishCrlsRequest allows to publish CRLs on demand
+// with the org named explicitly: the request of Backend.PublishCrls
+type PublishCrlsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the org; empty publishes for every org and the platform,
+	// for a service identity only
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID limits the scope to the project: the issuer of the IKID
+	// must belong to it, and without an IKID the issuers of the project
+	// publish. Empty publishes for the org-wide issuers and the projects the
+	// caller may read; a project Admin names the project, and an API key
+	// restricted to a project publishes for its project.
+	ProjectID string `protobuf:"bytes,4,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// IKID specifies Issuer Key ID; empty to publish for all issuers in scope
+	IKID string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
+	// Force specifies to publish even if the current CRL is not due for renewal
+	Force         bool `protobuf:"varint,3,opt,name=Force,proto3" json:"Force,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PublishCrlsRequest) Reset() {
+	*x = PublishCrlsRequest{}
+	mi := &file_backend_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PublishCrlsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PublishCrlsRequest) ProtoMessage() {}
+
+func (x *PublishCrlsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PublishCrlsRequest.ProtoReflect.Descriptor instead.
+func (*PublishCrlsRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *PublishCrlsRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *PublishCrlsRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *PublishCrlsRequest) GetIKID() string {
+	if x != nil {
+		return x.IKID
+	}
+	return ""
+}
+
+func (x *PublishCrlsRequest) GetForce() bool {
+	if x != nil {
+		return x.Force
+	}
+	return false
+}
+
 var File_backend_proto protoreflect.FileDescriptor
 
 const file_backend_proto_rawDesc = "" +
 	"\n" +
-	"\rbackend.proto\x12\x06privpb\x1a\bca.proto\x1a\n" +
-	"pkix.proto2\x95\x03\n" +
-	"\aBackend\x127\n" +
-	"\x0eRegisterIssuer\x12\x19.pb.RegisterIssuerRequest\x1a\n" +
-	".pb.Issuer\x123\n" +
-	"\fImportIssuer\x12\x17.pb.ImportIssuerRequest\x1a\n" +
+	"\rbackend.proto\x12\x06privpb\x1a\x1bgoogle/protobuf/empty.proto\x1a\x18es/api/annotations.proto\x1a\bca.proto\x1a\n" +
+	"pkix.proto\"\xc2\x03\n" +
+	"\x15RegisterIssuerRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
+	"\x05Label\x18\x03 \x01(\tB\b\xe8\xf3\x18\x01\x80\xf4\x18@R\x05Label\x120\n" +
+	"\x04Type\x18\x04 \x01(\x0e2\x16.pb.AuthorityType.EnumB\x04\xe8\xf3\x18\x01R\x04Type\x12/\n" +
+	"\aSubject\x18\x05 \x01(\v2\x0f.pb.X509SubjectB\x04\xe8\xf3\x18\x01R\aSubject\x12%\n" +
+	"\aKeySpec\x18\x06 \x01(\v2\v.pb.KeySpecR\aKeySpec\x12 \n" +
+	"\vKeyProvider\x18\a \x01(\tR\vKeyProvider\x12\x1a\n" +
+	"\bParentID\x18\b \x01(\tR\bParentID\x12\x18\n" +
+	"\aProfile\x18\t \x01(\tR\aProfile\x12(\n" +
+	"\x06Config\x18\n" +
+	" \x01(\v2\x10.pb.IssuerConfigR\x06Config\x12\x10\n" +
+	"\x03SAN\x18\v \x03(\tR\x03SAN\x121\n" +
+	"\n" +
+	"Extensions\x18\f \x03(\v2\x11.pb.X509ExtensionR\n" +
+	"Extensions\"\xf5\x02\n" +
+	"\x13ImportIssuerRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
+	"\x05Label\x18\x03 \x01(\tB\b\xe8\xf3\x18\x01\x80\xf4\x18@R\x05Label\x120\n" +
+	"\x04Type\x18\x04 \x01(\x0e2\x16.pb.AuthorityType.EnumB\x04\xe8\xf3\x18\x01R\x04Type\x12&\n" +
+	"\vCertificate\x18\x05 \x01(\tB\x04\xe8\xf3\x18\x01R\vCertificate\x12$\n" +
+	"\rIntermediates\x18\x06 \x01(\tR\rIntermediates\x12\x12\n" +
+	"\x04Root\x18\a \x01(\tR\x04Root\x12\"\n" +
+	"\x06KeyURI\x18\b \x01(\tB\n" +
+	"\xf2\xf3\x18\x06KeyPemR\x06KeyURI\x12\"\n" +
+	"\x06KeyPem\x18\t \x01(\tB\n" +
+	"\xf2\xf3\x18\x06KeyURIR\x06KeyPem\x12(\n" +
+	"\x06Config\x18\n" +
+	" \x01(\v2\x10.pb.IssuerConfigR\x06Config\"\xab\x01\n" +
+	"\x15ActivateIssuerRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
+	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12&\n" +
+	"\vCertificate\x18\x03 \x01(\tB\x04\xe8\xf3\x18\x01R\vCertificate\x12$\n" +
+	"\rIntermediates\x18\x04 \x01(\tR\rIntermediates\x12\x12\n" +
+	"\x04Root\x18\x05 \x01(\tR\x04Root\"\xb1\x01\n" +
+	"\x10GetIssuerRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
+	"\x02ID\x18\x03 \x01(\tB\x0e\xf2\xf3\x18\n" +
+	"Label,IKIDR\x02ID\x12!\n" +
+	"\x05Label\x18\x04 \x01(\tB\v\xf2\xf3\x18\aID,IKIDR\x05Label\x12 \n" +
+	"\x04IKID\x18\x05 \x01(\tB\f\xf2\xf3\x18\bID,LabelR\x04IKID\"\xef\x01\n" +
+	"\x12ListIssuersRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12-\n" +
+	"\x06Status\x18\x03 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\x12*\n" +
+	"\x04Type\x18\x04 \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\x12\x14\n" +
+	"\x05Limit\x18\x05 \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Offset\x18\x06 \x01(\rR\x06Offset\x12\x16\n" +
+	"\x06Cursor\x18\a \x01(\tR\x06Cursor\"\xa0\x01\n" +
+	"\x13UpdateIssuerRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
+	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12(\n" +
+	"\x06Config\x18\x03 \x01(\v2\x10.pb.IssuerConfigR\x06Config\x12-\n" +
+	"\x06Status\x18\x04 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\"o\n" +
+	"\x13RegisterRootRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x16\n" +
+	"\x03Pem\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x03Pem\x12$\n" +
+	"\x05Trust\x18\x03 \x01(\x0e2\x0e.pb.Trust.EnumR\x05Trust\"n\n" +
+	"\x10ListRootsRequest\x12\x14\n" +
+	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x14\n" +
+	"\x05Limit\x18\x02 \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Offset\x18\x03 \x01(\rR\x06Offset\x12\x16\n" +
+	"\x06Cursor\x18\x04 \x01(\tR\x06Cursor\"\x83\x01\n" +
+	"\x16RegisterProfileRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12/\n" +
+	"\aProfile\x18\x03 \x01(\v2\x0f.pb.CertProfileB\x04\xe8\xf3\x18\x01R\aProfile\"\x86\x01\n" +
+	"\x11GetProfileRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x19\n" +
+	"\x02ID\x18\x03 \x01(\tB\t\xf2\xf3\x18\x05LabelR\x02ID\x12\x1c\n" +
+	"\x05Label\x18\x04 \x01(\tB\x06\xf2\xf3\x18\x02IDR\x05Label\"\xb7\x01\n" +
+	"\x13ListProfilesRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12 \n" +
+	"\vIssuerLabel\x18\x03 \x01(\tR\vIssuerLabel\x12\x14\n" +
+	"\x05Limit\x18\x04 \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Offset\x18\x05 \x01(\rR\x06Offset\x12\x16\n" +
+	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\"H\n" +
+	"\x14DeleteProfileRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
+	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\"\xc1\x04\n" +
+	"\x16SignCertificateRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
+	"\aProfile\x18\x03 \x01(\tB\x04\xe8\xf3\x18\x01R\aProfile\x12 \n" +
+	"\vIssuerLabel\x18\x04 \x01(\tR\vIssuerLabel\x12=\n" +
+	"\rRequestFormat\x18\x05 \x01(\x0e2\x17.pb.EncodingFormat.EnumR\rRequestFormat\x12\x1e\n" +
+	"\aRequest\x18\x06 \x01(\fB\x04\xe8\xf3\x18\x01R\aRequest\x12\x10\n" +
+	"\x03SAN\x18\a \x03(\tR\x03SAN\x12)\n" +
+	"\aSubject\x18\b \x01(\v2\x0f.pb.X509SubjectR\aSubject\x12\x1c\n" +
+	"\tNotBefore\x18\t \x01(\tR\tNotBefore\x12\x1a\n" +
+	"\bNotAfter\x18\n" +
+	" \x01(\tR\bNotAfter\x121\n" +
+	"\n" +
+	"Extensions\x18\v \x03(\v2\x11.pb.X509ExtensionR\n" +
+	"Extensions\x12\x1b\n" +
+	"\x05Label\x18\f \x01(\tB\x05\x80\xf4\x18\x84\x02R\x05Label\x12H\n" +
+	"\bMetadata\x18\r \x03(\v2,.privpb.SignCertificateRequest.MetadataEntryR\bMetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9a\x02\n" +
+	"\x1dUpdateCertificateLabelRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
+	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12\x1b\n" +
+	"\x05Label\x18\x03 \x01(\tB\x05\x80\xf4\x18\x84\x02R\x05Label\x12O\n" +
+	"\bMetadata\x18\x04 \x03(\v23.privpb.UpdateCertificateLabelRequest.MetadataEntryR\bMetadata\x12\x1c\n" +
+	"\tProjectID\x18\x05 \x01(\tR\tProjectID\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8d\x02\n" +
+	"\x15GetCertificateRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12,\n" +
+	"\x02ID\x18\x02 \x01(\tB\x1c\xf2\xf3\x18\x18SKID,Sha256,IssuerSerialR\x02ID\x12.\n" +
+	"\x04SKID\x18\x03 \x01(\tB\x1a\xf2\xf3\x18\x16ID,Sha256,IssuerSerialR\x04SKID\x120\n" +
+	"\x06Sha256\x18\x04 \x01(\tB\x18\xf2\xf3\x18\x14ID,SKID,IssuerSerialR\x06Sha256\x12H\n" +
+	"\fIssuerSerial\x18\x05 \x01(\v2\x10.pb.IssuerSerialB\x12\xf2\xf3\x18\x0eID,SKID,Sha256R\fIssuerSerial\"\xa3\x02\n" +
+	"\x17ListCertificatesRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x12\n" +
+	"\x04IKID\x18\x03 \x01(\tR\x04IKID\x12\x18\n" +
+	"\aProfile\x18\x04 \x01(\tR\aProfile\x122\n" +
+	"\x06Status\x18\x05 \x01(\x0e2\x1a.pb.CertificateStatus.EnumR\x06Status\x12&\n" +
+	"\x0eExpiringBefore\x18\x06 \x01(\tR\x0eExpiringBefore\x12\x14\n" +
+	"\x05Limit\x18\a \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Offset\x18\b \x01(\rR\x06Offset\x12\x16\n" +
+	"\x06Cursor\x18\t \x01(\tR\x06Cursor\"\xb4\x01\n" +
+	"\x1eListRevokedCertificatesRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x12\n" +
+	"\x04IKID\x18\x03 \x01(\tR\x04IKID\x12\x14\n" +
+	"\x05Limit\x18\x04 \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Offset\x18\x05 \x01(\rR\x06Offset\x12\x16\n" +
+	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\"\xbb\x02\n" +
+	"\x18RevokeCertificateRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12%\n" +
+	"\x02ID\x18\x02 \x01(\tB\x15\xf2\xf3\x18\x11SKID,IssuerSerialR\x02ID\x12'\n" +
+	"\x04SKID\x18\x03 \x01(\tB\x13\xf2\xf3\x18\x0fID,IssuerSerialR\x04SKID\x12A\n" +
+	"\fIssuerSerial\x18\x04 \x01(\v2\x10.pb.IssuerSerialB\v\xf2\xf3\x18\aID,SKIDR\fIssuerSerial\x12+\n" +
+	"\x06Reason\x18\x05 \x01(\x0e2\x13.pb.ReasonCode.EnumR\x06Reason\x12%\n" +
+	"\n" +
+	"ReasonText\x18\x06 \x01(\tB\x05\x80\xf4\x18\x84\x02R\n" +
+	"ReasonText\x12\x1c\n" +
+	"\tProjectID\x18\a \x01(\tR\tProjectID\"?\n" +
+	"\rGetCrlRequest\x12\x14\n" +
+	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x18\n" +
+	"\x04IKID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x04IKID\"r\n" +
+	"\x12PublishCrlsRequest\x12\x14\n" +
+	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x04 \x01(\tR\tProjectID\x12\x12\n" +
+	"\x04IKID\x18\x02 \x01(\tR\x04IKID\x12\x14\n" +
+	"\x05Force\x18\x03 \x01(\bR\x05Force2\x84\v\n" +
+	"\aBackend\x12;\n" +
+	"\x0eRegisterIssuer\x12\x1d.privpb.RegisterIssuerRequest\x1a\n" +
 	".pb.Issuer\x127\n" +
-	"\x0eActivateIssuer\x12\x19.pb.ActivateIssuerRequest\x1a\n" +
-	".pb.Issuer\x123\n" +
-	"\fUpdateIssuer\x12\x17.pb.UpdateIssuerRequest\x1a\n" +
-	".pb.Issuer\x12F\n" +
-	"\x0fSignCertificate\x12\x1a.pb.SignCertificateRequest\x1a\x17.pb.CertificateResponse\x127\n" +
-	"\vPublishCrls\x12\x16.pb.PublishCrlsRequest\x1a\x10.pb.CrlsResponse\x12-\n" +
+	"\fImportIssuer\x12\x1b.privpb.ImportIssuerRequest\x1a\n" +
+	".pb.Issuer\x12;\n" +
+	"\x0eActivateIssuer\x12\x1d.privpb.ActivateIssuerRequest\x1a\n" +
+	".pb.Issuer\x127\n" +
+	"\fUpdateIssuer\x12\x1b.privpb.UpdateIssuerRequest\x1a\n" +
+	".pb.Issuer\x121\n" +
+	"\tGetIssuer\x12\x18.privpb.GetIssuerRequest\x1a\n" +
+	".pb.Issuer\x12>\n" +
+	"\vListIssuers\x12\x1a.privpb.ListIssuersRequest\x1a\x13.pb.IssuersResponse\x12@\n" +
+	"\fRegisterRoot\x12\x1b.privpb.RegisterRootRequest\x1a\x13.pb.RootCertificate\x128\n" +
+	"\tListRoots\x12\x18.privpb.ListRootsRequest\x1a\x11.pb.RootsResponse\x12B\n" +
+	"\x0fRegisterProfile\x12\x1e.privpb.RegisterProfileRequest\x1a\x0f.pb.CertProfile\x128\n" +
+	"\n" +
+	"GetProfile\x12\x19.privpb.GetProfileRequest\x1a\x0f.pb.CertProfile\x12A\n" +
+	"\fListProfiles\x12\x1b.privpb.ListProfilesRequest\x1a\x14.pb.ProfilesResponse\x12E\n" +
+	"\rDeleteProfile\x12\x1c.privpb.DeleteProfileRequest\x1a\x16.google.protobuf.Empty\x12J\n" +
+	"\x0fSignCertificate\x12\x1e.privpb.SignCertificateRequest\x1a\x17.pb.CertificateResponse\x12H\n" +
+	"\x0eGetCertificate\x12\x1d.privpb.GetCertificateRequest\x1a\x17.pb.CertificateResponse\x12M\n" +
+	"\x10ListCertificates\x12\x1f.privpb.ListCertificatesRequest\x1a\x18.pb.CertificatesResponse\x12X\n" +
+	"\x16UpdateCertificateLabel\x12%.privpb.UpdateCertificateLabelRequest\x1a\x17.pb.CertificateResponse\x12U\n" +
+	"\x11RevokeCertificate\x12 .privpb.RevokeCertificateRequest\x1a\x1e.pb.RevokedCertificateResponse\x12b\n" +
+	"\x17ListRevokedCertificates\x12&.privpb.ListRevokedCertificatesRequest\x1a\x1f.pb.RevokedCertificatesResponse\x120\n" +
+	"\x06GetCRL\x12\x15.privpb.GetCrlRequest\x1a\x0f.pb.CrlResponse\x12;\n" +
+	"\vPublishCrls\x12\x1a.privpb.PublishCrlsRequest\x1a\x10.pb.CrlsResponse\x12-\n" +
 	"\bSignOCSP\x12\x0f.pb.OCSPRequest\x1a\x10.pb.OCSPResponseB/Z-github.com/effective-security/trustyca/privpbb\x06proto3"
 
+var (
+	file_backend_proto_rawDescOnce sync.Once
+	file_backend_proto_rawDescData []byte
+)
+
+func file_backend_proto_rawDescGZIP() []byte {
+	file_backend_proto_rawDescOnce.Do(func() {
+		file_backend_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_backend_proto_rawDesc), len(file_backend_proto_rawDesc)))
+	})
+	return file_backend_proto_rawDescData
+}
+
+var file_backend_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_backend_proto_goTypes = []any{
-	(*pb.RegisterIssuerRequest)(nil),  // 0: pb.RegisterIssuerRequest
-	(*pb.ImportIssuerRequest)(nil),    // 1: pb.ImportIssuerRequest
-	(*pb.ActivateIssuerRequest)(nil),  // 2: pb.ActivateIssuerRequest
-	(*pb.UpdateIssuerRequest)(nil),    // 3: pb.UpdateIssuerRequest
-	(*pb.SignCertificateRequest)(nil), // 4: pb.SignCertificateRequest
-	(*pb.PublishCrlsRequest)(nil),     // 5: pb.PublishCrlsRequest
-	(*pb.OCSPRequest)(nil),            // 6: pb.OCSPRequest
-	(*pb.Issuer)(nil),                 // 7: pb.Issuer
-	(*pb.CertificateResponse)(nil),    // 8: pb.CertificateResponse
-	(*pb.CrlsResponse)(nil),           // 9: pb.CrlsResponse
-	(*pb.OCSPResponse)(nil),           // 10: pb.OCSPResponse
+	(*RegisterIssuerRequest)(nil),          // 0: privpb.RegisterIssuerRequest
+	(*ImportIssuerRequest)(nil),            // 1: privpb.ImportIssuerRequest
+	(*ActivateIssuerRequest)(nil),          // 2: privpb.ActivateIssuerRequest
+	(*GetIssuerRequest)(nil),               // 3: privpb.GetIssuerRequest
+	(*ListIssuersRequest)(nil),             // 4: privpb.ListIssuersRequest
+	(*UpdateIssuerRequest)(nil),            // 5: privpb.UpdateIssuerRequest
+	(*RegisterRootRequest)(nil),            // 6: privpb.RegisterRootRequest
+	(*ListRootsRequest)(nil),               // 7: privpb.ListRootsRequest
+	(*RegisterProfileRequest)(nil),         // 8: privpb.RegisterProfileRequest
+	(*GetProfileRequest)(nil),              // 9: privpb.GetProfileRequest
+	(*ListProfilesRequest)(nil),            // 10: privpb.ListProfilesRequest
+	(*DeleteProfileRequest)(nil),           // 11: privpb.DeleteProfileRequest
+	(*SignCertificateRequest)(nil),         // 12: privpb.SignCertificateRequest
+	(*UpdateCertificateLabelRequest)(nil),  // 13: privpb.UpdateCertificateLabelRequest
+	(*GetCertificateRequest)(nil),          // 14: privpb.GetCertificateRequest
+	(*ListCertificatesRequest)(nil),        // 15: privpb.ListCertificatesRequest
+	(*ListRevokedCertificatesRequest)(nil), // 16: privpb.ListRevokedCertificatesRequest
+	(*RevokeCertificateRequest)(nil),       // 17: privpb.RevokeCertificateRequest
+	(*GetCrlRequest)(nil),                  // 18: privpb.GetCrlRequest
+	(*PublishCrlsRequest)(nil),             // 19: privpb.PublishCrlsRequest
+	nil,                                    // 20: privpb.SignCertificateRequest.MetadataEntry
+	nil,                                    // 21: privpb.UpdateCertificateLabelRequest.MetadataEntry
+	(pb.AuthorityType_Enum)(0),             // 22: pb.AuthorityType.Enum
+	(*pb.X509Subject)(nil),                 // 23: pb.X509Subject
+	(*pb.KeySpec)(nil),                     // 24: pb.KeySpec
+	(*pb.IssuerConfig)(nil),                // 25: pb.IssuerConfig
+	(*pb.X509Extension)(nil),               // 26: pb.X509Extension
+	(pb.IssuerStatus_Enum)(0),              // 27: pb.IssuerStatus.Enum
+	(pb.Trust_Enum)(0),                     // 28: pb.Trust.Enum
+	(*pb.CertProfile)(nil),                 // 29: pb.CertProfile
+	(pb.EncodingFormat_Enum)(0),            // 30: pb.EncodingFormat.Enum
+	(*pb.IssuerSerial)(nil),                // 31: pb.IssuerSerial
+	(pb.CertificateStatus_Enum)(0),         // 32: pb.CertificateStatus.Enum
+	(pb.ReasonCode_Enum)(0),                // 33: pb.ReasonCode.Enum
+	(*pb.OCSPRequest)(nil),                 // 34: pb.OCSPRequest
+	(*pb.Issuer)(nil),                      // 35: pb.Issuer
+	(*pb.IssuersResponse)(nil),             // 36: pb.IssuersResponse
+	(*pb.RootCertificate)(nil),             // 37: pb.RootCertificate
+	(*pb.RootsResponse)(nil),               // 38: pb.RootsResponse
+	(*pb.ProfilesResponse)(nil),            // 39: pb.ProfilesResponse
+	(*emptypb.Empty)(nil),                  // 40: google.protobuf.Empty
+	(*pb.CertificateResponse)(nil),         // 41: pb.CertificateResponse
+	(*pb.CertificatesResponse)(nil),        // 42: pb.CertificatesResponse
+	(*pb.RevokedCertificateResponse)(nil),  // 43: pb.RevokedCertificateResponse
+	(*pb.RevokedCertificatesResponse)(nil), // 44: pb.RevokedCertificatesResponse
+	(*pb.CrlResponse)(nil),                 // 45: pb.CrlResponse
+	(*pb.CrlsResponse)(nil),                // 46: pb.CrlsResponse
+	(*pb.OCSPResponse)(nil),                // 47: pb.OCSPResponse
 }
 var file_backend_proto_depIdxs = []int32{
-	0,  // 0: privpb.Backend.RegisterIssuer:input_type -> pb.RegisterIssuerRequest
-	1,  // 1: privpb.Backend.ImportIssuer:input_type -> pb.ImportIssuerRequest
-	2,  // 2: privpb.Backend.ActivateIssuer:input_type -> pb.ActivateIssuerRequest
-	3,  // 3: privpb.Backend.UpdateIssuer:input_type -> pb.UpdateIssuerRequest
-	4,  // 4: privpb.Backend.SignCertificate:input_type -> pb.SignCertificateRequest
-	5,  // 5: privpb.Backend.PublishCrls:input_type -> pb.PublishCrlsRequest
-	6,  // 6: privpb.Backend.SignOCSP:input_type -> pb.OCSPRequest
-	7,  // 7: privpb.Backend.RegisterIssuer:output_type -> pb.Issuer
-	7,  // 8: privpb.Backend.ImportIssuer:output_type -> pb.Issuer
-	7,  // 9: privpb.Backend.ActivateIssuer:output_type -> pb.Issuer
-	7,  // 10: privpb.Backend.UpdateIssuer:output_type -> pb.Issuer
-	8,  // 11: privpb.Backend.SignCertificate:output_type -> pb.CertificateResponse
-	9,  // 12: privpb.Backend.PublishCrls:output_type -> pb.CrlsResponse
-	10, // 13: privpb.Backend.SignOCSP:output_type -> pb.OCSPResponse
-	7,  // [7:14] is the sub-list for method output_type
-	0,  // [0:7] is the sub-list for method input_type
-	0,  // [0:0] is the sub-list for extension type_name
-	0,  // [0:0] is the sub-list for extension extendee
-	0,  // [0:0] is the sub-list for field type_name
+	22, // 0: privpb.RegisterIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
+	23, // 1: privpb.RegisterIssuerRequest.Subject:type_name -> pb.X509Subject
+	24, // 2: privpb.RegisterIssuerRequest.KeySpec:type_name -> pb.KeySpec
+	25, // 3: privpb.RegisterIssuerRequest.Config:type_name -> pb.IssuerConfig
+	26, // 4: privpb.RegisterIssuerRequest.Extensions:type_name -> pb.X509Extension
+	22, // 5: privpb.ImportIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
+	25, // 6: privpb.ImportIssuerRequest.Config:type_name -> pb.IssuerConfig
+	27, // 7: privpb.ListIssuersRequest.Status:type_name -> pb.IssuerStatus.Enum
+	22, // 8: privpb.ListIssuersRequest.Type:type_name -> pb.AuthorityType.Enum
+	25, // 9: privpb.UpdateIssuerRequest.Config:type_name -> pb.IssuerConfig
+	27, // 10: privpb.UpdateIssuerRequest.Status:type_name -> pb.IssuerStatus.Enum
+	28, // 11: privpb.RegisterRootRequest.Trust:type_name -> pb.Trust.Enum
+	29, // 12: privpb.RegisterProfileRequest.Profile:type_name -> pb.CertProfile
+	30, // 13: privpb.SignCertificateRequest.RequestFormat:type_name -> pb.EncodingFormat.Enum
+	23, // 14: privpb.SignCertificateRequest.Subject:type_name -> pb.X509Subject
+	26, // 15: privpb.SignCertificateRequest.Extensions:type_name -> pb.X509Extension
+	20, // 16: privpb.SignCertificateRequest.Metadata:type_name -> privpb.SignCertificateRequest.MetadataEntry
+	21, // 17: privpb.UpdateCertificateLabelRequest.Metadata:type_name -> privpb.UpdateCertificateLabelRequest.MetadataEntry
+	31, // 18: privpb.GetCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
+	32, // 19: privpb.ListCertificatesRequest.Status:type_name -> pb.CertificateStatus.Enum
+	31, // 20: privpb.RevokeCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
+	33, // 21: privpb.RevokeCertificateRequest.Reason:type_name -> pb.ReasonCode.Enum
+	0,  // 22: privpb.Backend.RegisterIssuer:input_type -> privpb.RegisterIssuerRequest
+	1,  // 23: privpb.Backend.ImportIssuer:input_type -> privpb.ImportIssuerRequest
+	2,  // 24: privpb.Backend.ActivateIssuer:input_type -> privpb.ActivateIssuerRequest
+	5,  // 25: privpb.Backend.UpdateIssuer:input_type -> privpb.UpdateIssuerRequest
+	3,  // 26: privpb.Backend.GetIssuer:input_type -> privpb.GetIssuerRequest
+	4,  // 27: privpb.Backend.ListIssuers:input_type -> privpb.ListIssuersRequest
+	6,  // 28: privpb.Backend.RegisterRoot:input_type -> privpb.RegisterRootRequest
+	7,  // 29: privpb.Backend.ListRoots:input_type -> privpb.ListRootsRequest
+	8,  // 30: privpb.Backend.RegisterProfile:input_type -> privpb.RegisterProfileRequest
+	9,  // 31: privpb.Backend.GetProfile:input_type -> privpb.GetProfileRequest
+	10, // 32: privpb.Backend.ListProfiles:input_type -> privpb.ListProfilesRequest
+	11, // 33: privpb.Backend.DeleteProfile:input_type -> privpb.DeleteProfileRequest
+	12, // 34: privpb.Backend.SignCertificate:input_type -> privpb.SignCertificateRequest
+	14, // 35: privpb.Backend.GetCertificate:input_type -> privpb.GetCertificateRequest
+	15, // 36: privpb.Backend.ListCertificates:input_type -> privpb.ListCertificatesRequest
+	13, // 37: privpb.Backend.UpdateCertificateLabel:input_type -> privpb.UpdateCertificateLabelRequest
+	17, // 38: privpb.Backend.RevokeCertificate:input_type -> privpb.RevokeCertificateRequest
+	16, // 39: privpb.Backend.ListRevokedCertificates:input_type -> privpb.ListRevokedCertificatesRequest
+	18, // 40: privpb.Backend.GetCRL:input_type -> privpb.GetCrlRequest
+	19, // 41: privpb.Backend.PublishCrls:input_type -> privpb.PublishCrlsRequest
+	34, // 42: privpb.Backend.SignOCSP:input_type -> pb.OCSPRequest
+	35, // 43: privpb.Backend.RegisterIssuer:output_type -> pb.Issuer
+	35, // 44: privpb.Backend.ImportIssuer:output_type -> pb.Issuer
+	35, // 45: privpb.Backend.ActivateIssuer:output_type -> pb.Issuer
+	35, // 46: privpb.Backend.UpdateIssuer:output_type -> pb.Issuer
+	35, // 47: privpb.Backend.GetIssuer:output_type -> pb.Issuer
+	36, // 48: privpb.Backend.ListIssuers:output_type -> pb.IssuersResponse
+	37, // 49: privpb.Backend.RegisterRoot:output_type -> pb.RootCertificate
+	38, // 50: privpb.Backend.ListRoots:output_type -> pb.RootsResponse
+	29, // 51: privpb.Backend.RegisterProfile:output_type -> pb.CertProfile
+	29, // 52: privpb.Backend.GetProfile:output_type -> pb.CertProfile
+	39, // 53: privpb.Backend.ListProfiles:output_type -> pb.ProfilesResponse
+	40, // 54: privpb.Backend.DeleteProfile:output_type -> google.protobuf.Empty
+	41, // 55: privpb.Backend.SignCertificate:output_type -> pb.CertificateResponse
+	41, // 56: privpb.Backend.GetCertificate:output_type -> pb.CertificateResponse
+	42, // 57: privpb.Backend.ListCertificates:output_type -> pb.CertificatesResponse
+	41, // 58: privpb.Backend.UpdateCertificateLabel:output_type -> pb.CertificateResponse
+	43, // 59: privpb.Backend.RevokeCertificate:output_type -> pb.RevokedCertificateResponse
+	44, // 60: privpb.Backend.ListRevokedCertificates:output_type -> pb.RevokedCertificatesResponse
+	45, // 61: privpb.Backend.GetCRL:output_type -> pb.CrlResponse
+	46, // 62: privpb.Backend.PublishCrls:output_type -> pb.CrlsResponse
+	47, // 63: privpb.Backend.SignOCSP:output_type -> pb.OCSPResponse
+	43, // [43:64] is the sub-list for method output_type
+	22, // [22:43] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_backend_proto_init() }
@@ -87,12 +2216,13 @@ func file_backend_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_backend_proto_rawDesc), len(file_backend_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_backend_proto_goTypes,
 		DependencyIndexes: file_backend_proto_depIdxs,
+		MessageInfos:      file_backend_proto_msgTypes,
 	}.Build()
 	File_backend_proto = out.File
 	file_backend_proto_goTypes = nil

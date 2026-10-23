@@ -171,7 +171,7 @@ func TestClients(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = cl.Cli.AdminClient()
 	assert.NoError(t, err)
-	_, err = cl.Cli.CAClient()
+	_, err = cl.Cli.BackendClient()
 	assert.NoError(t, err)
 
 	cl.Cli.HTTP = true
@@ -179,7 +179,7 @@ func TestClients(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = cl.Cli.AdminClient()
 	assert.EqualError(t, err, "admin endpoint is allowed only over gRPC")
-	_, err = cl.Cli.CAClient()
+	_, err = cl.Cli.BackendClient()
 	assert.EqualError(t, err, "CA endpoint is allowed only over gRPC")
 }
 

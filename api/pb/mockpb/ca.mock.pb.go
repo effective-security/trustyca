@@ -131,7 +131,7 @@ func (m *MockCAServer) ListRoots(ctx context.Context, req *pb.ListRootsRequest) 
 }
 
 // RegisterProfile creates or replaces a certificate profile, keyed by
-// (OrgID, ProjectID, Label)
+// (org, ProjectID, Label)
 
 func (m *MockCAServer) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRequest) (*pb.CertProfile, error) {
 	if m.Err != nil {
@@ -244,7 +244,8 @@ func (m *MockCAServer) PublishCrls(ctx context.Context, req *pb.PublishCrlsReque
 	return m.next().(*pb.CrlsResponse), nil
 }
 
-// SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
+// SignOCSP signs an OCSP response; the AIA OCSP responder calls
+// Backend.SignOCSP.
 
 func (m *MockCAServer) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error) {
 	if m.Err != nil {

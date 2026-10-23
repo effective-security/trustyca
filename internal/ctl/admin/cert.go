@@ -36,7 +36,7 @@ func (a *CertListCmd) Run(app App) error {
 	if err != nil {
 		return err
 	}
-	res, err := client.ListCertificates(app.Context(), &privpb.ListCertificatesRequest{
+	res, err := client.ListCertificates(app.Context(), &privpb.ListAllCertificatesRequest{
 		OrgID:          a.Org,
 		ProjectID:      a.Project,
 		Platform:       a.Platform,
@@ -98,11 +98,11 @@ func (a *CertGetCmd) Run(app App) error {
 	if err != nil {
 		return err
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.GetCertificate(app.Context(), &pb.GetCertificateRequest{
+	res, err := client.GetCertificate(app.Context(), &privpb.GetCertificateRequest{
 		OrgID:        a.Org,
 		ID:           a.ID,
 		SKID:         a.SKID,
@@ -138,11 +138,11 @@ func (a *CertRevokeCmd) Run(app App) error {
 			return errors.Errorf("invalid reason: %s", a.Reason)
 		}
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.RevokeCertificate(app.Context(), &pb.RevokeCertificateRequest{
+	res, err := client.RevokeCertificate(app.Context(), &privpb.RevokeCertificateRequest{
 		OrgID:        a.Org,
 		ProjectID:    a.Project,
 		ID:           a.ID,

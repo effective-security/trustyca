@@ -22,7 +22,7 @@ const defaultListLimit = 100
 // GetRoots returns the published trust anchors, newest first: of the
 // platform when the request names no org, else of the org. An unknown org
 // has none.
-func (s *Service) GetRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.RootsResponse, error) {
+func (s *Service) GetRoots(ctx context.Context, req *pb.GetRootsRequest) (*pb.RootsResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}

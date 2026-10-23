@@ -346,7 +346,7 @@ func (s *postproxyCAClient) ListRoots(ctx context.Context, req *pb.ListRootsRequ
 }
 
 // RegisterProfile creates or replaces a certificate profile, keyed by
-// (OrgID, ProjectID, Label)
+// (org, ProjectID, Label)
 func (s *proxyCAServer) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRequest, opts ...grpc.CallOption) (*pb.CertProfile, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -358,7 +358,7 @@ func (s *proxyCAServer) RegisterProfile(ctx context.Context, req *pb.RegisterPro
 }
 
 // RegisterProfile creates or replaces a certificate profile, keyed by
-// (OrgID, ProjectID, Label)
+// (org, ProjectID, Label)
 func (s *proxyCAClient) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRequest) (*pb.CertProfile, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -370,7 +370,7 @@ func (s *proxyCAClient) RegisterProfile(ctx context.Context, req *pb.RegisterPro
 }
 
 // RegisterProfile creates or replaces a certificate profile, keyed by
-// (OrgID, ProjectID, Label)
+// (org, ProjectID, Label)
 func (s *postproxyCAClient) RegisterProfile(ctx context.Context, req *pb.RegisterProfileRequest) (*pb.CertProfile, error) {
 	var res pb.CertProfile
 	path := pb.CA_RegisterProfile_FullMethodName
@@ -759,7 +759,8 @@ func (s *postproxyCAClient) PublishCrls(ctx context.Context, req *pb.PublishCrls
 	return &res, nil
 }
 
-// SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
+// SignOCSP signs an OCSP response; the AIA OCSP responder calls
+// Backend.SignOCSP.
 func (s *proxyCAServer) SignOCSP(ctx context.Context, req *pb.OCSPRequest, opts ...grpc.CallOption) (*pb.OCSPResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -770,7 +771,8 @@ func (s *proxyCAServer) SignOCSP(ctx context.Context, req *pb.OCSPRequest, opts 
 	return res, nil
 }
 
-// SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
+// SignOCSP signs an OCSP response; the AIA OCSP responder calls
+// Backend.SignOCSP.
 func (s *proxyCAClient) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -781,7 +783,8 @@ func (s *proxyCAClient) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.
 	return res, nil
 }
 
-// SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
+// SignOCSP signs an OCSP response; the AIA OCSP responder calls
+// Backend.SignOCSP.
 func (s *postproxyCAClient) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error) {
 	var res pb.OCSPResponse
 	path := pb.CA_SignOCSP_FullMethodName

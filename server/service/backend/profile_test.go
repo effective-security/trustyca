@@ -1,9 +1,11 @@
-package ca
+package backend
 
 import (
 	"context"
 	"strings"
 	"testing"
+
+	"github.com/effective-security/trustyca/privpb"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
@@ -35,8 +37,8 @@ func TestService_RegisterProfile(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
 	ctx := testCtx("42", "1")
-	valid := func() *pb.RegisterProfileRequest {
-		return &pb.RegisterProfileRequest{
+	valid := func() *privpb.RegisterProfileRequest {
+		return &privpb.RegisterProfileRequest{
 			ProjectID: "201",
 			Profile:   peerProfileDef("server", testIssuerLabel, "24h"),
 		}
@@ -44,7 +46,7 @@ func TestService_RegisterProfile(t *testing.T) {
 
 	_, err := svc.RegisterProfile(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing profile")
-	_, err = svc.RegisterProfile(ctx, &pb.RegisterProfileRequest{})
+	_, err = svc.RegisterProfile(ctx, &privpb.RegisterProfileRequest{})
 	assert.EqualError(t, err, "bad_request: missing profile")
 	req := valid()
 	req.Profile.Label = " "
@@ -106,7 +108,7 @@ func TestService_RegisterProfile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, tca.peer.ID.UInt64(), before.ProfileRow.ID.UInt64())
 	storeProfile(tca, nil)
-	_, err = svc.RegisterProfile(ctx, &pb.RegisterProfileRequest{ProjectID: "201", Profile: peerProfileDef(testProfile, testIssuerLabel, "1h")})
+	_, err = svc.RegisterProfile(ctx, &privpb.RegisterProfileRequest{ProjectID: "201", Profile: peerProfileDef(testProfile, testIssuerLabel, "1h")})
 	require.NoError(t, err)
 	after, err := tca.registry.Resolve(tca.ctx, &core.ResolveRequest{OrgID: testOrgID(), ProjectID: testProject.ID, Profile: testProfile})
 	require.NoError(t, err)
@@ -130,39 +132,39 @@ func TestService_GetProfile(t *testing.T) {
 
 	_, err := svc.GetProfile(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = svc.GetProfile(ctx, &pb.GetProfileRequest{})
+	_, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{})
 	assert.EqualError(t, err, "bad_request: profile ID or label is required")
-	_, err = svc.GetProfile(testCtx("42", ""), &pb.GetProfileRequest{Label: testProfile})
+	_, err = svc.GetProfile(testCtx("42", ""), &privpb.GetProfileRequest{Label: testProfile})
 	assert.EqualError(t, err, "forbidden: org not selected")
 
-	res, err := svc.GetProfile(ctx, &pb.GetProfileRequest{ID: tca.peer.ID.String()})
+	res, err := svc.GetProfile(ctx, &privpb.GetProfileRequest{ID: tca.peer.ID.String()})
 	require.NoError(t, err)
 	assert.Equal(t, testProfile, res.Label)
 	assert.Equal(t, testIssuerLabel, res.IssuerLabel)
 	assert.Equal(t, "168h", res.Expiry)
 	assert.Equal(t, "1", res.OrgID)
-	_, err = svc.GetProfile(ctx, &pb.GetProfileRequest{ID: "bad"})
+	_, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{ID: "bad"})
 	assert.EqualError(t, err, "bad_request: invalid profile ID")
-	_, err = svc.GetProfile(ctx, &pb.GetProfileRequest{ID: "9999"})
+	_, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{ID: "9999"})
 	assert.EqualError(t, err, "not_found: profile not found")
-	_, err = svc.GetProfile(ctx, &pb.GetProfileRequest{ID: org2Peer.ID.String()})
+	_, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{ID: org2Peer.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found", "a profile of another org")
-	_, err = svc.GetProfile(ctx, &pb.GetProfileRequest{ID: platform.ID.String()})
+	_, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{ID: platform.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found", "a platform profile")
 
-	res, err = svc.GetProfile(ctx, &pb.GetProfileRequest{Label: testProfile, ProjectID: "201"})
+	res, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{Label: testProfile, ProjectID: "201"})
 	require.NoError(t, err)
 	assert.Equal(t, tca.peer.ID.String(), res.ID, "the org profile serves the project")
 	projectPeer := tca.addProfile(testOrgID(), testProject.ID, peerProfileDef(testProfile, testIssuerLabel, "1h"))
-	res, err = svc.GetProfile(ctx, &pb.GetProfileRequest{Label: testProfile, ProjectID: "201"})
+	res, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{Label: testProfile, ProjectID: "201"})
 	require.NoError(t, err)
 	assert.Equal(t, projectPeer.ID.String(), res.ID)
-	res, err = svc.GetProfile(ctx, &pb.GetProfileRequest{Label: testProfile})
+	res, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{Label: testProfile})
 	require.NoError(t, err)
 	assert.Equal(t, tca.peer.ID.String(), res.ID)
-	_, err = svc.GetProfile(ctx, &pb.GetProfileRequest{Label: "nope"})
+	_, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{Label: "nope"})
 	assert.EqualError(t, err, "not_found: profile not found: nope")
-	_, err = svc.GetProfile(ctx, &pb.GetProfileRequest{Label: testProfile, ProjectID: "301"})
+	_, err = svc.GetProfile(ctx, &privpb.GetProfileRequest{Label: testProfile, ProjectID: "301"})
 	assert.EqualError(t, err, "not_found: project not found")
 }
 
@@ -180,26 +182,26 @@ func TestService_ProfileProjectAccess(t *testing.T) {
 
 	// a member with a grant in one project reads the org-wide profiles and
 	// those of its project; a profile of another project is not found
-	res, err := svc.GetProfile(viewer, &pb.GetProfileRequest{ID: tca.peer.ID.String()})
+	res, err := svc.GetProfile(viewer, &privpb.GetProfileRequest{ID: tca.peer.ID.String()})
 	require.NoError(t, err)
 	assert.Equal(t, testProfile, res.Label)
-	res, err = svc.GetProfile(viewer, &pb.GetProfileRequest{ID: projectPeer.ID.String()})
+	res, err = svc.GetProfile(viewer, &privpb.GetProfileRequest{ID: projectPeer.ID.String()})
 	require.NoError(t, err)
 	assert.Equal(t, "201", res.ProjectID)
-	_, err = svc.GetProfile(viewer, &pb.GetProfileRequest{ID: siblingPeer.ID.String()})
+	_, err = svc.GetProfile(viewer, &privpb.GetProfileRequest{ID: siblingPeer.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found")
-	_, err = svc.GetProfile(viewer, &pb.GetProfileRequest{ID: gonePeer.ID.String()})
+	_, err = svc.GetProfile(viewer, &privpb.GetProfileRequest{ID: gonePeer.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found")
-	_, err = svc.GetProfile(admin, &pb.GetProfileRequest{ID: siblingPeer.ID.String()})
+	_, err = svc.GetProfile(admin, &privpb.GetProfileRequest{ID: siblingPeer.ID.String()})
 	require.NoError(t, err)
-	_, err = svc.GetProfile(testCtx(strangerUser, "1"), &pb.GetProfileRequest{ID: tca.peer.ID.String()})
+	_, err = svc.GetProfile(testCtx(strangerUser, "1"), &privpb.GetProfileRequest{ID: tca.peer.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found")
 	key := apiKeyCtx("1", "201")
-	_, err = svc.GetProfile(key, &pb.GetProfileRequest{ID: tca.peer.ID.String()})
+	_, err = svc.GetProfile(key, &privpb.GetProfileRequest{ID: tca.peer.ID.String()})
 	require.NoError(t, err)
-	_, err = svc.GetProfile(key, &pb.GetProfileRequest{ID: siblingPeer.ID.String()})
+	_, err = svc.GetProfile(key, &privpb.GetProfileRequest{ID: siblingPeer.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found")
-	_, err = svc.GetProfile(apiKeyCtx("1", ""), &pb.GetProfileRequest{ID: siblingPeer.ID.String()})
+	_, err = svc.GetProfile(apiKeyCtx("1", ""), &privpb.GetProfileRequest{ID: siblingPeer.ID.String()})
 	require.NoError(t, err)
 
 	// a list without a project covers the org-wide profiles and the
@@ -209,7 +211,7 @@ func TestService_ProfileProjectAccess(t *testing.T) {
 		ProjectIDs: []uint64{201},
 		Limit:      defaultListLimit,
 	}).Return(&model.CertificateProfileResult{Rows: []*model.CertificateProfile{tca.peer, projectPeer}}, nil)
-	list, err := svc.ListProfiles(viewer, &pb.ListProfilesRequest{})
+	list, err := svc.ListProfiles(viewer, &privpb.ListProfilesRequest{})
 	require.NoError(t, err)
 	assert.Len(t, list.Profiles, 2)
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
@@ -217,32 +219,32 @@ func TestService_ProfileProjectAccess(t *testing.T) {
 		ProjectID: 201,
 		Limit:     defaultListLimit,
 	}).Return(&model.CertificateProfileResult{}, nil)
-	_, err = svc.ListProfiles(viewer, &pb.ListProfilesRequest{ProjectID: "201"})
+	_, err = svc.ListProfiles(viewer, &privpb.ListProfilesRequest{ProjectID: "201"})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
 		OrgID:      1,
 		ProjectIDs: []uint64{},
 		Limit:      defaultListLimit,
 	}).Return(&model.CertificateProfileResult{}, nil)
-	_, err = svc.ListProfiles(testCtx(strangerUser, "1"), &pb.ListProfilesRequest{})
+	_, err = svc.ListProfiles(testCtx(strangerUser, "1"), &privpb.ListProfilesRequest{})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
 		OrgID: 1,
 		Limit: defaultListLimit,
 	}).Return(&model.CertificateProfileResult{}, nil)
-	_, err = svc.ListProfiles(apiKeyCtx("1", ""), &pb.ListProfilesRequest{})
+	_, err = svc.ListProfiles(apiKeyCtx("1", ""), &privpb.ListProfilesRequest{})
 	require.NoError(t, err)
 
 	// a project Admin deletes the profiles of its project only
 	projectAdmin := testCtx(projectAdminUser, "1")
-	_, err = svc.DeleteProfile(projectAdmin, &pb.DeleteProfileRequest{ID: tca.peer.ID.String()})
+	_, err = svc.DeleteProfile(projectAdmin, &privpb.DeleteProfileRequest{ID: tca.peer.ID.String()})
 	assert.EqualError(t, err, "forbidden: access denied")
-	_, err = svc.DeleteProfile(projectAdmin, &pb.DeleteProfileRequest{ID: siblingPeer.ID.String()})
+	_, err = svc.DeleteProfile(projectAdmin, &privpb.DeleteProfileRequest{ID: siblingPeer.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found")
-	_, err = svc.DeleteProfile(viewer, &pb.DeleteProfileRequest{ID: projectPeer.ID.String()})
+	_, err = svc.DeleteProfile(viewer, &privpb.DeleteProfileRequest{ID: projectPeer.ID.String()})
 	assert.EqualError(t, err, "forbidden: access denied")
 	tca.cadb.EXPECT().DeleteProfile(gomock.Any(), uint64(1), projectPeer.ID.UInt64()).DoAndReturn(tca.rows.deleteProfile)
-	_, err = svc.DeleteProfile(projectAdmin, &pb.DeleteProfileRequest{ID: projectPeer.ID.String()})
+	_, err = svc.DeleteProfile(projectAdmin, &privpb.DeleteProfileRequest{ID: projectPeer.ID.String()})
 	require.NoError(t, err)
 }
 
@@ -256,9 +258,9 @@ func TestService_ListProfiles(t *testing.T) {
 
 	_, err := svc.ListProfiles(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = svc.ListProfiles(testCtx("42", ""), &pb.ListProfilesRequest{})
+	_, err = svc.ListProfiles(testCtx("42", ""), &privpb.ListProfilesRequest{})
 	assert.EqualError(t, err, "forbidden: org not selected")
-	_, err = svc.ListProfiles(ctx, &pb.ListProfilesRequest{Cursor: "zzz"})
+	_, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{Cursor: "zzz"})
 	assert.EqualError(t, err, "bad_request: invalid cursor")
 
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
@@ -270,7 +272,7 @@ func TestService_ListProfiles(t *testing.T) {
 		HasNextPage: true,
 		Cursor:      "next",
 	}, nil)
-	res, err := svc.ListProfiles(ctx, &pb.ListProfilesRequest{IssuerLabel: testIssuerLabel})
+	res, err := svc.ListProfiles(ctx, &privpb.ListProfilesRequest{IssuerLabel: testIssuerLabel})
 	require.NoError(t, err)
 	require.Len(t, res.Profiles, 1)
 	assert.Equal(t, testProfile, res.Profiles[0].Label)
@@ -284,12 +286,12 @@ func TestService_ListProfiles(t *testing.T) {
 		Limit:     5,
 		Offset:    10,
 	}).Return(&model.CertificateProfileResult{}, nil)
-	res, err = svc.ListProfiles(ctx, &pb.ListProfilesRequest{ProjectID: "201", Limit: 5, Offset: 10})
+	res, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{ProjectID: "201", Limit: 5, Offset: 10})
 	require.NoError(t, err)
 	assert.Empty(t, res.Profiles)
 
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
-	_, err = svc.ListProfiles(ctx, &pb.ListProfilesRequest{})
+	_, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list profiles")
 }
 
@@ -304,18 +306,18 @@ func TestService_DeleteProfile(t *testing.T) {
 
 	_, err := svc.DeleteProfile(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{})
+	_, err = svc.DeleteProfile(ctx, &privpb.DeleteProfileRequest{})
 	assert.EqualError(t, err, "bad_request: missing profile ID")
-	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{ID: "9999"})
+	_, err = svc.DeleteProfile(ctx, &privpb.DeleteProfileRequest{ID: "9999"})
 	assert.EqualError(t, err, "not_found: profile not found")
-	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{ID: org2Peer.ID.String()})
+	_, err = svc.DeleteProfile(ctx, &privpb.DeleteProfileRequest{ID: org2Peer.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found", "a profile of another org")
 
 	// the profile resolves until it is deleted
 	_, err = tca.registry.Resolve(tca.ctx, &core.ResolveRequest{OrgID: testOrgID(), Profile: testProfile})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().DeleteProfile(gomock.Any(), uint64(1), tca.peer.ID.UInt64()).DoAndReturn(tca.rows.deleteProfile)
-	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{ID: tca.peer.ID.String()})
+	_, err = svc.DeleteProfile(ctx, &privpb.DeleteProfileRequest{ID: tca.peer.ID.String()})
 	require.NoError(t, err)
 	evt := tca.events.last(pb.EventType_ProfileDeleted)
 	require.NotNil(t, evt)
@@ -327,9 +329,9 @@ func TestService_DeleteProfile(t *testing.T) {
 	// a row that is gone by the time of the delete
 	other := tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("other", testIssuerLabel, "1h"))
 	tca.cadb.EXPECT().DeleteProfile(gomock.Any(), uint64(1), other.ID.UInt64()).Return(int64(0), nil)
-	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{ID: other.ID.String()})
+	_, err = svc.DeleteProfile(ctx, &privpb.DeleteProfileRequest{ID: other.ID.String()})
 	assert.EqualError(t, err, "not_found: profile not found")
 	tca.cadb.EXPECT().DeleteProfile(gomock.Any(), uint64(1), other.ID.UInt64()).Return(int64(0), errors.New("db down"))
-	_, err = svc.DeleteProfile(ctx, &pb.DeleteProfileRequest{ID: other.ID.String()})
+	_, err = svc.DeleteProfile(ctx, &privpb.DeleteProfileRequest{ID: other.ID.String()})
 	assert.EqualError(t, err, "unexpected: failed to delete profile")
 }

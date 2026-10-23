@@ -9,58 +9,328 @@ import (
 
 	"github.com/effective-security/protoc-gen-go/api"
 	pb "github.com/effective-security/trustyca/api/pb"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var ActivateIssuerRequest_MessageDescription = &api.MessageDescription{
-	Name:     "ActivateIssuerRequest",
-	Display:  "Activate Issuer Request",
-	FullName: "pb.ActivateIssuerRequest",
-	Documentation: `ActivateIssuerRequest specifies the externally signed certificate for a
-Pending issuer`,
+var Empty_MessageDescription = &api.MessageDescription{
+	Name:     "Empty",
+	FullName: "google.protobuf.Empty",
+	Documentation: `A generic empty message that you can re-use to avoid defining duplicated
+empty messages in your APIs. A typical example is to use it as the request
+or the response type of an API method. For instance:
+service Foo {
+rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
+}`,
+	Fields: []*api.FieldMeta{},
+}
+
+var CAConstraint_MessageDescription = &api.MessageDescription{
+	Name:     "CAConstraint",
+	Display:  "CA Constraint",
+	FullName: "pb.CAConstraint",
+	Documentation: `CAConstraint specifies various CA constraints on the signed certificate.
+CAConstraint would verify against (and override) the CA
+extensions in the given CSR.`,
 	Fields: []*api.FieldMeta{
 		{
+			Name:          "IsCA",
+			FullName:      "pb.CAConstraint.IsCA",
+			Display:       "Is CA",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "MaxPathLen",
+			FullName:      "pb.CAConstraint.MaxPathLen",
+			Display:       "Max Path Len",
+			Type:          "int32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+	},
+}
+
+var CSRAllowedFields_MessageDescription = &api.MessageDescription{
+	Name:          "CSRAllowedFields",
+	Display:       "CSR Allowed Fields",
+	FullName:      "pb.CSRAllowedFields",
+	Documentation: `CSRAllowedFields specifies which fields may be copied from a CSR`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Subject",
+			FullName:      "pb.CSRAllowedFields.Subject",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "Dns",
+			FullName:      "pb.CSRAllowedFields.Dns",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "Ip",
+			FullName:      "pb.CSRAllowedFields.Ip",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "Email",
+			FullName:      "pb.CSRAllowedFields.Email",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "Uri",
+			FullName:      "pb.CSRAllowedFields.Uri",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+	},
+}
+
+var CertProfile_MessageDescription = &api.MessageDescription{
+	Name:     "CertProfile",
+	Display:  "Cert Profile",
+	FullName: "pb.CertProfile",
+	Documentation: `CertProfile provides certificate profile.
+The shape matches the YAML profiles in ca-config files.`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "ID",
+			FullName:      "pb.CertProfile.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ID of the profile; empty for profiles loaded from files`,
+		},
+		{
 			Name:          "OrgID",
-			FullName:      "pb.ActivateIssuerRequest.OrgID",
+			FullName:      "pb.CertProfile.OrgID",
 			Display:       "Org ID",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
+			Documentation: `OrgID of the owning org; empty for platform profiles`,
 		},
 		{
-			Name:          "ID",
-			FullName:      "pb.ActivateIssuerRequest.ID",
+			Name:          "ProjectID",
+			FullName:      "pb.CertProfile.ProjectID",
+			Display:       "Project ID",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `ID of the Pending issuer`,
+			Documentation: `ProjectID of the owning project; empty for org-wide profiles`,
 		},
 		{
-			Name:          "Certificate",
-			FullName:      "pb.ActivateIssuerRequest.Certificate",
+			Name:          "Label",
+			FullName:      "pb.CertProfile.Label",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `Certificate provides the issuer certificate in PEM format`,
+			Documentation: `Label is the profile name, unique per (Org, Project)`,
 		},
 		{
-			Name:          "Intermediates",
-			FullName:      "pb.ActivateIssuerRequest.Intermediates",
+			Name:          "IssuerLabel",
+			FullName:      "pb.CertProfile.IssuerLabel",
+			Display:       "Issuer Label",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Intermediates provides the intermediate CA certificates in PEM format`,
+			Documentation: `IssuerLabel binds the profile to an issuer of the same org.
+"*" allows any issuer that lists the profile in AllowedProfiles.`,
 		},
 		{
-			Name:          "Root",
-			FullName:      "pb.ActivateIssuerRequest.Root",
+			Name:          "Description",
+			FullName:      "pb.CertProfile.Description",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Root provides the Root CA certificate in PEM format`,
+			Documentation: `Description of the profile`,
+		},
+		{
+			Name:          "Usages",
+			FullName:      "pb.CertProfile.Usages",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Usages provides a list of key usages and extended key usages`,
+		},
+		{
+			Name:          "CAConstraint",
+			FullName:      "pb.CertProfile.CAConstraint",
+			Display:       "CA Constraint",
+			Type:          "struct",
+			StructName:    "pb.CAConstraint",
+			SearchType:    "flat_object",
+			Documentation: `CAConstraint specifies the basic constraints for CA certificates`,
+		},
+		{
+			Name:          "OcspNoCheck",
+			FullName:      "pb.CertProfile.OcspNoCheck",
+			Display:       "Ocsp No Check",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `OcspNoCheck specifies to add id-pkix-ocsp-nocheck extension`,
+		},
+		{
+			Name:          "Expiry",
+			FullName:      "pb.CertProfile.Expiry",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Expiry specifies the validity duration, e.g. 168h`,
+		},
+		{
+			Name:          "Backdate",
+			FullName:      "pb.CertProfile.Backdate",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Backdate specifies the NotBefore backdate duration, e.g. 30m`,
+		},
+		{
+			Name:          "Extensions",
+			FullName:      "pb.CertProfile.Extensions",
+			Type:          "[]struct",
+			StructName:    "pb.X509Extension",
+			SearchType:    "flat_object",
+			Documentation: `Extensions specifies extensions to always add to the certificate`,
+		},
+		{
+			Name:          "AllowedExtensions",
+			FullName:      "pb.CertProfile.AllowedExtensions",
+			Display:       "Allowed Extensions",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `AllowedExtensions specifies OIDs of extensions allowed from the request`,
+		},
+		{
+			Name:          "AllowedNames",
+			FullName:      "pb.CertProfile.AllowedNames",
+			Display:       "Allowed Names",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `AllowedNames specifies a RegExp to check for allowed names.
+If not provided, then all values are allowed`,
+		},
+		{
+			Name:          "AllowedDns",
+			FullName:      "pb.CertProfile.AllowedDns",
+			Display:       "Allowed Dns",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `AllowedDns specifies a RegExp to check for allowed DNS.
+If not provided, then all values are allowed`,
+		},
+		{
+			Name:          "AllowedEmail",
+			FullName:      "pb.CertProfile.AllowedEmail",
+			Display:       "Allowed Email",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `AllowedEmail specifies a RegExp to check for allowed email.
+If not provided, then all values are allowed`,
+		},
+		{
+			Name:          "AllowedUri",
+			FullName:      "pb.CertProfile.AllowedUri",
+			Display:       "Allowed Uri",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `AllowedUri specifies a RegExp to check for allowed URI.
+If not provided, then all values are allowed`,
+		},
+		{
+			Name:       "AllowedFields",
+			FullName:   "pb.CertProfile.AllowedFields",
+			Display:    "Allowed Fields",
+			Type:       "struct",
+			StructName: "pb.CSRAllowedFields",
+			SearchType: "flat_object",
+			Documentation: `AllowedFields provides booleans for fields in the CSR.
+If AllowedFields is not present in a CertProfile,
+all of these fields may be copied from the CSR into the signed
+certificate. If AllowedFields *is* present in a CertProfile, only those
+fields with a 'true' value in the AllowedFields may be copied from the
+CSR to the signed certificate. Note that some of these fields, like
+Subject, can be provided or partially provided through the API. Since API
+clients are expected to be trusted, but CSRs are not, fields provided
+through the API are not subject to validation through this mechanism.`,
+		},
+		{
+			Name:          "Policies",
+			FullName:      "pb.CertProfile.Policies",
+			Type:          "[]struct",
+			StructName:    "pb.CertificatePolicy",
+			SearchType:    "flat_object",
+			Documentation: `Policies specifies Certificate Policies to include`,
+		},
+		{
+			Name:          "PoliciesCritical",
+			FullName:      "pb.CertProfile.PoliciesCritical",
+			Display:       "Policies Critical",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `PoliciesCritical specifies to mark Policies as Critical extension`,
+		},
+		{
+			Name:          "AllowedRoles",
+			FullName:      "pb.CertProfile.AllowedRoles",
+			Display:       "Allowed Roles",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `AllowedRoles specifies caller roles allowed to request the profile`,
+		},
+		{
+			Name:          "DeniedRoles",
+			FullName:      "pb.CertProfile.DeniedRoles",
+			Display:       "Denied Roles",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `DeniedRoles specifies caller roles denied to request the profile`,
+		},
+		{
+			Name:            "Status",
+			FullName:        "pb.CertProfile.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.ItemStatus_Enum_EnumDescription,
+			Documentation:   `Status of the profile`,
+		},
+		{
+			Name:          "CreatedAt",
+			FullName:      "pb.CertProfile.CreatedAt",
+			Display:       "Created At",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `CreatedAt in RFC3339 format`,
+		},
+		{
+			Name:          "UpdatedAt",
+			FullName:      "pb.CertProfile.UpdatedAt",
+			Display:       "Updated At",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `UpdatedAt in RFC3339 format`,
 		},
 	},
 }
@@ -258,6 +528,54 @@ var Certificate_MetadataEntry_MessageDescription = &api.MessageDescription{
 	},
 }
 
+var CertificatePolicy_MessageDescription = &api.MessageDescription{
+	Name:          "CertificatePolicy",
+	Display:       "Certificate Policy",
+	FullName:      "pb.CertificatePolicy",
+	Documentation: `CertificatePolicy specifies a Certificate Policy extension entry`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "ID",
+			FullName:      "pb.CertificatePolicy.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ID is OID of Certificate Policy`,
+		},
+		{
+			Name:       "Qualifiers",
+			FullName:   "pb.CertificatePolicy.Qualifiers",
+			Type:       "[]struct",
+			StructName: "pb.CertificatePolicyQualifier",
+			SearchType: "flat_object",
+		},
+	},
+}
+
+var CertificatePolicyQualifier_MessageDescription = &api.MessageDescription{
+	Name:     "CertificatePolicyQualifier",
+	Display:  "Certificate Policy Qualifier",
+	FullName: "pb.CertificatePolicyQualifier",
+	Documentation: `CertificatePolicyQualifier specifies a policy qualifier: id-qt-cps or
+id-qt-unotice`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Type",
+			FullName:      "pb.CertificatePolicyQualifier.Type",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "Value",
+			FullName:      "pb.CertificatePolicyQualifier.Value",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+	},
+}
+
 var CertificateResponse_MessageDescription = &api.MessageDescription{
 	Name:          "CertificateResponse",
 	Display:       "Certificate Response",
@@ -392,6 +710,22 @@ var Crl_MessageDescription = &api.MessageDescription{
 	},
 }
 
+var CrlResponse_MessageDescription = &api.MessageDescription{
+	Name:          "CrlResponse",
+	Display:       "Crl Response",
+	FullName:      "pb.CrlResponse",
+	Documentation: `CrlResponse returns CRL`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:       "Crl",
+			FullName:   "pb.CrlResponse.Crl",
+			Type:       "struct",
+			StructName: "pb.Crl",
+			SearchType: "flat_object",
+		},
+	},
+}
+
 var CrlsResponse_MessageDescription = &api.MessageDescription{
 	Name:          "CrlsResponse",
 	Display:       "Crls Response",
@@ -404,109 +738,6 @@ var CrlsResponse_MessageDescription = &api.MessageDescription{
 			Type:       "[]struct",
 			StructName: "pb.Crl",
 			SearchType: "flat_object",
-		},
-	},
-}
-
-var ImportIssuerRequest_MessageDescription = &api.MessageDescription{
-	Name:          "ImportIssuerRequest",
-	Display:       "Import Issuer Request",
-	FullName:      "pb.ImportIssuerRequest",
-	Documentation: `ImportIssuerRequest specifies a request to import an existing issuer`,
-	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.ImportIssuerRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
-			Name:          "ProjectID",
-			FullName:      "pb.ImportIssuerRequest.ProjectID",
-			Display:       "Project ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `ProjectID of the owning project; empty for an org-wide issuer`,
-		},
-		{
-			Name:          "Label",
-			FullName:      "pb.ImportIssuerRequest.Label",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Max:           64,
-			Documentation: `Label of the issuer, unique per (Org, Project)`,
-		},
-		{
-			Name:            "Type",
-			FullName:        "pb.ImportIssuerRequest.Type",
-			Type:            "int32",
-			SearchType:      "integer",
-			SearchOptions:   api.SearchOption_Sortable,
-			EnumDescription: pb.AuthorityType_Enum_EnumDescription,
-			Required:        true,
-			Documentation:   `Type of the authority`,
-		},
-		{
-			Name:          "Certificate",
-			FullName:      "pb.ImportIssuerRequest.Certificate",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `Certificate provides the issuer certificate in PEM format`,
-		},
-		{
-			Name:          "Intermediates",
-			FullName:      "pb.ImportIssuerRequest.Intermediates",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Intermediates provides the intermediate CA certificates in PEM format`,
-		},
-		{
-			Name:          "Root",
-			FullName:      "pb.ImportIssuerRequest.Root",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Root provides the Root CA certificate in PEM format`,
-		},
-		{
-			Name:          "KeyURI",
-			FullName:      "pb.ImportIssuerRequest.KeyURI",
-			Display:       "Key URI",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			RequiredOr:    []string{"KeyPem"},
-			Documentation: `KeyURI references an existing key in a crypto provider,
-e.g. awskms://..., gcpkms://..., pkcs11:...`,
-		},
-		{
-			Name:          "KeyPem",
-			FullName:      "pb.ImportIssuerRequest.KeyPem",
-			Display:       "Key Pem",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			RequiredOr:    []string{"KeyURI"},
-			Documentation: `KeyPem provides the private key in PEM format.
-It is stored protected by the data protection provider.`,
-		},
-		{
-			Name:          "Config",
-			FullName:      "pb.ImportIssuerRequest.Config",
-			Type:          "struct",
-			StructName:    "pb.IssuerConfig",
-			SearchType:    "flat_object",
-			Documentation: `Config provides runtime settings`,
 		},
 	},
 }
@@ -829,6 +1060,32 @@ instead of failing the request`,
 	},
 }
 
+var IssuerSerial_MessageDescription = &api.MessageDescription{
+	Name:          "IssuerSerial",
+	Display:       "Issuer Serial",
+	FullName:      "pb.IssuerSerial",
+	Documentation: `IssuerSerial identifies a certificate by its issuer and serial number`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "IKID",
+			FullName:      "pb.IssuerSerial.IKID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IKID provides Issuer Key Identifier`,
+		},
+		{
+			Name:          "SerialNumber",
+			FullName:      "pb.IssuerSerial.SerialNumber",
+			Display:       "Serial Number",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `SerialNumber provides certificate's serial number`,
+		},
+	},
+}
+
 var IssuersResponse_MessageDescription = &api.MessageDescription{
 	Name:          "IssuersResponse",
 	Display:       "Issuers Response",
@@ -1021,6 +1278,32 @@ fetch. If there are no more pages to fetch, NextPage will be empty.`,
 	},
 }
 
+var ProfilesResponse_MessageDescription = &api.MessageDescription{
+	Name:          "ProfilesResponse",
+	Display:       "Profiles Response",
+	FullName:      "pb.ProfilesResponse",
+	Documentation: `ProfilesResponse returns list of profiles`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:       "Profiles",
+			FullName:   "pb.ProfilesResponse.Profiles",
+			Type:       "[]struct",
+			StructName: "pb.CertProfile",
+			SearchType: "flat_object",
+		},
+		{
+			Name:       "NextPage",
+			FullName:   "pb.ProfilesResponse.NextPage",
+			Display:    "Next Page",
+			Type:       "struct",
+			StructName: "pb.NextPage",
+			SearchType: "flat_object",
+			Documentation: `NextPage specifies pagination information, if there are more pages to
+fetch. If there are no more pages to fetch, NextPage will be empty.`,
+		},
+	},
+}
+
 var Project_MessageDescription = &api.MessageDescription{
 	Name:          "Project",
 	FullName:      "pb.Project",
@@ -1117,366 +1400,210 @@ fetch. If there are no more pages to fetch, NextPage will be empty.`,
 	},
 }
 
-var PublishCrlsRequest_MessageDescription = &api.MessageDescription{
-	Name:          "PublishCrlsRequest",
-	Display:       "Publish Crls Request",
-	FullName:      "pb.PublishCrlsRequest",
-	Documentation: `PublishCrlsRequest allows to publish CRLs on demand`,
+var RevokedCertificate_MessageDescription = &api.MessageDescription{
+	Name:          "RevokedCertificate",
+	Display:       "Revoked Certificate",
+	FullName:      "pb.RevokedCertificate",
+	Documentation: `RevokedCertificate provides revoked X509 Certificate information`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.PublishCrlsRequest.OrgID",
-			Display:       "Org ID",
+			Name:          "Certificate",
+			FullName:      "pb.RevokedCertificate.Certificate",
+			Type:          "struct",
+			StructName:    "pb.Certificate",
+			SearchType:    "flat_object",
+			Documentation: `Certificate provides the revoked certificate`,
+		},
+		{
+			Name:          "RevokedAt",
+			FullName:      "pb.RevokedCertificate.RevokedAt",
+			Display:       "Revoked At",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `OrgID of the owning org; empty for all orgs`,
+			Documentation: `RevokedAt is the revocation time in RFC3339 format`,
 		},
 		{
-			Name:          "ProjectID",
-			FullName:      "pb.PublishCrlsRequest.ProjectID",
-			Display:       "Project ID",
+			Name:            "Reason",
+			FullName:        "pb.RevokedCertificate.Reason",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.ReasonCode_Enum_EnumDescription,
+			Documentation:   `Reason of the revocation`,
+		},
+		{
+			Name:          "ReasonText",
+			FullName:      "pb.RevokedCertificate.ReasonText",
+			Display:       "Reason Text",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `ProjectID limits the scope to the project: the issuer of the IKID
-must belong to it, and without an IKID the issuers of the project
-publish. Empty publishes for the org-wide issuers and the projects the
-caller may read; a project Admin names the project, and an API key
-restricted to a project publishes for its project.`,
-		},
-		{
-			Name:          "IKID",
-			FullName:      "pb.PublishCrlsRequest.IKID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `IKID specifies Issuer Key ID; empty to publish for all issuers in scope`,
-		},
-		{
-			Name:          "Force",
-			FullName:      "pb.PublishCrlsRequest.Force",
-			Type:          "bool",
-			SearchType:    "boolean",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Force specifies to publish even if the current CRL is not due for renewal`,
+			Documentation: `ReasonText provides optional free-form revocation note`,
 		},
 	},
 }
 
-var RegisterIssuerRequest_MessageDescription = &api.MessageDescription{
-	Name:          "RegisterIssuerRequest",
-	Display:       "Register Issuer Request",
-	FullName:      "pb.RegisterIssuerRequest",
-	Documentation: `RegisterIssuerRequest specifies a request to create a new issuer`,
+var RevokedCertificateResponse_MessageDescription = &api.MessageDescription{
+	Name:          "RevokedCertificateResponse",
+	Display:       "Revoked Certificate Response",
+	FullName:      "pb.RevokedCertificateResponse",
+	Documentation: `RevokedCertificateResponse returns Revoked Certificate`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.RegisterIssuerRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
-			Name:          "ProjectID",
-			FullName:      "pb.RegisterIssuerRequest.ProjectID",
-			Display:       "Project ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `ProjectID of the owning project; empty for an org-wide issuer`,
-		},
-		{
-			Name:          "Label",
-			FullName:      "pb.RegisterIssuerRequest.Label",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Max:           64,
-			Documentation: `Label of the issuer, unique per (Org, Project)`,
-		},
-		{
-			Name:            "Type",
-			FullName:        "pb.RegisterIssuerRequest.Type",
-			Type:            "int32",
-			SearchType:      "integer",
-			SearchOptions:   api.SearchOption_Sortable,
-			EnumDescription: pb.AuthorityType_Enum_EnumDescription,
-			Required:        true,
-			Documentation:   `Type of the authority`,
-		},
-		{
-			Name:          "Subject",
-			FullName:      "pb.RegisterIssuerRequest.Subject",
-			Type:          "struct",
-			StructName:    "pb.X509Subject",
-			SearchType:    "flat_object",
-			Required:      true,
-			Documentation: `Subject of the issuer certificate`,
-		},
-		{
-			Name:          "KeySpec",
-			FullName:      "pb.RegisterIssuerRequest.KeySpec",
-			Display:       "Key Spec",
-			Type:          "struct",
-			StructName:    "pb.KeySpec",
-			SearchType:    "flat_object",
-			Documentation: `KeySpec of the key to generate; defaults to ECDSA P-256`,
-		},
-		{
-			Name:          "KeyProvider",
-			FullName:      "pb.RegisterIssuerRequest.KeyProvider",
-			Display:       "Key Provider",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `KeyProvider selects the crypto provider; empty for the server default`,
-		},
-		{
-			Name:          "ParentID",
-			FullName:      "pb.RegisterIssuerRequest.ParentID",
-			Display:       "Parent ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `ParentID specifies the signing issuer. It must belong to the same org,
-or be a platform issuer that allows the Profile.
-Empty for Root type, or to create a Pending issuer with a CSR.`,
-		},
-		{
-			Name:          "Profile",
-			FullName:      "pb.RegisterIssuerRequest.Profile",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Profile specifies the CA profile the parent uses to sign the issuer
-certificate. Required when ParentID is set or Type is Root.`,
-		},
-		{
-			Name:          "Config",
-			FullName:      "pb.RegisterIssuerRequest.Config",
-			Type:          "struct",
-			StructName:    "pb.IssuerConfig",
-			SearchType:    "flat_object",
-			Documentation: `Config provides runtime settings`,
-		},
-		{
-			Name:          "SAN",
-			FullName:      "pb.RegisterIssuerRequest.SAN",
-			Type:          "[]string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `SAN specifies Subject Alternative Names for the issuer certificate`,
-		},
-		{
-			Name:          "Extensions",
-			FullName:      "pb.RegisterIssuerRequest.Extensions",
-			Type:          "[]struct",
-			StructName:    "pb.X509Extension",
-			SearchType:    "flat_object",
-			Documentation: `Extensions specifies additional extensions for the issuer certificate`,
+			Name:       "Revoked",
+			FullName:   "pb.RevokedCertificateResponse.Revoked",
+			Type:       "struct",
+			StructName: "pb.RevokedCertificate",
+			SearchType: "flat_object",
 		},
 	},
 }
 
-var SignCertificateRequest_MessageDescription = &api.MessageDescription{
-	Name:          "SignCertificateRequest",
-	Display:       "Sign Certificate Request",
-	FullName:      "pb.SignCertificateRequest",
-	Documentation: `SignCertificateRequest specifies certificate sign request`,
+var RevokedCertificatesResponse_MessageDescription = &api.MessageDescription{
+	Name:          "RevokedCertificatesResponse",
+	Display:       "Revoked Certificates Response",
+	FullName:      "pb.RevokedCertificatesResponse",
+	Documentation: `RevokedCertificatesResponse returns Revoked Certificates list`,
 	Fields: []*api.FieldMeta{
 		{
+			Name:       "RevokedCertificates",
+			FullName:   "pb.RevokedCertificatesResponse.RevokedCertificates",
+			Display:    "Revoked Certificates",
+			Type:       "[]struct",
+			StructName: "pb.RevokedCertificate",
+			SearchType: "flat_object",
+		},
+		{
+			Name:       "NextPage",
+			FullName:   "pb.RevokedCertificatesResponse.NextPage",
+			Display:    "Next Page",
+			Type:       "struct",
+			StructName: "pb.NextPage",
+			SearchType: "flat_object",
+			Documentation: `NextPage specifies pagination information, if there are more pages to
+fetch. If there are no more pages to fetch, NextPage will be empty.`,
+		},
+	},
+}
+
+var RootCertificate_MessageDescription = &api.MessageDescription{
+	Name:          "RootCertificate",
+	Display:       "Root Certificate",
+	FullName:      "pb.RootCertificate",
+	Documentation: `RootCertificate provides X509 Root Certificate information`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "ID",
+			FullName:      "pb.RootCertificate.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ID of the root certificate`,
+		},
+		{
 			Name:          "OrgID",
-			FullName:      "pb.SignCertificateRequest.OrgID",
+			FullName:      "pb.RootCertificate.OrgID",
 			Display:       "Org ID",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
+			Documentation: `OrgID of the owning org; empty for platform roots`,
 		},
 		{
-			Name:          "ProjectID",
-			FullName:      "pb.SignCertificateRequest.ProjectID",
-			Display:       "Project ID",
+			Name:          "SKID",
+			FullName:      "pb.RootCertificate.SKID",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `ProjectID of the owning project; recorded on the certificate and used to
-resolve project-scoped profiles and issuers`,
-		},
-		{
-			Name:          "Profile",
-			FullName:      "pb.SignCertificateRequest.Profile",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `Profile specifies the certificate profile label`,
-		},
-		{
-			Name:          "IssuerLabel",
-			FullName:      "pb.SignCertificateRequest.IssuerLabel",
-			Display:       "Issuer Label",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `IssuerLabel selects the issuer when the profile binds to "*";
-otherwise it must match the profile's issuer`,
-		},
-		{
-			Name:            "RequestFormat",
-			FullName:        "pb.SignCertificateRequest.RequestFormat",
-			Display:         "Request Format",
-			Type:            "int32",
-			SearchType:      "integer",
-			SearchOptions:   api.SearchOption_Sortable,
-			EnumDescription: pb.EncodingFormat_Enum_EnumDescription,
-			Documentation:   `RequestFormat provides the certificate request format: PEM or DER`,
-		},
-		{
-			Name:          "Request",
-			FullName:      "pb.SignCertificateRequest.Request",
-			Type:          "[]byte",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `Request provides the PKCS#10 certificate request`,
-		},
-		{
-			Name:          "SAN",
-			FullName:      "pb.SignCertificateRequest.SAN",
-			Type:          "[]string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `SAN specifies Subject Alternative Names to add or override`,
-		},
-		{
-			Name:          "Subject",
-			FullName:      "pb.SignCertificateRequest.Subject",
-			Type:          "struct",
-			StructName:    "pb.X509Subject",
-			SearchType:    "flat_object",
-			Documentation: `Subject overrides the subject name from the request`,
+			Documentation: `SKID provides Subject Key Identifier`,
 		},
 		{
 			Name:          "NotBefore",
-			FullName:      "pb.SignCertificateRequest.NotBefore",
+			FullName:      "pb.RootCertificate.NotBefore",
 			Display:       "Not Before",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `NotBefore overrides the validity start in RFC3339 format;
-no backdate is applied when provided`,
+			Documentation: `NotBefore is the time when the validity period starts in RFC3339 format`,
 		},
 		{
 			Name:          "NotAfter",
-			FullName:      "pb.SignCertificateRequest.NotAfter",
+			FullName:      "pb.RootCertificate.NotAfter",
 			Display:       "Not After",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `NotAfter overrides the validity end in RFC3339 format;
-it must not exceed the profile expiry`,
+			Documentation: `NotAfter is the time when the validity period ends in RFC3339 format`,
 		},
 		{
-			Name:       "Extensions",
-			FullName:   "pb.SignCertificateRequest.Extensions",
-			Type:       "[]struct",
-			StructName: "pb.X509Extension",
-			SearchType: "flat_object",
-			Documentation: `Extensions specifies additional extensions to include, subject to the
-profile's AllowedExtensions`,
-		},
-		{
-			Name:          "Label",
-			FullName:      "pb.SignCertificateRequest.Label",
+			Name:          "Subject",
+			FullName:      "pb.RootCertificate.Subject",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Max:           260,
-			Documentation: `Label is provided by the client for search and display`,
+			Documentation: `Subject name`,
 		},
 		{
-			Name:          "Metadata",
-			FullName:      "pb.SignCertificateRequest.Metadata",
-			Type:          "map",
-			StructName:    "pb.SignCertificateRequest.MetadataEntry",
-			SearchType:    "flat_object",
-			Documentation: `Metadata is provided by the client`,
-		},
-	},
-}
-
-var SignCertificateRequest_MetadataEntry_MessageDescription = &api.MessageDescription{
-	Name:     "SignCertificateRequest_MetadataEntry",
-	Display:  "Metadata Entry",
-	FullName: "pb.SignCertificateRequest.MetadataEntry",
-	Fields: []*api.FieldMeta{
-		{
-			Name:          "Key",
-			FullName:      "pb.SignCertificateRequest.MetadataEntry.Key",
+			Name:          "Sha256",
+			FullName:      "pb.RootCertificate.Sha256",
+			Display:       "Sha 256",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
+			Documentation: `Sha256 thumbprint of the cert`,
 		},
 		{
-			Name:          "Value",
-			FullName:      "pb.SignCertificateRequest.MetadataEntry.Value",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-		},
-	},
-}
-
-var UpdateIssuerRequest_MessageDescription = &api.MessageDescription{
-	Name:          "UpdateIssuerRequest",
-	Display:       "Update Issuer Request",
-	FullName:      "pb.UpdateIssuerRequest",
-	Documentation: `UpdateIssuerRequest updates issuer config or status`,
-	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.UpdateIssuerRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
-			Name:          "ID",
-			FullName:      "pb.UpdateIssuerRequest.ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `ID of the issuer`,
-		},
-		{
-			Name:          "Config",
-			FullName:      "pb.UpdateIssuerRequest.Config",
-			Type:          "struct",
-			StructName:    "pb.IssuerConfig",
-			SearchType:    "flat_object",
-			Documentation: `Config replaces runtime settings when provided`,
-		},
-		{
-			Name:            "Status",
-			FullName:        "pb.UpdateIssuerRequest.Status",
+			Name:            "Trust",
+			FullName:        "pb.RootCertificate.Trust",
 			Type:            "int32",
 			SearchType:      "integer",
 			SearchOptions:   api.SearchOption_Sortable,
-			EnumDescription: pb.IssuerStatus_Enum_EnumDescription,
-			Documentation:   `Status changes the status when provided: Archived or Destroyed`,
+			EnumDescription: pb.Trust_Enum_EnumDescription,
+			Documentation:   `Trust scope`,
+		},
+		{
+			Name:          "Pem",
+			FullName:      "pb.RootCertificate.Pem",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Pem encoded certificate`,
+		},
+		{
+			Name:          "CreatedAt",
+			FullName:      "pb.RootCertificate.CreatedAt",
+			Display:       "Created At",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `CreatedAt is the registration time in RFC3339 format`,
+		},
+	},
+}
+
+var RootsResponse_MessageDescription = &api.MessageDescription{
+	Name:          "RootsResponse",
+	Display:       "Roots Response",
+	FullName:      "pb.RootsResponse",
+	Documentation: `RootsResponse returns Root Certificates`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:       "Roots",
+			FullName:   "pb.RootsResponse.Roots",
+			Type:       "[]struct",
+			StructName: "pb.RootCertificate",
+			SearchType: "flat_object",
+		},
+		{
+			Name:       "NextPage",
+			FullName:   "pb.RootsResponse.NextPage",
+			Display:    "Next Page",
+			Type:       "struct",
+			StructName: "pb.NextPage",
+			SearchType: "flat_object",
+			Documentation: `NextPage specifies pagination information, if there are more pages to
+fetch. If there are no more pages to fetch, NextPage will be empty.`,
 		},
 	},
 }
@@ -1599,16 +1726,401 @@ var X509Subject_MessageDescription = &api.MessageDescription{
 	},
 }
 
-var ListCertificatesRequest_MessageDescription = &api.MessageDescription{
-	Name:     "ListCertificatesRequest",
-	Display:  "List Certificates Request",
-	FullName: "privpb.ListCertificatesRequest",
-	Documentation: `ListCertificatesRequest specifies a paginated list of certificates across
+var ActivateIssuerRequest_MessageDescription = &api.MessageDescription{
+	Name:     "ActivateIssuerRequest",
+	Display:  "Activate Issuer Request",
+	FullName: "privpb.ActivateIssuerRequest",
+	Documentation: `ActivateIssuerRequest specifies the externally signed certificate for a
+Pending issuer
+with the org named explicitly: the request of Backend.ActivateIssuer`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ActivateIssuerRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ID",
+			FullName:      "privpb.ActivateIssuerRequest.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `ID of the Pending issuer`,
+		},
+		{
+			Name:          "Certificate",
+			FullName:      "privpb.ActivateIssuerRequest.Certificate",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `Certificate provides the issuer certificate in PEM format`,
+		},
+		{
+			Name:          "Intermediates",
+			FullName:      "privpb.ActivateIssuerRequest.Intermediates",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Intermediates provides the intermediate CA certificates in PEM format`,
+		},
+		{
+			Name:          "Root",
+			FullName:      "privpb.ActivateIssuerRequest.Root",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Root provides the Root CA certificate in PEM format`,
+		},
+	},
+}
+
+var DeleteProfileRequest_MessageDescription = &api.MessageDescription{
+	Name:     "DeleteProfileRequest",
+	Display:  "Delete Profile Request",
+	FullName: "privpb.DeleteProfileRequest",
+	Documentation: `DeleteProfileRequest deletes a profile
+with the org named explicitly: the request of Backend.DeleteProfile`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.DeleteProfileRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ID",
+			FullName:      "privpb.DeleteProfileRequest.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `ID of the profile`,
+		},
+	},
+}
+
+var GetCertificateRequest_MessageDescription = &api.MessageDescription{
+	Name:     "GetCertificateRequest",
+	Display:  "Get Certificate Request",
+	FullName: "privpb.GetCertificateRequest",
+	Documentation: `GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer
+and serial number
+with the org named explicitly: the request of Backend.GetCertificate`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.GetCertificateRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ID",
+			FullName:      "privpb.GetCertificateRequest.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"SKID", "Sha256", "IssuerSerial"},
+			Documentation: `ID specifies certificate ID`,
+		},
+		{
+			Name:          "SKID",
+			FullName:      "privpb.GetCertificateRequest.SKID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"ID", "Sha256", "IssuerSerial"},
+			Documentation: `SKID specifies Subject Key ID to search`,
+		},
+		{
+			Name:          "Sha256",
+			FullName:      "privpb.GetCertificateRequest.Sha256",
+			Display:       "Sha 256",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"ID", "SKID", "IssuerSerial"},
+			Documentation: `Sha256 specifies the certificate thumbprint to search`,
+		},
+		{
+			Name:          "IssuerSerial",
+			FullName:      "privpb.GetCertificateRequest.IssuerSerial",
+			Display:       "Issuer Serial",
+			Type:          "struct",
+			StructName:    "pb.IssuerSerial",
+			SearchType:    "flat_object",
+			RequiredOr:    []string{"ID", "SKID", "Sha256"},
+			Documentation: `IssuerSerial specifies Issuer Key ID and certificate serial number`,
+		},
+	},
+}
+
+var GetCrlRequest_MessageDescription = &api.MessageDescription{
+	Name:     "GetCrlRequest",
+	Display:  "Get Crl Request",
+	FullName: "privpb.GetCrlRequest",
+	Documentation: `GetCrlRequest specifies CRL request by IKID
+with the org named explicitly: the request of Backend.GetCRL`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.GetCrlRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `OrgID of the org of the issuer; empty reads the CRL of any issuer,
+for a service identity only`,
+		},
+		{
+			Name:          "IKID",
+			FullName:      "privpb.GetCrlRequest.IKID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `IKID specifies Issuer Key ID`,
+		},
+	},
+}
+
+var GetIssuerRequest_MessageDescription = &api.MessageDescription{
+	Name:     "GetIssuerRequest",
+	Display:  "Get Issuer Request",
+	FullName: "privpb.GetIssuerRequest",
+	Documentation: `GetIssuerRequest specifies an issuer by ID, label or IKID
+with the org named explicitly: the request of Backend.GetIssuer`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.GetIssuerRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.GetIssuerRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the owning project; used with Label`,
+		},
+		{
+			Name:          "ID",
+			FullName:      "privpb.GetIssuerRequest.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"Label", "IKID"},
+			Documentation: `ID of the issuer`,
+		},
+		{
+			Name:          "Label",
+			FullName:      "privpb.GetIssuerRequest.Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"ID", "IKID"},
+			Documentation: `Label of the issuer, resolved as (Org, Project) then (Org)`,
+		},
+		{
+			Name:          "IKID",
+			FullName:      "privpb.GetIssuerRequest.IKID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"ID", "Label"},
+			Documentation: `IKID specifies Issuer Key ID`,
+		},
+	},
+}
+
+var GetProfileRequest_MessageDescription = &api.MessageDescription{
+	Name:     "GetProfileRequest",
+	Display:  "Get Profile Request",
+	FullName: "privpb.GetProfileRequest",
+	Documentation: `GetProfileRequest specifies a profile by ID or label
+with the org named explicitly: the request of Backend.GetProfile`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.GetProfileRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.GetProfileRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the owning project; used with Label`,
+		},
+		{
+			Name:          "ID",
+			FullName:      "privpb.GetProfileRequest.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"Label"},
+			Documentation: `ID of the profile`,
+		},
+		{
+			Name:          "Label",
+			FullName:      "privpb.GetProfileRequest.Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"ID"},
+			Documentation: `Label of the profile, resolved as (Org, Project) then (Org)`,
+		},
+	},
+}
+
+var ImportIssuerRequest_MessageDescription = &api.MessageDescription{
+	Name:     "ImportIssuerRequest",
+	Display:  "Import Issuer Request",
+	FullName: "privpb.ImportIssuerRequest",
+	Documentation: `ImportIssuerRequest specifies a request to import an existing issuer
+with the org named explicitly: the request of Backend.ImportIssuer`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ImportIssuerRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.ImportIssuerRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the owning project; empty for an org-wide issuer`,
+		},
+		{
+			Name:          "Label",
+			FullName:      "privpb.ImportIssuerRequest.Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Max:           64,
+			Documentation: `Label of the issuer, unique per (Org, Project)`,
+		},
+		{
+			Name:            "Type",
+			FullName:        "privpb.ImportIssuerRequest.Type",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.AuthorityType_Enum_EnumDescription,
+			Required:        true,
+			Documentation:   `Type of the authority`,
+		},
+		{
+			Name:          "Certificate",
+			FullName:      "privpb.ImportIssuerRequest.Certificate",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `Certificate provides the issuer certificate in PEM format`,
+		},
+		{
+			Name:          "Intermediates",
+			FullName:      "privpb.ImportIssuerRequest.Intermediates",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Intermediates provides the intermediate CA certificates in PEM format`,
+		},
+		{
+			Name:          "Root",
+			FullName:      "privpb.ImportIssuerRequest.Root",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Root provides the Root CA certificate in PEM format`,
+		},
+		{
+			Name:          "KeyURI",
+			FullName:      "privpb.ImportIssuerRequest.KeyURI",
+			Display:       "Key URI",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"KeyPem"},
+			Documentation: `KeyURI references an existing key in a crypto provider,
+e.g. awskms://..., gcpkms://..., pkcs11:...`,
+		},
+		{
+			Name:          "KeyPem",
+			FullName:      "privpb.ImportIssuerRequest.KeyPem",
+			Display:       "Key Pem",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"KeyURI"},
+			Documentation: `KeyPem provides the private key in PEM format.
+It is stored protected by the data protection provider.`,
+		},
+		{
+			Name:          "Config",
+			FullName:      "privpb.ImportIssuerRequest.Config",
+			Type:          "struct",
+			StructName:    "pb.IssuerConfig",
+			SearchType:    "flat_object",
+			Documentation: `Config provides runtime settings`,
+		},
+	},
+}
+
+var ListAllCertificatesRequest_MessageDescription = &api.MessageDescription{
+	Name:     "ListAllCertificatesRequest",
+	Display:  "List All Certificates Request",
+	FullName: "privpb.ListAllCertificatesRequest",
+	Documentation: `ListAllCertificatesRequest specifies a paginated list of certificates across
 orgs, newest first`,
 	Fields: []*api.FieldMeta{
 		{
 			Name:          "Limit",
-			FullName:      "privpb.ListCertificatesRequest.Limit",
+			FullName:      "privpb.ListAllCertificatesRequest.Limit",
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
@@ -1616,7 +2128,7 @@ orgs, newest first`,
 		},
 		{
 			Name:          "Offset",
-			FullName:      "privpb.ListCertificatesRequest.Offset",
+			FullName:      "privpb.ListAllCertificatesRequest.Offset",
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
@@ -1624,7 +2136,7 @@ orgs, newest first`,
 		},
 		{
 			Name:          "Cursor",
-			FullName:      "privpb.ListCertificatesRequest.Cursor",
+			FullName:      "privpb.ListAllCertificatesRequest.Cursor",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
@@ -1634,7 +2146,7 @@ the previous request.`,
 		},
 		{
 			Name:          "OrgID",
-			FullName:      "privpb.ListCertificatesRequest.OrgID",
+			FullName:      "privpb.ListAllCertificatesRequest.OrgID",
 			Display:       "Org ID",
 			Type:          "string",
 			SearchType:    "keyword",
@@ -1644,7 +2156,7 @@ every org and of the platform, or of the platform only with Platform.`,
 		},
 		{
 			Name:          "Platform",
-			FullName:      "privpb.ListCertificatesRequest.Platform",
+			FullName:      "privpb.ListAllCertificatesRequest.Platform",
 			Type:          "bool",
 			SearchType:    "boolean",
 			SearchOptions: api.SearchOption_Sortable,
@@ -1653,12 +2165,169 @@ OrgID is empty`,
 		},
 		{
 			Name:          "ProjectID",
-			FullName:      "privpb.ListCertificatesRequest.ProjectID",
+			FullName:      "privpb.ListAllCertificatesRequest.ProjectID",
 			Display:       "Project ID",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
 			Documentation: `ProjectID limits the result to the project; used with OrgID`,
+		},
+		{
+			Name:          "IKID",
+			FullName:      "privpb.ListAllCertificatesRequest.IKID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IKID filters by issuer`,
+		},
+		{
+			Name:          "Profile",
+			FullName:      "privpb.ListAllCertificatesRequest.Profile",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Profile filters by profile label`,
+		},
+		{
+			Name:            "Status",
+			FullName:        "privpb.ListAllCertificatesRequest.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.CertificateStatus_Enum_EnumDescription,
+			Documentation:   `Status filters by status; Unknown returns all`,
+		},
+		{
+			Name:          "ExpiringBefore",
+			FullName:      "privpb.ListAllCertificatesRequest.ExpiringBefore",
+			Display:       "Expiring Before",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ExpiringBefore filters certificates with NotAfter before the time,
+in RFC3339 format`,
+		},
+	},
+}
+
+var ListAllIssuersRequest_MessageDescription = &api.MessageDescription{
+	Name:          "ListAllIssuersRequest",
+	Display:       "List All Issuers Request",
+	FullName:      "privpb.ListAllIssuersRequest",
+	Documentation: `ListAllIssuersRequest specifies a paginated list of issuers across orgs`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Limit",
+			FullName:      "privpb.ListAllIssuersRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return`,
+		},
+		{
+			Name:          "Offset",
+			FullName:      "privpb.ListAllIssuersRequest.Offset",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Offset specifies offset for the offset-based pagination`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "privpb.ListAllIssuersRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor specifies cursor for the cursor-based pagination.
+Use "initial" to start the pagination or pass the cursor returned from
+the previous request.`,
+		},
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ListAllIssuersRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `OrgID limits the result to the org. Empty lists the issuers of every
+org and of the platform, or of the platform only with Platform.`,
+		},
+		{
+			Name:          "Platform",
+			FullName:      "privpb.ListAllIssuersRequest.Platform",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Platform limits the result to the platform issuers (no org) when
+OrgID is empty`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.ListAllIssuersRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID limits the result to the project; used with OrgID`,
+		},
+		{
+			Name:          "Label",
+			FullName:      "privpb.ListAllIssuersRequest.Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Label limits the result to the issuers with the label, in every scope
+the list covers`,
+		},
+		{
+			Name:            "Status",
+			FullName:        "privpb.ListAllIssuersRequest.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.IssuerStatus_Enum_EnumDescription,
+			Documentation:   `Status filters by lifecycle status; Unknown returns all`,
+		},
+		{
+			Name:            "Type",
+			FullName:        "privpb.ListAllIssuersRequest.Type",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.AuthorityType_Enum_EnumDescription,
+			Documentation:   `Type filters by authority type; Unknown returns all`,
+		},
+	},
+}
+
+var ListCertificatesRequest_MessageDescription = &api.MessageDescription{
+	Name:     "ListCertificatesRequest",
+	Display:  "List Certificates Request",
+	FullName: "privpb.ListCertificatesRequest",
+	Documentation: `ListCertificatesRequest specifies a paginated list of certificates,
+sorted by ID descending (newest first)
+with the org named explicitly: the request of Backend.ListCertificates`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ListCertificatesRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.ListCertificatesRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID filters by project; empty returns org-wide and all project
+certificates`,
 		},
 		{
 			Name:          "IKID",
@@ -1695,15 +2364,81 @@ OrgID is empty`,
 			Documentation: `ExpiringBefore filters certificates with NotAfter before the time,
 in RFC3339 format`,
 		},
+		{
+			Name:          "Limit",
+			FullName:      "privpb.ListCertificatesRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return`,
+		},
+		{
+			Name:          "Offset",
+			FullName:      "privpb.ListCertificatesRequest.Offset",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Offset specifies offset for the offset-based pagination`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "privpb.ListCertificatesRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor specifies cursor for the cursor-based pagination.
+Use "initial" to start the pagination or pass the cursor returned from
+the previous request.`,
+		},
 	},
 }
 
 var ListIssuersRequest_MessageDescription = &api.MessageDescription{
-	Name:          "ListIssuersRequest",
-	Display:       "List Issuers Request",
-	FullName:      "privpb.ListIssuersRequest",
-	Documentation: `ListIssuersRequest specifies a paginated list of issuers across orgs`,
+	Name:     "ListIssuersRequest",
+	Display:  "List Issuers Request",
+	FullName: "privpb.ListIssuersRequest",
+	Documentation: `ListIssuersRequest specifies a paginated list of issuers
+with the org named explicitly: the request of Backend.ListIssuers`,
 	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ListIssuersRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.ListIssuersRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID filters by project; empty returns org-wide and all project
+issuers`,
+		},
+		{
+			Name:            "Status",
+			FullName:        "privpb.ListIssuersRequest.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.IssuerStatus_Enum_EnumDescription,
+			Documentation:   `Status filters by status; Unknown returns all`,
+		},
+		{
+			Name:            "Type",
+			FullName:        "privpb.ListIssuersRequest.Type",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.AuthorityType_Enum_EnumDescription,
+			Documentation:   `Type filters by authority type; Unknown returns all`,
+		},
 		{
 			Name:          "Limit",
 			FullName:      "privpb.ListIssuersRequest.Limit",
@@ -1729,61 +2464,6 @@ var ListIssuersRequest_MessageDescription = &api.MessageDescription{
 			Documentation: `Cursor specifies cursor for the cursor-based pagination.
 Use "initial" to start the pagination or pass the cursor returned from
 the previous request.`,
-		},
-		{
-			Name:          "OrgID",
-			FullName:      "privpb.ListIssuersRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `OrgID limits the result to the org. Empty lists the issuers of every
-org and of the platform, or of the platform only with Platform.`,
-		},
-		{
-			Name:          "Platform",
-			FullName:      "privpb.ListIssuersRequest.Platform",
-			Type:          "bool",
-			SearchType:    "boolean",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Platform limits the result to the platform issuers (no org) when
-OrgID is empty`,
-		},
-		{
-			Name:          "ProjectID",
-			FullName:      "privpb.ListIssuersRequest.ProjectID",
-			Display:       "Project ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `ProjectID limits the result to the project; used with OrgID`,
-		},
-		{
-			Name:          "Label",
-			FullName:      "privpb.ListIssuersRequest.Label",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Label limits the result to the issuers with the label, in every scope
-the list covers`,
-		},
-		{
-			Name:            "Status",
-			FullName:        "privpb.ListIssuersRequest.Status",
-			Type:            "int32",
-			SearchType:      "integer",
-			SearchOptions:   api.SearchOption_Sortable,
-			EnumDescription: pb.IssuerStatus_Enum_EnumDescription,
-			Documentation:   `Status filters by lifecycle status; Unknown returns all`,
-		},
-		{
-			Name:            "Type",
-			FullName:        "privpb.ListIssuersRequest.Type",
-			Type:            "int32",
-			SearchType:      "integer",
-			SearchOptions:   api.SearchOption_Sortable,
-			EnumDescription: pb.AuthorityType_Enum_EnumDescription,
-			Documentation:   `Type filters by authority type; Unknown returns all`,
 		},
 	},
 }
@@ -1832,6 +2512,70 @@ the previous request.`,
 			EnumDescription: pb.ItemStatus_Enum_EnumDescription,
 			Documentation: `Status specifies on optional status of the item to filter by.
 If not specified, all items will be listed.`,
+		},
+	},
+}
+
+var ListProfilesRequest_MessageDescription = &api.MessageDescription{
+	Name:     "ListProfilesRequest",
+	Display:  "List Profiles Request",
+	FullName: "privpb.ListProfilesRequest",
+	Documentation: `ListProfilesRequest specifies a paginated list of profiles
+with the org named explicitly: the request of Backend.ListProfiles`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ListProfilesRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.ListProfilesRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID filters by project; empty returns org-wide and all project
+profiles`,
+		},
+		{
+			Name:          "IssuerLabel",
+			FullName:      "privpb.ListProfilesRequest.IssuerLabel",
+			Display:       "Issuer Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IssuerLabel filters by issuer label`,
+		},
+		{
+			Name:          "Limit",
+			FullName:      "privpb.ListProfilesRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return`,
+		},
+		{
+			Name:          "Offset",
+			FullName:      "privpb.ListProfilesRequest.Offset",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Offset specifies offset for the offset-based pagination`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "privpb.ListProfilesRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
 		},
 	},
 }
@@ -1893,80 +2637,885 @@ If not specified, all items will be listed.`,
 	},
 }
 
+var ListRevokedCertificatesRequest_MessageDescription = &api.MessageDescription{
+	Name:     "ListRevokedCertificatesRequest",
+	Display:  "List Revoked Certificates Request",
+	FullName: "privpb.ListRevokedCertificatesRequest",
+	Documentation: `ListRevokedCertificatesRequest specifies a paginated list of revoked
+certificates, sorted by revocation ID descending
+with the org named explicitly: the request of Backend.ListRevokedCertificates`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ListRevokedCertificatesRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.ListRevokedCertificatesRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID filters by project`,
+		},
+		{
+			Name:          "IKID",
+			FullName:      "privpb.ListRevokedCertificatesRequest.IKID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IKID filters by issuer`,
+		},
+		{
+			Name:          "Limit",
+			FullName:      "privpb.ListRevokedCertificatesRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return`,
+		},
+		{
+			Name:          "Offset",
+			FullName:      "privpb.ListRevokedCertificatesRequest.Offset",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Offset specifies offset for the offset-based pagination`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "privpb.ListRevokedCertificatesRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+		},
+	},
+}
+
+var ListRootsRequest_MessageDescription = &api.MessageDescription{
+	Name:     "ListRootsRequest",
+	Display:  "List Roots Request",
+	FullName: "privpb.ListRootsRequest",
+	Documentation: `ListRootsRequest specifies a list of trust anchors
+with the org named explicitly: the request of Backend.ListRoots`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.ListRootsRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `OrgID of the org; empty lists the platform anchors, for a service
+identity only`,
+		},
+		{
+			Name:          "Limit",
+			FullName:      "privpb.ListRootsRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return`,
+		},
+		{
+			Name:          "Offset",
+			FullName:      "privpb.ListRootsRequest.Offset",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Offset specifies offset for the offset-based pagination`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "privpb.ListRootsRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+		},
+	},
+}
+
+var PublishCrlsRequest_MessageDescription = &api.MessageDescription{
+	Name:     "PublishCrlsRequest",
+	Display:  "Publish Crls Request",
+	FullName: "privpb.PublishCrlsRequest",
+	Documentation: `PublishCrlsRequest allows to publish CRLs on demand
+with the org named explicitly: the request of Backend.PublishCrls`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.PublishCrlsRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `OrgID of the org; empty publishes for every org and the platform,
+for a service identity only`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.PublishCrlsRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID limits the scope to the project: the issuer of the IKID
+must belong to it, and without an IKID the issuers of the project
+publish. Empty publishes for the org-wide issuers and the projects the
+caller may read; a project Admin names the project, and an API key
+restricted to a project publishes for its project.`,
+		},
+		{
+			Name:          "IKID",
+			FullName:      "privpb.PublishCrlsRequest.IKID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IKID specifies Issuer Key ID; empty to publish for all issuers in scope`,
+		},
+		{
+			Name:          "Force",
+			FullName:      "privpb.PublishCrlsRequest.Force",
+			Type:          "bool",
+			SearchType:    "boolean",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Force specifies to publish even if the current CRL is not due for renewal`,
+		},
+	},
+}
+
+var RegisterIssuerRequest_MessageDescription = &api.MessageDescription{
+	Name:     "RegisterIssuerRequest",
+	Display:  "Register Issuer Request",
+	FullName: "privpb.RegisterIssuerRequest",
+	Documentation: `RegisterIssuerRequest specifies a request to create a new issuer
+with the org named explicitly: the request of Backend.RegisterIssuer`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.RegisterIssuerRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.RegisterIssuerRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the owning project; empty for an org-wide issuer`,
+		},
+		{
+			Name:          "Label",
+			FullName:      "privpb.RegisterIssuerRequest.Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Max:           64,
+			Documentation: `Label of the issuer, unique per (Org, Project)`,
+		},
+		{
+			Name:            "Type",
+			FullName:        "privpb.RegisterIssuerRequest.Type",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.AuthorityType_Enum_EnumDescription,
+			Required:        true,
+			Documentation:   `Type of the authority`,
+		},
+		{
+			Name:          "Subject",
+			FullName:      "privpb.RegisterIssuerRequest.Subject",
+			Type:          "struct",
+			StructName:    "pb.X509Subject",
+			SearchType:    "flat_object",
+			Required:      true,
+			Documentation: `Subject of the issuer certificate`,
+		},
+		{
+			Name:          "KeySpec",
+			FullName:      "privpb.RegisterIssuerRequest.KeySpec",
+			Display:       "Key Spec",
+			Type:          "struct",
+			StructName:    "pb.KeySpec",
+			SearchType:    "flat_object",
+			Documentation: `KeySpec of the key to generate; defaults to ECDSA P-256`,
+		},
+		{
+			Name:          "KeyProvider",
+			FullName:      "privpb.RegisterIssuerRequest.KeyProvider",
+			Display:       "Key Provider",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `KeyProvider selects the crypto provider; empty for the server default`,
+		},
+		{
+			Name:          "ParentID",
+			FullName:      "privpb.RegisterIssuerRequest.ParentID",
+			Display:       "Parent ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ParentID specifies the signing issuer. It must belong to the same org,
+or be a platform issuer that allows the Profile.
+Empty for Root type, or to create a Pending issuer with a CSR.`,
+		},
+		{
+			Name:          "Profile",
+			FullName:      "privpb.RegisterIssuerRequest.Profile",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Profile specifies the CA profile the parent uses to sign the issuer
+certificate. Required when ParentID is set or Type is Root.`,
+		},
+		{
+			Name:          "Config",
+			FullName:      "privpb.RegisterIssuerRequest.Config",
+			Type:          "struct",
+			StructName:    "pb.IssuerConfig",
+			SearchType:    "flat_object",
+			Documentation: `Config provides runtime settings`,
+		},
+		{
+			Name:          "SAN",
+			FullName:      "privpb.RegisterIssuerRequest.SAN",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `SAN specifies Subject Alternative Names for the issuer certificate`,
+		},
+		{
+			Name:          "Extensions",
+			FullName:      "privpb.RegisterIssuerRequest.Extensions",
+			Type:          "[]struct",
+			StructName:    "pb.X509Extension",
+			SearchType:    "flat_object",
+			Documentation: `Extensions specifies additional extensions for the issuer certificate`,
+		},
+	},
+}
+
+var RegisterProfileRequest_MessageDescription = &api.MessageDescription{
+	Name:     "RegisterProfileRequest",
+	Display:  "Register Profile Request",
+	FullName: "privpb.RegisterProfileRequest",
+	Documentation: `RegisterProfileRequest creates or replaces a profile
+with the org named explicitly: the request of Backend.RegisterProfile`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.RegisterProfileRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.RegisterProfileRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the owning project; empty for an org-wide profile`,
+		},
+		{
+			Name:       "Profile",
+			FullName:   "privpb.RegisterProfileRequest.Profile",
+			Type:       "struct",
+			StructName: "pb.CertProfile",
+			SearchType: "flat_object",
+			Required:   true,
+			Documentation: `Profile provides the profile definition.
+Profile.Label and Profile.IssuerLabel are required.`,
+		},
+	},
+}
+
+var RegisterRootRequest_MessageDescription = &api.MessageDescription{
+	Name:     "RegisterRootRequest",
+	Display:  "Register Root Request",
+	FullName: "privpb.RegisterRootRequest",
+	Documentation: `RegisterRootRequest registers an external trust anchor
+with the org named explicitly: the request of Backend.RegisterRoot`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.RegisterRootRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "Pem",
+			FullName:      "privpb.RegisterRootRequest.Pem",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `Pem encoded root certificate`,
+		},
+		{
+			Name:            "Trust",
+			FullName:        "privpb.RegisterRootRequest.Trust",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.Trust_Enum_EnumDescription,
+			Documentation:   `Trust scope`,
+		},
+	},
+}
+
+var RevokeCertificateRequest_MessageDescription = &api.MessageDescription{
+	Name:     "RevokeCertificateRequest",
+	Display:  "Revoke Certificate Request",
+	FullName: "privpb.RevokeCertificateRequest",
+	Documentation: `RevokeCertificateRequest specifies revocation request
+with the org named explicitly: the request of Backend.RevokeCertificate`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.RevokeCertificateRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ID",
+			FullName:      "privpb.RevokeCertificateRequest.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"SKID", "IssuerSerial"},
+			Documentation: `ID specifies certificate ID`,
+		},
+		{
+			Name:          "SKID",
+			FullName:      "privpb.RevokeCertificateRequest.SKID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			RequiredOr:    []string{"ID", "IssuerSerial"},
+			Documentation: `SKID specifies Subject Key ID to search`,
+		},
+		{
+			Name:          "IssuerSerial",
+			FullName:      "privpb.RevokeCertificateRequest.IssuerSerial",
+			Display:       "Issuer Serial",
+			Type:          "struct",
+			StructName:    "pb.IssuerSerial",
+			SearchType:    "flat_object",
+			RequiredOr:    []string{"ID", "SKID"},
+			Documentation: `IssuerSerial specifies Issuer Key ID and certificate serial number`,
+		},
+		{
+			Name:            "Reason",
+			FullName:        "privpb.RevokeCertificateRequest.Reason",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.ReasonCode_Enum_EnumDescription,
+			Documentation: `Reason for revocation; RemoveFromCRL is refused, since it releases a
+certificate from hold instead of revoking it`,
+		},
+		{
+			Name:          "ReasonText",
+			FullName:      "privpb.RevokeCertificateRequest.ReasonText",
+			Display:       "Reason Text",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Max:           260,
+			Documentation: `ReasonText provides optional free-form revocation note`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.RevokeCertificateRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the certificate's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the certificate must belong to it.`,
+		},
+	},
+}
+
+var SignCertificateRequest_MessageDescription = &api.MessageDescription{
+	Name:     "SignCertificateRequest",
+	Display:  "Sign Certificate Request",
+	FullName: "privpb.SignCertificateRequest",
+	Documentation: `SignCertificateRequest specifies certificate sign request
+with the org named explicitly: the request of Backend.SignCertificate`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.SignCertificateRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.SignCertificateRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the owning project; recorded on the certificate and used to
+resolve project-scoped profiles and issuers`,
+		},
+		{
+			Name:          "Profile",
+			FullName:      "privpb.SignCertificateRequest.Profile",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `Profile specifies the certificate profile label`,
+		},
+		{
+			Name:          "IssuerLabel",
+			FullName:      "privpb.SignCertificateRequest.IssuerLabel",
+			Display:       "Issuer Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IssuerLabel selects the issuer when the profile binds to "*";
+otherwise it must match the profile's issuer`,
+		},
+		{
+			Name:            "RequestFormat",
+			FullName:        "privpb.SignCertificateRequest.RequestFormat",
+			Display:         "Request Format",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.EncodingFormat_Enum_EnumDescription,
+			Documentation:   `RequestFormat provides the certificate request format: PEM or DER`,
+		},
+		{
+			Name:          "Request",
+			FullName:      "privpb.SignCertificateRequest.Request",
+			Type:          "[]byte",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `Request provides the PKCS#10 certificate request`,
+		},
+		{
+			Name:          "SAN",
+			FullName:      "privpb.SignCertificateRequest.SAN",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `SAN specifies Subject Alternative Names to add or override`,
+		},
+		{
+			Name:          "Subject",
+			FullName:      "privpb.SignCertificateRequest.Subject",
+			Type:          "struct",
+			StructName:    "pb.X509Subject",
+			SearchType:    "flat_object",
+			Documentation: `Subject overrides the subject name from the request`,
+		},
+		{
+			Name:          "NotBefore",
+			FullName:      "privpb.SignCertificateRequest.NotBefore",
+			Display:       "Not Before",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `NotBefore overrides the validity start in RFC3339 format;
+no backdate is applied when provided`,
+		},
+		{
+			Name:          "NotAfter",
+			FullName:      "privpb.SignCertificateRequest.NotAfter",
+			Display:       "Not After",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `NotAfter overrides the validity end in RFC3339 format;
+it must not exceed the profile expiry`,
+		},
+		{
+			Name:       "Extensions",
+			FullName:   "privpb.SignCertificateRequest.Extensions",
+			Type:       "[]struct",
+			StructName: "pb.X509Extension",
+			SearchType: "flat_object",
+			Documentation: `Extensions specifies additional extensions to include, subject to the
+profile's AllowedExtensions`,
+		},
+		{
+			Name:          "Label",
+			FullName:      "privpb.SignCertificateRequest.Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Max:           260,
+			Documentation: `Label is provided by the client for search and display`,
+		},
+		{
+			Name:          "Metadata",
+			FullName:      "privpb.SignCertificateRequest.Metadata",
+			Type:          "map",
+			StructName:    "privpb.SignCertificateRequest.MetadataEntry",
+			SearchType:    "flat_object",
+			Documentation: `Metadata is provided by the client`,
+		},
+	},
+}
+
+var SignCertificateRequest_MetadataEntry_MessageDescription = &api.MessageDescription{
+	Name:     "SignCertificateRequest_MetadataEntry",
+	Display:  "Metadata Entry",
+	FullName: "privpb.SignCertificateRequest.MetadataEntry",
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Key",
+			FullName:      "privpb.SignCertificateRequest.MetadataEntry.Key",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+		},
+		{
+			Name:          "Value",
+			FullName:      "privpb.SignCertificateRequest.MetadataEntry.Value",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+		},
+	},
+}
+
+var UpdateCertificateLabelRequest_MessageDescription = &api.MessageDescription{
+	Name:     "UpdateCertificateLabelRequest",
+	Display:  "Update Certificate Label Request",
+	FullName: "privpb.UpdateCertificateLabelRequest",
+	Documentation: `UpdateCertificateLabelRequest specifies certificate label update request
+with the org named explicitly: the request of Backend.UpdateCertificateLabel`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.UpdateCertificateLabelRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ID",
+			FullName:      "privpb.UpdateCertificateLabelRequest.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `ID specifies certificate ID`,
+		},
+		{
+			Name:          "Label",
+			FullName:      "privpb.UpdateCertificateLabelRequest.Label",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Max:           260,
+			Documentation: `Label is provided by the client`,
+		},
+		{
+			Name:          "Metadata",
+			FullName:      "privpb.UpdateCertificateLabelRequest.Metadata",
+			Type:          "map",
+			StructName:    "privpb.UpdateCertificateLabelRequest.MetadataEntry",
+			SearchType:    "flat_object",
+			Documentation: `Metadata replaces the client metadata when provided`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.UpdateCertificateLabelRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the certificate's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the certificate must belong to it.`,
+		},
+	},
+}
+
+var UpdateCertificateLabelRequest_MetadataEntry_MessageDescription = &api.MessageDescription{
+	Name:     "UpdateCertificateLabelRequest_MetadataEntry",
+	Display:  "Metadata Entry",
+	FullName: "privpb.UpdateCertificateLabelRequest.MetadataEntry",
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Key",
+			FullName:      "privpb.UpdateCertificateLabelRequest.MetadataEntry.Key",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+		},
+		{
+			Name:          "Value",
+			FullName:      "privpb.UpdateCertificateLabelRequest.MetadataEntry.Value",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+		},
+	},
+}
+
+var UpdateIssuerRequest_MessageDescription = &api.MessageDescription{
+	Name:     "UpdateIssuerRequest",
+	Display:  "Update Issuer Request",
+	FullName: "privpb.UpdateIssuerRequest",
+	Documentation: `UpdateIssuerRequest updates issuer config or status
+with the org named explicitly: the request of Backend.UpdateIssuer`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.UpdateIssuerRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ID",
+			FullName:      "privpb.UpdateIssuerRequest.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `ID of the issuer`,
+		},
+		{
+			Name:          "Config",
+			FullName:      "privpb.UpdateIssuerRequest.Config",
+			Type:          "struct",
+			StructName:    "pb.IssuerConfig",
+			SearchType:    "flat_object",
+			Documentation: `Config replaces runtime settings when provided`,
+		},
+		{
+			Name:            "Status",
+			FullName:        "privpb.UpdateIssuerRequest.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.IssuerStatus_Enum_EnumDescription,
+			Documentation:   `Status changes the status when provided: Archived or Destroyed`,
+		},
+	},
+}
+
 // MessageAllocator defines constructor to allocate Protobuf message
 type MessageAllocator func() any
 
 var (
 	initMessageDescriptionOnce sync.Once
 	messageDescriptions        = map[string]*api.MessageDescription{
-		"pb.ActivateIssuerRequest":                ActivateIssuerRequest_MessageDescription,
-		"pb.Certificate":                          Certificate_MessageDescription,
-		"pb.Certificate.MetadataEntry":            Certificate_MetadataEntry_MessageDescription,
-		"pb.CertificateResponse":                  CertificateResponse_MessageDescription,
-		"pb.CertificatesResponse":                 CertificatesResponse_MessageDescription,
-		"pb.Crl":                                  Crl_MessageDescription,
-		"pb.CrlsResponse":                         CrlsResponse_MessageDescription,
-		"pb.ImportIssuerRequest":                  ImportIssuerRequest_MessageDescription,
-		"pb.Issuer":                               Issuer_MessageDescription,
-		"pb.IssuerConfig":                         IssuerConfig_MessageDescription,
-		"pb.IssuersResponse":                      IssuersResponse_MessageDescription,
-		"pb.KeySpec":                              KeySpec_MessageDescription,
-		"pb.NextPage":                             NextPage_MessageDescription,
-		"pb.OCSPRequest":                          OCSPRequest_MessageDescription,
-		"pb.OCSPResponse":                         OCSPResponse_MessageDescription,
-		"pb.Org":                                  Org_MessageDescription,
-		"pb.OrgsResponse":                         OrgsResponse_MessageDescription,
-		"pb.Project":                              Project_MessageDescription,
-		"pb.ProjectsResponse":                     ProjectsResponse_MessageDescription,
-		"pb.PublishCrlsRequest":                   PublishCrlsRequest_MessageDescription,
-		"pb.RegisterIssuerRequest":                RegisterIssuerRequest_MessageDescription,
-		"pb.SignCertificateRequest":               SignCertificateRequest_MessageDescription,
-		"pb.SignCertificateRequest.MetadataEntry": SignCertificateRequest_MetadataEntry_MessageDescription,
-		"pb.UpdateIssuerRequest":                  UpdateIssuerRequest_MessageDescription,
-		"pb.X509Extension":                        X509Extension_MessageDescription,
-		"pb.X509Name":                             X509Name_MessageDescription,
-		"pb.X509Subject":                          X509Subject_MessageDescription,
-		"privpb.ListCertificatesRequest":          ListCertificatesRequest_MessageDescription,
-		"privpb.ListIssuersRequest":               ListIssuersRequest_MessageDescription,
-		"privpb.ListOrgsRequest":                  ListOrgsRequest_MessageDescription,
-		"privpb.ListProjectsRequest":              ListProjectsRequest_MessageDescription,
+		"google.protobuf.Empty":                              Empty_MessageDescription,
+		"pb.CAConstraint":                                    CAConstraint_MessageDescription,
+		"pb.CSRAllowedFields":                                CSRAllowedFields_MessageDescription,
+		"pb.CertProfile":                                     CertProfile_MessageDescription,
+		"pb.Certificate":                                     Certificate_MessageDescription,
+		"pb.Certificate.MetadataEntry":                       Certificate_MetadataEntry_MessageDescription,
+		"pb.CertificatePolicy":                               CertificatePolicy_MessageDescription,
+		"pb.CertificatePolicyQualifier":                      CertificatePolicyQualifier_MessageDescription,
+		"pb.CertificateResponse":                             CertificateResponse_MessageDescription,
+		"pb.CertificatesResponse":                            CertificatesResponse_MessageDescription,
+		"pb.Crl":                                             Crl_MessageDescription,
+		"pb.CrlResponse":                                     CrlResponse_MessageDescription,
+		"pb.CrlsResponse":                                    CrlsResponse_MessageDescription,
+		"pb.Issuer":                                          Issuer_MessageDescription,
+		"pb.IssuerConfig":                                    IssuerConfig_MessageDescription,
+		"pb.IssuerSerial":                                    IssuerSerial_MessageDescription,
+		"pb.IssuersResponse":                                 IssuersResponse_MessageDescription,
+		"pb.KeySpec":                                         KeySpec_MessageDescription,
+		"pb.NextPage":                                        NextPage_MessageDescription,
+		"pb.OCSPRequest":                                     OCSPRequest_MessageDescription,
+		"pb.OCSPResponse":                                    OCSPResponse_MessageDescription,
+		"pb.Org":                                             Org_MessageDescription,
+		"pb.OrgsResponse":                                    OrgsResponse_MessageDescription,
+		"pb.ProfilesResponse":                                ProfilesResponse_MessageDescription,
+		"pb.Project":                                         Project_MessageDescription,
+		"pb.ProjectsResponse":                                ProjectsResponse_MessageDescription,
+		"pb.RevokedCertificate":                              RevokedCertificate_MessageDescription,
+		"pb.RevokedCertificateResponse":                      RevokedCertificateResponse_MessageDescription,
+		"pb.RevokedCertificatesResponse":                     RevokedCertificatesResponse_MessageDescription,
+		"pb.RootCertificate":                                 RootCertificate_MessageDescription,
+		"pb.RootsResponse":                                   RootsResponse_MessageDescription,
+		"pb.X509Extension":                                   X509Extension_MessageDescription,
+		"pb.X509Name":                                        X509Name_MessageDescription,
+		"pb.X509Subject":                                     X509Subject_MessageDescription,
+		"privpb.ActivateIssuerRequest":                       ActivateIssuerRequest_MessageDescription,
+		"privpb.DeleteProfileRequest":                        DeleteProfileRequest_MessageDescription,
+		"privpb.GetCertificateRequest":                       GetCertificateRequest_MessageDescription,
+		"privpb.GetCrlRequest":                               GetCrlRequest_MessageDescription,
+		"privpb.GetIssuerRequest":                            GetIssuerRequest_MessageDescription,
+		"privpb.GetProfileRequest":                           GetProfileRequest_MessageDescription,
+		"privpb.ImportIssuerRequest":                         ImportIssuerRequest_MessageDescription,
+		"privpb.ListAllCertificatesRequest":                  ListAllCertificatesRequest_MessageDescription,
+		"privpb.ListAllIssuersRequest":                       ListAllIssuersRequest_MessageDescription,
+		"privpb.ListCertificatesRequest":                     ListCertificatesRequest_MessageDescription,
+		"privpb.ListIssuersRequest":                          ListIssuersRequest_MessageDescription,
+		"privpb.ListOrgsRequest":                             ListOrgsRequest_MessageDescription,
+		"privpb.ListProfilesRequest":                         ListProfilesRequest_MessageDescription,
+		"privpb.ListProjectsRequest":                         ListProjectsRequest_MessageDescription,
+		"privpb.ListRevokedCertificatesRequest":              ListRevokedCertificatesRequest_MessageDescription,
+		"privpb.ListRootsRequest":                            ListRootsRequest_MessageDescription,
+		"privpb.PublishCrlsRequest":                          PublishCrlsRequest_MessageDescription,
+		"privpb.RegisterIssuerRequest":                       RegisterIssuerRequest_MessageDescription,
+		"privpb.RegisterProfileRequest":                      RegisterProfileRequest_MessageDescription,
+		"privpb.RegisterRootRequest":                         RegisterRootRequest_MessageDescription,
+		"privpb.RevokeCertificateRequest":                    RevokeCertificateRequest_MessageDescription,
+		"privpb.SignCertificateRequest":                      SignCertificateRequest_MessageDescription,
+		"privpb.SignCertificateRequest.MetadataEntry":        SignCertificateRequest_MetadataEntry_MessageDescription,
+		"privpb.UpdateCertificateLabelRequest":               UpdateCertificateLabelRequest_MessageDescription,
+		"privpb.UpdateCertificateLabelRequest.MetadataEntry": UpdateCertificateLabelRequest_MetadataEntry_MessageDescription,
+		"privpb.UpdateIssuerRequest":                         UpdateIssuerRequest_MessageDescription,
 	}
 
 	messageAllocators = map[string]MessageAllocator{
-		"pb.ActivateIssuerRequest":                func() any { return new(pb.ActivateIssuerRequest) },
-		"pb.Certificate":                          func() any { return new(pb.Certificate) },
-		"pb.Certificate.MetadataEntry":            func() any { return make(map[string]string) },
-		"pb.CertificateResponse":                  func() any { return new(pb.CertificateResponse) },
-		"pb.CertificatesResponse":                 func() any { return new(pb.CertificatesResponse) },
-		"pb.Crl":                                  func() any { return new(pb.Crl) },
-		"pb.CrlsResponse":                         func() any { return new(pb.CrlsResponse) },
-		"pb.ImportIssuerRequest":                  func() any { return new(pb.ImportIssuerRequest) },
-		"pb.Issuer":                               func() any { return new(pb.Issuer) },
-		"pb.IssuerConfig":                         func() any { return new(pb.IssuerConfig) },
-		"pb.IssuersResponse":                      func() any { return new(pb.IssuersResponse) },
-		"pb.KeySpec":                              func() any { return new(pb.KeySpec) },
-		"pb.NextPage":                             func() any { return new(pb.NextPage) },
-		"pb.OCSPRequest":                          func() any { return new(pb.OCSPRequest) },
-		"pb.OCSPResponse":                         func() any { return new(pb.OCSPResponse) },
-		"pb.Org":                                  func() any { return new(pb.Org) },
-		"pb.OrgsResponse":                         func() any { return new(pb.OrgsResponse) },
-		"pb.Project":                              func() any { return new(pb.Project) },
-		"pb.ProjectsResponse":                     func() any { return new(pb.ProjectsResponse) },
-		"pb.PublishCrlsRequest":                   func() any { return new(pb.PublishCrlsRequest) },
-		"pb.RegisterIssuerRequest":                func() any { return new(pb.RegisterIssuerRequest) },
-		"pb.SignCertificateRequest":               func() any { return new(pb.SignCertificateRequest) },
-		"pb.SignCertificateRequest.MetadataEntry": func() any { return make(map[string]string) },
-		"pb.UpdateIssuerRequest":                  func() any { return new(pb.UpdateIssuerRequest) },
-		"pb.X509Extension":                        func() any { return new(pb.X509Extension) },
-		"pb.X509Name":                             func() any { return new(pb.X509Name) },
-		"pb.X509Subject":                          func() any { return new(pb.X509Subject) },
-		"privpb.ListCertificatesRequest":          func() any { return new(ListCertificatesRequest) },
-		"privpb.ListIssuersRequest":               func() any { return new(ListIssuersRequest) },
-		"privpb.ListOrgsRequest":                  func() any { return new(ListOrgsRequest) },
-		"privpb.ListProjectsRequest":              func() any { return new(ListProjectsRequest) },
+		"google.protobuf.Empty":                              func() any { return new(emptypb.Empty) },
+		"pb.CAConstraint":                                    func() any { return new(pb.CAConstraint) },
+		"pb.CSRAllowedFields":                                func() any { return new(pb.CSRAllowedFields) },
+		"pb.CertProfile":                                     func() any { return new(pb.CertProfile) },
+		"pb.Certificate":                                     func() any { return new(pb.Certificate) },
+		"pb.Certificate.MetadataEntry":                       func() any { return make(map[string]string) },
+		"pb.CertificatePolicy":                               func() any { return new(pb.CertificatePolicy) },
+		"pb.CertificatePolicyQualifier":                      func() any { return new(pb.CertificatePolicyQualifier) },
+		"pb.CertificateResponse":                             func() any { return new(pb.CertificateResponse) },
+		"pb.CertificatesResponse":                            func() any { return new(pb.CertificatesResponse) },
+		"pb.Crl":                                             func() any { return new(pb.Crl) },
+		"pb.CrlResponse":                                     func() any { return new(pb.CrlResponse) },
+		"pb.CrlsResponse":                                    func() any { return new(pb.CrlsResponse) },
+		"pb.Issuer":                                          func() any { return new(pb.Issuer) },
+		"pb.IssuerConfig":                                    func() any { return new(pb.IssuerConfig) },
+		"pb.IssuerSerial":                                    func() any { return new(pb.IssuerSerial) },
+		"pb.IssuersResponse":                                 func() any { return new(pb.IssuersResponse) },
+		"pb.KeySpec":                                         func() any { return new(pb.KeySpec) },
+		"pb.NextPage":                                        func() any { return new(pb.NextPage) },
+		"pb.OCSPRequest":                                     func() any { return new(pb.OCSPRequest) },
+		"pb.OCSPResponse":                                    func() any { return new(pb.OCSPResponse) },
+		"pb.Org":                                             func() any { return new(pb.Org) },
+		"pb.OrgsResponse":                                    func() any { return new(pb.OrgsResponse) },
+		"pb.ProfilesResponse":                                func() any { return new(pb.ProfilesResponse) },
+		"pb.Project":                                         func() any { return new(pb.Project) },
+		"pb.ProjectsResponse":                                func() any { return new(pb.ProjectsResponse) },
+		"pb.RevokedCertificate":                              func() any { return new(pb.RevokedCertificate) },
+		"pb.RevokedCertificateResponse":                      func() any { return new(pb.RevokedCertificateResponse) },
+		"pb.RevokedCertificatesResponse":                     func() any { return new(pb.RevokedCertificatesResponse) },
+		"pb.RootCertificate":                                 func() any { return new(pb.RootCertificate) },
+		"pb.RootsResponse":                                   func() any { return new(pb.RootsResponse) },
+		"pb.X509Extension":                                   func() any { return new(pb.X509Extension) },
+		"pb.X509Name":                                        func() any { return new(pb.X509Name) },
+		"pb.X509Subject":                                     func() any { return new(pb.X509Subject) },
+		"privpb.ActivateIssuerRequest":                       func() any { return new(ActivateIssuerRequest) },
+		"privpb.DeleteProfileRequest":                        func() any { return new(DeleteProfileRequest) },
+		"privpb.GetCertificateRequest":                       func() any { return new(GetCertificateRequest) },
+		"privpb.GetCrlRequest":                               func() any { return new(GetCrlRequest) },
+		"privpb.GetIssuerRequest":                            func() any { return new(GetIssuerRequest) },
+		"privpb.GetProfileRequest":                           func() any { return new(GetProfileRequest) },
+		"privpb.ImportIssuerRequest":                         func() any { return new(ImportIssuerRequest) },
+		"privpb.ListAllCertificatesRequest":                  func() any { return new(ListAllCertificatesRequest) },
+		"privpb.ListAllIssuersRequest":                       func() any { return new(ListAllIssuersRequest) },
+		"privpb.ListCertificatesRequest":                     func() any { return new(ListCertificatesRequest) },
+		"privpb.ListIssuersRequest":                          func() any { return new(ListIssuersRequest) },
+		"privpb.ListOrgsRequest":                             func() any { return new(ListOrgsRequest) },
+		"privpb.ListProfilesRequest":                         func() any { return new(ListProfilesRequest) },
+		"privpb.ListProjectsRequest":                         func() any { return new(ListProjectsRequest) },
+		"privpb.ListRevokedCertificatesRequest":              func() any { return new(ListRevokedCertificatesRequest) },
+		"privpb.ListRootsRequest":                            func() any { return new(ListRootsRequest) },
+		"privpb.PublishCrlsRequest":                          func() any { return new(PublishCrlsRequest) },
+		"privpb.RegisterIssuerRequest":                       func() any { return new(RegisterIssuerRequest) },
+		"privpb.RegisterProfileRequest":                      func() any { return new(RegisterProfileRequest) },
+		"privpb.RegisterRootRequest":                         func() any { return new(RegisterRootRequest) },
+		"privpb.RevokeCertificateRequest":                    func() any { return new(RevokeCertificateRequest) },
+		"privpb.SignCertificateRequest":                      func() any { return new(SignCertificateRequest) },
+		"privpb.SignCertificateRequest.MetadataEntry":        func() any { return make(map[string]string) },
+		"privpb.UpdateCertificateLabelRequest":               func() any { return new(UpdateCertificateLabelRequest) },
+		"privpb.UpdateCertificateLabelRequest.MetadataEntry": func() any { return make(map[string]string) },
+		"privpb.UpdateIssuerRequest":                         func() any { return new(UpdateIssuerRequest) },
 	}
 )
 
+func (m *ActivateIssuerRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ActivateIssuerRequest_MessageDescription)
+}
+func (m *DeleteProfileRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, DeleteProfileRequest_MessageDescription)
+}
+func (m *GetCertificateRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, GetCertificateRequest_MessageDescription)
+}
+func (m *GetCrlRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, GetCrlRequest_MessageDescription)
+}
+func (m *GetIssuerRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, GetIssuerRequest_MessageDescription)
+}
+func (m *GetProfileRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, GetProfileRequest_MessageDescription)
+}
+func (m *ImportIssuerRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ImportIssuerRequest_MessageDescription)
+}
+func (m *ListAllCertificatesRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ListAllCertificatesRequest_MessageDescription)
+}
+func (m *ListAllIssuersRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ListAllIssuersRequest_MessageDescription)
+}
 func (m *ListCertificatesRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, ListCertificatesRequest_MessageDescription)
 }
@@ -1976,8 +3525,41 @@ func (m *ListIssuersRequest) Validate(ctx context.Context) error {
 func (m *ListOrgsRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, ListOrgsRequest_MessageDescription)
 }
+func (m *ListProfilesRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ListProfilesRequest_MessageDescription)
+}
 func (m *ListProjectsRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, ListProjectsRequest_MessageDescription)
+}
+func (m *ListRevokedCertificatesRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ListRevokedCertificatesRequest_MessageDescription)
+}
+func (m *ListRootsRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ListRootsRequest_MessageDescription)
+}
+func (m *PublishCrlsRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, PublishCrlsRequest_MessageDescription)
+}
+func (m *RegisterIssuerRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, RegisterIssuerRequest_MessageDescription)
+}
+func (m *RegisterProfileRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, RegisterProfileRequest_MessageDescription)
+}
+func (m *RegisterRootRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, RegisterRootRequest_MessageDescription)
+}
+func (m *RevokeCertificateRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, RevokeCertificateRequest_MessageDescription)
+}
+func (m *SignCertificateRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, SignCertificateRequest_MessageDescription)
+}
+func (m *UpdateCertificateLabelRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, UpdateCertificateLabelRequest_MessageDescription)
+}
+func (m *UpdateIssuerRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, UpdateIssuerRequest_MessageDescription)
 }
 
 func GetMessageDescriptions() map[string]*api.MessageDescription {

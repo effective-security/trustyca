@@ -12,6 +12,7 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/privpb"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type proxyBackendServer struct {
@@ -57,7 +58,7 @@ func NewHTTPBackendClient(client retriable.PostRequester) privpb.BackendServer {
 // RegisterIssuer creates an issuer of the org: the key is generated in
 // the crypto provider, and the certificate is self-signed for a Root,
 // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
-func (s *proxyBackendServer) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+func (s *proxyBackendServer) RegisterIssuer(ctx context.Context, req *privpb.RegisterIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.srv.RegisterIssuer(ctx, req)
@@ -70,7 +71,7 @@ func (s *proxyBackendServer) RegisterIssuer(ctx context.Context, req *pb.Registe
 // RegisterIssuer creates an issuer of the org: the key is generated in
 // the crypto provider, and the certificate is self-signed for a Root,
 // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
-func (s *proxyBackendClient) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequest) (*pb.Issuer, error) {
+func (s *proxyBackendClient) RegisterIssuer(ctx context.Context, req *privpb.RegisterIssuerRequest) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.remote.RegisterIssuer(ctx, req, s.callOpts...)
@@ -83,7 +84,7 @@ func (s *proxyBackendClient) RegisterIssuer(ctx context.Context, req *pb.Registe
 // RegisterIssuer creates an issuer of the org: the key is generated in
 // the crypto provider, and the certificate is self-signed for a Root,
 // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
-func (s *postproxyBackendClient) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequest) (*pb.Issuer, error) {
+func (s *postproxyBackendClient) RegisterIssuer(ctx context.Context, req *privpb.RegisterIssuerRequest) (*pb.Issuer, error) {
 	var res pb.Issuer
 	path := privpb.Backend_RegisterIssuer_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
@@ -94,9 +95,8 @@ func (s *postproxyBackendClient) RegisterIssuer(ctx context.Context, req *pb.Reg
 }
 
 // ImportIssuer registers an issuer from an existing certificate and a
-// key URI of a crypto provider or a PEM key stored protected
-// (CA.ImportIssuer)
-func (s *proxyBackendServer) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+func (s *proxyBackendServer) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.srv.ImportIssuer(ctx, req)
@@ -107,9 +107,8 @@ func (s *proxyBackendServer) ImportIssuer(ctx context.Context, req *pb.ImportIss
 }
 
 // ImportIssuer registers an issuer from an existing certificate and a
-// key URI of a crypto provider or a PEM key stored protected
-// (CA.ImportIssuer)
-func (s *proxyBackendClient) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest) (*pb.Issuer, error) {
+// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+func (s *proxyBackendClient) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.remote.ImportIssuer(ctx, req, s.callOpts...)
@@ -120,9 +119,8 @@ func (s *proxyBackendClient) ImportIssuer(ctx context.Context, req *pb.ImportIss
 }
 
 // ImportIssuer registers an issuer from an existing certificate and a
-// key URI of a crypto provider or a PEM key stored protected
-// (CA.ImportIssuer)
-func (s *postproxyBackendClient) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest) (*pb.Issuer, error) {
+// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
+func (s *postproxyBackendClient) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest) (*pb.Issuer, error) {
 	var res pb.Issuer
 	path := privpb.Backend_ImportIssuer_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
@@ -134,7 +132,7 @@ func (s *postproxyBackendClient) ImportIssuer(ctx context.Context, req *pb.Impor
 
 // ActivateIssuer sets the externally signed certificate of a Pending
 // issuer, which must be for the issuer's key (CA.ActivateIssuer)
-func (s *proxyBackendServer) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+func (s *proxyBackendServer) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.srv.ActivateIssuer(ctx, req)
@@ -146,7 +144,7 @@ func (s *proxyBackendServer) ActivateIssuer(ctx context.Context, req *pb.Activat
 
 // ActivateIssuer sets the externally signed certificate of a Pending
 // issuer, which must be for the issuer's key (CA.ActivateIssuer)
-func (s *proxyBackendClient) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequest) (*pb.Issuer, error) {
+func (s *proxyBackendClient) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuerRequest) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.remote.ActivateIssuer(ctx, req, s.callOpts...)
@@ -158,7 +156,7 @@ func (s *proxyBackendClient) ActivateIssuer(ctx context.Context, req *pb.Activat
 
 // ActivateIssuer sets the externally signed certificate of a Pending
 // issuer, which must be for the issuer's key (CA.ActivateIssuer)
-func (s *postproxyBackendClient) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequest) (*pb.Issuer, error) {
+func (s *postproxyBackendClient) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuerRequest) (*pb.Issuer, error) {
 	var res pb.Issuer
 	path := privpb.Backend_ActivateIssuer_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
@@ -170,7 +168,7 @@ func (s *postproxyBackendClient) ActivateIssuer(ctx context.Context, req *pb.Act
 
 // UpdateIssuer updates the runtime configuration or the status of an
 // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
-func (s *proxyBackendServer) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+func (s *proxyBackendServer) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.srv.UpdateIssuer(ctx, req)
@@ -182,7 +180,7 @@ func (s *proxyBackendServer) UpdateIssuer(ctx context.Context, req *pb.UpdateIss
 
 // UpdateIssuer updates the runtime configuration or the status of an
 // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
-func (s *proxyBackendClient) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest) (*pb.Issuer, error) {
+func (s *proxyBackendClient) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequest) (*pb.Issuer, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.remote.UpdateIssuer(ctx, req, s.callOpts...)
@@ -194,7 +192,7 @@ func (s *proxyBackendClient) UpdateIssuer(ctx context.Context, req *pb.UpdateIss
 
 // UpdateIssuer updates the runtime configuration or the status of an
 // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
-func (s *postproxyBackendClient) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest) (*pb.Issuer, error) {
+func (s *postproxyBackendClient) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequest) (*pb.Issuer, error) {
 	var res pb.Issuer
 	path := privpb.Backend_UpdateIssuer_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
@@ -204,9 +202,279 @@ func (s *postproxyBackendClient) UpdateIssuer(ctx context.Context, req *pb.Updat
 	return &res, nil
 }
 
+// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+func (s *proxyBackendServer) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest, opts ...grpc.CallOption) (*pb.Issuer, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetIssuer(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+func (s *proxyBackendClient) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetIssuer(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+func (s *postproxyBackendClient) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error) {
+	var res pb.Issuer
+	path := privpb.Backend_GetIssuer_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListIssuers returns the issuers of the org (CA.ListIssuers)
+func (s *proxyBackendServer) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest, opts ...grpc.CallOption) (*pb.IssuersResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListIssuers(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListIssuers returns the issuers of the org (CA.ListIssuers)
+func (s *proxyBackendClient) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListIssuers(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListIssuers returns the issuers of the org (CA.ListIssuers)
+func (s *postproxyBackendClient) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+	var res pb.IssuersResponse
+	path := privpb.Backend_ListIssuers_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+func (s *proxyBackendServer) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest, opts ...grpc.CallOption) (*pb.RootCertificate, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.RegisterRoot(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+func (s *proxyBackendClient) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest) (*pb.RootCertificate, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.RegisterRoot(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+func (s *postproxyBackendClient) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest) (*pb.RootCertificate, error) {
+	var res pb.RootCertificate
+	path := privpb.Backend_RegisterRoot_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListRoots returns the trust anchors of the org, or of the
+// platform (CA.ListRoots)
+func (s *proxyBackendServer) ListRoots(ctx context.Context, req *privpb.ListRootsRequest, opts ...grpc.CallOption) (*pb.RootsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListRoots(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListRoots returns the trust anchors of the org, or of the
+// platform (CA.ListRoots)
+func (s *proxyBackendClient) ListRoots(ctx context.Context, req *privpb.ListRootsRequest) (*pb.RootsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListRoots(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListRoots returns the trust anchors of the org, or of the
+// platform (CA.ListRoots)
+func (s *postproxyBackendClient) ListRoots(ctx context.Context, req *privpb.ListRootsRequest) (*pb.RootsResponse, error) {
+	var res pb.RootsResponse
+	path := privpb.Backend_ListRoots_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// RegisterProfile creates or replaces a certificate profile, keyed
+// by (OrgID, ProjectID, Label) (CA.RegisterProfile)
+func (s *proxyBackendServer) RegisterProfile(ctx context.Context, req *privpb.RegisterProfileRequest, opts ...grpc.CallOption) (*pb.CertProfile, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.RegisterProfile(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// RegisterProfile creates or replaces a certificate profile, keyed
+// by (OrgID, ProjectID, Label) (CA.RegisterProfile)
+func (s *proxyBackendClient) RegisterProfile(ctx context.Context, req *privpb.RegisterProfileRequest) (*pb.CertProfile, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.RegisterProfile(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// RegisterProfile creates or replaces a certificate profile, keyed
+// by (OrgID, ProjectID, Label) (CA.RegisterProfile)
+func (s *postproxyBackendClient) RegisterProfile(ctx context.Context, req *privpb.RegisterProfileRequest) (*pb.CertProfile, error) {
+	var res pb.CertProfile
+	path := privpb.Backend_RegisterProfile_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// GetProfile returns a profile of the org by ID or label (CA.GetProfile)
+func (s *proxyBackendServer) GetProfile(ctx context.Context, req *privpb.GetProfileRequest, opts ...grpc.CallOption) (*pb.CertProfile, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetProfile(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetProfile returns a profile of the org by ID or label (CA.GetProfile)
+func (s *proxyBackendClient) GetProfile(ctx context.Context, req *privpb.GetProfileRequest) (*pb.CertProfile, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetProfile(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetProfile returns a profile of the org by ID or label (CA.GetProfile)
+func (s *postproxyBackendClient) GetProfile(ctx context.Context, req *privpb.GetProfileRequest) (*pb.CertProfile, error) {
+	var res pb.CertProfile
+	path := privpb.Backend_GetProfile_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListProfiles returns the profiles of the org (CA.ListProfiles)
+func (s *proxyBackendServer) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequest, opts ...grpc.CallOption) (*pb.ProfilesResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListProfiles(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListProfiles returns the profiles of the org (CA.ListProfiles)
+func (s *proxyBackendClient) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequest) (*pb.ProfilesResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListProfiles(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListProfiles returns the profiles of the org (CA.ListProfiles)
+func (s *postproxyBackendClient) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequest) (*pb.ProfilesResponse, error) {
+	var res pb.ProfilesResponse
+	path := privpb.Backend_ListProfiles_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// DeleteProfile deletes a profile of the org (CA.DeleteProfile)
+func (s *proxyBackendServer) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.DeleteProfile(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// DeleteProfile deletes a profile of the org (CA.DeleteProfile)
+func (s *proxyBackendClient) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRequest) (*emptypb.Empty, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.DeleteProfile(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// DeleteProfile deletes a profile of the org (CA.DeleteProfile)
+func (s *postproxyBackendClient) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRequest) (*emptypb.Empty, error) {
+	var res emptypb.Empty
+	path := privpb.Backend_DeleteProfile_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 // SignCertificate signs a certificate request with the issuer of the
 // profile and registers the certificate (CA.SignCertificate)
-func (s *proxyBackendServer) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error) {
+func (s *proxyBackendServer) SignCertificate(ctx context.Context, req *privpb.SignCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.srv.SignCertificate(ctx, req)
@@ -218,7 +486,7 @@ func (s *proxyBackendServer) SignCertificate(ctx context.Context, req *pb.SignCe
 
 // SignCertificate signs a certificate request with the issuer of the
 // profile and registers the certificate (CA.SignCertificate)
-func (s *proxyBackendClient) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest) (*pb.CertificateResponse, error) {
+func (s *proxyBackendClient) SignCertificate(ctx context.Context, req *privpb.SignCertificateRequest) (*pb.CertificateResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.remote.SignCertificate(ctx, req, s.callOpts...)
@@ -230,7 +498,7 @@ func (s *proxyBackendClient) SignCertificate(ctx context.Context, req *pb.SignCe
 
 // SignCertificate signs a certificate request with the issuer of the
 // profile and registers the certificate (CA.SignCertificate)
-func (s *postproxyBackendClient) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest) (*pb.CertificateResponse, error) {
+func (s *postproxyBackendClient) SignCertificate(ctx context.Context, req *privpb.SignCertificateRequest) (*pb.CertificateResponse, error) {
 	var res pb.CertificateResponse
 	path := privpb.Backend_SignCertificate_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
@@ -240,9 +508,219 @@ func (s *postproxyBackendClient) SignCertificate(ctx context.Context, req *pb.Si
 	return &res, nil
 }
 
-// PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
-// of the issuers in scope (CA.PublishCrls)
-func (s *proxyBackendServer) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest, opts ...grpc.CallOption) (*pb.CrlsResponse, error) {
+// GetCertificate returns a certificate of the org by ID, SKID,
+// Sha256 or issuer and serial number (CA.GetCertificate)
+func (s *proxyBackendServer) GetCertificate(ctx context.Context, req *privpb.GetCertificateRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetCertificate(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetCertificate returns a certificate of the org by ID, SKID,
+// Sha256 or issuer and serial number (CA.GetCertificate)
+func (s *proxyBackendClient) GetCertificate(ctx context.Context, req *privpb.GetCertificateRequest) (*pb.CertificateResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetCertificate(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetCertificate returns a certificate of the org by ID, SKID,
+// Sha256 or issuer and serial number (CA.GetCertificate)
+func (s *postproxyBackendClient) GetCertificate(ctx context.Context, req *privpb.GetCertificateRequest) (*pb.CertificateResponse, error) {
+	var res pb.CertificateResponse
+	path := privpb.Backend_GetCertificate_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListCertificates returns the certificates of the org, newest
+// first (CA.ListCertificates)
+func (s *proxyBackendServer) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest, opts ...grpc.CallOption) (*pb.CertificatesResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListCertificates(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListCertificates returns the certificates of the org, newest
+// first (CA.ListCertificates)
+func (s *proxyBackendClient) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListCertificates(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListCertificates returns the certificates of the org, newest
+// first (CA.ListCertificates)
+func (s *postproxyBackendClient) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+	var res pb.CertificatesResponse
+	path := privpb.Backend_ListCertificates_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// UpdateCertificateLabel updates the client-provided label and
+// metadata of a certificate (CA.UpdateCertificateLabel)
+func (s *proxyBackendServer) UpdateCertificateLabel(ctx context.Context, req *privpb.UpdateCertificateLabelRequest, opts ...grpc.CallOption) (*pb.CertificateResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.UpdateCertificateLabel(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// UpdateCertificateLabel updates the client-provided label and
+// metadata of a certificate (CA.UpdateCertificateLabel)
+func (s *proxyBackendClient) UpdateCertificateLabel(ctx context.Context, req *privpb.UpdateCertificateLabelRequest) (*pb.CertificateResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.UpdateCertificateLabel(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// UpdateCertificateLabel updates the client-provided label and
+// metadata of a certificate (CA.UpdateCertificateLabel)
+func (s *postproxyBackendClient) UpdateCertificateLabel(ctx context.Context, req *privpb.UpdateCertificateLabelRequest) (*pb.CertificateResponse, error) {
+	var res pb.CertificateResponse
+	path := privpb.Backend_UpdateCertificateLabel_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// RevokeCertificate revokes a certificate of the org (CA.RevokeCertificate)
+func (s *proxyBackendServer) RevokeCertificate(ctx context.Context, req *privpb.RevokeCertificateRequest, opts ...grpc.CallOption) (*pb.RevokedCertificateResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.RevokeCertificate(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// RevokeCertificate revokes a certificate of the org (CA.RevokeCertificate)
+func (s *proxyBackendClient) RevokeCertificate(ctx context.Context, req *privpb.RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.RevokeCertificate(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// RevokeCertificate revokes a certificate of the org (CA.RevokeCertificate)
+func (s *postproxyBackendClient) RevokeCertificate(ctx context.Context, req *privpb.RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error) {
+	var res pb.RevokedCertificateResponse
+	path := privpb.Backend_RevokeCertificate_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListRevokedCertificates returns the revoked certificates of
+// the org (CA.ListRevokedCertificates)
+func (s *proxyBackendServer) ListRevokedCertificates(ctx context.Context, req *privpb.ListRevokedCertificatesRequest, opts ...grpc.CallOption) (*pb.RevokedCertificatesResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListRevokedCertificates(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListRevokedCertificates returns the revoked certificates of
+// the org (CA.ListRevokedCertificates)
+func (s *proxyBackendClient) ListRevokedCertificates(ctx context.Context, req *privpb.ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListRevokedCertificates(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListRevokedCertificates returns the revoked certificates of
+// the org (CA.ListRevokedCertificates)
+func (s *postproxyBackendClient) ListRevokedCertificates(ctx context.Context, req *privpb.ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error) {
+	var res pb.RevokedCertificatesResponse
+	path := privpb.Backend_ListRevokedCertificates_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// GetCRL returns the current CRL of an issuer (CA.GetCRL)
+func (s *proxyBackendServer) GetCRL(ctx context.Context, req *privpb.GetCrlRequest, opts ...grpc.CallOption) (*pb.CrlResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetCRL(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetCRL returns the current CRL of an issuer (CA.GetCRL)
+func (s *proxyBackendClient) GetCRL(ctx context.Context, req *privpb.GetCrlRequest) (*pb.CrlResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetCRL(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetCRL returns the current CRL of an issuer (CA.GetCRL)
+func (s *postproxyBackendClient) GetCRL(ctx context.Context, req *privpb.GetCrlRequest) (*pb.CrlResponse, error) {
+	var res pb.CrlResponse
+	path := privpb.Backend_GetCRL_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// PublishCrls signs and publishes the CRL of an issuer, or the due
+// CRLs of the issuers in scope (CA.PublishCrls)
+func (s *proxyBackendServer) PublishCrls(ctx context.Context, req *privpb.PublishCrlsRequest, opts ...grpc.CallOption) (*pb.CrlsResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.srv.PublishCrls(ctx, req)
@@ -252,9 +730,9 @@ func (s *proxyBackendServer) PublishCrls(ctx context.Context, req *pb.PublishCrl
 	return res, nil
 }
 
-// PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
-// of the issuers in scope (CA.PublishCrls)
-func (s *proxyBackendClient) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
+// PublishCrls signs and publishes the CRL of an issuer, or the due
+// CRLs of the issuers in scope (CA.PublishCrls)
+func (s *proxyBackendClient) PublishCrls(ctx context.Context, req *privpb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
 	res, err := s.remote.PublishCrls(ctx, req, s.callOpts...)
@@ -264,9 +742,9 @@ func (s *proxyBackendClient) PublishCrls(ctx context.Context, req *pb.PublishCrl
 	return res, nil
 }
 
-// PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
-// of the issuers in scope (CA.PublishCrls)
-func (s *postproxyBackendClient) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
+// PublishCrls signs and publishes the CRL of an issuer, or the due
+// CRLs of the issuers in scope (CA.PublishCrls)
+func (s *postproxyBackendClient) PublishCrls(ctx context.Context, req *privpb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
 	var res pb.CrlsResponse
 	path := privpb.Backend_PublishCrls_FullMethodName
 	_, _, err := s.client.Post(ctx, path, req, &res)
@@ -276,8 +754,8 @@ func (s *postproxyBackendClient) PublishCrls(ctx context.Context, req *pb.Publis
 	return &res, nil
 }
 
-// SignOCSP signs the OCSP response of a DER request; the request names
-// the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+// SignOCSP signs the OCSP response of a DER request; the request
+// names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
 func (s *proxyBackendServer) SignOCSP(ctx context.Context, req *pb.OCSPRequest, opts ...grpc.CallOption) (*pb.OCSPResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -288,8 +766,8 @@ func (s *proxyBackendServer) SignOCSP(ctx context.Context, req *pb.OCSPRequest, 
 	return res, nil
 }
 
-// SignOCSP signs the OCSP response of a DER request; the request names
-// the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+// SignOCSP signs the OCSP response of a DER request; the request
+// names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
 func (s *proxyBackendClient) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error) {
 	// add correlation ID to outgoing RPC calls
 	ctx = correlation.WithMetaFromContext(ctx)
@@ -300,8 +778,8 @@ func (s *proxyBackendClient) SignOCSP(ctx context.Context, req *pb.OCSPRequest) 
 	return res, nil
 }
 
-// SignOCSP signs the OCSP response of a DER request; the request names
-// the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+// SignOCSP signs the OCSP response of a DER request; the request
+// names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
 func (s *postproxyBackendClient) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error) {
 	var res pb.OCSPResponse
 	path := privpb.Backend_SignOCSP_FullMethodName

@@ -238,7 +238,7 @@ var methods = map[string]*MethodInfo{
 	},
 
 	CIS_GetRoots_FullMethodName: {
-		Allocator: func() any { return new(ListRootsRequest) },
+		Allocator: func() any { return new(GetRootsRequest) },
 	},
 
 	CIS_GetIssuer_FullMethodName: {

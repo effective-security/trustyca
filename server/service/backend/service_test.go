@@ -1,4 +1,4 @@
-package ca
+package backend
 
 import (
 	"context"
@@ -21,8 +21,6 @@ import (
 	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/mocks/mocktrustycadb"
-	"github.com/effective-security/trustyca/server/service/backend"
-	"github.com/effective-security/trustyca/server/service/shared"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/cryptoprov"
@@ -542,20 +540,15 @@ func newTestCA(t testing.TB, ctrl *gomock.Controller) *testCA {
 	return tca
 }
 
-// service returns the CA service of the tests, which forwards the key
-// operations to the backend service over the CA in the same process, with
-// the context of the caller
+// service returns the backend service of the tests over the CA
 func (tca *testCA) service() *Service {
-	authorizer := newFakeAuthorizer()
-	backendSvc := backend.New(tca.cadb, tca.orgsdb, authorizer, tca.registry)
-	return New(tca.cadb, tca.orgsdb, authorizer, shared.NewStaticBackendLocator(backendSvc))
+	return New(tca.cadb, tca.orgsdb, newFakeAuthorizer(), tca.registry)
 }
 
-// noCA returns a CA service without a backend and a backend service without
-// an issuer registry, over the DB of the CA
-func (tca *testCA) noCA() (*Service, *backend.Service) {
-	authorizer := newFakeAuthorizer()
-	return New(tca.cadb, tca.orgsdb, authorizer, nil), backend.New(tca.cadb, tca.orgsdb, authorizer, nil)
+// noCA returns a backend service without an issuer registry, over the DB of
+// the CA: the methods that use a key are Unavailable
+func (tca *testCA) noCA() *Service {
+	return New(tca.cadb, tca.orgsdb, newFakeAuthorizer(), nil)
 }
 
 // addProfile stores a profile of the scope

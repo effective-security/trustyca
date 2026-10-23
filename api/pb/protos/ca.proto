@@ -8,13 +8,13 @@ import "google/protobuf/empty.proto";
 import "types.proto";
 import "pkix.proto";
 
-// CA is the Certification Authority service.
-// It is served over gRPC only on the backend and is not exposed to the
-// internet. The Registration Authority (RA) is the trusted caller and is
-// responsible for tenant mapping and end-user authorization.
-// Every request is scoped by OrgID and optional ProjectID. Trusted service
-// callers (mTLS) pass OrgID explicitly; user tokens are checked against the
-// permission named by (es.api.scopes).
+// CA is the Certification Authority service of the tenants: the users and
+// the API keys of an org, on the wfe listener. Every request is scoped by
+// the org of the caller's token and an optional ProjectID; the requests
+// carry no OrgID. The service holds no issuer key: it forwards every call
+// to privpb.Backend with the org of the token (DESIGN.md section 2.1),
+// which is also the API of the service identities (the RA, the operator).
+// Methods declare the roles and the API key scopes they require.
 service CA {
     //
     // Issuers
@@ -80,7 +80,7 @@ service CA {
     //
 
     // RegisterProfile creates or replaces a certificate profile, keyed by
-    // (OrgID, ProjectID, Label)
+    // (org, ProjectID, Label)
     rpc RegisterProfile(RegisterProfileRequest) returns (CertProfile) {
         option (es.api.allowed_roles) = "Admin";
         option (es.api.scopes)        = "ca:write";
@@ -159,7 +159,8 @@ service CA {
         option (es.api.allowed_roles) = "Admin,Security,APIKey";
         option (es.api.scopes)        = "ca:write";
     }
-    // SignOCSP signs an OCSP response. Called by the CIS OCSP responder.
+    // SignOCSP signs an OCSP response; the AIA OCSP responder calls
+    // Backend.SignOCSP.
     rpc SignOCSP(OCSPRequest) returns (OCSPResponse) {
         option (es.api.allowed_roles) = "Admin,Security";
         option (es.api.scopes)        = "ca:write";
@@ -172,8 +173,6 @@ service CA {
 
 // RegisterIssuerRequest specifies a request to create a new issuer
 message RegisterIssuerRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID of the owning project; empty for an org-wide issuer
     string ProjectID = 2 [json_name = "ProjectID"];
     // Label of the issuer, unique per (Org, Project)
@@ -204,8 +203,6 @@ message RegisterIssuerRequest {
 
 // ImportIssuerRequest specifies a request to import an existing issuer
 message ImportIssuerRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID of the owning project; empty for an org-wide issuer
     string ProjectID = 2 [json_name = "ProjectID"];
     // Label of the issuer, unique per (Org, Project)
@@ -233,23 +230,19 @@ message ImportIssuerRequest {
 // ActivateIssuerRequest specifies the externally signed certificate for a
 // Pending issuer
 message ActivateIssuerRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ID of the Pending issuer
-    string ID = 2 [json_name = "ID", (es.api.required) = true];
+    string ID = 1 [json_name = "ID", (es.api.required) = true];
     // Certificate provides the issuer certificate in PEM format
-    string Certificate = 3
+    string Certificate = 2
         [json_name = "Certificate", (es.api.required) = true];
     // Intermediates provides the intermediate CA certificates in PEM format
-    string Intermediates = 4 [json_name = "Intermediates"];
+    string Intermediates = 3 [json_name = "Intermediates"];
     // Root provides the Root CA certificate in PEM format
-    string Root = 5 [json_name = "Root"];
+    string Root = 4 [json_name = "Root"];
 }
 
 // GetIssuerRequest specifies an issuer by ID, label or IKID
 message GetIssuerRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID of the owning project; used with Label
     string ProjectID = 2 [json_name = "ProjectID"];
     // ID of the issuer
@@ -262,8 +255,6 @@ message GetIssuerRequest {
 
 // ListIssuersRequest specifies a paginated list of issuers
 message ListIssuersRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID filters by project; empty returns org-wide and all project
     // issuers
     string ProjectID = 2 [json_name = "ProjectID"];
@@ -291,8 +282,6 @@ message IssuersResponse {
 
 // UpdateIssuerRequest updates issuer config or status
 message UpdateIssuerRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ID of the issuer
     string ID = 2 [json_name = "ID", (es.api.required) = true];
     // Config replaces runtime settings when provided
@@ -307,8 +296,6 @@ message UpdateIssuerRequest {
 
 // RegisterRootRequest registers an external trust anchor
 message RegisterRootRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // Pem encoded root certificate
     string Pem = 2 [json_name = "Pem", (es.api.required) = true];
     // Trust scope
@@ -317,8 +304,6 @@ message RegisterRootRequest {
 
 // ListRootsRequest specifies a list of trust anchors
 message ListRootsRequest {
-    // OrgID of the owning org; empty for platform roots
-    string OrgID = 1 [json_name = "OrgID"];
     // Limit specifies maximum number of records to return
     uint32 Limit = 2 [json_name = "Limit"];
     // Offset specifies offset for the offset-based pagination
@@ -341,8 +326,6 @@ message RootsResponse {
 
 // RegisterProfileRequest creates or replaces a profile
 message RegisterProfileRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID of the owning project; empty for an org-wide profile
     string ProjectID = 2 [json_name = "ProjectID"];
     // Profile provides the profile definition.
@@ -352,8 +335,6 @@ message RegisterProfileRequest {
 
 // GetProfileRequest specifies a profile by ID or label
 message GetProfileRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID of the owning project; used with Label
     string ProjectID = 2 [json_name = "ProjectID"];
     // ID of the profile
@@ -364,8 +345,6 @@ message GetProfileRequest {
 
 // ListProfilesRequest specifies a paginated list of profiles
 message ListProfilesRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID filters by project; empty returns org-wide and all project
     // profiles
     string ProjectID = 2 [json_name = "ProjectID"];
@@ -389,8 +368,6 @@ message ProfilesResponse {
 
 // DeleteProfileRequest deletes a profile
 message DeleteProfileRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ID of the profile
     string ID = 2 [json_name = "ID", (es.api.required) = true];
 }
@@ -401,8 +378,6 @@ message DeleteProfileRequest {
 
 // SignCertificateRequest specifies certificate sign request
 message SignCertificateRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID of the owning project; recorded on the certificate and used to
     // resolve project-scoped profiles and issuers
     string ProjectID = 2 [json_name = "ProjectID"];
@@ -436,8 +411,6 @@ message SignCertificateRequest {
 
 // UpdateCertificateLabelRequest specifies certificate label update request
 message UpdateCertificateLabelRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ID specifies certificate ID
     string ID = 2 [json_name = "ID", (es.api.required) = true];
     // Label is provided by the client
@@ -453,8 +426,6 @@ message UpdateCertificateLabelRequest {
 // GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer
 // and serial number
 message GetCertificateRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ID specifies certificate ID
     string ID = 2
         [json_name = "ID", (es.api.required_or) = "SKID,Sha256,IssuerSerial"];
@@ -472,8 +443,6 @@ message GetCertificateRequest {
 // ListCertificatesRequest specifies a paginated list of certificates,
 // sorted by ID descending (newest first)
 message ListCertificatesRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID filters by project; empty returns org-wide and all project
     // certificates
     string ProjectID = 2 [json_name = "ProjectID"];
@@ -499,8 +468,6 @@ message ListCertificatesRequest {
 // ListRevokedCertificatesRequest specifies a paginated list of revoked
 // certificates, sorted by revocation ID descending
 message ListRevokedCertificatesRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ProjectID filters by project
     string ProjectID = 2 [json_name = "ProjectID"];
     // IKID filters by issuer
@@ -515,8 +482,6 @@ message ListRevokedCertificatesRequest {
 
 // RevokeCertificateRequest specifies revocation request
 message RevokeCertificateRequest {
-    // OrgID of the owning org
-    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ID specifies certificate ID
     string ID = 2
         [json_name = "ID", (es.api.required_or) = "SKID,IssuerSerial"];
@@ -570,22 +535,18 @@ message RevokedCertificatesResponse {
 
 // GetCrlRequest specifies CRL request by IKID
 message GetCrlRequest {
-    // OrgID of the owning org; empty allows lookup across orgs for CIS
-    string OrgID = 1 [json_name = "OrgID"];
     // IKID specifies Issuer Key ID
-    string IKID = 2 [json_name = "IKID", (es.api.required) = true];
+    string IKID = 1 [json_name = "IKID", (es.api.required) = true];
 }
 
 // PublishCrlsRequest allows to publish CRLs on demand
 message PublishCrlsRequest {
-    // OrgID of the owning org; empty for all orgs
-    string OrgID = 1 [json_name = "OrgID"];
     // ProjectID limits the scope to the project: the issuer of the IKID
     // must belong to it, and without an IKID the issuers of the project
     // publish. Empty publishes for the org-wide issuers and the projects the
     // caller may read; a project Admin names the project, and an API key
     // restricted to a project publishes for its project.
-    string ProjectID = 4 [json_name = "ProjectID"];
+    string ProjectID = 1 [json_name = "ProjectID"];
     // IKID specifies Issuer Key ID; empty to publish for all issuers in scope
     string IKID = 2 [json_name = "IKID"];
     // Force specifies to publish even if the current CRL is not due for renewal

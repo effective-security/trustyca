@@ -9,6 +9,7 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/privpb"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // MockBackendServer for testing
@@ -53,7 +54,7 @@ func (m *MockBackendServer) next() proto.Message {
 // the crypto provider, and the certificate is self-signed for a Root,
 // signed by the parent, or left Pending with a CSR (CA.RegisterIssuer)
 
-func (m *MockBackendServer) RegisterIssuer(ctx context.Context, req *pb.RegisterIssuerRequest) (*pb.Issuer, error) {
+func (m *MockBackendServer) RegisterIssuer(ctx context.Context, req *privpb.RegisterIssuerRequest) (*pb.Issuer, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
@@ -61,10 +62,9 @@ func (m *MockBackendServer) RegisterIssuer(ctx context.Context, req *pb.Register
 }
 
 // ImportIssuer registers an issuer from an existing certificate and a
-// key URI of a crypto provider or a PEM key stored protected
-// (CA.ImportIssuer)
+// key URI of a crypto provider or a PEM key stored protected (CA.ImportIssuer)
 
-func (m *MockBackendServer) ImportIssuer(ctx context.Context, req *pb.ImportIssuerRequest) (*pb.Issuer, error) {
+func (m *MockBackendServer) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequest) (*pb.Issuer, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
@@ -74,7 +74,7 @@ func (m *MockBackendServer) ImportIssuer(ctx context.Context, req *pb.ImportIssu
 // ActivateIssuer sets the externally signed certificate of a Pending
 // issuer, which must be for the issuer's key (CA.ActivateIssuer)
 
-func (m *MockBackendServer) ActivateIssuer(ctx context.Context, req *pb.ActivateIssuerRequest) (*pb.Issuer, error) {
+func (m *MockBackendServer) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuerRequest) (*pb.Issuer, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
@@ -84,35 +84,167 @@ func (m *MockBackendServer) ActivateIssuer(ctx context.Context, req *pb.Activate
 // UpdateIssuer updates the runtime configuration or the status of an
 // issuer; Destroyed removes its key from the provider (CA.UpdateIssuer)
 
-func (m *MockBackendServer) UpdateIssuer(ctx context.Context, req *pb.UpdateIssuerRequest) (*pb.Issuer, error) {
+func (m *MockBackendServer) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequest) (*pb.Issuer, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	return m.next().(*pb.Issuer), nil
 }
 
+// GetIssuer returns an issuer of the org by ID, label or IKID (CA.GetIssuer)
+
+func (m *MockBackendServer) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.Issuer), nil
+}
+
+// ListIssuers returns the issuers of the org (CA.ListIssuers)
+
+func (m *MockBackendServer) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.IssuersResponse), nil
+}
+
+// RegisterRoot registers an external trust anchor of the org (CA.RegisterRoot)
+
+func (m *MockBackendServer) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest) (*pb.RootCertificate, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.RootCertificate), nil
+}
+
+// ListRoots returns the trust anchors of the org, or of the
+// platform (CA.ListRoots)
+
+func (m *MockBackendServer) ListRoots(ctx context.Context, req *privpb.ListRootsRequest) (*pb.RootsResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.RootsResponse), nil
+}
+
+// RegisterProfile creates or replaces a certificate profile, keyed
+// by (OrgID, ProjectID, Label) (CA.RegisterProfile)
+
+func (m *MockBackendServer) RegisterProfile(ctx context.Context, req *privpb.RegisterProfileRequest) (*pb.CertProfile, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.CertProfile), nil
+}
+
+// GetProfile returns a profile of the org by ID or label (CA.GetProfile)
+
+func (m *MockBackendServer) GetProfile(ctx context.Context, req *privpb.GetProfileRequest) (*pb.CertProfile, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.CertProfile), nil
+}
+
+// ListProfiles returns the profiles of the org (CA.ListProfiles)
+
+func (m *MockBackendServer) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequest) (*pb.ProfilesResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.ProfilesResponse), nil
+}
+
+// DeleteProfile deletes a profile of the org (CA.DeleteProfile)
+
+func (m *MockBackendServer) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRequest) (*emptypb.Empty, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*emptypb.Empty), nil
+}
+
 // SignCertificate signs a certificate request with the issuer of the
 // profile and registers the certificate (CA.SignCertificate)
 
-func (m *MockBackendServer) SignCertificate(ctx context.Context, req *pb.SignCertificateRequest) (*pb.CertificateResponse, error) {
+func (m *MockBackendServer) SignCertificate(ctx context.Context, req *privpb.SignCertificateRequest) (*pb.CertificateResponse, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	return m.next().(*pb.CertificateResponse), nil
 }
 
-// PublishCrls signs and publishes the CRL of an issuer, or the due CRLs
-// of the issuers in scope (CA.PublishCrls)
+// GetCertificate returns a certificate of the org by ID, SKID,
+// Sha256 or issuer and serial number (CA.GetCertificate)
 
-func (m *MockBackendServer) PublishCrls(ctx context.Context, req *pb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
+func (m *MockBackendServer) GetCertificate(ctx context.Context, req *privpb.GetCertificateRequest) (*pb.CertificateResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.CertificateResponse), nil
+}
+
+// ListCertificates returns the certificates of the org, newest
+// first (CA.ListCertificates)
+
+func (m *MockBackendServer) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.CertificatesResponse), nil
+}
+
+// UpdateCertificateLabel updates the client-provided label and
+// metadata of a certificate (CA.UpdateCertificateLabel)
+
+func (m *MockBackendServer) UpdateCertificateLabel(ctx context.Context, req *privpb.UpdateCertificateLabelRequest) (*pb.CertificateResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.CertificateResponse), nil
+}
+
+// RevokeCertificate revokes a certificate of the org (CA.RevokeCertificate)
+
+func (m *MockBackendServer) RevokeCertificate(ctx context.Context, req *privpb.RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.RevokedCertificateResponse), nil
+}
+
+// ListRevokedCertificates returns the revoked certificates of
+// the org (CA.ListRevokedCertificates)
+
+func (m *MockBackendServer) ListRevokedCertificates(ctx context.Context, req *privpb.ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.RevokedCertificatesResponse), nil
+}
+
+// GetCRL returns the current CRL of an issuer (CA.GetCRL)
+
+func (m *MockBackendServer) GetCRL(ctx context.Context, req *privpb.GetCrlRequest) (*pb.CrlResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.CrlResponse), nil
+}
+
+// PublishCrls signs and publishes the CRL of an issuer, or the due
+// CRLs of the issuers in scope (CA.PublishCrls)
+
+func (m *MockBackendServer) PublishCrls(ctx context.Context, req *privpb.PublishCrlsRequest) (*pb.CrlsResponse, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	return m.next().(*pb.CrlsResponse), nil
 }
 
-// SignOCSP signs the OCSP response of a DER request; the request names
-// the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
+// SignOCSP signs the OCSP response of a DER request; the request
+// names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
 
 func (m *MockBackendServer) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPResponse, error) {
 	if m.Err != nil {

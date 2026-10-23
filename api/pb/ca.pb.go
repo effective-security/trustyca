@@ -27,8 +27,6 @@ const (
 // RegisterIssuerRequest specifies a request to create a new issuer
 type RegisterIssuerRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID of the owning project; empty for an org-wide issuer
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// Label of the issuer, unique per (Org, Project)
@@ -86,13 +84,6 @@ func (x *RegisterIssuerRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use RegisterIssuerRequest.ProtoReflect.Descriptor instead.
 func (*RegisterIssuerRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *RegisterIssuerRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *RegisterIssuerRequest) GetProjectID() string {
@@ -175,8 +166,6 @@ func (x *RegisterIssuerRequest) GetExtensions() []*X509Extension {
 // ImportIssuerRequest specifies a request to import an existing issuer
 type ImportIssuerRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID of the owning project; empty for an org-wide issuer
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// Label of the issuer, unique per (Org, Project)
@@ -229,13 +218,6 @@ func (x *ImportIssuerRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ImportIssuerRequest.ProtoReflect.Descriptor instead.
 func (*ImportIssuerRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ImportIssuerRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *ImportIssuerRequest) GetProjectID() string {
@@ -305,16 +287,14 @@ func (x *ImportIssuerRequest) GetConfig() *IssuerConfig {
 // Pending issuer
 type ActivateIssuerRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ID of the Pending issuer
-	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
 	// Certificate provides the issuer certificate in PEM format
-	Certificate string `protobuf:"bytes,3,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
+	Certificate string `protobuf:"bytes,2,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
 	// Intermediates provides the intermediate CA certificates in PEM format
-	Intermediates string `protobuf:"bytes,4,opt,name=Intermediates,proto3" json:"Intermediates,omitempty"`
+	Intermediates string `protobuf:"bytes,3,opt,name=Intermediates,proto3" json:"Intermediates,omitempty"`
 	// Root provides the Root CA certificate in PEM format
-	Root          string `protobuf:"bytes,5,opt,name=Root,proto3" json:"Root,omitempty"`
+	Root          string `protobuf:"bytes,4,opt,name=Root,proto3" json:"Root,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -349,13 +329,6 @@ func (*ActivateIssuerRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ActivateIssuerRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *ActivateIssuerRequest) GetID() string {
 	if x != nil {
 		return x.ID
@@ -387,8 +360,6 @@ func (x *ActivateIssuerRequest) GetRoot() string {
 // GetIssuerRequest specifies an issuer by ID, label or IKID
 type GetIssuerRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID of the owning project; used with Label
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// ID of the issuer
@@ -431,13 +402,6 @@ func (*GetIssuerRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetIssuerRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *GetIssuerRequest) GetProjectID() string {
 	if x != nil {
 		return x.ProjectID
@@ -469,8 +433,6 @@ func (x *GetIssuerRequest) GetIKID() string {
 // ListIssuersRequest specifies a paginated list of issuers
 type ListIssuersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID filters by project; empty returns org-wide and all project
 	// issuers
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
@@ -518,13 +480,6 @@ func (x *ListIssuersRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListIssuersRequest.ProtoReflect.Descriptor instead.
 func (*ListIssuersRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *ListIssuersRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *ListIssuersRequest) GetProjectID() string {
@@ -627,8 +582,6 @@ func (x *IssuersResponse) GetNextPage() *NextPage {
 // UpdateIssuerRequest updates issuer config or status
 type UpdateIssuerRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ID of the issuer
 	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
 	// Config replaces runtime settings when provided
@@ -669,13 +622,6 @@ func (*UpdateIssuerRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *UpdateIssuerRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *UpdateIssuerRequest) GetID() string {
 	if x != nil {
 		return x.ID
@@ -700,8 +646,6 @@ func (x *UpdateIssuerRequest) GetStatus() IssuerStatus_Enum {
 // RegisterRootRequest registers an external trust anchor
 type RegisterRootRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// Pem encoded root certificate
 	Pem string `protobuf:"bytes,2,opt,name=Pem,proto3" json:"Pem,omitempty"`
 	// Trust scope
@@ -740,13 +684,6 @@ func (*RegisterRootRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *RegisterRootRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *RegisterRootRequest) GetPem() string {
 	if x != nil {
 		return x.Pem
@@ -764,8 +701,6 @@ func (x *RegisterRootRequest) GetTrust() Trust_Enum {
 // ListRootsRequest specifies a list of trust anchors
 type ListRootsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org; empty for platform roots
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// Limit specifies maximum number of records to return
 	Limit uint32 `protobuf:"varint,2,opt,name=Limit,proto3" json:"Limit,omitempty"`
 	// Offset specifies offset for the offset-based pagination
@@ -804,13 +739,6 @@ func (x *ListRootsRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListRootsRequest.ProtoReflect.Descriptor instead.
 func (*ListRootsRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *ListRootsRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *ListRootsRequest) GetLimit() uint32 {
@@ -892,8 +820,6 @@ func (x *RootsResponse) GetNextPage() *NextPage {
 // RegisterProfileRequest creates or replaces a profile
 type RegisterProfileRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID of the owning project; empty for an org-wide profile
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// Profile provides the profile definition.
@@ -933,13 +859,6 @@ func (*RegisterProfileRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *RegisterProfileRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *RegisterProfileRequest) GetProjectID() string {
 	if x != nil {
 		return x.ProjectID
@@ -957,8 +876,6 @@ func (x *RegisterProfileRequest) GetProfile() *CertProfile {
 // GetProfileRequest specifies a profile by ID or label
 type GetProfileRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID of the owning project; used with Label
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// ID of the profile
@@ -999,13 +916,6 @@ func (*GetProfileRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *GetProfileRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *GetProfileRequest) GetProjectID() string {
 	if x != nil {
 		return x.ProjectID
@@ -1030,8 +940,6 @@ func (x *GetProfileRequest) GetLabel() string {
 // ListProfilesRequest specifies a paginated list of profiles
 type ListProfilesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID filters by project; empty returns org-wide and all project
 	// profiles
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
@@ -1075,13 +983,6 @@ func (x *ListProfilesRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListProfilesRequest.ProtoReflect.Descriptor instead.
 func (*ListProfilesRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *ListProfilesRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *ListProfilesRequest) GetProjectID() string {
@@ -1177,8 +1078,6 @@ func (x *ProfilesResponse) GetNextPage() *NextPage {
 // DeleteProfileRequest deletes a profile
 type DeleteProfileRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ID of the profile
 	ID            string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1215,13 +1114,6 @@ func (*DeleteProfileRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *DeleteProfileRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *DeleteProfileRequest) GetID() string {
 	if x != nil {
 		return x.ID
@@ -1232,8 +1124,6 @@ func (x *DeleteProfileRequest) GetID() string {
 // SignCertificateRequest specifies certificate sign request
 type SignCertificateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID of the owning project; recorded on the certificate and used to
 	// resolve project-scoped profiles and issuers
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
@@ -1295,13 +1185,6 @@ func (x *SignCertificateRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use SignCertificateRequest.ProtoReflect.Descriptor instead.
 func (*SignCertificateRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *SignCertificateRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *SignCertificateRequest) GetProjectID() string {
@@ -1391,8 +1274,6 @@ func (x *SignCertificateRequest) GetMetadata() map[string]string {
 // UpdateCertificateLabelRequest specifies certificate label update request
 type UpdateCertificateLabelRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ID specifies certificate ID
 	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
 	// Label is provided by the client
@@ -1437,13 +1318,6 @@ func (*UpdateCertificateLabelRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *UpdateCertificateLabelRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *UpdateCertificateLabelRequest) GetID() string {
 	if x != nil {
 		return x.ID
@@ -1476,8 +1350,6 @@ func (x *UpdateCertificateLabelRequest) GetProjectID() string {
 // and serial number
 type GetCertificateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ID specifies certificate ID
 	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
 	// SKID specifies Subject Key ID to search
@@ -1520,13 +1392,6 @@ func (*GetCertificateRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *GetCertificateRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *GetCertificateRequest) GetID() string {
 	if x != nil {
 		return x.ID
@@ -1559,8 +1424,6 @@ func (x *GetCertificateRequest) GetIssuerSerial() *IssuerSerial {
 // sorted by ID descending (newest first)
 type ListCertificatesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID filters by project; empty returns org-wide and all project
 	// certificates
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
@@ -1613,13 +1476,6 @@ func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListCertificatesRequest.ProtoReflect.Descriptor instead.
 func (*ListCertificatesRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *ListCertificatesRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *ListCertificatesRequest) GetProjectID() string {
@@ -1682,8 +1538,6 @@ func (x *ListCertificatesRequest) GetCursor() string {
 // certificates, sorted by revocation ID descending
 type ListRevokedCertificatesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID filters by project
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// IKID filters by issuer
@@ -1728,13 +1582,6 @@ func (*ListRevokedCertificatesRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *ListRevokedCertificatesRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *ListRevokedCertificatesRequest) GetProjectID() string {
 	if x != nil {
 		return x.ProjectID
@@ -1773,8 +1620,6 @@ func (x *ListRevokedCertificatesRequest) GetCursor() string {
 // RevokeCertificateRequest specifies revocation request
 type RevokeCertificateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ID specifies certificate ID
 	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
 	// SKID specifies Subject Key ID to search
@@ -1822,13 +1667,6 @@ func (x *RevokeCertificateRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use RevokeCertificateRequest.ProtoReflect.Descriptor instead.
 func (*RevokeCertificateRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{20}
-}
-
-func (x *RevokeCertificateRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *RevokeCertificateRequest) GetID() string {
@@ -2076,10 +1914,8 @@ func (x *RevokedCertificatesResponse) GetNextPage() *NextPage {
 // GetCrlRequest specifies CRL request by IKID
 type GetCrlRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org; empty allows lookup across orgs for CIS
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// IKID specifies Issuer Key ID
-	IKID          string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
+	IKID          string `protobuf:"bytes,1,opt,name=IKID,proto3" json:"IKID,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2114,13 +1950,6 @@ func (*GetCrlRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{25}
 }
 
-func (x *GetCrlRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
-}
-
 func (x *GetCrlRequest) GetIKID() string {
 	if x != nil {
 		return x.IKID
@@ -2131,14 +1960,12 @@ func (x *GetCrlRequest) GetIKID() string {
 // PublishCrlsRequest allows to publish CRLs on demand
 type PublishCrlsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// OrgID of the owning org; empty for all orgs
-	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
 	// ProjectID limits the scope to the project: the issuer of the IKID
 	// must belong to it, and without an IKID the issuers of the project
 	// publish. Empty publishes for the org-wide issuers and the projects the
 	// caller may read; a project Admin names the project, and an API key
 	// restricted to a project publishes for its project.
-	ProjectID string `protobuf:"bytes,4,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	ProjectID string `protobuf:"bytes,1,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// IKID specifies Issuer Key ID; empty to publish for all issuers in scope
 	IKID string `protobuf:"bytes,2,opt,name=IKID,proto3" json:"IKID,omitempty"`
 	// Force specifies to publish even if the current CRL is not due for renewal
@@ -2175,13 +2002,6 @@ func (x *PublishCrlsRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use PublishCrlsRequest.ProtoReflect.Descriptor instead.
 func (*PublishCrlsRequest) Descriptor() ([]byte, []int) {
 	return file_ca_proto_rawDescGZIP(), []int{26}
-}
-
-func (x *PublishCrlsRequest) GetOrgID() string {
-	if x != nil {
-		return x.OrgID
-	}
-	return ""
 }
 
 func (x *PublishCrlsRequest) GetProjectID() string {
@@ -2392,9 +2212,8 @@ var File_ca_proto protoreflect.FileDescriptor
 const file_ca_proto_rawDesc = "" +
 	"\n" +
 	"\bca.proto\x12\x02pb\x1a\x18es/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\vtypes.proto\x1a\n" +
-	"pkix.proto\"\xc2\x03\n" +
-	"\x15RegisterIssuerRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"pkix.proto\"\xa6\x03\n" +
+	"\x15RegisterIssuerRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
 	"\x05Label\x18\x03 \x01(\tB\b\xe8\xf3\x18\x01\x80\xf4\x18@R\x05Label\x120\n" +
 	"\x04Type\x18\x04 \x01(\x0e2\x16.pb.AuthorityType.EnumB\x04\xe8\xf3\x18\x01R\x04Type\x12/\n" +
@@ -2408,9 +2227,8 @@ const file_ca_proto_rawDesc = "" +
 	"\x03SAN\x18\v \x03(\tR\x03SAN\x121\n" +
 	"\n" +
 	"Extensions\x18\f \x03(\v2\x11.pb.X509ExtensionR\n" +
-	"Extensions\"\xf5\x02\n" +
-	"\x13ImportIssuerRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"Extensions\"\xd9\x02\n" +
+	"\x13ImportIssuerRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
 	"\x05Label\x18\x03 \x01(\tB\b\xe8\xf3\x18\x01\x80\xf4\x18@R\x05Label\x120\n" +
 	"\x04Type\x18\x04 \x01(\x0e2\x16.pb.AuthorityType.EnumB\x04\xe8\xf3\x18\x01R\x04Type\x12&\n" +
@@ -2422,22 +2240,19 @@ const file_ca_proto_rawDesc = "" +
 	"\x06KeyPem\x18\t \x01(\tB\n" +
 	"\xf2\xf3\x18\x06KeyURIR\x06KeyPem\x12(\n" +
 	"\x06Config\x18\n" +
-	" \x01(\v2\x10.pb.IssuerConfigR\x06Config\"\xab\x01\n" +
-	"\x15ActivateIssuerRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
-	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12&\n" +
-	"\vCertificate\x18\x03 \x01(\tB\x04\xe8\xf3\x18\x01R\vCertificate\x12$\n" +
-	"\rIntermediates\x18\x04 \x01(\tR\rIntermediates\x12\x12\n" +
-	"\x04Root\x18\x05 \x01(\tR\x04Root\"\xb1\x01\n" +
-	"\x10GetIssuerRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	" \x01(\v2\x10.pb.IssuerConfigR\x06Config\"\x8f\x01\n" +
+	"\x15ActivateIssuerRequest\x12\x14\n" +
+	"\x02ID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12&\n" +
+	"\vCertificate\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\vCertificate\x12$\n" +
+	"\rIntermediates\x18\x03 \x01(\tR\rIntermediates\x12\x12\n" +
+	"\x04Root\x18\x04 \x01(\tR\x04Root\"\x95\x01\n" +
+	"\x10GetIssuerRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
 	"\x02ID\x18\x03 \x01(\tB\x0e\xf2\xf3\x18\n" +
 	"Label,IKIDR\x02ID\x12!\n" +
 	"\x05Label\x18\x04 \x01(\tB\v\xf2\xf3\x18\aID,IKIDR\x05Label\x12 \n" +
-	"\x04IKID\x18\x05 \x01(\tB\f\xf2\xf3\x18\bID,LabelR\x04IKID\"\xef\x01\n" +
-	"\x12ListIssuersRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\x04IKID\x18\x05 \x01(\tB\f\xf2\xf3\x18\bID,LabelR\x04IKID\"\xd3\x01\n" +
+	"\x12ListIssuersRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12-\n" +
 	"\x06Status\x18\x03 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\x12*\n" +
 	"\x04Type\x18\x04 \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\x12\x14\n" +
@@ -2447,35 +2262,29 @@ const file_ca_proto_rawDesc = "" +
 	"\x0fIssuersResponse\x12$\n" +
 	"\aIssuers\x18\x01 \x03(\v2\n" +
 	".pb.IssuerR\aIssuers\x12(\n" +
-	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"\xa0\x01\n" +
-	"\x13UpdateIssuerRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
+	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"\x84\x01\n" +
+	"\x13UpdateIssuerRequest\x12\x14\n" +
 	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12(\n" +
 	"\x06Config\x18\x03 \x01(\v2\x10.pb.IssuerConfigR\x06Config\x12-\n" +
-	"\x06Status\x18\x04 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\"o\n" +
-	"\x13RegisterRootRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x16\n" +
+	"\x06Status\x18\x04 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\"S\n" +
+	"\x13RegisterRootRequest\x12\x16\n" +
 	"\x03Pem\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x03Pem\x12$\n" +
-	"\x05Trust\x18\x03 \x01(\x0e2\x0e.pb.Trust.EnumR\x05Trust\"n\n" +
+	"\x05Trust\x18\x03 \x01(\x0e2\x0e.pb.Trust.EnumR\x05Trust\"X\n" +
 	"\x10ListRootsRequest\x12\x14\n" +
-	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x14\n" +
 	"\x05Limit\x18\x02 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x03 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x04 \x01(\tR\x06Cursor\"d\n" +
 	"\rRootsResponse\x12)\n" +
 	"\x05Roots\x18\x01 \x03(\v2\x13.pb.RootCertificateR\x05Roots\x12(\n" +
-	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"\x83\x01\n" +
-	"\x16RegisterProfileRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"g\n" +
+	"\x16RegisterProfileRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12/\n" +
-	"\aProfile\x18\x03 \x01(\v2\x0f.pb.CertProfileB\x04\xe8\xf3\x18\x01R\aProfile\"\x86\x01\n" +
-	"\x11GetProfileRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\aProfile\x18\x03 \x01(\v2\x0f.pb.CertProfileB\x04\xe8\xf3\x18\x01R\aProfile\"j\n" +
+	"\x11GetProfileRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x19\n" +
 	"\x02ID\x18\x03 \x01(\tB\t\xf2\xf3\x18\x05LabelR\x02ID\x12\x1c\n" +
-	"\x05Label\x18\x04 \x01(\tB\x06\xf2\xf3\x18\x02IDR\x05Label\"\xb7\x01\n" +
-	"\x13ListProfilesRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\x05Label\x18\x04 \x01(\tB\x06\xf2\xf3\x18\x02IDR\x05Label\"\x9b\x01\n" +
+	"\x13ListProfilesRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12 \n" +
 	"\vIssuerLabel\x18\x03 \x01(\tR\vIssuerLabel\x12\x14\n" +
 	"\x05Limit\x18\x04 \x01(\rR\x05Limit\x12\x16\n" +
@@ -2483,12 +2292,10 @@ const file_ca_proto_rawDesc = "" +
 	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\"i\n" +
 	"\x10ProfilesResponse\x12+\n" +
 	"\bProfiles\x18\x01 \x03(\v2\x0f.pb.CertProfileR\bProfiles\x12(\n" +
-	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"H\n" +
-	"\x14DeleteProfileRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
-	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\"\xbd\x04\n" +
-	"\x16SignCertificateRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\",\n" +
+	"\x14DeleteProfileRequest\x12\x14\n" +
+	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\"\xa1\x04\n" +
+	"\x16SignCertificateRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
 	"\aProfile\x18\x03 \x01(\tB\x04\xe8\xf3\x18\x01R\aProfile\x12 \n" +
 	"\vIssuerLabel\x18\x04 \x01(\tR\vIssuerLabel\x12=\n" +
@@ -2506,24 +2313,21 @@ const file_ca_proto_rawDesc = "" +
 	"\bMetadata\x18\r \x03(\v2(.pb.SignCertificateRequest.MetadataEntryR\bMetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x96\x02\n" +
-	"\x1dUpdateCertificateLabelRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfa\x01\n" +
+	"\x1dUpdateCertificateLabelRequest\x12\x14\n" +
 	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12\x1b\n" +
 	"\x05Label\x18\x03 \x01(\tB\x05\x80\xf4\x18\x84\x02R\x05Label\x12K\n" +
 	"\bMetadata\x18\x04 \x03(\v2/.pb.UpdateCertificateLabelRequest.MetadataEntryR\bMetadata\x12\x1c\n" +
 	"\tProjectID\x18\x05 \x01(\tR\tProjectID\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8d\x02\n" +
-	"\x15GetCertificateRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12,\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf1\x01\n" +
+	"\x15GetCertificateRequest\x12,\n" +
 	"\x02ID\x18\x02 \x01(\tB\x1c\xf2\xf3\x18\x18SKID,Sha256,IssuerSerialR\x02ID\x12.\n" +
 	"\x04SKID\x18\x03 \x01(\tB\x1a\xf2\xf3\x18\x16ID,Sha256,IssuerSerialR\x04SKID\x120\n" +
 	"\x06Sha256\x18\x04 \x01(\tB\x18\xf2\xf3\x18\x14ID,SKID,IssuerSerialR\x06Sha256\x12H\n" +
-	"\fIssuerSerial\x18\x05 \x01(\v2\x10.pb.IssuerSerialB\x12\xf2\xf3\x18\x0eID,SKID,Sha256R\fIssuerSerial\"\xa3\x02\n" +
-	"\x17ListCertificatesRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\fIssuerSerial\x18\x05 \x01(\v2\x10.pb.IssuerSerialB\x12\xf2\xf3\x18\x0eID,SKID,Sha256R\fIssuerSerial\"\x87\x02\n" +
+	"\x17ListCertificatesRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x12\n" +
 	"\x04IKID\x18\x03 \x01(\tR\x04IKID\x12\x18\n" +
 	"\aProfile\x18\x04 \x01(\tR\aProfile\x122\n" +
@@ -2531,16 +2335,14 @@ const file_ca_proto_rawDesc = "" +
 	"\x0eExpiringBefore\x18\x06 \x01(\tR\x0eExpiringBefore\x12\x14\n" +
 	"\x05Limit\x18\a \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\b \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\t \x01(\tR\x06Cursor\"\xb4\x01\n" +
-	"\x1eListRevokedCertificatesRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\x06Cursor\x18\t \x01(\tR\x06Cursor\"\x98\x01\n" +
+	"\x1eListRevokedCertificatesRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x12\n" +
 	"\x04IKID\x18\x03 \x01(\tR\x04IKID\x12\x14\n" +
 	"\x05Limit\x18\x04 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x05 \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\"\xbb\x02\n" +
-	"\x18RevokeCertificateRequest\x12\x1a\n" +
-	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12%\n" +
+	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\"\x9f\x02\n" +
+	"\x18RevokeCertificateRequest\x12%\n" +
 	"\x02ID\x18\x02 \x01(\tB\x15\xf2\xf3\x18\x11SKID,IssuerSerialR\x02ID\x12'\n" +
 	"\x04SKID\x18\x03 \x01(\tB\x13\xf2\xf3\x18\x0fID,IssuerSerialR\x04SKID\x12A\n" +
 	"\fIssuerSerial\x18\x04 \x01(\v2\x10.pb.IssuerSerialB\v\xf2\xf3\x18\aID,SKIDR\fIssuerSerial\x12+\n" +
@@ -2558,13 +2360,11 @@ const file_ca_proto_rawDesc = "" +
 	"\aRevoked\x18\x01 \x01(\v2\x16.pb.RevokedCertificateR\aRevoked\"\x91\x01\n" +
 	"\x1bRevokedCertificatesResponse\x12H\n" +
 	"\x13RevokedCertificates\x18\x01 \x03(\v2\x16.pb.RevokedCertificateR\x13RevokedCertificates\x12(\n" +
-	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"?\n" +
-	"\rGetCrlRequest\x12\x14\n" +
-	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x18\n" +
-	"\x04IKID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x04IKID\"r\n" +
-	"\x12PublishCrlsRequest\x12\x14\n" +
-	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x1c\n" +
-	"\tProjectID\x18\x04 \x01(\tR\tProjectID\x12\x12\n" +
+	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\")\n" +
+	"\rGetCrlRequest\x12\x18\n" +
+	"\x04IKID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x04IKID\"\\\n" +
+	"\x12PublishCrlsRequest\x12\x1c\n" +
+	"\tProjectID\x18\x01 \x01(\tR\tProjectID\x12\x12\n" +
 	"\x04IKID\x18\x02 \x01(\tR\x04IKID\x12\x14\n" +
 	"\x05Force\x18\x03 \x01(\bR\x05Force\"+\n" +
 	"\fCrlsResponse\x12\x1b\n" +

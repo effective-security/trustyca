@@ -24,6 +24,81 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GetRootsRequest specifies a list of the published trust anchors
+type GetRootsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID selects the anchors of an org; empty lists the platform
+	// anchors. It is a lookup, not a tenant scope: the anchors are public
+	// and any authenticated caller reads those of any org.
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// Limit specifies maximum number of records to return
+	Limit uint32 `protobuf:"varint,2,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Offset specifies offset for the offset-based pagination
+	Offset uint32 `protobuf:"varint,3,opt,name=Offset,proto3" json:"Offset,omitempty"`
+	// Cursor specifies cursor for the cursor-based pagination
+	Cursor        string `protobuf:"bytes,4,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRootsRequest) Reset() {
+	*x = GetRootsRequest{}
+	mi := &file_cis_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRootsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRootsRequest) ProtoMessage() {}
+
+func (x *GetRootsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cis_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRootsRequest.ProtoReflect.Descriptor instead.
+func (*GetRootsRequest) Descriptor() ([]byte, []int) {
+	return file_cis_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GetRootsRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *GetRootsRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *GetRootsRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *GetRootsRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
 // GetIssuerInfoRequest specifies an issuer by IKID
 type GetIssuerInfoRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -35,7 +110,7 @@ type GetIssuerInfoRequest struct {
 
 func (x *GetIssuerInfoRequest) Reset() {
 	*x = GetIssuerInfoRequest{}
-	mi := &file_cis_proto_msgTypes[0]
+	mi := &file_cis_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -47,7 +122,7 @@ func (x *GetIssuerInfoRequest) String() string {
 func (*GetIssuerInfoRequest) ProtoMessage() {}
 
 func (x *GetIssuerInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cis_proto_msgTypes[0]
+	mi := &file_cis_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,7 +135,7 @@ func (x *GetIssuerInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetIssuerInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetIssuerInfoRequest) Descriptor() ([]byte, []int) {
-	return file_cis_proto_rawDescGZIP(), []int{0}
+	return file_cis_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetIssuerInfoRequest) GetIKID() string {
@@ -105,7 +180,7 @@ type IssuerInfo struct {
 
 func (x *IssuerInfo) Reset() {
 	*x = IssuerInfo{}
-	mi := &file_cis_proto_msgTypes[1]
+	mi := &file_cis_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -117,7 +192,7 @@ func (x *IssuerInfo) String() string {
 func (*IssuerInfo) ProtoMessage() {}
 
 func (x *IssuerInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_cis_proto_msgTypes[1]
+	mi := &file_cis_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -130,7 +205,7 @@ func (x *IssuerInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssuerInfo.ProtoReflect.Descriptor instead.
 func (*IssuerInfo) Descriptor() ([]byte, []int) {
-	return file_cis_proto_rawDescGZIP(), []int{1}
+	return file_cis_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *IssuerInfo) GetLabel() string {
@@ -242,7 +317,7 @@ type GetCertificateInfoRequest struct {
 
 func (x *GetCertificateInfoRequest) Reset() {
 	*x = GetCertificateInfoRequest{}
-	mi := &file_cis_proto_msgTypes[2]
+	mi := &file_cis_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -254,7 +329,7 @@ func (x *GetCertificateInfoRequest) String() string {
 func (*GetCertificateInfoRequest) ProtoMessage() {}
 
 func (x *GetCertificateInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cis_proto_msgTypes[2]
+	mi := &file_cis_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -267,7 +342,7 @@ func (x *GetCertificateInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCertificateInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetCertificateInfoRequest) Descriptor() ([]byte, []int) {
-	return file_cis_proto_rawDescGZIP(), []int{2}
+	return file_cis_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetCertificateInfoRequest) GetID() string {
@@ -319,7 +394,7 @@ type CertificateStatusResponse struct {
 
 func (x *CertificateStatusResponse) Reset() {
 	*x = CertificateStatusResponse{}
-	mi := &file_cis_proto_msgTypes[3]
+	mi := &file_cis_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -331,7 +406,7 @@ func (x *CertificateStatusResponse) String() string {
 func (*CertificateStatusResponse) ProtoMessage() {}
 
 func (x *CertificateStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cis_proto_msgTypes[3]
+	mi := &file_cis_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -344,7 +419,7 @@ func (x *CertificateStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateStatusResponse.ProtoReflect.Descriptor instead.
 func (*CertificateStatusResponse) Descriptor() ([]byte, []int) {
-	return file_cis_proto_rawDescGZIP(), []int{3}
+	return file_cis_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CertificateStatusResponse) GetIKID() string {
@@ -393,8 +468,13 @@ var File_cis_proto protoreflect.FileDescriptor
 
 const file_cis_proto_rawDesc = "" +
 	"\n" +
-	"\tcis.proto\x12\x02pb\x1a\x1cgoogle/api/annotations.proto\x1a\x18es/api/annotations.proto\x1a\vtypes.proto\x1a\n" +
-	"pkix.proto\x1a\bca.proto\"0\n" +
+	"\tcis.proto\x12\x02pb\x1a\x1cgoogle/api/annotations.proto\x1a\x18es/api/annotations.proto\x1a\n" +
+	"pkix.proto\x1a\bca.proto\"m\n" +
+	"\x0fGetRootsRequest\x12\x14\n" +
+	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x14\n" +
+	"\x05Limit\x18\x02 \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Offset\x18\x03 \x01(\rR\x06Offset\x12\x16\n" +
+	"\x06Cursor\x18\x04 \x01(\tR\x06Cursor\"0\n" +
 	"\x14GetIssuerInfoRequest\x12\x18\n" +
 	"\x04IKID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x04IKID\"\x8b\x03\n" +
 	"\n" +
@@ -424,9 +504,9 @@ const file_cis_proto_rawDesc = "" +
 	"\x06Status\x18\x03 \x01(\x0e2\x1a.pb.CertificateStatus.EnumR\x06Status\x12\x1a\n" +
 	"\bNotAfter\x18\x04 \x01(\tR\bNotAfter\x12\x1c\n" +
 	"\tRevokedAt\x18\x05 \x01(\tR\tRevokedAt\x12+\n" +
-	"\x06Reason\x18\x06 \x01(\x0e2\x13.pb.ReasonCode.EnumR\x06Reason2\xe1\x03\n" +
-	"\x03CIS\x12P\n" +
-	"\bGetRoots\x12\x14.pb.ListRootsRequest\x1a\x11.pb.RootsResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/pb.CIS/GetRoots\x12S\n" +
+	"\x06Reason\x18\x06 \x01(\x0e2\x13.pb.ReasonCode.EnumR\x06Reason2\xe0\x03\n" +
+	"\x03CIS\x12O\n" +
+	"\bGetRoots\x12\x13.pb.GetRootsRequest\x1a\x11.pb.RootsResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/pb.CIS/GetRoots\x12S\n" +
 	"\tGetIssuer\x12\x18.pb.GetIssuerInfoRequest\x1a\x0e.pb.IssuerInfo\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/pb.CIS/GetIssuer\x12k\n" +
 	"\x0eGetCertificate\x12\x1d.pb.GetCertificateInfoRequest\x1a\x17.pb.CertificateResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/pb.CIS/GetCertificate\x12}\n" +
 	"\x14GetCertificateStatus\x12\x1d.pb.GetCertificateInfoRequest\x1a\x1d.pb.CertificateStatusResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/pb.CIS/GetCertificateStatus\x12G\n" +
@@ -444,38 +524,38 @@ func file_cis_proto_rawDescGZIP() []byte {
 	return file_cis_proto_rawDescData
 }
 
-var file_cis_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_cis_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_cis_proto_goTypes = []any{
-	(*GetIssuerInfoRequest)(nil),      // 0: pb.GetIssuerInfoRequest
-	(*IssuerInfo)(nil),                // 1: pb.IssuerInfo
-	(*GetCertificateInfoRequest)(nil), // 2: pb.GetCertificateInfoRequest
-	(*CertificateStatusResponse)(nil), // 3: pb.CertificateStatusResponse
-	(AuthorityType_Enum)(0),           // 4: pb.AuthorityType.Enum
-	(IssuerStatus_Enum)(0),            // 5: pb.IssuerStatus.Enum
-	(*IssuerSerial)(nil),              // 6: pb.IssuerSerial
-	(CertificateStatus_Enum)(0),       // 7: pb.CertificateStatus.Enum
-	(ReasonCode_Enum)(0),              // 8: pb.ReasonCode.Enum
-	(*ListRootsRequest)(nil),          // 9: pb.ListRootsRequest
+	(*GetRootsRequest)(nil),           // 0: pb.GetRootsRequest
+	(*GetIssuerInfoRequest)(nil),      // 1: pb.GetIssuerInfoRequest
+	(*IssuerInfo)(nil),                // 2: pb.IssuerInfo
+	(*GetCertificateInfoRequest)(nil), // 3: pb.GetCertificateInfoRequest
+	(*CertificateStatusResponse)(nil), // 4: pb.CertificateStatusResponse
+	(AuthorityType_Enum)(0),           // 5: pb.AuthorityType.Enum
+	(IssuerStatus_Enum)(0),            // 6: pb.IssuerStatus.Enum
+	(*IssuerSerial)(nil),              // 7: pb.IssuerSerial
+	(CertificateStatus_Enum)(0),       // 8: pb.CertificateStatus.Enum
+	(ReasonCode_Enum)(0),              // 9: pb.ReasonCode.Enum
 	(*GetCrlRequest)(nil),             // 10: pb.GetCrlRequest
 	(*RootsResponse)(nil),             // 11: pb.RootsResponse
 	(*CertificateResponse)(nil),       // 12: pb.CertificateResponse
 	(*CrlResponse)(nil),               // 13: pb.CrlResponse
 }
 var file_cis_proto_depIdxs = []int32{
-	4,  // 0: pb.IssuerInfo.Type:type_name -> pb.AuthorityType.Enum
-	5,  // 1: pb.IssuerInfo.Status:type_name -> pb.IssuerStatus.Enum
-	6,  // 2: pb.GetCertificateInfoRequest.IssuerSerial:type_name -> pb.IssuerSerial
-	7,  // 3: pb.CertificateStatusResponse.Status:type_name -> pb.CertificateStatus.Enum
-	8,  // 4: pb.CertificateStatusResponse.Reason:type_name -> pb.ReasonCode.Enum
-	9,  // 5: pb.CIS.GetRoots:input_type -> pb.ListRootsRequest
-	0,  // 6: pb.CIS.GetIssuer:input_type -> pb.GetIssuerInfoRequest
-	2,  // 7: pb.CIS.GetCertificate:input_type -> pb.GetCertificateInfoRequest
-	2,  // 8: pb.CIS.GetCertificateStatus:input_type -> pb.GetCertificateInfoRequest
+	5,  // 0: pb.IssuerInfo.Type:type_name -> pb.AuthorityType.Enum
+	6,  // 1: pb.IssuerInfo.Status:type_name -> pb.IssuerStatus.Enum
+	7,  // 2: pb.GetCertificateInfoRequest.IssuerSerial:type_name -> pb.IssuerSerial
+	8,  // 3: pb.CertificateStatusResponse.Status:type_name -> pb.CertificateStatus.Enum
+	9,  // 4: pb.CertificateStatusResponse.Reason:type_name -> pb.ReasonCode.Enum
+	0,  // 5: pb.CIS.GetRoots:input_type -> pb.GetRootsRequest
+	1,  // 6: pb.CIS.GetIssuer:input_type -> pb.GetIssuerInfoRequest
+	3,  // 7: pb.CIS.GetCertificate:input_type -> pb.GetCertificateInfoRequest
+	3,  // 8: pb.CIS.GetCertificateStatus:input_type -> pb.GetCertificateInfoRequest
 	10, // 9: pb.CIS.GetCRL:input_type -> pb.GetCrlRequest
 	11, // 10: pb.CIS.GetRoots:output_type -> pb.RootsResponse
-	1,  // 11: pb.CIS.GetIssuer:output_type -> pb.IssuerInfo
+	2,  // 11: pb.CIS.GetIssuer:output_type -> pb.IssuerInfo
 	12, // 12: pb.CIS.GetCertificate:output_type -> pb.CertificateResponse
-	3,  // 13: pb.CIS.GetCertificateStatus:output_type -> pb.CertificateStatusResponse
+	4,  // 13: pb.CIS.GetCertificateStatus:output_type -> pb.CertificateStatusResponse
 	13, // 14: pb.CIS.GetCRL:output_type -> pb.CrlResponse
 	10, // [10:15] is the sub-list for method output_type
 	5,  // [5:10] is the sub-list for method input_type
@@ -489,7 +569,6 @@ func file_cis_proto_init() {
 	if File_cis_proto != nil {
 		return
 	}
-	file_types_proto_init()
 	file_pkix_proto_init()
 	file_ca_proto_init()
 	type x struct{}
@@ -498,7 +577,7 @@ func file_cis_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cis_proto_rawDesc), len(file_cis_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

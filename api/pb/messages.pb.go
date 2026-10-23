@@ -192,16 +192,6 @@ var ActivateIssuerRequest_MessageDescription = &api.MessageDescription{
 Pending issuer`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.ActivateIssuerRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ID",
 			FullName:      "pb.ActivateIssuerRequest.ID",
 			Type:          "string",
@@ -1462,16 +1452,6 @@ var DeleteProfileRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `DeleteProfileRequest deletes a profile`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.DeleteProfileRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ID",
 			FullName:      "pb.DeleteProfileRequest.ID",
 			Type:          "string",
@@ -1584,16 +1564,6 @@ var GetCertificateRequest_MessageDescription = &api.MessageDescription{
 and serial number`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.GetCertificateRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ID",
 			FullName:      "pb.GetCertificateRequest.ID",
 			Type:          "string",
@@ -1641,15 +1611,6 @@ var GetCrlRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `GetCrlRequest specifies CRL request by IKID`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.GetCrlRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `OrgID of the owning org; empty allows lookup across orgs for CIS`,
-		},
-		{
 			Name:          "IKID",
 			FullName:      "pb.GetCrlRequest.IKID",
 			Type:          "string",
@@ -1685,16 +1646,6 @@ var GetIssuerRequest_MessageDescription = &api.MessageDescription{
 	FullName:      "pb.GetIssuerRequest",
 	Documentation: `GetIssuerRequest specifies an issuer by ID, label or IKID`,
 	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.GetIssuerRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
 		{
 			Name:          "ProjectID",
 			FullName:      "pb.GetIssuerRequest.ProjectID",
@@ -1770,16 +1721,6 @@ var GetProfileRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `GetProfileRequest specifies a profile by ID or label`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.GetProfileRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ProjectID",
 			FullName:      "pb.GetProfileRequest.ProjectID",
 			Display:       "Project ID",
@@ -1835,22 +1776,56 @@ var GetProjectRequest_MessageDescription = &api.MessageDescription{
 	},
 }
 
+var GetRootsRequest_MessageDescription = &api.MessageDescription{
+	Name:          "GetRootsRequest",
+	Display:       "Get Roots Request",
+	FullName:      "pb.GetRootsRequest",
+	Documentation: `GetRootsRequest specifies a list of the published trust anchors`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "pb.GetRootsRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `OrgID selects the anchors of an org; empty lists the platform
+anchors. It is a lookup, not a tenant scope: the anchors are public
+and any authenticated caller reads those of any org.`,
+		},
+		{
+			Name:          "Limit",
+			FullName:      "pb.GetRootsRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return`,
+		},
+		{
+			Name:          "Offset",
+			FullName:      "pb.GetRootsRequest.Offset",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Offset specifies offset for the offset-based pagination`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "pb.GetRootsRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+		},
+	},
+}
+
 var ImportIssuerRequest_MessageDescription = &api.MessageDescription{
 	Name:          "ImportIssuerRequest",
 	Display:       "Import Issuer Request",
 	FullName:      "pb.ImportIssuerRequest",
 	Documentation: `ImportIssuerRequest specifies a request to import an existing issuer`,
 	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.ImportIssuerRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
 		{
 			Name:          "ProjectID",
 			FullName:      "pb.ImportIssuerRequest.ProjectID",
@@ -2623,16 +2598,6 @@ var ListCertificatesRequest_MessageDescription = &api.MessageDescription{
 sorted by ID descending (newest first)`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.ListCertificatesRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ProjectID",
 			FullName:      "pb.ListCertificatesRequest.ProjectID",
 			Display:       "Project ID",
@@ -2713,16 +2678,6 @@ var ListIssuersRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `ListIssuersRequest specifies a paginated list of issuers`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.ListIssuersRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ProjectID",
 			FullName:      "pb.ListIssuersRequest.ProjectID",
 			Display:       "Project ID",
@@ -2785,16 +2740,6 @@ var ListProfilesRequest_MessageDescription = &api.MessageDescription{
 	FullName:      "pb.ListProfilesRequest",
 	Documentation: `ListProfilesRequest specifies a paginated list of profiles`,
 	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.ListProfilesRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
 		{
 			Name:          "ProjectID",
 			FullName:      "pb.ListProfilesRequest.ProjectID",
@@ -2891,16 +2836,6 @@ var ListRevokedCertificatesRequest_MessageDescription = &api.MessageDescription{
 certificates, sorted by revocation ID descending`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.ListRevokedCertificatesRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ProjectID",
 			FullName:      "pb.ListRevokedCertificatesRequest.ProjectID",
 			Display:       "Project ID",
@@ -2950,15 +2885,6 @@ var ListRootsRequest_MessageDescription = &api.MessageDescription{
 	FullName:      "pb.ListRootsRequest",
 	Documentation: `ListRootsRequest specifies a list of trust anchors`,
 	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.ListRootsRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `OrgID of the owning org; empty for platform roots`,
-		},
 		{
 			Name:          "Limit",
 			FullName:      "pb.ListRootsRequest.Limit",
@@ -3475,15 +3401,6 @@ var PublishCrlsRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `PublishCrlsRequest allows to publish CRLs on demand`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.PublishCrlsRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `OrgID of the owning org; empty for all orgs`,
-		},
-		{
 			Name:          "ProjectID",
 			FullName:      "pb.PublishCrlsRequest.ProjectID",
 			Display:       "Project ID",
@@ -3551,16 +3468,6 @@ var RegisterIssuerRequest_MessageDescription = &api.MessageDescription{
 	FullName:      "pb.RegisterIssuerRequest",
 	Documentation: `RegisterIssuerRequest specifies a request to create a new issuer`,
 	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.RegisterIssuerRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
 		{
 			Name:          "ProjectID",
 			FullName:      "pb.RegisterIssuerRequest.ProjectID",
@@ -3695,16 +3602,6 @@ var RegisterProfileRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `RegisterProfileRequest creates or replaces a profile`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.RegisterProfileRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ProjectID",
 			FullName:      "pb.RegisterProfileRequest.ProjectID",
 			Display:       "Project ID",
@@ -3768,16 +3665,6 @@ var RegisterRootRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `RegisterRootRequest registers an external trust anchor`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.RegisterRootRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "Pem",
 			FullName:      "pb.RegisterRootRequest.Pem",
 			Type:          "string",
@@ -3804,16 +3691,6 @@ var RevokeCertificateRequest_MessageDescription = &api.MessageDescription{
 	FullName:      "pb.RevokeCertificateRequest",
 	Documentation: `RevokeCertificateRequest specifies revocation request`,
 	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.RevokeCertificateRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
 		{
 			Name:          "ID",
 			FullName:      "pb.RevokeCertificateRequest.ID",
@@ -4268,16 +4145,6 @@ var SignCertificateRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `SignCertificateRequest specifies certificate sign request`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.SignCertificateRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ProjectID",
 			FullName:      "pb.SignCertificateRequest.ProjectID",
 			Display:       "Project ID",
@@ -4500,16 +4367,6 @@ var UpdateCertificateLabelRequest_MessageDescription = &api.MessageDescription{
 	Documentation: `UpdateCertificateLabelRequest specifies certificate label update request`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "OrgID",
-			FullName:      "pb.UpdateCertificateLabelRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
-		{
 			Name:          "ID",
 			FullName:      "pb.UpdateCertificateLabelRequest.ID",
 			Type:          "string",
@@ -4579,16 +4436,6 @@ var UpdateIssuerRequest_MessageDescription = &api.MessageDescription{
 	FullName:      "pb.UpdateIssuerRequest",
 	Documentation: `UpdateIssuerRequest updates issuer config or status`,
 	Fields: []*api.FieldMeta{
-		{
-			Name:          "OrgID",
-			FullName:      "pb.UpdateIssuerRequest.OrgID",
-			Display:       "Org ID",
-			Type:          "string",
-			SearchType:    "keyword",
-			SearchOptions: api.SearchOption_Sortable,
-			Required:      true,
-			Documentation: `OrgID of the owning org`,
-		},
 		{
 			Name:          "ID",
 			FullName:      "pb.UpdateIssuerRequest.ID",
@@ -5014,6 +4861,7 @@ var (
 		"pb.GetMembersRequest":                           GetMembersRequest_MessageDescription,
 		"pb.GetProfileRequest":                           GetProfileRequest_MessageDescription,
 		"pb.GetProjectRequest":                           GetProjectRequest_MessageDescription,
+		"pb.GetRootsRequest":                             GetRootsRequest_MessageDescription,
 		"pb.ImportIssuerRequest":                         ImportIssuerRequest_MessageDescription,
 		"pb.Invite":                                      Invite_MessageDescription,
 		"pb.Issuer":                                      Issuer_MessageDescription,
@@ -5121,6 +4969,7 @@ var (
 		"pb.GetMembersRequest":                           func() any { return new(GetMembersRequest) },
 		"pb.GetProfileRequest":                           func() any { return new(GetProfileRequest) },
 		"pb.GetProjectRequest":                           func() any { return new(GetProjectRequest) },
+		"pb.GetRootsRequest":                             func() any { return new(GetRootsRequest) },
 		"pb.ImportIssuerRequest":                         func() any { return new(ImportIssuerRequest) },
 		"pb.Invite":                                      func() any { return new(Invite) },
 		"pb.Issuer":                                      func() any { return new(Issuer) },
@@ -5243,6 +5092,9 @@ func (m *GetProfileRequest) Validate(ctx context.Context) error {
 }
 func (m *GetProjectRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, GetProjectRequest_MessageDescription)
+}
+func (m *GetRootsRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, GetRootsRequest_MessageDescription)
 }
 func (m *ImportIssuerRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, ImportIssuerRequest_MessageDescription)

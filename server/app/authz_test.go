@@ -29,10 +29,11 @@ var aiaMethods = map[string]bool{
 // Test_Authz_CAMethods checks the role matrix of the dev configuration
 // for every method of the CA, the backend and the Admin services, as the
 // authorization interceptor of each listener evaluates it. On the backend
-// the RA and the admin operate the CA, the WFE (the peer) reaches the
+// the WFE (the peer), the RA and the admin reach every method of the
 // backend service and the AIA its SignOCSP only, the Admin API is for the
-// admin and the peer, every other identity is refused, and a path without
-// a rule is refused to everyone. The wfe serves the CA and the CIS to any
+// admin and the peer, every other identity is refused, the public CA is not
+// served, and a path without a rule is refused to everyone. The wfe serves
+// the CA and the CIS to any
 // authenticated role and refuses a guest; it maps no TLS identity, serves
 // neither the backend nor the Admin API, and its Admin rule admits the
 // admin only. The wfe keeps the root path public for the UI, so a path
@@ -78,18 +79,20 @@ func Test_Authz_CAMethods(t *testing.T) {
 	}
 
 	// the backend: service identities over mTLS
-	assert.ElementsMatch(t, []string{"status", "admin", "backend", "ca"}, backend.Services)
+	assert.ElementsMatch(t, []string{"status", "admin", "backend"}, backend.Services)
 	require.NotNil(t, backend.IdentityMap)
 	assert.True(t, backend.IdentityMap.TLS.Enabled)
+	// the public CA takes the org of a token, which a service identity has
+	// not: the backend does not serve it, and has no rule for it
 	for _, method := range caMethods {
 		for _, role := range backendRoles {
-			want := role == "trustyca-ra" || role == "trustyca-admin"
-			assert.Equal(t, want, allowed(t, backend.Authz, role, method), "backend %s for %s", method, role)
+			assert.False(t, allowed(t, backend.Authz, role, method), "backend %s for %s", method, role)
 		}
 	}
 	for _, method := range backendMethods {
 		for _, role := range backendRoles {
-			want := role == "trustyca-peer" || (role == "trustyca-aia" && aiaMethods[method])
+			want := role == "trustyca-peer" || role == "trustyca-ra" || role == "trustyca-admin" ||
+				(role == "trustyca-aia" && aiaMethods[method])
 			assert.Equal(t, want, allowed(t, backend.Authz, role, method), "backend %s for %s", method, role)
 		}
 	}
@@ -112,7 +115,7 @@ func Test_Authz_CAMethods(t *testing.T) {
 	}
 
 	// the wfe: users and API keys; no service role is mapped there, and it
-	// serves the CA, whose key operations run in the backend, and the CIS to
+	// serves the CA, which forwards every call to the backend, and the CIS to
 	// authenticated callers of any role
 	require.NotNil(t, wfe.IdentityMap)
 	assert.False(t, wfe.IdentityMap.TLS.Enabled, "the wfe maps no TLS identity")

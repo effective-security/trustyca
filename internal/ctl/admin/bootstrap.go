@@ -65,12 +65,12 @@ func (a *OrgBootstrapCmd) Run(app App) error {
 		settings.AllowedProfiles = wildcard
 	}
 
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
 	ctx := app.Context()
-	issuer, err := client.RegisterIssuer(ctx, &pb.RegisterIssuerRequest{
+	issuer, err := client.RegisterIssuer(ctx, &privpb.RegisterIssuerRequest{
 		OrgID:       a.Org,
 		ProjectID:   a.Project,
 		Label:       a.Label,
@@ -89,7 +89,7 @@ func (a *OrgBootstrapCmd) Run(app App) error {
 
 	profiles := &pb.ProfilesResponse{}
 	for _, def := range templates {
-		res, err := client.RegisterProfile(ctx, &pb.RegisterProfileRequest{
+		res, err := client.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
 			OrgID:     a.Org,
 			ProjectID: a.Project,
 			Profile:   def,
@@ -113,7 +113,7 @@ func (a *OrgBootstrapCmd) parentID(app App) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	res, err := client.ListIssuers(app.Context(), &privpb.ListIssuersRequest{
+	res, err := client.ListIssuers(app.Context(), &privpb.ListAllIssuersRequest{
 		Platform: true,
 		Label:    a.Parent,
 		Status:   pb.IssuerStatus_Active,

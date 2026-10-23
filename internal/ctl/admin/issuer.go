@@ -43,7 +43,7 @@ func (a *IssuerListCmd) Run(app App) error {
 	if err != nil {
 		return err
 	}
-	res, err := client.ListIssuers(app.Context(), &privpb.ListIssuersRequest{
+	res, err := client.ListIssuers(app.Context(), &privpb.ListAllIssuersRequest{
 		OrgID:     a.Org,
 		ProjectID: a.Project,
 		Platform:  a.Platform,
@@ -73,11 +73,11 @@ func (a *IssuerGetCmd) Run(app App) error {
 	if a.ID == "" && a.Label == "" && a.IKID == "" {
 		return errors.New("issuer ID, label or key identifier is required")
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.GetIssuer(app.Context(), &pb.GetIssuerRequest{
+	res, err := client.GetIssuer(app.Context(), &privpb.GetIssuerRequest{
 		OrgID:     a.Org,
 		ProjectID: a.Project,
 		ID:        a.ID,
@@ -119,11 +119,11 @@ func (a *IssuerRegisterCmd) Run(app App) error {
 	if subject == nil {
 		return errors.New("subject is required: --cn")
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.RegisterIssuer(app.Context(), &pb.RegisterIssuerRequest{
+	res, err := client.RegisterIssuer(app.Context(), &privpb.RegisterIssuerRequest{
 		OrgID:       a.Org,
 		ProjectID:   a.Project,
 		Label:       a.Label,
@@ -185,11 +185,11 @@ func (a *IssuerImportCmd) Run(app App) error {
 	if err != nil {
 		return err
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.ImportIssuer(app.Context(), &pb.ImportIssuerRequest{
+	res, err := client.ImportIssuer(app.Context(), &privpb.ImportIssuerRequest{
 		OrgID:         a.Org,
 		ProjectID:     a.Project,
 		Label:         a.Label,
@@ -231,11 +231,11 @@ func (a *IssuerActivateCmd) Run(app App) error {
 	if err != nil {
 		return err
 	}
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.ActivateIssuer(app.Context(), &pb.ActivateIssuerRequest{
+	res, err := client.ActivateIssuer(app.Context(), &privpb.ActivateIssuerRequest{
 		OrgID:         a.Org,
 		ID:            a.ID,
 		Certificate:   cert,
@@ -273,11 +273,11 @@ func (a *IssuerDestroyCmd) Run(app App) error {
 
 // updateIssuerStatus moves an issuer of the org to the status and prints it
 func updateIssuerStatus(app App, orgID, id string, status pb.IssuerStatus_Enum) error {
-	client, err := app.CAClient()
+	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
-	res, err := client.UpdateIssuer(app.Context(), &pb.UpdateIssuerRequest{
+	res, err := client.UpdateIssuer(app.Context(), &privpb.UpdateIssuerRequest{
 		OrgID:  orgID,
 		ID:     id,
 		Status: status,

@@ -1,10 +1,10 @@
-package ca
+package backend
 
 import (
 	"context"
 	"strings"
 
-	"github.com/effective-security/trustyca/server/service/internal/caapi"
+	"github.com/effective-security/trustyca/privpb"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/porto/xhttp/httperror"
@@ -22,7 +22,7 @@ import (
 
 // RegisterRoot registers a self-signed CA certificate as a trust anchor of
 // the org; registering it again updates its trust
-func (s *Service) RegisterRoot(ctx context.Context, req *pb.RegisterRootRequest) (*pb.RootCertificate, error) {
+func (s *Service) RegisterRoot(ctx context.Context, req *privpb.RegisterRootRequest) (*pb.RootCertificate, error) {
 	if req == nil || strings.TrimSpace(req.Pem) == "" {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing certificate")
 	}
@@ -54,7 +54,7 @@ func (s *Service) RegisterRoot(ctx context.Context, req *pb.RegisterRootRequest)
 		"org_id", res.OrgID.UnderscoreString(),
 		"skid", res.Skid,
 		"subject", res.Subject)
-	events.New(ctx, caapi.EventSource, pb.EventType_RootRegistered, "Root registered").
+	events.New(ctx, EventSource, pb.EventType_RootRegistered, "Root registered").
 		Org(orgID).
 		Reference(res.ID).
 		Description("root %q registered", res.Subject).
@@ -64,7 +64,7 @@ func (s *Service) RegisterRoot(ctx context.Context, req *pb.RegisterRootRequest)
 
 // ListRoots returns the trust anchors of the org, newest first; a trusted
 // service caller that names no org lists the platform anchors
-func (s *Service) ListRoots(ctx context.Context, req *pb.ListRootsRequest) (*pb.RootsResponse, error) {
+func (s *Service) ListRoots(ctx context.Context, req *privpb.ListRootsRequest) (*pb.RootsResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}

@@ -1,4 +1,4 @@
-package caapi
+package backend
 
 import (
 	"context"
@@ -14,19 +14,18 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// Scope resolves the tenant scope of a CA request and authorizes the rows
-// the request reaches, for the CA service and the backend service: the org
-// and the project of the request, and the project of a row found by ID. It
-// reads the CA tables and the orgs only.
-type Scope struct {
+// tenantScope resolves the tenant scope of a CA request and authorizes the
+// rows the request reaches: the org and the project of the request, and the
+// project of a row found by ID. It reads the CA tables and the orgs only.
+type tenantScope struct {
 	authorizer authctx.Authorizer
 	db         db.CaReadonlyDb
 	orgs       db.OrgsReadonlyDb
 }
 
-// NewScope returns the scope checks over the authorizer and the tables
-func NewScope(authorizer authctx.Authorizer, caDb db.CaReadonlyDb, orgsDb db.OrgsReadonlyDb) *Scope {
-	return &Scope{
+// newTenantScope returns the scope checks over the authorizer and the tables
+func newTenantScope(authorizer authctx.Authorizer, caDb db.CaReadonlyDb, orgsDb db.OrgsReadonlyDb) *tenantScope {
+	return &tenantScope{
 		authorizer: authorizer,
 		db:         caDb,
 		orgs:       orgsDb,
@@ -37,7 +36,7 @@ func NewScope(authorizer authctx.Authorizer, caDb db.CaReadonlyDb, orgsDb db.Org
 // carries the selected org, and an explicit OrgID in the request must match
 // it. A trusted service caller (RA, CIS, jobs over mTLS) has no org in its
 // token and names the org explicitly; the org must exist and be active.
-func (s *Scope) Org(ctx context.Context, reqOrgID string) (xdb.ID, error) {
+func (s *tenantScope) Org(ctx context.Context, reqOrgID string) (xdb.ID, error) {
 	tctx := authctx.FromContext(ctx)
 	orgID := tctx.OrgID()
 	if !orgID.IsZero() {
@@ -64,7 +63,7 @@ func (s *Scope) Org(ctx context.Context, reqOrgID string) (xdb.ID, error) {
 		return xdb.ID(0), httperror.WrapWithCtx(ctx, err, "unable to find org")
 	}
 	if org.Status != pb.ItemStatus_Active {
-		return xdb.ID(0), PreconditionFailed(ctx, "org is deleted")
+		return xdb.ID(0), preconditionFailed(ctx, "org is deleted")
 	}
 	return orgID, nil
 }
@@ -72,7 +71,7 @@ func (s *Scope) Org(ctx context.Context, reqOrgID string) (xdb.ID, error) {
 // Project returns the project of a tenant request, or a zero ID for
 // the org scope. A project of another org or an inactive project is reported
 // as not found, so that project existence is not leaked across orgs.
-func (s *Scope) Project(ctx context.Context, orgID xdb.ID, reqProjectID string) (xdb.ID, error) {
+func (s *tenantScope) Project(ctx context.Context, orgID xdb.ID, reqProjectID string) (xdb.ID, error) {
 	if reqProjectID == "" {
 		tctx := authctx.FromContext(ctx)
 		if tctx.IsAPIKey() {
@@ -103,7 +102,7 @@ func (s *Scope) Project(ctx context.Context, orgID xdb.ID, reqProjectID string) 
 // Project it does not default to the project of a restricted API key,
 // since the row's own project is authorized by RowAccess, where the key
 // reads an org-wide row but may not change it
-func (s *Scope) RequestProject(ctx context.Context, orgID xdb.ID, reqProjectID string) (xdb.ID, error) {
+func (s *tenantScope) RequestProject(ctx context.Context, orgID xdb.ID, reqProjectID string) (xdb.ID, error) {
 	if reqProjectID == "" {
 		return xdb.ID(0), nil
 	}
@@ -123,7 +122,7 @@ func (s *Scope) RequestProject(ctx context.Context, orgID xdb.ID, reqProjectID s
 // cannot read, an inactive project and a project of another org are
 // reported as not found, so that project existence does not leak; a project
 // the caller reads but cannot act on at the method's roles is forbidden.
-func (s *Scope) RowAccess(ctx context.Context, orgID, projectID xdb.ID, method, what string) error {
+func (s *tenantScope) RowAccess(ctx context.Context, orgID, projectID xdb.ID, method, what string) error {
 	tctx := authctx.FromContext(ctx)
 	if strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
 		return nil
@@ -171,7 +170,7 @@ func (s *Scope) RowAccess(ctx context.Context, orgID, projectID xdb.ID, method, 
 // project grants only sees nothing of the other projects (DESIGN.md
 // section 3.3). An API key restricted to a project never lists without a
 // project: Project selects its project.
-func (s *Scope) ListProjects(ctx context.Context, orgID xdb.ID) ([]uint64, error) {
+func (s *tenantScope) ListProjects(ctx context.Context, orgID xdb.ID) ([]uint64, error) {
 	tctx := authctx.FromContext(ctx)
 	if tctx.IsAPIKey() || strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
 		return nil, nil
@@ -190,8 +189,8 @@ func (s *Scope) ListProjects(ctx context.Context, orgID xdb.ID) ([]uint64, error
 // the caller may call the method on it (RowAccess); an issuer of another
 // org, of the platform or of a project the caller cannot read is reported
 // as not found
-func (s *Scope) Issuer(ctx context.Context, orgID xdb.ID, idVal, method string) (*model.Issuer, error) {
-	id, err := ParseID(ctx, idVal, "issuer ID")
+func (s *tenantScope) Issuer(ctx context.Context, orgID xdb.ID, idVal, method string) (*model.Issuer, error) {
+	id, err := parseID(ctx, idVal, "issuer ID")
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +206,7 @@ func (s *Scope) Issuer(ctx context.Context, orgID xdb.ID, idVal, method string) 
 
 // VisibleIssuer returns the issuer row when it belongs to the org and the
 // caller may call the method on it (RowAccess)
-func (s *Scope) VisibleIssuer(ctx context.Context, orgID xdb.ID, row *model.Issuer, method string) (*model.Issuer, error) {
+func (s *tenantScope) VisibleIssuer(ctx context.Context, orgID xdb.ID, row *model.Issuer, method string) (*model.Issuer, error) {
 	if row.OrgID.UInt64() != orgID.UInt64() {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found")
 	}
@@ -220,7 +219,7 @@ func (s *Scope) VisibleIssuer(ctx context.Context, orgID xdb.ID, row *model.Issu
 
 // IssuerByLabel returns the issuer with the label of the project, or of the
 // org when the project has none, from the DB
-func (s *Scope) IssuerByLabel(ctx context.Context, orgID, projectID xdb.ID, label string) (*model.Issuer, error) {
+func (s *tenantScope) IssuerByLabel(ctx context.Context, orgID, projectID xdb.ID, label string) (*model.Issuer, error) {
 	row, err := s.db.FindIssuer(ctx, orgID.UInt64(), projectID.UInt64(), label)
 	if err != nil && xdb.IsNotFoundError(err) && !projectID.IsZero() {
 		row, err = s.db.FindIssuer(ctx, orgID.UInt64(), 0, label)
@@ -238,8 +237,8 @@ func (s *Scope) IssuerByLabel(ctx context.Context, orgID, projectID xdb.ID, labe
 // the caller may call the method on it (RowAccess); a profile of another
 // org, of the platform or of a project the caller cannot read is reported
 // as not found
-func (s *Scope) Profile(ctx context.Context, orgID xdb.ID, idVal, method string) (*model.CertificateProfile, error) {
-	id, err := ParseID(ctx, idVal, "profile ID")
+func (s *tenantScope) Profile(ctx context.Context, orgID xdb.ID, idVal, method string) (*model.CertificateProfile, error) {
+	id, err := parseID(ctx, idVal, "profile ID")
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +261,7 @@ func (s *Scope) Profile(ctx context.Context, orgID xdb.ID, idVal, method string)
 
 // ProfileByLabel returns the profile with the label of the project, or of
 // the org when the project has none, from the DB
-func (s *Scope) ProfileByLabel(ctx context.Context, orgID, projectID xdb.ID, label string) (*model.CertificateProfile, error) {
+func (s *tenantScope) ProfileByLabel(ctx context.Context, orgID, projectID xdb.ID, label string) (*model.CertificateProfile, error) {
 	row, err := s.db.FindProfile(ctx, orgID.UInt64(), projectID.UInt64(), label)
 	if err != nil && xdb.IsNotFoundError(err) && !projectID.IsZero() {
 		row, err = s.db.FindProfile(ctx, orgID.UInt64(), 0, label)

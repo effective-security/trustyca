@@ -1,10 +1,12 @@
-package ca
+package backend
 
 import (
 	"context"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/effective-security/trustyca/privpb"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
@@ -62,8 +64,8 @@ func TestService_RegisterIssuer(t *testing.T) {
 	tca := newTestCA(t, ctrl)
 	svc := tca.service()
 	ctx := testCtx("42", "1")
-	valid := func() *pb.RegisterIssuerRequest {
-		return &pb.RegisterIssuerRequest{
+	valid := func() *privpb.RegisterIssuerRequest {
+		return &privpb.RegisterIssuerRequest{
 			Label:   "L3",
 			Type:    pb.AuthorityType_Issuing,
 			Subject: &pb.X509Subject{CommonName: "Tenant CA"},
@@ -73,10 +75,8 @@ func TestService_RegisterIssuer(t *testing.T) {
 	// validation
 	_, err := svc.RegisterIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA, noKeys := tca.noCA()
+	noCA := tca.noCA()
 	_, err = noCA.RegisterIssuer(ctx, valid())
-	assert.EqualError(t, err, "unavailable: CA is not configured")
-	_, err = noKeys.RegisterIssuer(ctx, valid())
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 	req := valid()
 	req.Label = " "
@@ -266,7 +266,7 @@ func TestService_RegisterIssuer(t *testing.T) {
 	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("l4-peer", "L4", "1h"))
 	storeCertificate(tca)
 	_, csrPEM := newCSR(t, "leaf.example.com")
-	signed, err := svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: "l4-peer", Request: csrPEM})
+	signed, err := svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Profile: "l4-peer", Request: csrPEM})
 	require.NoError(t, err)
 	assert.Equal(t, l4.SKID, signed.Certificate.IKID)
 
@@ -342,8 +342,8 @@ func TestService_ImportIssuer(t *testing.T) {
 	ctx := testCtx("42", "1")
 	root := testutils.NewTestCA(t, "Import Root", nil)
 	l1 := testutils.NewTestCA(t, "Import L1", root)
-	valid := func() *pb.ImportIssuerRequest {
-		return &pb.ImportIssuerRequest{
+	valid := func() *privpb.ImportIssuerRequest {
+		return &privpb.ImportIssuerRequest{
 			Label:       "BYO",
 			Type:        pb.AuthorityType_Issuing,
 			Certificate: testutils.CertPEM(l1.Cert),
@@ -355,10 +355,8 @@ func TestService_ImportIssuer(t *testing.T) {
 
 	_, err := svc.ImportIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA, noKeys := tca.noCA()
+	noCA := tca.noCA()
 	_, err = noCA.ImportIssuer(ctx, valid())
-	assert.EqualError(t, err, "unavailable: CA is not configured")
-	_, err = noKeys.ImportIssuer(ctx, valid())
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 	req := valid()
 	req.Label = ""
@@ -423,7 +421,7 @@ func TestService_ImportIssuer(t *testing.T) {
 	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("byo-peer", "BYO", "1h"))
 	storeCertificate(tca)
 	_, csrPEM := newCSR(t, "leaf.example.com")
-	signed, err := svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: "byo-peer", Request: csrPEM})
+	signed, err := svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Profile: "byo-peer", Request: csrPEM})
 	require.NoError(t, err)
 	assert.Equal(t, certutil.GetSubjectKeyID(l1.Cert), signed.Certificate.IKID)
 
@@ -463,8 +461,8 @@ func TestService_ActivateIssuer(t *testing.T) {
 	require.NoError(t, err)
 	crt, certPEM, err := res.Issuer.Sign(csr.SignRequest{Request: pending.CsrPem, Profile: res.ProfileName})
 	require.NoError(t, err)
-	valid := func() *pb.ActivateIssuerRequest {
-		return &pb.ActivateIssuerRequest{
+	valid := func() *privpb.ActivateIssuerRequest {
+		return &privpb.ActivateIssuerRequest{
 			ID:          pending.ID.String(),
 			Certificate: string(certPEM),
 			Root:        tca.root.Pem,
@@ -473,10 +471,8 @@ func TestService_ActivateIssuer(t *testing.T) {
 
 	_, err = svc.ActivateIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA, noKeys := tca.noCA()
+	noCA := tca.noCA()
 	_, err = noCA.ActivateIssuer(ctx, valid())
-	assert.EqualError(t, err, "unavailable: CA is not configured")
-	_, err = noKeys.ActivateIssuer(ctx, valid())
 	assert.EqualError(t, err, "unavailable: CA is not configured")
 	req := valid()
 	req.Certificate = ""
@@ -541,7 +537,7 @@ func TestService_ActivateIssuer(t *testing.T) {
 	tca.addProfile(testOrgID(), xdb.ID(0), peerProfileDef("ext-peer", "EXT", "1h"))
 	storeCertificate(tca)
 	_, csrPEM := newCSR(t, "leaf.example.com")
-	signed, err := svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: "ext-peer", Request: csrPEM})
+	signed, err := svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Profile: "ext-peer", Request: csrPEM})
 	require.NoError(t, err)
 	assert.Equal(t, activated.SKID, signed.Certificate.IKID)
 
@@ -550,7 +546,7 @@ func TestService_ActivateIssuer(t *testing.T) {
 	crt2, certPEM2, err := res.Issuer.Sign(csr.SignRequest{Request: p2.CsrPem, Profile: res.ProfileName})
 	require.NoError(t, err)
 	require.NotEqual(t, crt.SerialNumber, crt2.SerialNumber)
-	req2 := &pb.ActivateIssuerRequest{ID: p2.ID.String(), Certificate: string(certPEM2), Root: tca.root.Pem}
+	req2 := &privpb.ActivateIssuerRequest{ID: p2.ID.String(), Certificate: string(certPEM2), Root: tca.root.Pem}
 	tca.cadb.EXPECT().ActivateIssuer(gomock.Any(), gomock.Any()).Return(nil, notFoundErr("issuer", p2.ID.UInt64()))
 	_, err = svc.ActivateIssuer(ctx, req2)
 	assert.EqualError(t, err, "conflict: issuer is not pending")
@@ -576,43 +572,41 @@ func TestService_UpdateIssuer(t *testing.T) {
 
 	_, err := svc.UpdateIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	noCA, noKeys := tca.noCA()
-	_, err = noCA.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Archived})
+	noCA := tca.noCA()
+	_, err = noCA.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "unavailable: CA is not configured")
-	_, err = noKeys.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Archived})
-	assert.EqualError(t, err, "unavailable: CA is not configured")
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String()})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: issuer.ID.String()})
 	assert.EqualError(t, err, "bad_request: nothing to update")
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{Status: pb.IssuerStatus_Archived})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "bad_request: missing issuer ID")
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: "9999", Status: pb.IssuerStatus_Archived})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: "9999", Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "not_found: issuer not found")
 	org2Root := tca.newRoot(t, xdb.NewID(2), xdb.ID(0), testRootLabel)
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: org2Root.ID.String(), Status: pb.IssuerStatus_Archived})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: org2Root.ID.String(), Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "not_found: issuer not found", "an issuer of another org")
 
 	// the lifecycle moves one step at a time
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Destroyed})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Destroyed})
 	assert.EqualError(t, err, "conflict: issuer status Active cannot change to Destroyed")
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Pending})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Pending})
 	assert.EqualError(t, err, "conflict: issuer status Active cannot change to Pending")
 
 	// the issuer signs until it is archived
 	storeCertificate(tca)
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: "upd-peer", Request: csrPEM})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Profile: "upd-peer", Request: csrPEM})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().UpdateIssuer(gomock.Any(), &query.UpdateIssuerRequest{ID: issuer.ID.UInt64(), OrgID: 1, Status: pb.IssuerStatus_Archived}).DoAndReturn(
 		func(_ context.Context, _ *query.UpdateIssuerRequest) (*model.Issuer, error) {
 			return tca.rows.update(issuer.ID, func(m *model.Issuer) { m.Status = pb.IssuerStatus_Archived }), nil
 		})
-	res, err := svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Archived})
+	res, err := svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Archived})
 	require.NoError(t, err)
 	assert.Equal(t, pb.IssuerStatus_Archived, res.Status)
 	evt := tca.events.last(pb.EventType_IssuerUpdated)
 	require.NotNil(t, evt)
 	assert.Equal(t, issuer.ID.UInt64(), evt.ReferenceID.UInt64())
 	assert.Contains(t, evt.Description.String(), `issuer "UPD" updated: status Archived`)
-	_, err = svc.SignCertificate(ctx, &pb.SignCertificateRequest{Profile: "upd-peer", Request: csrPEM})
+	_, err = svc.SignCertificate(ctx, &privpb.SignCertificateRequest{Profile: "upd-peer", Request: csrPEM})
 	assert.EqualError(t, err, "conflict: issuer is not active", "the archived issuer left the registry at once")
 
 	// a destroyed issuer loses its key
@@ -623,12 +617,12 @@ func TestService_UpdateIssuer(t *testing.T) {
 				m.KeyProtected = ""
 			}), nil
 		})
-	res, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Destroyed})
+	res, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: issuer.ID.String(), Status: pb.IssuerStatus_Destroyed})
 	require.NoError(t, err)
 	assert.Equal(t, pb.IssuerStatus_Destroyed, res.Status)
 
 	// the settings
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Config: &pb.IssuerConfig{CrlExpiry: "x"}})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Config: &pb.IssuerConfig{CrlExpiry: "x"}})
 	assert.EqualError(t, err, `bad_request: invalid config: invalid CrlExpiry: "x" is not a duration`)
 	before, err := tca.registry.Resolve(tca.ctx, &core.ResolveRequest{OrgID: testOrgID(), Profile: testProfile})
 	require.NoError(t, err)
@@ -641,7 +635,7 @@ func TestService_UpdateIssuer(t *testing.T) {
 			assert.Contains(t, string(q.Config), `"OcspExpiry":"2h"`)
 			return tca.rows.update(tca.issuer.ID, func(m *model.Issuer) { m.Config = model.JSON(q.Config) }), nil
 		})
-	res, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Config: &pb.IssuerConfig{
+	res, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Config: &pb.IssuerConfig{
 		AllowedProfiles: []string{testOCSPProfile},
 		OcspExpiry:      "2h",
 	}})
@@ -654,10 +648,10 @@ func TestService_UpdateIssuer(t *testing.T) {
 
 	// DB failures
 	tca.cadb.EXPECT().UpdateIssuer(gomock.Any(), gomock.Any()).Return(nil, notFoundErr("issuer", tca.issuer.ID.UInt64()))
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Status: pb.IssuerStatus_Archived})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "not_found: issuer not found")
 	tca.cadb.EXPECT().UpdateIssuer(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
-	_, err = svc.UpdateIssuer(ctx, &pb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Status: pb.IssuerStatus_Archived})
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "unexpected: failed to update issuer")
 }
 
@@ -673,13 +667,13 @@ func TestService_GetIssuer(t *testing.T) {
 
 	_, err := svc.GetIssuer(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{})
 	assert.EqualError(t, err, "bad_request: issuer ID, label or IKID is required")
-	_, err = svc.GetIssuer(testCtx("42", ""), &pb.GetIssuerRequest{ID: tca.issuer.ID.String()})
+	_, err = svc.GetIssuer(testCtx("42", ""), &privpb.GetIssuerRequest{ID: tca.issuer.ID.String()})
 	assert.EqualError(t, err, "forbidden: org not selected")
 
 	// by ID
-	res, err := svc.GetIssuer(ctx, &pb.GetIssuerRequest{ID: tca.issuer.ID.String()})
+	res, err := svc.GetIssuer(ctx, &privpb.GetIssuerRequest{ID: tca.issuer.ID.String()})
 	require.NoError(t, err)
 	assert.Equal(t, testIssuerLabel, res.Label)
 	assert.Equal(t, tca.issuer.Skid, res.SKID)
@@ -690,44 +684,44 @@ func TestService_GetIssuer(t *testing.T) {
 	assert.Equal(t, []string{testOCSPProfile}, res.Config.AllowedProfiles)
 	assert.Equal(t, core.SoftwareKeyProvider, res.KeyProvider)
 	assert.Equal(t, "0", res.CrlNumber)
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{ID: "bad"})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{ID: "bad"})
 	assert.EqualError(t, err, "bad_request: invalid issuer ID")
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{ID: "9999"})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{ID: "9999"})
 	assert.EqualError(t, err, "not_found: issuer not found")
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{ID: org2Root.ID.String()})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{ID: org2Root.ID.String()})
 	assert.EqualError(t, err, "not_found: issuer not found", "an issuer of another org")
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{ID: platformRoot.ID.String()})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{ID: platformRoot.ID.String()})
 	assert.EqualError(t, err, "not_found: issuer not found", "a platform issuer")
 
 	// by label, in the project then in the org
-	res, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{Label: testIssuerLabel, ProjectID: "201"})
+	res, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{Label: testIssuerLabel, ProjectID: "201"})
 	require.NoError(t, err)
 	assert.Equal(t, tca.issuer.ID.String(), res.ID)
 	projectIssuer := tca.newChild(t, tca.root, testCAProfile, testOrgID(), testProject.ID, testIssuerLabel, pb.AuthorityType_Issuing, nil)
-	res, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{Label: testIssuerLabel, ProjectID: "201"})
+	res, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{Label: testIssuerLabel, ProjectID: "201"})
 	require.NoError(t, err)
 	assert.Equal(t, projectIssuer.ID.String(), res.ID)
 	assert.Equal(t, "201", res.ProjectID)
-	res, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{Label: testIssuerLabel})
+	res, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{Label: testIssuerLabel})
 	require.NoError(t, err)
 	assert.Equal(t, tca.issuer.ID.String(), res.ID)
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{Label: "nope"})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{Label: "nope"})
 	assert.EqualError(t, err, "not_found: issuer not found: nope")
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{Label: testIssuerLabel, ProjectID: "301"})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{Label: testIssuerLabel, ProjectID: "301"})
 	assert.EqualError(t, err, "not_found: project not found")
 
 	// by IKID
-	res, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{IKID: tca.issuer.Skid})
+	res, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{IKID: tca.issuer.Skid})
 	require.NoError(t, err)
 	assert.Equal(t, tca.issuer.ID.String(), res.ID)
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{IKID: org2Root.Skid})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{IKID: org2Root.Skid})
 	assert.EqualError(t, err, "not_found: issuer not found")
-	_, err = svc.GetIssuer(ctx, &pb.GetIssuerRequest{IKID: "nope"})
+	_, err = svc.GetIssuer(ctx, &privpb.GetIssuerRequest{IKID: "nope"})
 	assert.EqualError(t, err, "not_found: issuer not found")
 
 	// a service caller names the org
 	tca.orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
-	res, err = svc.GetIssuer(serviceCtx("trustyca-ra"), &pb.GetIssuerRequest{OrgID: "1", ID: tca.issuer.ID.String()})
+	res, err = svc.GetIssuer(serviceCtx("trustyca-ra"), &privpb.GetIssuerRequest{OrgID: "1", ID: tca.issuer.ID.String()})
 	require.NoError(t, err)
 	assert.Equal(t, tca.issuer.ID.String(), res.ID)
 }
@@ -750,39 +744,39 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 	// a member with a grant in one project reads the org-wide issuers and
 	// those of its project; an issuer of another project is not found,
 	// whether by ID or by IKID, and so is one of an inactive project
-	res, err := svc.GetIssuer(viewer, &pb.GetIssuerRequest{ID: tca.issuer.ID.String()})
+	res, err := svc.GetIssuer(viewer, &privpb.GetIssuerRequest{ID: tca.issuer.ID.String()})
 	require.NoError(t, err)
 	assert.Equal(t, testIssuerLabel, res.Label)
-	res, err = svc.GetIssuer(viewer, &pb.GetIssuerRequest{ID: projectIssuer.ID.String()})
+	res, err = svc.GetIssuer(viewer, &privpb.GetIssuerRequest{ID: projectIssuer.ID.String()})
 	require.NoError(t, err)
 	assert.Equal(t, "201", res.ProjectID)
-	_, err = svc.GetIssuer(viewer, &pb.GetIssuerRequest{ID: sibling.ID.String()})
+	_, err = svc.GetIssuer(viewer, &privpb.GetIssuerRequest{ID: sibling.ID.String()})
 	assert.EqualError(t, err, "not_found: issuer not found")
-	_, err = svc.GetIssuer(viewer, &pb.GetIssuerRequest{IKID: sibling.Skid})
+	_, err = svc.GetIssuer(viewer, &privpb.GetIssuerRequest{IKID: sibling.Skid})
 	assert.EqualError(t, err, "not_found: issuer not found")
-	_, err = svc.GetIssuer(viewer, &pb.GetIssuerRequest{ID: gone.ID.String()})
+	_, err = svc.GetIssuer(viewer, &privpb.GetIssuerRequest{ID: gone.ID.String()})
 	assert.EqualError(t, err, "not_found: issuer not found")
 	// an org-wide role reads every project
-	res, err = svc.GetIssuer(admin, &pb.GetIssuerRequest{ID: sibling.ID.String()})
+	res, err = svc.GetIssuer(admin, &privpb.GetIssuerRequest{ID: sibling.ID.String()})
 	require.NoError(t, err)
 	assert.Equal(t, "202", res.ProjectID)
-	_, err = svc.GetIssuer(admin, &pb.GetIssuerRequest{ID: gone.ID.String()})
+	_, err = svc.GetIssuer(admin, &privpb.GetIssuerRequest{ID: gone.ID.String()})
 	assert.EqualError(t, err, "not_found: issuer not found", "an inactive project hides its rows")
 	// a member without a grant reads nothing
-	_, err = svc.GetIssuer(testCtx(strangerUser, "1"), &pb.GetIssuerRequest{ID: tca.issuer.ID.String()})
+	_, err = svc.GetIssuer(testCtx(strangerUser, "1"), &privpb.GetIssuerRequest{ID: tca.issuer.ID.String()})
 	assert.EqualError(t, err, "not_found: issuer not found")
 	// an API key restricted to a project reads the org-wide issuers and
 	// those of its project; an org-wide key reads every project
 	key := apiKeyCtx("1", "201")
-	_, err = svc.GetIssuer(key, &pb.GetIssuerRequest{ID: tca.issuer.ID.String()})
+	_, err = svc.GetIssuer(key, &privpb.GetIssuerRequest{ID: tca.issuer.ID.String()})
 	require.NoError(t, err)
-	_, err = svc.GetIssuer(key, &pb.GetIssuerRequest{ID: projectIssuer.ID.String()})
+	_, err = svc.GetIssuer(key, &privpb.GetIssuerRequest{ID: projectIssuer.ID.String()})
 	require.NoError(t, err)
-	_, err = svc.GetIssuer(key, &pb.GetIssuerRequest{ID: sibling.ID.String()})
+	_, err = svc.GetIssuer(key, &privpb.GetIssuerRequest{ID: sibling.ID.String()})
 	assert.EqualError(t, err, "not_found: issuer not found")
-	_, err = svc.GetIssuer(apiKeyCtx("1", ""), &pb.GetIssuerRequest{ID: sibling.ID.String()})
+	_, err = svc.GetIssuer(apiKeyCtx("1", ""), &privpb.GetIssuerRequest{ID: sibling.ID.String()})
 	require.NoError(t, err)
-	_, err = svc.GetIssuer(apiKeyCtx("1", ""), &pb.GetIssuerRequest{ID: gone.ID.String()})
+	_, err = svc.GetIssuer(apiKeyCtx("1", ""), &privpb.GetIssuerRequest{ID: gone.ID.String()})
 	assert.EqualError(t, err, "not_found: issuer not found")
 
 	// a list without a project covers the org-wide issuers and the projects
@@ -792,7 +786,7 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 		ProjectIDs: []uint64{201},
 		Limit:      defaultListLimit,
 	}).Return(&model.IssuerResult{Rows: []*model.Issuer{tca.issuer, projectIssuer}}, nil)
-	list, err := svc.ListIssuers(viewer, &pb.ListIssuersRequest{})
+	list, err := svc.ListIssuers(viewer, &privpb.ListIssuersRequest{})
 	require.NoError(t, err)
 	assert.Len(t, list.Issuers, 2)
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
@@ -800,44 +794,44 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 		ProjectID: 201,
 		Limit:     defaultListLimit,
 	}).Return(&model.IssuerResult{}, nil)
-	_, err = svc.ListIssuers(viewer, &pb.ListIssuersRequest{ProjectID: "201"})
+	_, err = svc.ListIssuers(viewer, &privpb.ListIssuersRequest{ProjectID: "201"})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
 		OrgID:      1,
 		ProjectIDs: []uint64{},
 		Limit:      defaultListLimit,
 	}).Return(&model.IssuerResult{}, nil)
-	_, err = svc.ListIssuers(testCtx(strangerUser, "1"), &pb.ListIssuersRequest{})
+	_, err = svc.ListIssuers(testCtx(strangerUser, "1"), &privpb.ListIssuersRequest{})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
 		OrgID: 1,
 		Limit: defaultListLimit,
 	}).Return(&model.IssuerResult{}, nil)
-	_, err = svc.ListIssuers(admin, &pb.ListIssuersRequest{})
+	_, err = svc.ListIssuers(admin, &privpb.ListIssuersRequest{})
 	require.NoError(t, err)
 
 	// a project Admin changes the issuers of its project only: an org-wide
 	// issuer is forbidden, one of another project is not found
 	projectAdmin := testCtx(projectAdminUser, "1")
-	_, err = svc.UpdateIssuer(projectAdmin, &pb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Status: pb.IssuerStatus_Archived})
+	_, err = svc.UpdateIssuer(projectAdmin, &privpb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "forbidden: access denied")
-	_, err = svc.UpdateIssuer(projectAdmin, &pb.UpdateIssuerRequest{ID: sibling.ID.String(), Status: pb.IssuerStatus_Archived})
+	_, err = svc.UpdateIssuer(projectAdmin, &privpb.UpdateIssuerRequest{ID: sibling.ID.String(), Status: pb.IssuerStatus_Archived})
 	assert.EqualError(t, err, "not_found: issuer not found")
-	_, err = svc.ActivateIssuer(projectAdmin, &pb.ActivateIssuerRequest{ID: sibling.ID.String(), Certificate: sibling.Pem})
+	_, err = svc.ActivateIssuer(projectAdmin, &privpb.ActivateIssuerRequest{ID: sibling.ID.String(), Certificate: sibling.Pem})
 	assert.EqualError(t, err, "not_found: issuer not found")
 	tca.cadb.EXPECT().UpdateIssuer(gomock.Any(), &query.UpdateIssuerRequest{ID: projectIssuer.ID.UInt64(), OrgID: 1, Status: pb.IssuerStatus_Archived}).DoAndReturn(
 		func(_ context.Context, _ *query.UpdateIssuerRequest) (*model.Issuer, error) {
 			return tca.rows.update(projectIssuer.ID, func(m *model.Issuer) { m.Status = pb.IssuerStatus_Archived }), nil
 		})
-	res, err = svc.UpdateIssuer(projectAdmin, &pb.UpdateIssuerRequest{ID: projectIssuer.ID.String(), Status: pb.IssuerStatus_Archived})
+	res, err = svc.UpdateIssuer(projectAdmin, &privpb.UpdateIssuerRequest{ID: projectIssuer.ID.String(), Status: pb.IssuerStatus_Archived})
 	require.NoError(t, err)
 	assert.Equal(t, pb.IssuerStatus_Archived, res.Status)
-	_, err = svc.UpdateIssuer(viewer, &pb.UpdateIssuerRequest{ID: projectIssuer.ID.String(), Status: pb.IssuerStatus_Destroyed})
+	_, err = svc.UpdateIssuer(viewer, &privpb.UpdateIssuerRequest{ID: projectIssuer.ID.String(), Status: pb.IssuerStatus_Destroyed})
 	assert.EqualError(t, err, "forbidden: access denied", "a project Viewer")
 
 	// the parent of a new issuer is visible from the scope of the new
 	// issuer: org-wide or of the same project, never of another project
-	req := &pb.RegisterIssuerRequest{
+	req := &privpb.RegisterIssuerRequest{
 		Label:     "UNDER_SIB",
 		Type:      pb.AuthorityType_Issuing,
 		Subject:   &pb.X509Subject{CommonName: "Under Sibling"},
@@ -861,7 +855,7 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 	require.NoError(t, err)
 
 	// a Root is self-signed: a parent is refused before any key is made
-	_, err = svc.RegisterIssuer(admin, &pb.RegisterIssuerRequest{
+	_, err = svc.RegisterIssuer(admin, &privpb.RegisterIssuerRequest{
 		Label:    "R9",
 		Type:     pb.AuthorityType_Root,
 		Subject:  &pb.X509Subject{CommonName: "Root"},
@@ -881,11 +875,11 @@ func TestService_ListIssuers(t *testing.T) {
 
 	_, err := svc.ListIssuers(ctx, nil)
 	assert.EqualError(t, err, "bad_request: missing request")
-	_, err = svc.ListIssuers(testCtx("42", ""), &pb.ListIssuersRequest{})
+	_, err = svc.ListIssuers(testCtx("42", ""), &privpb.ListIssuersRequest{})
 	assert.EqualError(t, err, "forbidden: org not selected")
-	_, err = svc.ListIssuers(ctx, &pb.ListIssuersRequest{ProjectID: "301"})
+	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{ProjectID: "301"})
 	assert.EqualError(t, err, "not_found: project not found")
-	_, err = svc.ListIssuers(ctx, &pb.ListIssuersRequest{Cursor: "zzz"})
+	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{Cursor: "zzz"})
 	assert.EqualError(t, err, "bad_request: invalid cursor")
 
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
@@ -899,7 +893,7 @@ func TestService_ListIssuers(t *testing.T) {
 		HasNextPage: true,
 		NextOffset:  100,
 	}, nil)
-	res, err := svc.ListIssuers(ctx, &pb.ListIssuersRequest{
+	res, err := svc.ListIssuers(ctx, &privpb.ListIssuersRequest{
 		ProjectID: "201",
 		Status:    pb.IssuerStatus_Active,
 		Type:      pb.AuthorityType_Issuing,
@@ -917,13 +911,13 @@ func TestService_ListIssuers(t *testing.T) {
 		Limit:  10,
 		Cursor: initial,
 	}).Return(&model.IssuerResult{}, nil)
-	res, err = svc.ListIssuers(ctx, &pb.ListIssuersRequest{Limit: 10, Cursor: query.InitialCursor})
+	res, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{Limit: 10, Cursor: query.InitialCursor})
 	require.NoError(t, err)
 	assert.Empty(t, res.Issuers)
 	assert.Nil(t, res.NextPage)
 
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
-	_, err = svc.ListIssuers(ctx, &pb.ListIssuersRequest{})
+	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list issuers")
 }
 
@@ -938,7 +932,7 @@ func TestService_Issuers_SoftwareKeysDisabled(t *testing.T) {
 
 	// the inmem provider generates software keys: a new root is refused
 	// before anything is stored
-	_, err := svc.RegisterIssuer(ctx, &pb.RegisterIssuerRequest{
+	_, err := svc.RegisterIssuer(ctx, &privpb.RegisterIssuerRequest{
 		Label:   "NOSOFT",
 		Type:    pb.AuthorityType_Root,
 		Subject: &pb.X509Subject{CommonName: "No Software Root"},
@@ -948,7 +942,7 @@ func TestService_Issuers_SoftwareKeysDisabled(t *testing.T) {
 
 	// a PEM key is a software key
 	root := testutils.NewTestCA(t, "Import Root", nil)
-	_, err = svc.ImportIssuer(ctx, &pb.ImportIssuerRequest{
+	_, err = svc.ImportIssuer(ctx, &privpb.ImportIssuerRequest{
 		Label:       "BYO",
 		Type:        pb.AuthorityType_Root,
 		Certificate: testutils.CertPEM(root.Cert),

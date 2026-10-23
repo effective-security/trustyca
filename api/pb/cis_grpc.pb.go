@@ -42,7 +42,7 @@ const (
 // aia service, served over plain HTTP to any caller.
 type CISClient interface {
 	// GetRoots returns the published trust anchors
-	GetRoots(ctx context.Context, in *ListRootsRequest, opts ...grpc.CallOption) (*RootsResponse, error)
+	GetRoots(ctx context.Context, in *GetRootsRequest, opts ...grpc.CallOption) (*RootsResponse, error)
 	// GetIssuer returns the issuer chain and status by IKID
 	GetIssuer(ctx context.Context, in *GetIssuerInfoRequest, opts ...grpc.CallOption) (*IssuerInfo, error)
 	// GetCertificate returns the certificate by ID, SKID, Sha256 or issuer
@@ -62,7 +62,7 @@ func NewCISClient(cc grpc.ClientConnInterface) CISClient {
 	return &cISClient{cc}
 }
 
-func (c *cISClient) GetRoots(ctx context.Context, in *ListRootsRequest, opts ...grpc.CallOption) (*RootsResponse, error) {
+func (c *cISClient) GetRoots(ctx context.Context, in *GetRootsRequest, opts ...grpc.CallOption) (*RootsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RootsResponse)
 	err := c.cc.Invoke(ctx, CIS_GetRoots_FullMethodName, in, out, cOpts...)
@@ -127,7 +127,7 @@ func (c *cISClient) GetCRL(ctx context.Context, in *GetCrlRequest, opts ...grpc.
 // aia service, served over plain HTTP to any caller.
 type CISServer interface {
 	// GetRoots returns the published trust anchors
-	GetRoots(context.Context, *ListRootsRequest) (*RootsResponse, error)
+	GetRoots(context.Context, *GetRootsRequest) (*RootsResponse, error)
 	// GetIssuer returns the issuer chain and status by IKID
 	GetIssuer(context.Context, *GetIssuerInfoRequest) (*IssuerInfo, error)
 	// GetCertificate returns the certificate by ID, SKID, Sha256 or issuer
@@ -146,7 +146,7 @@ type CISServer interface {
 // pointer dereference when methods are called.
 type UnimplementedCISServer struct{}
 
-func (UnimplementedCISServer) GetRoots(context.Context, *ListRootsRequest) (*RootsResponse, error) {
+func (UnimplementedCISServer) GetRoots(context.Context, *GetRootsRequest) (*RootsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRoots not implemented")
 }
 func (UnimplementedCISServer) GetIssuer(context.Context, *GetIssuerInfoRequest) (*IssuerInfo, error) {
@@ -182,7 +182,7 @@ func RegisterCISServer(s grpc.ServiceRegistrar, srv CISServer) {
 }
 
 func _CIS_GetRoots_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := new(ListRootsRequest)
+	in := new(GetRootsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func _CIS_GetRoots_Handler(srv any, ctx context.Context, dec func(any) error, in
 		FullMethod: CIS_GetRoots_FullMethodName,
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
-		return srv.(CISServer).GetRoots(ctx, req.(*ListRootsRequest))
+		return srv.(CISServer).GetRoots(ctx, req.(*GetRootsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

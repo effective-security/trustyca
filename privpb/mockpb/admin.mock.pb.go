@@ -106,7 +106,7 @@ func (m *MockAdminServer) ListProjects(ctx context.Context, req *privpb.ListProj
 // first, for support staff; the tenant view of an org is CA.ListIssuers.
 // Private key material is never returned.
 
-func (m *MockAdminServer) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
+func (m *MockAdminServer) ListIssuers(ctx context.Context, req *privpb.ListAllIssuersRequest) (*pb.IssuersResponse, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
@@ -117,7 +117,7 @@ func (m *MockAdminServer) ListIssuers(ctx context.Context, req *privpb.ListIssue
 // platform, newest first, for support staff; the tenant view of an org
 // is CA.ListCertificates
 
-func (m *MockAdminServer) ListCertificates(ctx context.Context, req *privpb.ListCertificatesRequest) (*pb.CertificatesResponse, error) {
+func (m *MockAdminServer) ListCertificates(ctx context.Context, req *privpb.ListAllCertificatesRequest) (*pb.CertificatesResponse, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}

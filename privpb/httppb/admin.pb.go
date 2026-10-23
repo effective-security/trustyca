@@ -45,10 +45,10 @@ func GetAdminHTTPHandler(s privpb.AdminServer, withAccessCheck privpb.CheckAcces
 			res, err = s.ListProjects(ctx, req.(*privpb.ListProjectsRequest))
 
 		case privpb.Admin_ListIssuers_FullMethodName:
-			res, err = s.ListIssuers(ctx, req.(*privpb.ListIssuersRequest))
+			res, err = s.ListIssuers(ctx, req.(*privpb.ListAllIssuersRequest))
 
 		case privpb.Admin_ListCertificates_FullMethodName:
-			res, err = s.ListCertificates(ctx, req.(*privpb.ListCertificatesRequest))
+			res, err = s.ListCertificates(ctx, req.(*privpb.ListAllCertificatesRequest))
 
 		default:
 			err = httperror.Malformed("invalid action: %s", action)

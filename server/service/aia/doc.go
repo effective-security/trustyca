@@ -11,14 +11,14 @@
 // is forwarded to privpb.Backend.SignOCSP: to the backend service of the
 // same process, else over gRPC with the `aia` service client (the
 // `trustyca-aia` identity), created on the first request
-// (client.BackendLocator). The signed response is cached by the hash of the
+// (shared.BackendLocator). The signed response is cached by the hash of the
 // request until its NextUpdate. Every lookup is by the key identifier of
 // the issuer, or by the OCSP request itself: the service lists nothing.
 //
 // The service is built by its Factory from the app container; a test wires
 // a backend directly:
 //
-//	svc, err := aia.New(cfg, caReadonlyDb, client.NewStaticBackendLocator(backend))
+//	svc, err := aia.New(cfg, caReadonlyDb, shared.NewStaticBackendLocator(backend))
 //	if err != nil {
 //		return err
 //	}

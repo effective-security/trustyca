@@ -64,7 +64,7 @@ func TestRoutes(t *testing.T) {
 	assert.Equal(t, pb.CertificateStatus_Revoked, status.Status)
 	assert.Equal(t, pb.ReasonCode_KeyCompromise, status.Reason)
 	var roots pb.RootsResponse
-	w = e.postJSON(t, pb.CIS_GetRoots_FullMethodName, &pb.ListRootsRequest{}, &roots)
+	w = e.postJSON(t, pb.CIS_GetRoots_FullMethodName, &pb.GetRootsRequest{}, &roots)
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 	assert.Len(t, roots.Roots, 1)
 

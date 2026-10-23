@@ -1,10 +1,12 @@
-package ca
+package backend
 
 import (
 	"bytes"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/effective-security/trustyca/privpb"
 
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/tests/testutils"
@@ -59,14 +61,14 @@ func TestService_KeyMaterialNeverLogged(t *testing.T) {
 
 	root := testutils.NewTestCA(t, "Logged Root", nil)
 	key := keyPEM(t, root.Key)
-	imported, err := svc.ImportIssuer(ctx, &pb.ImportIssuerRequest{
+	imported, err := svc.ImportIssuer(ctx, &privpb.ImportIssuerRequest{
 		Label:       "LOGCHK",
 		Type:        pb.AuthorityType_Root,
 		Certificate: testutils.CertPEM(root.Cert),
 		KeyPem:      key,
 	})
 	require.NoError(t, err)
-	generated, err := svc.RegisterIssuer(ctx, &pb.RegisterIssuerRequest{
+	generated, err := svc.RegisterIssuer(ctx, &privpb.RegisterIssuerRequest{
 		Label:   "LOGGEN",
 		Type:    pb.AuthorityType_Root,
 		Subject: &pb.X509Subject{CommonName: "Logged Generated Root"},

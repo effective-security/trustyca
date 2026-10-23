@@ -26,5 +26,7 @@ type App interface {
 	StatusClient() (pb.StatusServer, error)
 	OrgsClient() (pb.OrgsServer, error)
 	AdminClient() (privpb.AdminServer, error)
-	CAClient() (pb.CAServer, error)
+	// BackendClient returns the client of the CA of the service identities
+	// (privpb.Backend), on the backend listener
+	BackendClient() (privpb.BackendServer, error)
 }
