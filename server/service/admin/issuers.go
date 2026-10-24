@@ -22,7 +22,7 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListAllIssuersReq
 	if err != nil {
 		return nil, err
 	}
-	cursor, err := listCursor(ctx, req.Cursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseCursor)
 	if err != nil {
 		return nil, err
 	}

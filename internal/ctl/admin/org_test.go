@@ -17,7 +17,7 @@ func ctlOrg() *pb.Org {
 
 func (s *testSuiteGrpc) Test_OrgListCmd() {
 	s.MockAdmin.SetResponse(&pb.OrgsResponse{Orgs: []*pb.Org{ctlOrg()}})
-	cmd := &admin.OrgListCmd{Status: "Active", Limit: 10}
+	cmd := &admin.OrgListCmd{Status: "Active", Limit: 10, Cursor: "initial"}
 	err := cmd.Run(s.Ctl)
 	s.Require().NoError(err)
 

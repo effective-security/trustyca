@@ -68,12 +68,12 @@ func (s *Service) ListRoots(ctx context.Context, req *privpb.ListRootsRequest) (
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	cursor, err := listCursor(ctx, req.Cursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseCursor)
 	if err != nil {
 		return nil, err
 	}
 	q := &query.ListRootsRequest{
-		Limit:  listLimit(req.Limit),
+		Limit:  query.Limit(req.Limit),
 		Offset: req.Offset,
 		Cursor: cursor,
 	}

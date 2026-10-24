@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/effective-security/porto/xhttp/httperror"
-	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/xdb"
 	"google.golang.org/grpc/codes"
 )
@@ -46,15 +45,6 @@ func parseListScope(ctx context.Context, orgIDVal, projectIDVal string, platform
 		res.allOrgs = !platform
 	}
 	return res, nil
-}
-
-// listCursor parses the cursor of a list request
-func listCursor(ctx context.Context, cursor string) (query.Cursor, error) {
-	c, err := query.ParseCursor(cursor)
-	if err != nil {
-		return query.Cursor{}, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid cursor")
-	}
-	return c, nil
 }
 
 // parseTime parses an optional RFC3339 time of a request

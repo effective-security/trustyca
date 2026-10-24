@@ -106,7 +106,10 @@ type ListCrlsRequest struct {
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListCrlsRequest) Validate() error {
-	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
+	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
+		return err
+	}
+	return r.Cursor.checkKey(keyID)
 }
 
 // QueryParams returns the query params builder
@@ -117,7 +120,7 @@ func (r *ListCrlsRequest) QueryParams() xdb.QueryParams {
 	if r.ExpiringBefore != nil {
 		b.Set(schema.Crl.NextUpdate.Position, r.ExpiringBefore.UTC())
 	}
-	setPage(b, schema.Crl.ID.Position, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
@@ -131,7 +134,7 @@ func ListCrls(args ...any) (string, string) {
 		if p.IsSet(schema.Crl.NextUpdate.Position) {
 			q.Where(schema.Crl.NextUpdate.Name+" < ?", nil)
 		}
-		pageByID(q, p)
+		pageByIDDesc(q, p)
 		return q
 	})
 }

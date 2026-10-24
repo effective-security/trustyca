@@ -129,7 +129,10 @@ type ListRevokedRequest struct {
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListRevokedRequest) Validate() error {
-	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
+	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
+		return err
+	}
+	return r.Cursor.checkKey(keyID)
 }
 
 // QueryParams returns the query params builder
@@ -143,7 +146,7 @@ func (r *ListRevokedRequest) QueryParams() xdb.QueryParams {
 	if r.ValidAfter != nil {
 		b.Set(schema.Revoked.NotAfter.Position, r.ValidAfter.UTC())
 	}
-	setPage(b, schema.Revoked.ID.Position, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
@@ -160,7 +163,7 @@ func ListRevoked(args ...any) (string, string) {
 		if p.IsSet(schema.Revoked.NotAfter.Position) {
 			q.Where(schema.Revoked.NotAfter.Name+" > ?", nil)
 		}
-		pageByID(q, p)
+		pageByIDDesc(q, p)
 		return q
 	})
 }
@@ -199,7 +202,10 @@ type ListRevokedCertificatesRequest struct {
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListRevokedCertificatesRequest) Validate() error {
-	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
+	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
+		return err
+	}
+	return r.Cursor.checkKey(keyID)
 }
 
 // QueryParams returns the query params builder
@@ -211,7 +217,7 @@ func (r *ListRevokedCertificatesRequest) QueryParams() xdb.QueryParams {
 	if r.IKID != "" {
 		b.Set(schema.RevokedCertificate.Ikid.Position, r.IKID)
 	}
-	setPage(b, schema.RevokedCertificate.ID.Position, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
@@ -226,7 +232,7 @@ func ListRevokedCertificates(args ...any) (string, string) {
 		if p.IsSet(schema.RevokedCertificate.Ikid.Position) {
 			q.Where(schema.RevokedCertificate.Ikid.Name+" = ?", nil)
 		}
-		pageByID(q, p)
+		pageByIDDesc(q, p)
 		return q
 	})
 }

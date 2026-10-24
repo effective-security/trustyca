@@ -126,7 +126,7 @@ func (s *Service) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (
 		OrgID:     orgID.UInt64(),
 		ProjectID: projectID.UInt64(),
 		Status:    req.Status,
-		Limit:     defaultListLimit,
+		Limit:     xdb.DefaultPageSize,
 	}
 
 	lres, err := s.db.ListAPIKeys(ctx, lreq)

@@ -100,7 +100,10 @@ type ListProfilesRequest struct {
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListProfilesRequest) Validate() error {
-	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
+	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
+		return err
+	}
+	return r.Cursor.checkKey(keyID)
 }
 
 // QueryParams returns the query params builder
@@ -115,7 +118,7 @@ func (r *ListProfilesRequest) QueryParams() xdb.QueryParams {
 	if r.Status != pb.ItemStatus_Unknown {
 		b.Set(schema.CertificateProfile.Status.Position, r.Status)
 	}
-	setPage(b, schema.CertificateProfile.ID.Position, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
@@ -132,7 +135,7 @@ func ListProfiles(args ...any) (string, string) {
 		if p.IsSet(schema.CertificateProfile.Status.Position) {
 			q.Where(schema.CertificateProfile.Status.Name+" = ?", nil)
 		}
-		pageByID(q, p)
+		pageByIDDesc(q, p)
 		return q
 	})
 }

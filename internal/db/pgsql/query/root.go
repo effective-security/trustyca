@@ -54,14 +54,17 @@ type ListRootsRequest struct {
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListRootsRequest) Validate() error {
-	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
+	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
+		return err
+	}
+	return r.Cursor.checkKey(keyID)
 }
 
 // QueryParams returns the query params builder
 func (r *ListRootsRequest) QueryParams() xdb.QueryParams {
 	b := xdb.NewQueryParams("ListRoots")
 	setOrgScope(b, schema.RootCertificate.OrgID.Position, r.OrgID, r.Platform)
-	setPage(b, schema.RootCertificate.ID.Position, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
@@ -72,7 +75,7 @@ func ListRoots(args ...any) (string, string) {
 	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
 		q := schema.RootCertificateTableInfo.Select()
 		whereOrgScope(q, p, schema.RootCertificate.OrgID.Position)
-		pageByID(q, p)
+		pageByIDDesc(q, p)
 		return q
 	})
 }

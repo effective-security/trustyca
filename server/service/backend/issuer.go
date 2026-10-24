@@ -526,7 +526,7 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersReques
 	if err != nil {
 		return nil, err
 	}
-	cursor, err := listCursor(ctx, req.Cursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseCursor)
 	if err != nil {
 		return nil, err
 	}
@@ -535,7 +535,7 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersReques
 		ProjectID: projectID.UInt64(),
 		Status:    req.Status,
 		Type:      req.Type,
-		Limit:     listLimit(req.Limit),
+		Limit:     query.Limit(req.Limit),
 		Offset:    req.Offset,
 		Cursor:    cursor,
 	}

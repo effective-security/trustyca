@@ -17,6 +17,7 @@ func Test_MemberQueries(t *testing.T) {
 			`SELECT ` + schema.MembershipInfoTableInfo.AllColumns() + ` 
 FROM trustyca.vw_membership_info 
 WHERE user_id = $1 AND org_status = $2 
+ORDER BY email ASC, id ASC 
 LIMIT $3 
 OFFSET $4`,
 		},
@@ -25,6 +26,7 @@ OFFSET $4`,
 			`SELECT ` + schema.MembershipInfoTableInfo.AllColumns() + ` 
 FROM trustyca.vw_membership_info 
 WHERE org_id = $1 AND org_status = $2 
+ORDER BY email ASC, id ASC 
 LIMIT $3 
 OFFSET $4`,
 		},
@@ -34,6 +36,7 @@ OFFSET $4`,
 			`SELECT ` + schema.MembershipInfoTableInfo.AllColumns() + ` 
 FROM trustyca.vw_membership_info 
 WHERE org_id = $1 AND project_id IS NULL 
+ORDER BY email ASC, id ASC 
 LIMIT $2 
 OFFSET $3`,
 		},
@@ -43,6 +46,7 @@ OFFSET $3`,
 			`SELECT ` + schema.MembershipInfoTableInfo.AllColumns() + ` 
 FROM trustyca.vw_membership_info 
 WHERE org_id = $1 AND project_id = $2 
+ORDER BY email ASC, id ASC 
 LIMIT $3 
 OFFSET $4`,
 		},
@@ -52,6 +56,7 @@ OFFSET $4`,
 			`SELECT ` + schema.MembershipInfoTableInfo.AllColumns() + ` 
 FROM trustyca.vw_membership_info 
 WHERE org_id = $1 AND project_id IS NOT NULL 
+ORDER BY email ASC, id ASC 
 LIMIT $2 
 OFFSET $3`,
 		},

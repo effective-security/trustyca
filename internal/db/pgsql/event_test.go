@@ -113,6 +113,47 @@ func Test_Event(t *testing.T) {
 		requireNewestFirst(t, loaded)
 	})
 
+	t.Run("cursor", func(t *testing.T) {
+		// the pages cross the events that share a created_at, so the
+		// key continues by id within a time
+		const pageSize = uint32(7)
+		var loaded model.EventSlice
+		req := &query.ListEventsRequest{
+			OrgID:  org.ID.UInt64(),
+			Limit:  pageSize,
+			Cursor: query.NewCursor(0),
+		}
+		for pages := 0; pages < 10; pages++ {
+			rs, err := provider.ListEvents(ctx, req)
+			require.NoError(t, err)
+			assert.Zero(t, rs.NextOffset)
+			loaded = append(loaded, rs.Rows...)
+			if !rs.HasNextPage {
+				assert.Empty(t, rs.Cursor)
+				assert.Nil(t, rs.Pb().NextPage)
+				break
+			}
+			require.Len(t, rs.Rows, int(pageSize))
+			require.NotEmpty(t, rs.Cursor)
+			assert.Equal(t, rs.Cursor, rs.Pb().NextPage.Cursor)
+			req.Cursor, err = query.ParseTimeCursor(rs.Cursor)
+			require.NoError(t, err)
+			last := rs.Rows[len(rs.Rows)-1]
+			at, ok := req.Cursor.Key()[0].(time.Time)
+			require.True(t, ok)
+			assert.True(t, at.Equal(time.Time(last.CreatedAt)), "the cursor keeps the time of the last row")
+			assert.Equal(t, last.ID.UInt64(), req.Cursor.LastID())
+		}
+		assert.Equal(t, eventIDs(newestFirst), eventIDs(loaded), "the pages cover every event once")
+		requireNewestFirst(t, loaded)
+
+		// the cursor of a list by id is refused before the query
+		idCursor, err := query.ParseCursor(query.EncodeCursor(created[0].ID))
+		require.NoError(t, err)
+		_, err = provider.ListEvents(ctx, &query.ListEventsRequest{OrgID: org.ID.UInt64(), Limit: pageSize, Cursor: idCursor})
+		assert.EqualError(t, err, "invalid cursor: the cursor of another list")
+	})
+
 	t.Run("filter_type", func(t *testing.T) {
 		expected := filterEvents(newestFirst, func(e *model.Event) bool {
 			return e.Type == pb.EventType_OrgCreated

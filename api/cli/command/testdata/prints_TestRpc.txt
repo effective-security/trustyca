@@ -481,7 +481,10 @@ Invites:
 			"Description": "Test project",
 			"Status": 2
 		}
-	]
+	],
+	"NextPage": {
+		"Cursor": "WyJUZXN0IiwiMjAxIl0"
+	}
 }
 
 - TestRpc/Test_ProjectListCmd/txt:
@@ -490,6 +493,8 @@ Invites:
 ├─────┼───────┼──────┼────────┼─────────┤
 │ 201 │ test  │ Test │ Active │         │
 └─────┴───────┴──────┴────────┴─────────┘
+
+Next page: --cursor WyJUZXN0IiwiMjAxIl0
 
 
 - TestRpc/Test_ProjectMemberAddCmd/json:

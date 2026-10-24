@@ -90,8 +90,16 @@ type ListProjectsRequest struct {
 	IDs []uint64
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Offset specifies the offset for pagination
+	// Offset specifies the offset for offset pagination
 	Offset uint32
+	// Cursor specifies the position for cursor pagination, decoded by
+	// ParseNameCursor
+	Cursor Cursor
+}
+
+// Validate fails a request that carries the cursor of another list
+func (r *ListProjectsRequest) Validate() error {
+	return r.Cursor.checkKey(keyName)
 }
 
 // QueryParams returns the query params builder
@@ -110,21 +118,18 @@ func (r *ListProjectsRequest) QueryParams() xdb.QueryParams {
 		}
 		b.Set(schema.Project.ID.Position, pq.Array(ids))
 	}
-	b.SetPage(r.Limit, r.Offset)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
-// ListProjects returns SQL query
+// ListProjects returns SQL query: the projects by name, then by id, paged
+// by offset or by a cursor on that key (ParseNameCursor, EncodeNameCursor)
 func ListProjects(args ...any) (string, string) {
 	p := xdb.GetQueryParams(args...)
 	key := p.Name()
 
 	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
-		q := schema.ProjectTableInfo.
-			Select().
-			OrderBy("name ASC, id ASC").
-			Limit(nil).
-			Offset(nil)
+		q := schema.ProjectTableInfo.Select()
 		if p.IsSet(schema.Project.OrgID.Position) {
 			q.Where(schema.Project.OrgID.Name+" = ?", nil)
 		}
@@ -134,6 +139,7 @@ func ListProjects(args ...any) (string, string) {
 		if p.IsSet(schema.Project.ID.Position) {
 			q.Where(schema.Project.ID.Name+" = ANY(?)", nil)
 		}
+		pageBy(q, p, OrderDirectionAsc, schema.Project.Name.Name, schema.Project.ID.Name)
 		return q
 	})
 }

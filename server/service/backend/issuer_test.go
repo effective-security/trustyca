@@ -790,7 +790,7 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
 		OrgID:      1,
 		ProjectIDs: []uint64{201},
-		Limit:      defaultListLimit,
+		Limit:      xdb.DefaultPageSize,
 	}).Return(&model.IssuerResult{Rows: []*model.Issuer{tca.issuer, projectIssuer}}, nil)
 	list, err := svc.ListIssuers(viewer, &privpb.ListIssuersRequest{})
 	require.NoError(t, err)
@@ -798,20 +798,20 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
 		OrgID:     1,
 		ProjectID: 201,
-		Limit:     defaultListLimit,
+		Limit:     xdb.DefaultPageSize,
 	}).Return(&model.IssuerResult{}, nil)
 	_, err = svc.ListIssuers(viewer, &privpb.ListIssuersRequest{ProjectID: "201"})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
 		OrgID:      1,
 		ProjectIDs: []uint64{},
-		Limit:      defaultListLimit,
+		Limit:      xdb.DefaultPageSize,
 	}).Return(&model.IssuerResult{}, nil)
 	_, err = svc.ListIssuers(testCtx(strangerUser, "1"), &privpb.ListIssuersRequest{})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
 		OrgID: 1,
-		Limit: defaultListLimit,
+		Limit: xdb.DefaultPageSize,
 	}).Return(&model.IssuerResult{}, nil)
 	_, err = svc.ListIssuers(admin, &privpb.ListIssuersRequest{})
 	require.NoError(t, err)
@@ -893,7 +893,7 @@ func TestService_ListIssuers(t *testing.T) {
 		ProjectID: 201,
 		Status:    pb.IssuerStatus_Active,
 		Type:      pb.AuthorityType_Issuing,
-		Limit:     defaultListLimit,
+		Limit:     xdb.DefaultPageSize,
 	}).Return(&model.IssuerResult{
 		Rows:        []*model.Issuer{tca.issuer},
 		HasNextPage: true,

@@ -62,12 +62,12 @@ Indexes:
 ├──────────────────────────────────────┼─────────┼────────┼───────────────────────────────┤
 │ certificate_pkey                     │ YES     │ YES    │ id                            │
 │ idx_certificate_notafter             │         │        │ not_after                     │
-│ idx_certificate_org_id_desc          │         │        │ org_id, id                    │
-│ idx_certificate_org_ikid_id_desc     │         │        │ org_id, ikid, id              │
+│ idx_certificate_org_id_desc          │         │        │ id, org_id                    │
+│ idx_certificate_org_ikid_id_desc     │         │        │ ikid, id, org_id              │
 │ idx_certificate_org_project_id_desc  │         │        │ org_id, project_id, id        │
-│ idx_certificate_org_project_notafter │         │        │ not_after, org_id, project_id │
+│ idx_certificate_org_project_notafter │         │        │ project_id, org_id, not_after │
 │ idx_certificate_skid                 │         │        │ skid                          │
-│ unique_certificate_ikid_serial       │         │ YES    │ serial_number, ikid           │
+│ unique_certificate_ikid_serial       │         │ YES    │ ikid, serial_number           │
 │ unique_certificate_sha256            │         │ YES    │ sha256                        │
 └──────────────────────────────────────┴─────────┴────────┴───────────────────────────────┘
 
@@ -291,19 +291,20 @@ Table: org
 ├─────┼─────────────┼──────────────────────────┼─────────────┼──────┼─────┼───────┼─────┤
 │ 1   │ id          │ bigint                   │ int8        │      │     │ YES   │     │
 │ 2   │ alias       │ character varying        │ varchar     │      │ 32  │ YES   │     │
-│ 3   │ name        │ character varying        │ varchar     │      │ 64  │       │     │
+│ 3   │ name        │ character varying        │ varchar     │      │ 64  │ YES   │     │
 │ 4   │ description │ text                     │ text        │ YES  │     │       │     │
 │ 5   │ status      │ integer                  │ int4        │      │     │       │     │
 │ 6   │ created_at  │ timestamp with time zone │ timestamptz │      │     │       │     │
 └─────┴─────────────┴──────────────────────────┴─────────────┴──────┴─────┴───────┴─────┘
 
 Indexes:
-┌──────────────────┬─────────┬────────┬─────────┐
-│       NAME       │ PRIMARY │ UNIQUE │ COLUMNS │
-├──────────────────┼─────────┼────────┼─────────┤
-│ org_pkey         │ YES     │ YES    │ id      │
-│ unique_org_alias │         │ YES    │ alias   │
-└──────────────────┴─────────┴────────┴─────────┘
+┌──────────────────┬─────────┬────────┬──────────┐
+│       NAME       │ PRIMARY │ UNIQUE │ COLUMNS  │
+├──────────────────┼─────────┼────────┼──────────┤
+│ idx_org_name_id  │         │        │ id, name │
+│ org_pkey         │ YES     │ YES    │ id       │
+│ unique_org_alias │         │ YES    │ alias    │
+└──────────────────┴─────────┴────────┴──────────┘
 
 Schema: trustyca
 Table: project
@@ -314,7 +315,7 @@ Table: project
 │ 1   │ id          │ bigint                   │ int8        │      │     │ YES   │                 │
 │ 2   │ org_id      │ bigint                   │ int8        │      │     │ YES   │ trustyca.org.id │
 │ 3   │ alias       │ character varying        │ varchar     │      │ 64  │ YES   │                 │
-│ 4   │ name        │ character varying        │ varchar     │      │ 64  │       │                 │
+│ 4   │ name        │ character varying        │ varchar     │      │ 64  │ YES   │                 │
 │ 5   │ description │ text                     │ text        │ YES  │     │       │                 │
 │ 6   │ status      │ integer                  │ int4        │      │     │ YES   │                 │
 │ 7   │ created_at  │ timestamp with time zone │ timestamptz │      │     │       │                 │
@@ -325,10 +326,11 @@ Indexes:
 ┌──────────────────────────┬─────────┬────────┬────────────────┐
 │           NAME           │ PRIMARY │ UNIQUE │    COLUMNS     │
 ├──────────────────────────┼─────────┼────────┼────────────────┤
+│ idx_project_name_id      │         │        │ name, id       │
 │ idx_project_org_status   │         │        │ org_id, status │
 │ project_pkey             │ YES     │ YES    │ id             │
 │ unique_project_org_alias │         │ YES    │ alias, org_id  │
-│ unique_project_org_id    │         │ YES    │ id, org_id     │
+│ unique_project_org_id    │         │ YES    │ org_id, id     │
 └──────────────────────────┴─────────┴────────┴────────────────┘
 
 Schema: trustyca

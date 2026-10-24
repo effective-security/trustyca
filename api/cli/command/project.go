@@ -86,8 +86,9 @@ func (a *ProjectDeleteCmd) Run(app App) error {
 // ProjectListCmd lists accessible projects
 type ProjectListCmd struct {
 	Status string `help:"the status to filter by"`
-	Limit  uint32 `help:"maximum number of records to return"`
-	Offset uint32 `help:"offset for pagination"`
+	Limit  uint32 `help:"the maximum number of records to return"`
+	Offset uint32 `help:"the offset for the offset-based pagination"`
+	Cursor string `help:"the cursor for the cursor-based pagination: initial, or the one of the previous page"`
 }
 
 // Run the command
@@ -99,6 +100,7 @@ func (a *ProjectListCmd) Run(app App) error {
 	req := &pb.ListProjectsRequest{
 		Limit:  a.Limit,
 		Offset: a.Offset,
+		Cursor: a.Cursor,
 	}
 	if a.Status != "" {
 		req.Status = pb.ItemStatus_Unknown.Parse(a.Status)

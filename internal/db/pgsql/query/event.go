@@ -32,9 +32,10 @@ func CreateEvent(args ...any) (string, string) {
 	})
 }
 
-// ListEventsRequest defines request for Events.
-// The events are sorted by created_at DESC, id DESC.
-// The latest events are at the top.
+// ListEventsRequest defines request for Events, newest first: the events
+// are sorted by created_at DESC, id DESC, served by the org-led indexes of
+// the event table, and page by offset or by a cursor on that key
+// (ParseTimeCursor, EncodeTimeCursor)
 type ListEventsRequest struct {
 	// OrgID specifies the org
 	OrgID uint64
@@ -54,42 +55,17 @@ type ListEventsRequest struct {
 	Source string
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Offset specifies the offset for pagination
+	// Offset specifies the offset for offset pagination
 	Offset uint32
-
-	// TODO: not implemented yet
-	// Cursor specifies the cursor for pagination
-	// Cursor string
+	// Cursor specifies the position for cursor pagination, decoded by
+	// ParseTimeCursor
+	Cursor Cursor
 }
 
-/*
-// EncodeCursor returns the cursor for pagination
-func (r *ListEventsRequest) EncodeCursor(row *model.Event) string {
-	// note: uint64 shall be encoded as string
-	cursor := values.MapAny{
-		"id": row.ID.String(),
-		"created_at": row.CreatedAt.String(),
-	}
-	return xdb.EncodeCursor(cursor)
+// Validate fails a request that carries the cursor of another list
+func (r *ListEventsRequest) Validate() error {
+	return r.Cursor.checkKey(keyTime)
 }
-
-// DecodeCursor decodes the cursor for pagination
-func (r *ListEventsRequest) DecodeCursor() uint64 {
-	if r.Cursor == "initial" {
-		return 0
-	}
-	cursor, err := xdb.DecodeCursor(r.Cursor)
-	if err == nil {
-		return cursor.UInt64("id")
-	}
-	logger.KV(xlog.ERROR,
-		"reason", "DecodeCursor",
-		"cursor", r.Cursor,
-		"err", err.Error())
-
-	return 0
-}
-*/
 
 // QueryParams returns the query params builder
 func (r *ListEventsRequest) QueryParams() xdb.QueryParams {
@@ -121,13 +97,7 @@ func (r *ListEventsRequest) QueryParams() xdb.QueryParams {
 		b.Set(schema.Event.Source.Position, r.Source)
 	}
 
-	// TODO
-	// if r.Cursor != "" {
-	// 	cursor := r.DecodeCursor()
-	// 	b.SetCursor(r.Limit, schema.Issue.ID.Position, cursor)
-	// } else {
-
-	b.SetPage(r.Limit, r.Offset)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
@@ -137,10 +107,7 @@ func ListEvents(args ...any) (string, string) {
 	key := p.Name()
 
 	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
-		q := schema.EventTableInfo.Select().
-			Limit(0).
-			Offset(0).
-			OrderBy("created_at DESC, id DESC")
+		q := schema.EventTableInfo.Select()
 
 		if p.IsSet(schema.Event.OrgID.Position) {
 			q.Where("org_id = ?", nil)
@@ -166,6 +133,7 @@ func ListEvents(args ...any) (string, string) {
 		if p.IsSet(schema.Event.Source.Position) {
 			q.Where("source = ?", nil)
 		}
+		pageBy(q, p, OrderDirectionDesc, schema.Event.CreatedAt.Name, schema.Event.ID.Name)
 		return q
 	})
 }

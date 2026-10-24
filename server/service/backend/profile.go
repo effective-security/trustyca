@@ -124,7 +124,7 @@ func (s *Service) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequ
 	if err != nil {
 		return nil, err
 	}
-	cursor, err := listCursor(ctx, req.Cursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseCursor)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (s *Service) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequ
 		OrgID:       orgID.UInt64(),
 		ProjectID:   projectID.UInt64(),
 		IssuerLabel: req.IssuerLabel,
-		Limit:       listLimit(req.Limit),
+		Limit:       query.Limit(req.Limit),
 		Offset:      req.Offset,
 		Cursor:      cursor,
 	}

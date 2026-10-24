@@ -191,7 +191,10 @@ type ListCertificatesRequest struct {
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListCertificatesRequest) Validate() error {
-	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
+	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
+		return err
+	}
+	return r.Cursor.checkKey(keyID)
 }
 
 // QueryParams returns the query params builder
@@ -215,7 +218,7 @@ func (r *ListCertificatesRequest) QueryParams() xdb.QueryParams {
 	if r.ExpiringBefore != nil {
 		b.Set(schema.Certificate.NotAfter.Position, r.ExpiringBefore.UTC())
 	}
-	setPage(b, schema.Certificate.ID.Position, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
@@ -241,7 +244,7 @@ func ListCertificates(args ...any) (string, string) {
 		if p.IsSet(schema.Certificate.NotAfter.Position) {
 			q.Where(schema.Certificate.NotAfter.Name+" < ?", nil)
 		}
-		pageByID(q, p)
+		pageByIDDesc(q, p)
 		return q
 	})
 }

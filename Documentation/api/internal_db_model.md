@@ -430,13 +430,13 @@ Certificate represents one row from table 'trustyca.certificate'. Primary key: i
 
 ```
 certificate_pkey: PRIMARY UNIQUE [id]
-idx_certificate_org_id_desc: [org_id,id]
-idx_certificate_org_ikid_id_desc: [org_id,ikid,id]
 idx_certificate_notafter: [not_after]
+idx_certificate_org_id_desc: [id,org_id]
+idx_certificate_org_ikid_id_desc: [ikid,id,org_id]
 idx_certificate_org_project_id_desc: [org_id,project_id,id]
-idx_certificate_org_project_notafter: [not_after,org_id,project_id]
+idx_certificate_org_project_notafter: [project_id,org_id,not_after]
 idx_certificate_skid: [skid]
-unique_certificate_ikid_serial: UNIQUE [serial_number,ikid]
+unique_certificate_ikid_serial: UNIQUE [ikid,serial_number]
 unique_certificate_sha256: UNIQUE [sha256]
 ```
 
@@ -1635,7 +1635,7 @@ func (m *Membership) Validate() error
 Validate returns error if the model is not valid
 
 <a name="MembershipInfo"></a>
-## type [MembershipInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1193-L1220>)
+## type [MembershipInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1195-L1222>)
 
 MembershipInfo represents one row from table 'trustyca.vw\_membership\_info'.
 
@@ -1680,7 +1680,7 @@ func (m *MembershipInfo) Pb() *pb.Membership
 Pb converts model to proto
 
 <a name="MembershipInfo.ScanRow"></a>
-### func \(\*MembershipInfo\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1223>)
+### func \(\*MembershipInfo\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1225>)
 
 ```go
 func (m *MembershipInfo) ScanRow(rows xdb.Row) error
@@ -1698,7 +1698,7 @@ func (m *MembershipInfo) Scope() pb.Scope_Enum
 Scope returns the grant scope
 
 <a name="MembershipInfoResult"></a>
-## type [MembershipInfoResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1246-L1251>)
+## type [MembershipInfoResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1248-L1253>)
 
 
 
@@ -1712,7 +1712,7 @@ type MembershipInfoResult struct {
 ```
 
 <a name="MembershipInfoResult.GetTableInfo"></a>
-### func \(\*MembershipInfoResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1267>)
+### func \(\*MembershipInfoResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1269>)
 
 ```go
 func (p *MembershipInfoResult) GetTableInfo() *xdbschema.TableInfo
@@ -1721,7 +1721,7 @@ func (p *MembershipInfoResult) GetTableInfo() *xdbschema.TableInfo
 
 
 <a name="MembershipInfoResult.SetResult"></a>
-### func \(\*MembershipInfoResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1253>)
+### func \(\*MembershipInfoResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1255>)
 
 ```go
 func (p *MembershipInfoResult) SetResult(rows []*MembershipInfo, hasNextPage bool, nextOffset uint32)
@@ -1730,7 +1730,7 @@ func (p *MembershipInfoResult) SetResult(rows []*MembershipInfo, hasNextPage boo
 
 
 <a name="MembershipInfoResult.SetResultWithCursor"></a>
-### func \(\*MembershipInfoResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1259>)
+### func \(\*MembershipInfoResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1261>)
 
 ```go
 func (p *MembershipInfoResult) SetResultWithCursor(rows []*MembershipInfo, hasNextPage bool, cursor func(lastRow *MembershipInfo) string)
@@ -1739,7 +1739,7 @@ func (p *MembershipInfoResult) SetResultWithCursor(rows []*MembershipInfo, hasNe
 
 
 <a name="MembershipInfoSlice"></a>
-## type [MembershipInfoSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1245>)
+## type [MembershipInfoSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1247>)
 
 
 
@@ -1852,11 +1852,12 @@ type MembershipSlice []*Membership
 ```
 
 <a name="Org"></a>
-## type [Org](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L801-L814>)
+## type [Org](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L802-L815>)
 
 Org represents one row from table 'trustyca.org'. Primary key: id Indexes:
 
 ```
+idx_org_name_id: [id,name]
 org_pkey: PRIMARY UNIQUE [id]
 unique_org_alias: UNIQUE [alias]
 ```
@@ -1868,7 +1869,7 @@ type Org struct {
     // Alias represents 'alias' column of 'character varying'
     Alias string `db:"alias,varchar,max:32,index" json:",omitempty"`
     // Name represents 'name' column of 'character varying'
-    Name string `db:"name,varchar,max:64" json:",omitempty"`
+    Name string `db:"name,varchar,max:64,index" json:",omitempty"`
     // Description represents 'description' column of 'text'
     Description xdb.NULLString `db:"description,text,null" json:",omitempty"`
     // Status represents 'status' column of 'integer'
@@ -1888,7 +1889,7 @@ func (m *Org) Pb() *pb.Org
 Pb converts model to proto
 
 <a name="Org.ScanRow"></a>
-### func \(\*Org\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L817>)
+### func \(\*Org\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L818>)
 
 ```go
 func (m *Org) ScanRow(rows xdb.Row) error
@@ -1906,7 +1907,7 @@ func (m *Org) Validate() error
 Validate returns error if the model is not valid
 
 <a name="OrgResult"></a>
-## type [OrgResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L833-L838>)
+## type [OrgResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L834-L839>)
 
 
 
@@ -1920,7 +1921,7 @@ type OrgResult struct {
 ```
 
 <a name="OrgResult.GetTableInfo"></a>
-### func \(\*OrgResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L854>)
+### func \(\*OrgResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L855>)
 
 ```go
 func (p *OrgResult) GetTableInfo() *xdbschema.TableInfo
@@ -1947,7 +1948,7 @@ func (v *OrgResult) Pb() *pb.OrgsResponse
 Pb converts model to proto
 
 <a name="OrgResult.SetResult"></a>
-### func \(\*OrgResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L840>)
+### func \(\*OrgResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L841>)
 
 ```go
 func (p *OrgResult) SetResult(rows []*Org, hasNextPage bool, nextOffset uint32)
@@ -1956,7 +1957,7 @@ func (p *OrgResult) SetResult(rows []*Org, hasNextPage bool, nextOffset uint32)
 
 
 <a name="OrgResult.SetResultWithCursor"></a>
-### func \(\*OrgResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L846>)
+### func \(\*OrgResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L847>)
 
 ```go
 func (p *OrgResult) SetResultWithCursor(rows []*Org, hasNextPage bool, cursor func(lastRow *Org) string)
@@ -1965,7 +1966,7 @@ func (p *OrgResult) SetResultWithCursor(rows []*Org, hasNextPage bool, cursor fu
 
 
 <a name="OrgSlice"></a>
-## type [OrgSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L832>)
+## type [OrgSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L833>)
 
 
 
@@ -1974,15 +1975,16 @@ type OrgSlice []*Org
 ```
 
 <a name="Project"></a>
-## type [Project](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L866-L883>)
+## type [Project](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L868-L885>)
 
 Project represents one row from table 'trustyca.project'. Primary key: id Indexes:
 
 ```
+idx_project_name_id: [name,id]
 idx_project_org_status: [org_id,status]
 project_pkey: PRIMARY UNIQUE [id]
 unique_project_org_alias: UNIQUE [alias,org_id]
-unique_project_org_id: UNIQUE [id,org_id]
+unique_project_org_id: UNIQUE [org_id,id]
 ```
 
 ```go
@@ -1994,7 +1996,7 @@ type Project struct {
     // Alias represents 'alias' column of 'character varying'
     Alias string `db:"alias,varchar,max:64,index" json:",omitempty"`
     // Name represents 'name' column of 'character varying'
-    Name string `db:"name,varchar,max:64" json:",omitempty"`
+    Name string `db:"name,varchar,max:64,index" json:",omitempty"`
     // Description represents 'description' column of 'text'
     Description xdb.NULLString `db:"description,text,null" json:",omitempty"`
     // Status represents 'status' column of 'integer'
@@ -2016,7 +2018,7 @@ func (m *Project) Pb() *pb.Project
 Pb converts model to proto
 
 <a name="Project.ScanRow"></a>
-### func \(\*Project\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L886>)
+### func \(\*Project\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L888>)
 
 ```go
 func (m *Project) ScanRow(rows xdb.Row) error
@@ -2034,7 +2036,7 @@ func (m *Project) Validate() error
 Validate returns error if the model is not valid
 
 <a name="ProjectResult"></a>
-## type [ProjectResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L904-L909>)
+## type [ProjectResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L906-L911>)
 
 
 
@@ -2048,7 +2050,7 @@ type ProjectResult struct {
 ```
 
 <a name="ProjectResult.GetTableInfo"></a>
-### func \(\*ProjectResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L925>)
+### func \(\*ProjectResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L927>)
 
 ```go
 func (p *ProjectResult) GetTableInfo() *xdbschema.TableInfo
@@ -2075,7 +2077,7 @@ func (v *ProjectResult) Pb() *pb.ProjectsResponse
 Pb converts model to proto
 
 <a name="ProjectResult.SetResult"></a>
-### func \(\*ProjectResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L911>)
+### func \(\*ProjectResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L913>)
 
 ```go
 func (p *ProjectResult) SetResult(rows []*Project, hasNextPage bool, nextOffset uint32)
@@ -2084,7 +2086,7 @@ func (p *ProjectResult) SetResult(rows []*Project, hasNextPage bool, nextOffset 
 
 
 <a name="ProjectResult.SetResultWithCursor"></a>
-### func \(\*ProjectResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L917>)
+### func \(\*ProjectResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L919>)
 
 ```go
 func (p *ProjectResult) SetResultWithCursor(rows []*Project, hasNextPage bool, cursor func(lastRow *Project) string)
@@ -2093,7 +2095,7 @@ func (p *ProjectResult) SetResultWithCursor(rows []*Project, hasNextPage bool, c
 
 
 <a name="ProjectSlice"></a>
-## type [ProjectSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L903>)
+## type [ProjectSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L905>)
 
 
 
@@ -2133,7 +2135,7 @@ func (r *RecordsResult) Pb() *pb.RecordsResult
 Pb converts the result to proto
 
 <a name="Revoked"></a>
-## type [Revoked](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L938-L959>)
+## type [Revoked](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L940-L961>)
 
 Revoked represents one row from table 'trustyca.revoked'. Primary key: id Indexes:
 
@@ -2171,7 +2173,7 @@ type Revoked struct {
 ```
 
 <a name="Revoked.ScanRow"></a>
-### func \(\*Revoked\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L962>)
+### func \(\*Revoked\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L964>)
 
 ```go
 func (m *Revoked) ScanRow(rows xdb.Row) error
@@ -2189,7 +2191,7 @@ func (m *Revoked) Validate() error
 Validate returns error if the model is not valid
 
 <a name="RevokedCertificate"></a>
-## type [RevokedCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1272-L1319>)
+## type [RevokedCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1274-L1321>)
 
 RevokedCertificate represents one row from table 'trustyca.vw\_revoked\_certificate'.
 
@@ -2272,7 +2274,7 @@ func (m *RevokedCertificate) Pb() *pb.RevokedCertificate
 Pb converts model to proto
 
 <a name="RevokedCertificate.ScanRow"></a>
-### func \(\*RevokedCertificate\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1322>)
+### func \(\*RevokedCertificate\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1324>)
 
 ```go
 func (m *RevokedCertificate) ScanRow(rows xdb.Row) error
@@ -2281,7 +2283,7 @@ func (m *RevokedCertificate) ScanRow(rows xdb.Row) error
 ScanRow scans one row for vw\_revoked\_certificate.
 
 <a name="RevokedCertificateResult"></a>
-## type [RevokedCertificateResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1355-L1360>)
+## type [RevokedCertificateResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1357-L1362>)
 
 
 
@@ -2295,7 +2297,7 @@ type RevokedCertificateResult struct {
 ```
 
 <a name="RevokedCertificateResult.GetTableInfo"></a>
-### func \(\*RevokedCertificateResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1376>)
+### func \(\*RevokedCertificateResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1378>)
 
 ```go
 func (p *RevokedCertificateResult) GetTableInfo() *xdbschema.TableInfo
@@ -2322,7 +2324,7 @@ func (v *RevokedCertificateResult) Pb() *pb.RevokedCertificatesResponse
 Pb converts model to proto
 
 <a name="RevokedCertificateResult.SetResult"></a>
-### func \(\*RevokedCertificateResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1362>)
+### func \(\*RevokedCertificateResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1364>)
 
 ```go
 func (p *RevokedCertificateResult) SetResult(rows []*RevokedCertificate, hasNextPage bool, nextOffset uint32)
@@ -2331,7 +2333,7 @@ func (p *RevokedCertificateResult) SetResult(rows []*RevokedCertificate, hasNext
 
 
 <a name="RevokedCertificateResult.SetResultWithCursor"></a>
-### func \(\*RevokedCertificateResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1368>)
+### func \(\*RevokedCertificateResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1370>)
 
 ```go
 func (p *RevokedCertificateResult) SetResultWithCursor(rows []*RevokedCertificate, hasNextPage bool, cursor func(lastRow *RevokedCertificate) string)
@@ -2340,7 +2342,7 @@ func (p *RevokedCertificateResult) SetResultWithCursor(rows []*RevokedCertificat
 
 
 <a name="RevokedCertificateSlice"></a>
-## type [RevokedCertificateSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1354>)
+## type [RevokedCertificateSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1356>)
 
 
 
@@ -2349,7 +2351,7 @@ type RevokedCertificateSlice []*RevokedCertificate
 ```
 
 <a name="RevokedResult"></a>
-## type [RevokedResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L982-L987>)
+## type [RevokedResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L984-L989>)
 
 
 
@@ -2363,7 +2365,7 @@ type RevokedResult struct {
 ```
 
 <a name="RevokedResult.GetTableInfo"></a>
-### func \(\*RevokedResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1003>)
+### func \(\*RevokedResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1005>)
 
 ```go
 func (p *RevokedResult) GetTableInfo() *xdbschema.TableInfo
@@ -2381,7 +2383,7 @@ func (v *RevokedResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="RevokedResult.SetResult"></a>
-### func \(\*RevokedResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L989>)
+### func \(\*RevokedResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L991>)
 
 ```go
 func (p *RevokedResult) SetResult(rows []*Revoked, hasNextPage bool, nextOffset uint32)
@@ -2390,7 +2392,7 @@ func (p *RevokedResult) SetResult(rows []*Revoked, hasNextPage bool, nextOffset 
 
 
 <a name="RevokedResult.SetResultWithCursor"></a>
-### func \(\*RevokedResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L995>)
+### func \(\*RevokedResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L997>)
 
 ```go
 func (p *RevokedResult) SetResultWithCursor(rows []*Revoked, hasNextPage bool, cursor func(lastRow *Revoked) string)
@@ -2399,7 +2401,7 @@ func (p *RevokedResult) SetResultWithCursor(rows []*Revoked, hasNextPage bool, c
 
 
 <a name="RevokedSlice"></a>
-## type [RevokedSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L981>)
+## type [RevokedSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L983>)
 
 
 
@@ -2408,7 +2410,7 @@ type RevokedSlice []*Revoked
 ```
 
 <a name="RootCertificate"></a>
-## type [RootCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1016-L1037>)
+## type [RootCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1018-L1039>)
 
 RootCertificate represents one row from table 'trustyca.root\_certificate'. Primary key: id Indexes:
 
@@ -2464,7 +2466,7 @@ func (m *RootCertificate) Pb() *pb.RootCertificate
 Pb converts model to proto
 
 <a name="RootCertificate.ScanRow"></a>
-### func \(\*RootCertificate\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1040>)
+### func \(\*RootCertificate\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1042>)
 
 ```go
 func (m *RootCertificate) ScanRow(rows xdb.Row) error
@@ -2482,7 +2484,7 @@ func (m *RootCertificate) Validate() error
 Validate returns error if the model is not valid
 
 <a name="RootCertificateResult"></a>
-## type [RootCertificateResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1060-L1065>)
+## type [RootCertificateResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1062-L1067>)
 
 
 
@@ -2496,7 +2498,7 @@ type RootCertificateResult struct {
 ```
 
 <a name="RootCertificateResult.GetTableInfo"></a>
-### func \(\*RootCertificateResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1081>)
+### func \(\*RootCertificateResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1083>)
 
 ```go
 func (p *RootCertificateResult) GetTableInfo() *xdbschema.TableInfo
@@ -2523,7 +2525,7 @@ func (v *RootCertificateResult) Pb() *pb.RootsResponse
 Pb converts model to proto
 
 <a name="RootCertificateResult.SetResult"></a>
-### func \(\*RootCertificateResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1067>)
+### func \(\*RootCertificateResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1069>)
 
 ```go
 func (p *RootCertificateResult) SetResult(rows []*RootCertificate, hasNextPage bool, nextOffset uint32)
@@ -2532,7 +2534,7 @@ func (p *RootCertificateResult) SetResult(rows []*RootCertificate, hasNextPage b
 
 
 <a name="RootCertificateResult.SetResultWithCursor"></a>
-### func \(\*RootCertificateResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1073>)
+### func \(\*RootCertificateResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1075>)
 
 ```go
 func (p *RootCertificateResult) SetResultWithCursor(rows []*RootCertificate, hasNextPage bool, cursor func(lastRow *RootCertificate) string)
@@ -2541,7 +2543,7 @@ func (p *RootCertificateResult) SetResultWithCursor(rows []*RootCertificate, has
 
 
 <a name="RootCertificateSlice"></a>
-## type [RootCertificateSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1059>)
+## type [RootCertificateSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1061>)
 
 
 
@@ -2550,7 +2552,7 @@ type RootCertificateSlice []*RootCertificate
 ```
 
 <a name="SchemaMigration"></a>
-## type [SchemaMigration](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1090-L1095>)
+## type [SchemaMigration](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1092-L1097>)
 
 SchemaMigration represents one row from table 'trustyca.schema\_migrations'. Primary key: version Indexes:
 
@@ -2568,7 +2570,7 @@ type SchemaMigration struct {
 ```
 
 <a name="SchemaMigration.ScanRow"></a>
-### func \(\*SchemaMigration\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1098>)
+### func \(\*SchemaMigration\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1100>)
 
 ```go
 func (m *SchemaMigration) ScanRow(rows xdb.Row) error
@@ -2577,7 +2579,7 @@ func (m *SchemaMigration) ScanRow(rows xdb.Row) error
 ScanRow scans one row for schema\_migrations.
 
 <a name="SchemaMigrationResult"></a>
-## type [SchemaMigrationResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1110-L1115>)
+## type [SchemaMigrationResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1112-L1117>)
 
 
 
@@ -2591,7 +2593,7 @@ type SchemaMigrationResult struct {
 ```
 
 <a name="SchemaMigrationResult.GetTableInfo"></a>
-### func \(\*SchemaMigrationResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1131>)
+### func \(\*SchemaMigrationResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1133>)
 
 ```go
 func (p *SchemaMigrationResult) GetTableInfo() *xdbschema.TableInfo
@@ -2600,7 +2602,7 @@ func (p *SchemaMigrationResult) GetTableInfo() *xdbschema.TableInfo
 
 
 <a name="SchemaMigrationResult.SetResult"></a>
-### func \(\*SchemaMigrationResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1117>)
+### func \(\*SchemaMigrationResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1119>)
 
 ```go
 func (p *SchemaMigrationResult) SetResult(rows []*SchemaMigration, hasNextPage bool, nextOffset uint32)
@@ -2609,7 +2611,7 @@ func (p *SchemaMigrationResult) SetResult(rows []*SchemaMigration, hasNextPage b
 
 
 <a name="SchemaMigrationResult.SetResultWithCursor"></a>
-### func \(\*SchemaMigrationResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1123>)
+### func \(\*SchemaMigrationResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1125>)
 
 ```go
 func (p *SchemaMigrationResult) SetResultWithCursor(rows []*SchemaMigration, hasNextPage bool, cursor func(lastRow *SchemaMigration) string)
@@ -2618,7 +2620,7 @@ func (p *SchemaMigrationResult) SetResultWithCursor(rows []*SchemaMigration, has
 
 
 <a name="SchemaMigrationSlice"></a>
-## type [SchemaMigrationSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1109>)
+## type [SchemaMigrationSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1111>)
 
 
 
@@ -2627,7 +2629,7 @@ type SchemaMigrationSlice []*SchemaMigration
 ```
 
 <a name="User"></a>
-## type [User](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1141-L1150>)
+## type [User](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1143-L1152>)
 
 User represents one row from table 'trustyca.user'. Primary key: id Indexes:
 
@@ -2668,7 +2670,7 @@ func (u *User) Pb() *pb.UserInfo
 Pb converts model to proto
 
 <a name="User.ScanRow"></a>
-### func \(\*User\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1153>)
+### func \(\*User\) [ScanRow](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1155>)
 
 ```go
 func (m *User) ScanRow(rows xdb.Row) error
@@ -2686,7 +2688,7 @@ func (u *User) Validate() error
 Validate returns error if the model is not valid
 
 <a name="UserResult"></a>
-## type [UserResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1167-L1172>)
+## type [UserResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1169-L1174>)
 
 
 
@@ -2700,7 +2702,7 @@ type UserResult struct {
 ```
 
 <a name="UserResult.GetTableInfo"></a>
-### func \(\*UserResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1188>)
+### func \(\*UserResult\) [GetTableInfo](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1190>)
 
 ```go
 func (p *UserResult) GetTableInfo() *xdbschema.TableInfo
@@ -2709,7 +2711,7 @@ func (p *UserResult) GetTableInfo() *xdbschema.TableInfo
 
 
 <a name="UserResult.SetResult"></a>
-### func \(\*UserResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1174>)
+### func \(\*UserResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1176>)
 
 ```go
 func (p *UserResult) SetResult(rows []*User, hasNextPage bool, nextOffset uint32)
@@ -2718,7 +2720,7 @@ func (p *UserResult) SetResult(rows []*User, hasNextPage bool, nextOffset uint32
 
 
 <a name="UserResult.SetResultWithCursor"></a>
-### func \(\*UserResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1180>)
+### func \(\*UserResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1182>)
 
 ```go
 func (p *UserResult) SetResultWithCursor(rows []*User, hasNextPage bool, cursor func(lastRow *User) string)
@@ -2727,7 +2729,7 @@ func (p *UserResult) SetResultWithCursor(rows []*User, hasNextPage bool, cursor 
 
 
 <a name="UserSlice"></a>
-## type [UserSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1166>)
+## type [UserSlice](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L1168>)
 
 
 

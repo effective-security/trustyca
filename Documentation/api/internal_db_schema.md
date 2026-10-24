@@ -77,13 +77,13 @@ var APIKeyTableInfo = xdbschema.TableInfo{
 
 ```
 certificate_pkey: PRIMARY UNIQUE [id]
-idx_certificate_org_id_desc: [org_id,id]
-idx_certificate_org_ikid_id_desc: [org_id,ikid,id]
 idx_certificate_notafter: [not_after]
+idx_certificate_org_id_desc: [id,org_id]
+idx_certificate_org_ikid_id_desc: [ikid,id,org_id]
 idx_certificate_org_project_id_desc: [org_id,project_id,id]
-idx_certificate_org_project_notafter: [not_after,org_id,project_id]
+idx_certificate_org_project_notafter: [project_id,org_id,not_after]
 idx_certificate_skid: [skid]
-unique_certificate_ikid_serial: UNIQUE [serial_number,ikid]
+unique_certificate_ikid_serial: UNIQUE [ikid,serial_number]
 unique_certificate_sha256: UNIQUE [sha256]
 ```
 
@@ -592,6 +592,7 @@ var MembershipTableInfo = xdbschema.TableInfo{
 <a name="Org"></a>Org provides column definitions for table 'trustyca.org'. Primary key: id Indexes:
 
 ```
+idx_org_name_id: [id,name]
 org_pkey: PRIMARY UNIQUE [id]
 unique_org_alias: UNIQUE [alias]
 ```
@@ -625,7 +626,7 @@ var OrgTableInfo = xdbschema.TableInfo{
     Name:       "org",
     PrimaryKey: "id",
     Columns:    []string{"id", "alias", "name", "description", "status", "created_at"},
-    Indexes:    []string{"org_pkey", "unique_org_alias"},
+    Indexes:    []string{"idx_org_name_id", "org_pkey", "unique_org_alias"},
     Dialect:    xsql.Postgres,
 }
 ```
@@ -633,10 +634,11 @@ var OrgTableInfo = xdbschema.TableInfo{
 <a name="Project"></a>Project provides column definitions for table 'trustyca.project'. Primary key: id Indexes:
 
 ```
+idx_project_name_id: [name,id]
 idx_project_org_status: [org_id,status]
 project_pkey: PRIMARY UNIQUE [id]
 unique_project_org_alias: UNIQUE [alias,org_id]
-unique_project_org_id: UNIQUE [id,org_id]
+unique_project_org_id: UNIQUE [org_id,id]
 ```
 
 ```go
@@ -672,7 +674,7 @@ var ProjectTableInfo = xdbschema.TableInfo{
     Name:       "project",
     PrimaryKey: "id",
     Columns:    []string{"id", "org_id", "alias", "name", "description", "status", "created_at", "updated_at"},
-    Indexes:    []string{"idx_project_org_status", "project_pkey", "unique_project_org_alias", "unique_project_org_id"},
+    Indexes:    []string{"idx_project_name_id", "idx_project_org_status", "project_pkey", "unique_project_org_alias", "unique_project_org_id"},
     Dialect:    xsql.Postgres,
 }
 ```

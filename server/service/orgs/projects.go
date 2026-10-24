@@ -16,9 +16,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// defaultListLimit is used when a list request does not specify a limit
-const defaultListLimit = 100
-
 // parseOptionalID parses an optional ID; an empty value returns a zero ID
 func parseOptionalID(ctx context.Context, val, what string) (xdb.ID, error) {
 	if val == "" {
@@ -199,15 +196,16 @@ func (s *Service) ListProjects(ctx context.Context, req *pb.ListProjectsRequest)
 		}
 	}
 
-	limit := req.Limit
-	if limit == 0 {
-		limit = defaultListLimit
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseNameCursor)
+	if err != nil {
+		return nil, err
 	}
 	q := &query.ListProjectsRequest{
 		OrgID:  orgID.UInt64(),
 		Status: req.Status,
-		Limit:  limit,
+		Limit:  query.Limit(req.Limit),
 		Offset: req.Offset,
+		Cursor: cursor,
 	}
 	if !grants.CanListAllProjects() {
 		ids := grants.GrantedProjectIDs()

@@ -72,7 +72,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertific
 	if err != nil {
 		return nil, err
 	}
-	cursor, err := listCursor(ctx, req.Cursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseCursor)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertific
 		IKID:      req.IKID,
 		Profile:   req.Profile,
 		Status:    req.Status,
-		Limit:     listLimit(req.Limit),
+		Limit:     query.Limit(req.Limit),
 		Offset:    req.Offset,
 		Cursor:    cursor,
 	}
@@ -265,7 +265,7 @@ func (s *Service) ListRevokedCertificates(ctx context.Context, req *privpb.ListR
 	if err != nil {
 		return nil, err
 	}
-	cursor, err := listCursor(ctx, req.Cursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseCursor)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func (s *Service) ListRevokedCertificates(ctx context.Context, req *privpb.ListR
 		OrgID:     orgID.UInt64(),
 		ProjectID: projectID.UInt64(),
 		IKID:      req.IKID,
-		Limit:     listLimit(req.Limit),
+		Limit:     query.Limit(req.Limit),
 		Offset:    req.Offset,
 		Cursor:    cursor,
 	}

@@ -139,7 +139,7 @@ func (s *Service) DeleteOrg(ctx context.Context, _ *emptypb.Empty) (*pb.Org, err
 DeleteOrg deactivates the org selected in the token
 
 <a name="Service.DeleteProject"></a>
-### func \(\*Service\) [DeleteProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L228>)
+### func \(\*Service\) [DeleteProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L226>)
 
 ```go
 func (s *Service) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.Project, error)
@@ -166,7 +166,7 @@ func (s *Service) GetOrg(ctx context.Context, _ *emptypb.Empty) (*pb.Org, error)
 GetOrg returns the org selected in the token
 
 <a name="Service.GetProject"></a>
-### func \(\*Service\) [GetProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L139>)
+### func \(\*Service\) [GetProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L136>)
 
 ```go
 func (s *Service) GetProject(ctx context.Context, req *pb.GetProjectRequest) (*pb.Project, error)
@@ -211,7 +211,7 @@ func (s *Service) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (
 ListAPIKeys lists the API keys of the org selected in the token, or of a project when ProjectID is set
 
 <a name="Service.ListProjects"></a>
-### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L181>)
+### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L178>)
 
 ```go
 func (s *Service) ListProjects(ctx context.Context, req *pb.ListProjectsRequest) (*pb.ProjectsResponse, error)
@@ -256,7 +256,7 @@ func (s *Service) RegisterOrg(ctx context.Context, req *pb.RegisterOrgRequest) (
 RegisterOrg registers a new org; the caller becomes its Owner
 
 <a name="Service.RegisterProject"></a>
-### func \(\*Service\) [RegisterProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L65>)
+### func \(\*Service\) [RegisterProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L62>)
 
 ```go
 func (s *Service) RegisterProject(ctx context.Context, req *pb.RegisterProjectRequest) (*pb.Project, error)
@@ -283,7 +283,7 @@ func (s *Service) UpdateOrg(ctx context.Context, req *pb.UpdateOrgRequest) (*pb.
 UpdateOrg updates the org selected in the token
 
 <a name="Service.UpdateProject"></a>
-### func \(\*Service\) [UpdateProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L106>)
+### func \(\*Service\) [UpdateProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L103>)
 
 ```go
 func (s *Service) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.Project, error)

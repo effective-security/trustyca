@@ -229,7 +229,10 @@ type ListIssuersRequest struct {
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListIssuersRequest) Validate() error {
-	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
+	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
+		return err
+	}
+	return r.Cursor.checkKey(keyID)
 }
 
 // QueryParams returns the query params builder
@@ -250,7 +253,7 @@ func (r *ListIssuersRequest) QueryParams() xdb.QueryParams {
 	if r.Type != pb.AuthorityType_Unknown {
 		b.Set(schema.Issuer.Type.Position, r.Type)
 	}
-	setPage(b, schema.Issuer.ID.Position, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
@@ -273,7 +276,7 @@ func ListIssuers(args ...any) (string, string) {
 		if p.IsSet(schema.Issuer.Type.Position) {
 			q.Where(schema.Issuer.Type.Name+" = ?", nil)
 		}
-		pageByID(q, p)
+		pageByIDDesc(q, p)
 		return q
 	})
 }

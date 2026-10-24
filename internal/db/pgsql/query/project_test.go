@@ -6,12 +6,27 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/db/schema"
+	"github.com/effective-security/xdb"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ProjectQueries(t *testing.T) {
 	t.Parallel()
 
+	cursor, err := query.ParseNameCursor(query.EncodeNameCursor("Project 1", xdb.NewID(201)))
+	require.NoError(t, err)
+
 	check(t, []tcase{
+		{
+			// a cursor page filters past the key of the last row, next to
+			// the filter by id
+			query.ListProjects, []any{&query.ListProjectsRequest{OrgID: 1, IDs: []uint64{201, 202}, Limit: 10, Cursor: cursor}},
+			`SELECT ` + schema.ProjectTableInfo.AllColumns() + ` 
+FROM trustyca.project 
+WHERE org_id = $1 AND id = ANY($2) AND (name, id) > ($3, $4) 
+ORDER BY name ASC, id ASC 
+LIMIT $5`,
+		},
 		{
 			query.RegisterProject, nil,
 			`INSERT INTO trustyca.project 

@@ -1,7 +1,6 @@
 package cis
 
 import (
-	"cmp"
 	"context"
 	"database/sql"
 	"time"
@@ -16,9 +15,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// defaultListLimit is used when a list request does not specify a limit
-const defaultListLimit = 100
-
 // GetRoots returns the published trust anchors, newest first: of the
 // platform when the request names no org, else of the org. An unknown org
 // has none.
@@ -26,12 +22,12 @@ func (s *Service) GetRoots(ctx context.Context, req *pb.GetRootsRequest) (*pb.Ro
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
 	}
-	cursor, err := query.ParseCursor(req.Cursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseCursor)
 	if err != nil {
-		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid cursor")
+		return nil, err
 	}
 	q := &query.ListRootsRequest{
-		Limit:  cmp.Or(req.Limit, defaultListLimit),
+		Limit:  query.Limit(req.Limit),
 		Offset: req.Offset,
 		Cursor: cursor,
 	}

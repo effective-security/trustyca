@@ -74,7 +74,9 @@ type ListMembershipsRequest struct {
 	Scope     pb.Scope_Enum
 	OrgStatus pb.ItemStatus_Enum
 	Role      pb.Role_Enum
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return; zero is
+	// xdb.DefaultPageSize, the bound of the callers that read the whole
+	// scope (the grants of a user, the members of an org)
 	Limit uint32
 	// Offset specifies the offset for pagination
 	Offset uint32
@@ -100,13 +102,16 @@ func (r *ListMembershipsRequest) QueryParams() xdb.QueryParams {
 	return b
 }
 
-// ListMemberships returns SQL query
+// ListMemberships returns SQL query: the grants by the email of the user,
+// then by id, so the grants of a user are adjacent in creation order
 func ListMemberships(args ...any) (string, string) {
 	p := xdb.GetQueryParams(args...)
 	key := p.Name()
 	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
 		q := schema.MembershipInfoTableInfo.
-			Select().Limit(nil).Offset(nil)
+			Select().
+			OrderBy(schema.MembershipInfo.Email.Name+" ASC", schema.MembershipInfo.ID.Name+" ASC").
+			Limit(nil).Offset(nil)
 
 		if p.IsSet(schema.MembershipInfo.UserID.Position) {
 			q.Where(schema.MembershipInfo.UserID.Name+" = ?", nil)
