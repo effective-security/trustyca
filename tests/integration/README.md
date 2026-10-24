@@ -31,6 +31,7 @@ cache of a `make build`: `make docker-build` compiles the binaries in a
 | `test_status.sh`  | the status routes of the three listeners, a guest caller, the `local` provider of a `local+` address      |
 | `test_auth.sh`    | the bearer session of the CLI: login, the default org, the org switch, sign-out with token revocation    |
 | `test_cookies.sh` | the cookie session of the console: CORS, the cookies of the login, CSRF over gRPC-Web and REST, the org switch that replaces the cookies (`POST /v1/auth/org`), sign-out |
+| `test_operator.sh` | the operator on the backend listener: `trustycactl ca` with a DPoP login of `operator@trustyca.io` (the `jwt_dpop` roles of `trustyca-config.citest.yaml`), the org each request names; the DPoP token of another user, a bearer token and a client certificate are refused |
 
 Two images are built from the repository `Dockerfile`, both on Debian trixie,
 since the binaries link the PKCS#11 provider with cgo:

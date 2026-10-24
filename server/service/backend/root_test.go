@@ -117,6 +117,18 @@ func TestService_ListRoots(t *testing.T) {
 	_, err = svc.ListRoots(svcCaller, &privpb.ListRootsRequest{OrgID: "1"})
 	require.NoError(t, err)
 
+	// so does the operator: the org its DPoP token selected is not its scope
+	operator := operatorCtx("2")
+	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{Platform: true, Limit: defaultListLimit}).
+		Return(&model.RootCertificateResult{}, nil)
+	_, err = svc.ListRoots(operator, &privpb.ListRootsRequest{})
+	require.NoError(t, err)
+	tca.orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
+	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: defaultListLimit}).
+		Return(&model.RootCertificateResult{}, nil)
+	_, err = svc.ListRoots(operator, &privpb.ListRootsRequest{OrgID: "1"})
+	require.NoError(t, err)
+
 	tca.cadb.EXPECT().ListRoots(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
 	_, err = svc.ListRoots(ctx, &privpb.ListRootsRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list roots")

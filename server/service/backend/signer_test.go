@@ -67,6 +67,9 @@ func TestService_SignCertificate(t *testing.T) {
 	ra := serviceCtx("trustyca-ra")
 	_, err = svc.SignCertificate(ra, &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "bad_request: org ID is required")
+	// the operator names the org too, whatever org its DPoP token selected
+	_, err = svc.SignCertificate(operatorCtx("1"), &privpb.SignCertificateRequest{Request: csrPEM, Profile: testProfile})
+	assert.EqualError(t, err, "bad_request: org ID is required")
 	_, err = svc.SignCertificate(ra, &privpb.SignCertificateRequest{OrgID: "bad", Request: csrPEM, Profile: testProfile})
 	assert.EqualError(t, err, "bad_request: invalid org ID")
 	orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(9)).Return(nil, notFoundErr("org", 9))

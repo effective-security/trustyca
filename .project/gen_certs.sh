@@ -99,10 +99,6 @@ case $key in
     SERVER=YES
     shift # past argument
     ;;
-    --admin)
-    ADMIN=YES
-    shift # past argument
-    ;;
     --client)
     CLIENT=YES
     shift # past argument
@@ -225,22 +221,6 @@ if [[ "$BUNDLE" == "YES" && ("$FORCE" == "YES" || ! -f ${CABUNDLE}) ]]; then
     if [[ -f ${OUT_DIR}/${OUT_PREFIX}l1_ca.pem ]]; then
         cat ${OUT_DIR}/${OUT_PREFIX}l1_ca.pem >> ${CABUNDLE}
     fi
-fi
-
-if [[ "$ADMIN" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}admin.key) ]]; then
-    echo "*** generating admin cert: ${OUT_DIR}/${OUT_PREFIX}admin.pem"
-    hsm-tool ${FLAGS} \
-        --cfg ${HSM_CONFIG}  ${CRYPTO_PROV} \
-        csr gen-cert --plain-key \
-        --ca-config=${CA_CONFIG} \
-        --profile client \
-        --ca-cert ${OUT_DIR}/${OUT_PREFIX}l2_ca.pem \
-        --ca-key ${OUT_DIR}/${OUT_PREFIX}l2_ca.key \
-        --csr-profile ${CSR_DIR}/${CSR_PREFIX}admin.yaml \
-        --key-label "${KEY_LABEL}${OUT_PREFIX}admin*" \
-        --output ${OUT_DIR}/${OUT_PREFIX}admin
-
-    cat ${CABUNDLE} >> ${OUT_DIR}/${OUT_PREFIX}admin.pem
 fi
 
 if [[ "$SERVER" == "YES" && ("$FORCE" == "YES" || ! -f ${OUT_DIR}/${OUT_PREFIX}server.key) ]]; then

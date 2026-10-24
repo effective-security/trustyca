@@ -149,7 +149,8 @@ func (s *Service) AuthorizeHandler() restserver.Handle {
 		if dpopScope {
 			res, err := dpop.VerifyRequestClaims(dpop.VerifyConfig{EnableQuery: true}, r)
 			if err != nil {
-				marshal.WriteJSON(w, r, err.Error())
+				// the client gets the generic message, the log the reason
+				marshal.WriteJSON(w, r, httperror.InvalidRequest("invalid DPoP proof").WithCause(err))
 				return
 			}
 			dpopThumbprint = res.Thumbprint

@@ -423,6 +423,97 @@ func Test_DPoPAuthorizeHandler(t *testing.T) {
 		h(w, r, nil)
 		assert.Equal(t, http.StatusSeeOther, w.Code)
 	})
+
+	t.Run("code_challenge_method", func(t *testing.T) {
+		t.Parallel()
+		w := httptest.NewRecorder()
+		params := url.Values{
+			"client_id":             {"trustyca"},
+			"response_type":         {"code"},
+			"redirect_uri":          {"http://localhost:38989"},
+			"provider":              {pb.IDP_Github.DisplayName()},
+			"code_challenge":        {"challenge"},
+			"code_challenge_method": {"plain"},
+		}
+		r, err := http.NewRequest(http.MethodGet, pb.PathForAuthorize+"?"+params.Encode(), nil)
+		require.NoError(t, err)
+
+		h(w, r, nil)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, `{"code":"invalid_request","message":"unsupported code_challenge_method: plain"}`, w.Body.String())
+	})
+
+	t.Run("redirect_not_allowed", func(t *testing.T) {
+		t.Parallel()
+		w := httptest.NewRecorder()
+		params := url.Values{
+			"client_id":     {"trustyca"},
+			"response_type": {"code"},
+			"redirect_uri":  {"https://attacker.example.com/callback"},
+			"provider":      {pb.IDP_Github.DisplayName()},
+		}
+		r, err := http.NewRequest(http.MethodGet, pb.PathForAuthorize+"?"+params.Encode(), nil)
+		require.NoError(t, err)
+
+		h(w, r, nil)
+		assert.Equal(t, http.StatusForbidden, w.Code)
+		assert.Equal(t, `{"code":"forbidden","message":"redirect_url not_allowed"}`, w.Body.String())
+	})
+
+	dpopParams := url.Values{
+		"client_id":     {"trustyca"},
+		"response_type": {"code"},
+		"scope":         {"openid email dpop"},
+		"redirect_uri":  {"http://localhost:38989"},
+		"provider":      {pb.IDP_Github.DisplayName()},
+		"nonce":         {"123"},
+	}
+	authorizeURL := "https://localhost" + pb.PathForAuthorize + "?" + dpopParams.Encode()
+
+	t.Run("dpop_without_proof", func(t *testing.T) {
+		t.Parallel()
+		w := httptest.NewRecorder()
+		r, err := http.NewRequest(http.MethodGet, authorizeURL, nil)
+		require.NoError(t, err)
+
+		h(w, r, nil)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, `{"code":"invalid_request","message":"invalid DPoP proof"}`, w.Body.String())
+	})
+
+	t.Run("dpop_proof_for_other_uri", func(t *testing.T) {
+		t.Parallel()
+		w := httptest.NewRecorder()
+		r, err := http.NewRequest(http.MethodGet, authorizeURL, nil)
+		require.NoError(t, err)
+		other, err := url.Parse("https://localhost/v1/other")
+		require.NoError(t, err)
+		proof, err := dpopSigner.Sign(t.Context(), http.MethodGet, other, nil)
+		require.NoError(t, err)
+		r.Header.Set(dpop.HTTPHeader, proof)
+
+		h(w, r, nil)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, `{"code":"invalid_request","message":"invalid DPoP proof"}`, w.Body.String())
+	})
+
+	t.Run("dpop_proof", func(t *testing.T) {
+		t.Parallel()
+		w := httptest.NewRecorder()
+		r, err := http.NewRequest(http.MethodGet, authorizeURL, nil)
+		require.NoError(t, err)
+		_, err = dpop.ForRequest(dpopSigner, r, nil)
+		require.NoError(t, err)
+
+		h(w, r, nil)
+		require.Equal(t, http.StatusSeeOther, w.Code)
+		loc, err := url.Parse(w.Header().Get("Location"))
+		require.NoError(t, err)
+
+		var st auth.State
+		require.NoError(t, service.Unprotect(t.Context(), loc.Query().Get("state"), &st))
+		assert.Equal(t, dpopSigner.JWKThumbprint(), st.DPoPJwk)
+	})
 }
 
 func Test_DPoPCallbackHandlerError(t *testing.T) {

@@ -42,9 +42,6 @@ if err != nil {
 const (
     // UserAgentWfe is the user agent of the clients of the service
     UserAgentWfe = "trustyca"
-    // ClientNameDefault is the client of a process that has a single
-    // identity, such as a tool
-    ClientNameDefault = "default"
     // ClientNameAIA is the client the AIA service forwards OCSP requests to
     // the backend with: the trustyca-aia identity
     ClientNameAIA = "aia"
@@ -56,7 +53,7 @@ const (
 ```
 
 <a name="Config"></a>
-## type [Config](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L41-L67>)
+## type [Config](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L38-L64>)
 
 Config specifies a named service client: the certificate it presents and the URLs of the listeners it dials. A process holds one client per identity it calls other listeners with \(DESIGN.md section 2.2\).
 
@@ -91,7 +88,7 @@ type Config struct {
 ```
 
 <a name="Factory"></a>
-## type [Factory](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L72-L87>)
+## type [Factory](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L69-L84>)
 
 Factory creates the gRPC clients of the services: every method dials the listener named server with the TLS identity and settings of the named client, and returns the closer of the connection
 
@@ -115,7 +112,7 @@ type Factory interface {
 ```
 
 <a name="NewFactory"></a>
-### func [NewFactory](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L138>)
+### func [NewFactory](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L135>)
 
 ```go
 func NewFactory(cfgs []Config, ops ...Option) (Factory, error)
@@ -171,7 +168,7 @@ func (c *HTTPStatusClient) Version(ctx context.Context) (*pb.ServerVersion, erro
 Version returns ServerVersion
 
 <a name="Option"></a>
-## type [Option](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L90-L92>)
+## type [Option](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L87-L89>)
 
 Option configures how we set up the client
 
@@ -182,7 +179,7 @@ type Option struct {
 ```
 
 <a name="WithAgent"></a>
-### func [WithAgent](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L125>)
+### func [WithAgent](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L122>)
 
 ```go
 func WithAgent(agent string) Option
@@ -191,7 +188,7 @@ func WithAgent(agent string) Option
 WithAgent option to provide client Agent
 
 <a name="WithCallerIdentity"></a>
-### func [WithCallerIdentity](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L118>)
+### func [WithCallerIdentity](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L115>)
 
 ```go
 func WithCallerIdentity(callerIdentity credentials.CallerIdentity) Option
@@ -200,7 +197,7 @@ func WithCallerIdentity(callerIdentity credentials.CallerIdentity) Option
 WithCallerIdentity option to provide CallerIdentity
 
 <a name="WithTLS"></a>
-### func [WithTLS](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L111>)
+### func [WithTLS](<https://github.com/effective-security/trustyca/blob/main/api/client/factory.go#L108>)
 
 ```go
 func WithTLS(tlsCfg *tls.Config) Option

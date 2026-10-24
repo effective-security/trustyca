@@ -167,6 +167,36 @@ login() {
 
 xdg_open_log() { echo "${TRUSTYCA_WORKDIR}/xdg-open.log"; }
 
+# trustycactl_as <user> <args...> runs the operator CLI on the backend
+# listener with that user's token storage and DPoP keys, and no client
+# certificate.
+trustycactl_as() {
+    local user="$1"; shift
+    TRUSTYCA_STORAGE="${TRUSTYCA_USERS_DIR}/${user}" TRUSTYCA_AUTH_TOKEN="" \
+        trustycactl -s "$TRUSTYCA_BACKEND_URL" -r "$TRUSTYCA_TRUSTED_CA" \
+        --timeout "$TRUSTYCA_CLI_TIMEOUT" "$@"
+}
+
+# dpop_login <user> signs <user> in as login does, with a DPoP key of its
+# storage: the token is bound to the key, as an operator's must be.
+dpop_login() {
+    local user="$1"
+    local email="local+$(email_of "$user")"
+    mkdir -p "${TRUSTYCA_USERS_DIR}/${user}"
+    info "DPoP login ${email}"
+    trustycactl_as "$user" dpop-key gen "$user" >/dev/null || {
+        fail "dpop-key gen for ${user} failed"
+        return 1
+    }
+    if ! TRUSTYCA_STORAGE="${TRUSTYCA_USERS_DIR}/${user}" TRUSTYCA_AUTH_TOKEN="" \
+        timeout 60 trustyca -s "$TRUSTYCA_URL" -r "$TRUSTYCA_TRUSTED_CA" \
+        --timeout "$TRUSTYCA_CLI_TIMEOUT" auth login "$email" --dpop-key default; then
+        fail "DPoP login ${email} failed, see $(xdg_open_log)"
+        [[ -f "$(xdg_open_log)" ]] && tail -40 "$(xdg_open_log)" >&2
+        return 1
+    fi
+}
+
 # org_of <user> prints the ID of the org selected in the user's token
 org_of() {
     trustyca_as "$1" --o json org get | jq -r '.ID'

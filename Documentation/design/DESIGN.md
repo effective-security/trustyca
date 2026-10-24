@@ -57,10 +57,12 @@ The services are `gserver` services in this binary (`server/service/ca`,
 `server/service/backend`, `server/service/cis`, `server/service/aia`) and
 are enabled per listener in `etc/dev/trustyca-config.yaml`:
 
-- `backend` listener: `status`, `admin`, `backend`. mTLS: the TLS
-  identity map gives the service identities their roles (`trustyca-ra`,
-  `trustyca-aia`, `trustyca-admin`, `trustyca-peer`), and every path but
-  the status routes requires one of them; a path without a rule is
+- `backend` listener: `status`, `admin`, `backend`. mTLS for the
+  services: the TLS identity map gives the service identities their roles
+  (`trustyca-ra`, `trustyca-aia`, `trustyca-peer`); the operator
+  (`trustyca-admin`) is a DPoP token of the `wfe`, mapped by the
+  `jwt_dpop` of the `wfe`, and no certificate maps to it. Every path but
+  the status routes requires one of these roles; a path without a rule is
   refused.
 - `wfe` listener: `status`, `auth`, `orgs`, `ui`, `cis`, `ca`. HTTPS for
   users and API keys; a client certificate is verified when one is given,
@@ -777,8 +779,9 @@ on the `wfe` and again on the `backend` for a forwarded caller. Conventions: str
 
 The operator drives the CA with `trustycactl ca issuer|profile|root|cert|crl
 ...` and `ca org bootstrap` through `privpb.Backend` on the backend
-listener, with the `trustyca-admin` client certificate, naming the org of
-every request;
+listener, with a DPoP token of the `wfe` whose email the listener maps to
+`trustyca-admin`, naming the org of every request (the org its login
+selected is not its scope);
 `privpb.Admin.ListIssuers` and `ListCertificates` are the support lists
 across orgs (`ca issuer list` and `ca cert list` without `--org`).
 
@@ -860,8 +863,14 @@ tasks:
     schedule: "every 1 hour"
 ```
 
-Backend listener: the `trustyca-ra`, `trustyca-aia`, `trustyca-admin`
-and `trustyca-peer` TLS roles (`identity_map.tls.enabled: true`). The dev
+Backend listener: the `trustyca-ra`, `trustyca-aia` and `trustyca-peer`
+TLS roles (`identity_map.tls.enabled: true`), and the operators: the
+`jwt_dpop` of the `wfe` (a YAML anchor), whose `roles` list the emails of
+`trustyca-admin`. A client certificate is a service identity only, never
+the operator, and a bearer token is not mapped; another DPoP token is the
+default role, which no rule admits. A signing pod verifies the operators'
+tokens as a web pod does, so it needs the token provider (`auth.jwt`) and
+the revocation cache (`cache`). The dev
 configuration verifies a client certificate when one is given
 (`client_cert_auth: false`), so that a health probe reaches the status
 routes over TLS; a deployment whose probes do not use the port may require
@@ -883,8 +892,7 @@ require their roles), and no CIS or CA path is under
 identity map (every caller is a guest) and lists only the AIA and status
 routes under `authz.allow_any`, so every other path is refused.
 `make gen_test_certs` generates the client certificates of the dev
-configuration (`trustyca_peer`, `trustyca_aia`, `trustyca_ra`,
-`trustyca_admin`).
+configuration (`trustyca_peer`, `trustyca_aia`, `trustyca_ra`).
 
 ## 11. Audit and observability
 

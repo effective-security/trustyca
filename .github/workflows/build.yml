@@ -26,6 +26,9 @@ env:
   # NOTE(epk) this identifier is used to easily bust a pre-existing go
   # mod/build cache. To do so simply increment this number.
   GO_CACHE_BUSTER: 5
+  # the total coverage of `make covtest` above which the CovTest step
+  # posts a success status; raise it as the coverage improves
+  MIN_TESTCOV: 88
 
 jobs:
   detect-noop:

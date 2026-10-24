@@ -87,17 +87,20 @@ type BootstrapResult struct {
 // a key that does not load or a delegated OCSP profile that does not bind
 // fails the start instead of the first request.
 //
-// It is idempotent: a registered issuer with the same key only has its
-// runtime settings refreshed, roots are registered by thumbprint and
+// It is idempotent: a registered issuer with the same certificate only has
+// its runtime settings refreshed, roots are registered by thumbprint and
 // profiles are replaced by label. It is also safe when several instances
 // start against one fresh DB at once: an issuer insert that loses the race
 // to another instance continues with the row that instance registered. The key of an issuer is a key URI, stored
 // as the reference, or key material, stored wrapped; both are checked
 // against the certificate. An issuer whose certificate is for a new key is
 // an error: renewal keeps the label unique, so the old issuer must be
-// archived under another label first. A disabled issuer is archived, so
-// that it stops signing on every instance, and enabled again when the
-// configuration enables it; a destroyed one has no key and is an error.
+// archived under another label first. A certificate renewed for the
+// registered key is an error too: renewal means a new key, so two
+// certificates never share a SKID (DESIGN.md section 5.4). A disabled
+// issuer is archived, so that it stops signing on every instance, and
+// enabled again when the configuration enables it; a destroyed one has no
+// key and is an error.
 // The anchor of a root issuer is written in the transaction of the issuer
 // insert, and registered again on every start from the stored certificate,
 // which restores an anchor that was deleted or that a version without the
@@ -294,7 +297,7 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 	existing, err := caDb.FindIssuer(ctx, 0, 0, label)
 	switch {
 	case err == nil && existing.Skid == skid:
-		return r.refreshIssuer(ctx, caDb, existing, cfg)
+		return r.refreshIssuer(ctx, caDb, existing, crt, cfg)
 	case err == nil:
 		return out, errors.Errorf("the certificate is for key %s and the registered issuer has key %s: archive the registered issuer under another label before renewing it", skid, existing.Skid)
 	case !xdb.IsNotFoundError(err):
@@ -389,7 +392,7 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 			"issuer_id", idString(existing.ID),
 			"issuer", label,
 			"skid", skid)
-		return r.refreshIssuer(ctx, caDb, existing, cfg)
+		return r.refreshIssuer(ctx, caDb, existing, crt, cfg)
 	}
 	r.InvalidateIssuer(row)
 	out.registered = true
@@ -409,8 +412,11 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 // Active, changed runtime settings are replaced, both in one update, and
 // the trust anchor of a root is registered again from the stored
 // certificate. A Destroyed issuer has no key, and a Pending one no
-// certificate: neither is the issuer of the configuration.
-func (r *Registry) refreshIssuer(ctx context.Context, caDb db.CaDb, existing *model.Issuer, cfg *pb.IssuerConfig) (issuerOutcome, error) {
+// certificate: neither is the issuer of the configuration. crt, the
+// certificate of the configuration, must be the registered one: a
+// certificate renewed for the same key is refused, since renewal means a
+// new key (DESIGN.md section 5.4).
+func (r *Registry) refreshIssuer(ctx context.Context, caDb db.CaDb, existing *model.Issuer, crt *x509.Certificate, cfg *pb.IssuerConfig) (issuerOutcome, error) {
 	var out issuerOutcome
 	update := &query.UpdateIssuerRequest{
 		ID:    existing.ID.UInt64(),
@@ -422,6 +428,9 @@ func (r *Registry) refreshIssuer(ctx context.Context, caDb db.CaDb, existing *mo
 		update.Status = pb.IssuerStatus_Active
 	default:
 		return out, errors.Errorf("the registered issuer is %s: register it under another label", existing.Status.String())
+	}
+	if sha := certutil.SHA256Hex(crt.Raw); sha != existing.Sha256 {
+		return out, errors.Errorf("the certificate %s is not the registered certificate %s of key %s: a renewal must use a new key", sha, existing.Sha256, existing.Skid)
 	}
 	current, err := existing.GetConfig()
 	if err != nil {

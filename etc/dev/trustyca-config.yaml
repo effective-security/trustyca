@@ -302,7 +302,10 @@ servers:
         subject_claim: sub
         tenant_claim: org
         role_claim: email
-      jwt_dpop:
+      # the DPoP tokens of the wfe, which the backend maps too: the
+      # operators are the trustyca-admin role of both listeners, and no
+      # client certificate maps to it
+      jwt_dpop: &jwt_dpop
         enabled: true
         issuer: https://localhost:8880
         audience: https://localhost:8880
@@ -318,7 +321,8 @@ servers:
   # the signing plane (DESIGN.md section 2.1): the backend service holds the
   # issuer keys and is the CA of the service identities: the RA and the
   # operator call it with the org of every request, the WFE forwards the CA
-  # calls of its tenants, the AIA its OCSP requests. mTLS only.
+  # calls of its tenants, the AIA its OCSP requests. The services
+  # authenticate with mTLS, the operator with a DPoP token.
   backend:
     description: Backend service
     disabled: false
@@ -372,8 +376,13 @@ servers:
     identity_map:
       debug_logs: false
       strict: true
-      # the TLS client certificate is the identity of a backend caller; the
-      # mapping is off unless enabled, and a caller is then a guest
+      # the operator: a DPoP token of the wfe whose email is listed under
+      # trustyca-admin; any other token is the default role, which the authz
+      # rules above refuse. Bearer tokens are not mapped.
+      jwt_dpop: *jwt_dpop
+      # the TLS client certificate is the identity of a service caller; the
+      # mapping is off unless enabled, and a caller is then a guest. A
+      # certificate is a service identity only: none maps to trustyca-admin
       tls:
         enabled: true
         default_authenticated_role: user
@@ -383,8 +392,6 @@ servers:
             - spiffe://trustyca/peer
           trustyca-client:
             - spiffe://trustyca/client
-          trustyca-admin:
-            - spiffe://trustyca/admin
           # the service identities of the CA API (DESIGN.md section 10): the
           # Registration Authority and the Authority Information Access service
           trustyca-ra:
@@ -395,17 +402,6 @@ servers:
 # the service clients a process dials the other listeners with, one per
 # identity (DESIGN.md section 2.2): a service selects its client by name
 clients:
-  - name: default
-    client_tls:
-      cert: ${HOME}/.trustyca/certs/trustyca_client.pem
-      key: ${HOME}/.trustyca/certs/trustyca_client.key
-      trusted_ca: ${HOME}/.trustyca/certs/trustyca_root.pem
-    server_url:
-      wfe: https://localhost:8880
-      backend: https://localhost:8881
-    dial_timeout: 30s
-    dial_keep_alive_time: 300s
-    dial_keep_alive_timeout: 30s
   # the CA service of a process without the backend service forwards the
   # calls of its tenants to the backend: the WFE identity, trustyca-peer
   - name: ca

@@ -16,8 +16,7 @@ Flags:
                              environment to override
   -H, --http                 Use HTTP client
       --timeout=6            Connection timeout
-  -c, --cert=STRING          Client certificate file for mTLS; its identity
-                             replaces the auth token when none is stored
+  -c, --cert=STRING          Client certificate file for mTLS
   -k, --cert-key=STRING      Client certificate key for mTLS
   -r, --trusted-ca=STRING    Trusted CA store for server TLS
 

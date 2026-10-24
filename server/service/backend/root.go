@@ -78,7 +78,7 @@ func (s *Service) ListRoots(ctx context.Context, req *privpb.ListRootsRequest) (
 		Cursor: cursor,
 	}
 	tctx := authctx.FromContext(ctx)
-	if req.OrgID == "" && tctx.OrgID().IsZero() && strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
+	if req.OrgID == "" && isServiceCaller(tctx) {
 		q.Platform = true
 	} else {
 		orgID, err := s.scope.Org(ctx, req.OrgID)

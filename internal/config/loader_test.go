@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		clients[cl.Name] = cl
 	}
 	require.Len(t, clients, len(c.Clients), "client names are unique")
-	for _, name := range []string{client.ClientNameDefault, client.ClientNameAIA} {
+	for _, name := range []string{client.ClientNameCA, client.ClientNameAIA} {
 		cl, ok := clients[name]
 		require.True(t, ok, "client %s", name)
 		testDirAbs("Clients."+name+".ClientTLS.TrustedCAFile", cl.ClientTLS.TrustedCAFile)
@@ -231,4 +231,15 @@ func TestLoadCitestOverride(t *testing.T) {
 	assert.True(t, strings.HasSuffix("api.local.trustyca.io", ccfg.Domain), "the API host is under the cookie domain %s", ccfg.Domain)
 	assert.NotEmpty(t, ccfg.Auth)
 	assert.NotEmpty(t, ccfg.CSRF)
+
+	// the operator of the tests replaces the operators of the dev
+	// configuration on both listeners, and the rest of the DPoP map is kept
+	backend := c.HTTPServers[BackendServerName]
+	require.NotNil(t, backend)
+	operators := map[string][]string{"trustyca-admin": {"operator@trustyca.io"}}
+	assert.Equal(t, operators, wfe.IdentityMap.DPoP.Roles)
+	assert.Equal(t, operators, backend.IdentityMap.DPoP.Roles)
+	assert.True(t, backend.IdentityMap.DPoP.Enabled)
+	assert.Equal(t, wfe.IdentityMap.DPoP, backend.IdentityMap.DPoP)
+	assert.Equal(t, 15*time.Second, backend.Timeout.Request)
 }

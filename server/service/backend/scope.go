@@ -34,19 +34,19 @@ func newTenantScope(authorizer authctx.Authorizer, caDb db.CaReadonlyDb, orgsDb 
 
 // Org returns the org of a tenant request. A user or API key token
 // carries the selected org, and an explicit OrgID in the request must match
-// it. A trusted service caller (RA, CIS, jobs over mTLS) has no org in its
-// token and names the org explicitly; the org must exist and be active.
+// it. A trusted service caller (isServiceCaller) names the org explicitly;
+// the org must exist and be active.
 func (s *tenantScope) Org(ctx context.Context, reqOrgID string) (xdb.ID, error) {
 	tctx := authctx.FromContext(ctx)
-	orgID := tctx.OrgID()
-	if !orgID.IsZero() {
+	if !isServiceCaller(tctx) {
+		orgID := tctx.OrgID()
+		if orgID.IsZero() {
+			return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org not selected")
+		}
 		if reqOrgID != "" && reqOrgID != orgID.String() {
 			return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org mismatch")
 		}
 		return orgID, nil
-	}
-	if !strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
-		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.PermissionDenied, "org not selected")
 	}
 	if reqOrgID == "" {
 		return xdb.ID(0), httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "org ID is required")
@@ -66,6 +66,15 @@ func (s *tenantScope) Org(ctx context.Context, reqOrgID string) (xdb.ID, error) 
 		return xdb.ID(0), preconditionFailed(ctx, "org is deleted")
 	}
 	return orgID, nil
+}
+
+// isServiceCaller reports a trusted service caller, a `trustyca-*` role:
+// the RA, the AIA and the CA of the wfe over mTLS, and the operator with a
+// DPoP token. It names the org of a request explicitly, and an empty org
+// names the platform where a method allows it; the org an operator's token
+// selected is not its scope.
+func isServiceCaller(tctx authctx.TrustyCtx) bool {
+	return strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix)
 }
 
 // Project returns the project of a tenant request, or a zero ID for
@@ -124,7 +133,7 @@ func (s *tenantScope) RequestProject(ctx context.Context, orgID xdb.ID, reqProje
 // the caller reads but cannot act on at the method's roles is forbidden.
 func (s *tenantScope) RowAccess(ctx context.Context, orgID, projectID xdb.ID, method, what string) error {
 	tctx := authctx.FromContext(ctx)
-	if strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
+	if isServiceCaller(tctx) {
 		return nil
 	}
 	var allowed []string
@@ -172,7 +181,7 @@ func (s *tenantScope) RowAccess(ctx context.Context, orgID, projectID xdb.ID, me
 // project: Project selects its project.
 func (s *tenantScope) ListProjects(ctx context.Context, orgID xdb.ID) ([]uint64, error) {
 	tctx := authctx.FromContext(ctx)
-	if tctx.IsAPIKey() || strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix) {
+	if tctx.IsAPIKey() || isServiceCaller(tctx) {
 		return nil, nil
 	}
 	grants, err := s.authorizer.Grants(ctx, orgID, tctx.UserID())

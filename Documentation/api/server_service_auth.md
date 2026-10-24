@@ -77,7 +77,7 @@ func Factory(server gserver.GServer) any
 Factory returns a factory of the service
 
 <a name="OTCState"></a>
-## type [OTCState](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L308-L313>)
+## type [OTCState](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L309-L314>)
 
 
 
@@ -91,7 +91,7 @@ type OTCState struct {
 ```
 
 <a name="Request"></a>
-## type [Request](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L262-L272>)
+## type [Request](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L263-L273>)
 
 Request specifies Authorization request
 
@@ -110,7 +110,7 @@ type Request struct {
 ```
 
 <a name="Request.Validate"></a>
-### func \(\*Request\) [Validate](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L275>)
+### func \(\*Request\) [Validate](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L276>)
 
 ```go
 func (c *Request) Validate() error
@@ -433,7 +433,7 @@ func (s *Service) UserinfoHandler() restserver.Handle
 UserinfoHandler returns handler for returning the user info
 
 <a name="State"></a>
-## type [State](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L289-L306>)
+## type [State](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/authorize.go#L290-L307>)
 
 State is OAuth state provided by an authenticating client
 

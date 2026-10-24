@@ -45,9 +45,12 @@ const (
 	e2eParentLabel = "trusty.l1"
 	e2eCAProfile   = "tenant_ca"
 	e2eIssuerLabel = "issuing"
-	// e2eRole is the identity of the operator's client certificate on the
-	// backend listener
+	// e2eRole is the role of the operator's DPoP token on the backend
+	// listener
 	e2eRole = "trustyca-admin"
+	// e2eTokenOrg is the org the operator's login selected, which is not the
+	// scope of its requests: every command names the org
+	e2eTokenOrg = "1"
 )
 
 // TestCA_EndToEnd runs the CA and Admin services of the app container over
@@ -312,14 +315,19 @@ func TestCA_EndToEnd(t *testing.T) {
 
 // backendServer serves the backend and Admin services on a TCP listener whose
 // interceptor sets the trustyca-admin identity of every call, as the
-// backend listener maps the operator's client certificate
+// backend listener maps the operator's DPoP token
 func backendServer(t *testing.T, be privpb.BackendServer, adm privpb.AdminServer) string {
 	t.Helper()
 	lis, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 	srv := grpc.NewServer(grpc.UnaryInterceptor(
 		func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-			uid := identity.NewIdentity(e2eRole, "spiffe://trustyca/admin", "", map[string]any{}, "", "", identity.MethodCertificate)
+			claims := map[string]any{
+				"sub":            "7",
+				"email":          "operator@trustyca.io",
+				authctx.ClaimOrg: e2eTokenOrg,
+			}
+			uid := identity.NewIdentity(e2eRole, "7", e2eTokenOrg, claims, "tok", "DPoP", identity.MethodDPoP)
 			return handler(authctx.NewTrustyCtx(ctx, identity.NewRequestContext(uid, info.FullMethod)), req)
 		}))
 	privpb.RegisterBackendServer(srv, be)

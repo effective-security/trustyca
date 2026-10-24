@@ -12,6 +12,7 @@ import (
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
+	"github.com/effective-security/xpki/certutil"
 )
 
 // RegisterIssuer inserts an issuer. A Pending issuer carries its CSR, any
@@ -39,8 +40,10 @@ func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *
 		return nil, errors.New("only a root issuer has an anchor")
 	case anchor == nil:
 		return nil, errors.New("a root issuer requires its anchor")
-	case anchor.OrgID.UInt64() != im.OrgID.UInt64() || anchor.Sha256 != im.Sha256:
-		return nil, errors.New("the anchor must be the certificate of the issuer in its org")
+	}
+	err = checkAnchor(&im, anchor)
+	if err != nil {
+		return nil, err
 	}
 
 	defer DbMeasureSince(time.Now())
@@ -71,6 +74,30 @@ func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *
 		return nil, errors.WithStack(err)
 	}
 	return res, nil
+}
+
+// checkAnchor verifies that anchor is the certificate of the root issuer im
+// in its org. The identity columns of the anchor are set by the caller, so
+// they are compared with the ones its PEM derives, and the certificate of
+// the PEM with the issuer's.
+func checkAnchor(im *model.Issuer, anchor *model.RootCertificate) error {
+	crt, err := certutil.ParseFromPEM([]byte(anchor.Pem))
+	if err != nil {
+		return errors.WithMessage(err, "invalid anchor certificate")
+	}
+	want := model.NewRootCertificate(crt, im.OrgID, anchor.Trust, anchor.Pem)
+	same := want.Sha256 == im.Sha256 &&
+		want.Skid == im.Skid &&
+		anchor.OrgID.UInt64() == want.OrgID.UInt64() &&
+		anchor.Sha256 == want.Sha256 &&
+		anchor.Skid == want.Skid &&
+		anchor.Subject == want.Subject &&
+		anchor.NotBefore.UTC().Equal(want.NotBefore.UTC()) &&
+		anchor.NotAfter.UTC().Equal(want.NotAfter.UTC())
+	if !same {
+		return errors.New("the anchor must be the certificate of the issuer in its org")
+	}
+	return nil
 }
 
 // registerIssuer inserts the validated issuer row

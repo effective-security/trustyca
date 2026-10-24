@@ -627,7 +627,7 @@ func NewRegistry(caDb db.CaReadonlyDb, keys *Keys, opts Options) *Registry
 NewRegistry returns a registry over the CA tables and the key management
 
 <a name="Registry.Bootstrap"></a>
-### func \(\*Registry\) [Bootstrap](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L105>)
+### func \(\*Registry\) [Bootstrap](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L108>)
 
 ```go
 func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.Config) (*BootstrapResult, error)
@@ -635,7 +635,7 @@ func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.C
 
 Bootstrap mirrors the issuers, trust anchors and profiles of a ca\-config into the platform rows \(org\_id IS NULL\), so that the platform issuers sign tenant CA certificates and CIS serves their chains from the same tables \(DESIGN.md section 5.1\), then loads every enabled issuer, so that a key that does not load or a delegated OCSP profile that does not bind fails the start instead of the first request.
 
-It is idempotent: a registered issuer with the same key only has its runtime settings refreshed, roots are registered by thumbprint and profiles are replaced by label. It is also safe when several instances start against one fresh DB at once: an issuer insert that loses the race to another instance continues with the row that instance registered. The key of an issuer is a key URI, stored as the reference, or key material, stored wrapped; both are checked against the certificate. An issuer whose certificate is for a new key is an error: renewal keeps the label unique, so the old issuer must be archived under another label first. A disabled issuer is archived, so that it stops signing on every instance, and enabled again when the configuration enables it; a destroyed one has no key and is an error. The anchor of a root issuer is written in the transaction of the issuer insert, and registered again on every start from the stored certificate, which restores an anchor that was deleted or that a version without the transaction failed to write.
+It is idempotent: a registered issuer with the same certificate only has its runtime settings refreshed, roots are registered by thumbprint and profiles are replaced by label. It is also safe when several instances start against one fresh DB at once: an issuer insert that loses the race to another instance continues with the row that instance registered. The key of an issuer is a key URI, stored as the reference, or key material, stored wrapped; both are checked against the certificate. An issuer whose certificate is for a new key is an error: renewal keeps the label unique, so the old issuer must be archived under another label first. A certificate renewed for the registered key is an error too: renewal means a new key, so two certificates never share a SKID \(DESIGN.md section 5.4\). A disabled issuer is archived, so that it stops signing on every instance, and enabled again when the configuration enables it; a destroyed one has no key and is an error. The anchor of a root issuer is written in the transaction of the issuer insert, and registered again on every start from the stored certificate, which restores an anchor that was deleted or that a version without the transaction failed to write.
 
 <a name="Registry.FindIssuer"></a>
 ### func \(\*Registry\) [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L226>)

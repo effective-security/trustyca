@@ -224,6 +224,19 @@ func TestBootstrap(t *testing.T) {
 	writeFile(t, dir, "l2.pem", testutils.CertPEM(l2.Cert))
 	writeFile(t, dir, "l2.key", keyPEM(t, l2.Key))
 
+	// a renewed certificate for the same key is refused, and the stored
+	// certificate stays the issuer's
+	renewed := l2.Renew(t)
+	writeFile(t, dir, "l2.pem", testutils.CertPEM(renewed.Cert))
+	_, err = f.registry.Bootstrap(f.ctx, f.db, cfg)
+	assert.ErrorContains(t, err, `issuer "L2": the certificate `+certutil.SHA256Hex(renewed.Cert.Raw)+
+		" is not the registered certificate "+certutil.SHA256Hex(l2.Cert.Raw)+
+		" of key "+certutil.GetSubjectKeyID(l2.Cert)+": a renewal must use a new key")
+	stored, err := f.db.FindIssuer(f.ctx, 0, 0, "L2")
+	require.NoError(t, err)
+	assert.Equal(t, certutil.SHA256Hex(l2.Cert.Raw), stored.Sha256)
+	writeFile(t, dir, "l2.pem", testutils.CertPEM(l2.Cert))
+
 	// a key that is not the certificate's is refused
 	l3 := testutils.NewTestCA(t, "Boot L3", l1)
 	cfg.Authority.Issuers = append(cfg.Authority.Issuers, authority.IssuerConfig{
@@ -318,6 +331,16 @@ func TestBootstrap_LostRace(t *testing.T) {
 	f.db.RaceEdit = func(m *model.Issuer) { m.Skid = "other-key" }
 	_, err = f.registry.Bootstrap(f.ctx, f.db, cfg)
 	require.ErrorContains(t, err, `issuer "L1": the certificate is for key `+certutil.GetSubjectKeyID(l1.Cert)+" and the registered issuer has key other-key")
+
+	// the other instance registered the key with another certificate: a
+	// renewal with the same key is refused, as for a lookup that finds it
+	f = newFixture(t)
+	cfg = bootstrapConfig(t, t.TempDir(), root, l1, l2)
+	renewedSha := certutil.SHA256Hex(l1.Renew(t).Cert.Raw)
+	f.db.Race = true
+	f.db.RaceEdit = func(m *model.Issuer) { m.Sha256 = renewedSha }
+	_, err = f.registry.Bootstrap(f.ctx, f.db, cfg)
+	require.ErrorContains(t, err, `issuer "L1": the certificate `+certutil.SHA256Hex(l1.Cert.Raw)+" is not the registered certificate "+renewedSha)
 
 	// the other instance registered the key under another label: the
 	// conflict is reported

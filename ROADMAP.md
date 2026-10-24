@@ -47,7 +47,8 @@ or benchmark result.
 
 - DPoP replay protection is missing. porto's server-side DPoP check passes
   an empty config: no replay cache, no proof-to-token hash (`ath`), no
-  trusted URL; this is an upstream porto item. The trustyca login endpoint has
+  trusted URL; this is an upstream porto item. It applies to the `backend`
+  listener as well, where the operators authenticate with DPoP. The trustyca login endpoint has
   no replay cache either: the only one xpki ships is in-memory and rejects
   every proof once full, and login needs no authentication, so anyone could
   fill it and block DPoP logins. A Redis-backed cache is the right shape.

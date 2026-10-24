@@ -40,7 +40,7 @@ func (s *Service) PublishCrls(ctx context.Context, req *privpb.PublishCrlsReques
 		return nil, err
 	}
 	tctx := authctx.FromContext(ctx)
-	all := req.OrgID == "" && req.ProjectID == "" && tctx.OrgID().IsZero() && strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix)
+	all := req.OrgID == "" && req.ProjectID == "" && isServiceCaller(tctx)
 	var orgID xdb.ID
 	if !all {
 		orgID, err = s.scope.Org(ctx, req.OrgID)
@@ -151,7 +151,7 @@ func (s *Service) GetCRL(ctx context.Context, req *privpb.GetCrlRequest) (*pb.Cr
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing IKID")
 	}
 	tctx := authctx.FromContext(ctx)
-	public := req.OrgID == "" && tctx.OrgID().IsZero() && strings.HasPrefix(tctx.AppRole(), authctx.ServiceRolePrefix)
+	public := req.OrgID == "" && isServiceCaller(tctx)
 	var orgID xdb.ID
 	if !public {
 		var err error
