@@ -15,6 +15,7 @@ import (
 	"github.com/effective-security/trustyca/internal/ca/pbconv"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/xdb"
+	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/cryptoprov"
 	"github.com/effective-security/xpki/cryptoprov/inmemcrypto"
 	"github.com/effective-security/xpki/csr"
@@ -152,7 +153,9 @@ func (f *fixture) root(orgID, projectID xdb.ID, label string, cfg *pb.IssuerConf
 		Config:    cfg,
 	}, rootProfile, profile)
 	require.NoError(f.t, err)
-	res, err := f.db.RegisterIssuer(f.ctx, m, nil)
+	crt, err := certutil.ParseFromPEM([]byte(m.Pem))
+	require.NoError(f.t, err)
+	res, err := f.db.RegisterIssuer(f.ctx, m, model.NewRootCertificate(crt, orgID, pb.Trust_Private, m.Pem))
 	require.NoError(f.t, err)
 	return res
 }

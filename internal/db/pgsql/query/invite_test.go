@@ -49,6 +49,12 @@ FROM trustyca.invite
 WHERE email = $1 AND (expires_at IS NULL OR expires_at > Now())`,
 		},
 		{
+			query.TakeInvite, nil,
+			`DELETE FROM trustyca.invite 
+WHERE id = $1 
+RETURNING ` + schema.InviteTableInfo.AllColumns(),
+		},
+		{
 			// all scopes
 			query.DeleteInvite, []any{&query.DeleteInviteRequest{OrgID: 1, Email: "a@example.com"}},
 			`DELETE FROM trustyca.invite 

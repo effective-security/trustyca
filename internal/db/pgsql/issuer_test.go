@@ -29,7 +29,7 @@ func Test_Issuer(t *testing.T) {
 
 	// a platform root, an org intermediate and a project issuing CA
 	platformLabel := "ROOT_" + certutil.RandomString(8)
-	rootIssuer := registerIssuer(t, newTestIssuer(xdb.ID(0), xdb.ID(0), platformLabel, root, pb.AuthorityType_Root, xdb.ID(0)))
+	rootIssuer := registerRootIssuer(t, newTestIssuer(xdb.ID(0), xdb.ID(0), platformLabel, root, pb.AuthorityType_Root, xdb.ID(0)), root.Cert)
 	assert.True(t, rootIssuer.OrgID.IsZero(), "platform rows have no org")
 	assert.True(t, rootIssuer.ProjectID.IsZero())
 	assert.True(t, rootIssuer.ParentID.IsZero())
@@ -328,9 +328,17 @@ func Test_Issuer_RootAnchor(t *testing.T) {
 	root := testutils.NewTestCA(t, "Anchored Root", nil)
 	m := newTestIssuer(org.ID, xdb.ID(0), "ANCHORED", root, pb.AuthorityType_Root, xdb.ID(0))
 
+	// a root requires its anchor, any other issuer takes none
+	_, err := provider.RegisterIssuer(ctx, m, nil)
+	assert.EqualError(t, err, "a root issuer requires its anchor")
+	l1 := testutils.NewTestCA(t, "Unanchored L1", root)
+	_, err = provider.RegisterIssuer(ctx, newTestIssuer(org.ID, xdb.ID(0), "UNANCHORED", l1, pb.AuthorityType_Intermediate, xdb.ID(0)),
+		model.NewRootCertificate(l1.Cert, org.ID, pb.Trust_Private, testutils.CertPEM(l1.Cert)))
+	assert.EqualError(t, err, "only a root issuer has an anchor")
+
 	// the anchor is the certificate of the issuer in its org
 	wrong := model.NewRootCertificate(root.Cert, other.ID, pb.Trust_Private, m.Pem)
-	_, err := provider.RegisterIssuer(ctx, m, wrong)
+	_, err = provider.RegisterIssuer(ctx, m, wrong)
 	assert.EqualError(t, err, "the anchor must be the certificate of the issuer in its org")
 	foreign := testutils.NewTestCA(t, "Foreign Root", nil)
 	wrong = model.NewRootCertificate(foreign.Cert, org.ID, pb.Trust_Private, testutils.CertPEM(foreign.Cert))

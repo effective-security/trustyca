@@ -144,13 +144,17 @@ func (f *fakeDb) GetIssuerBySKID(_ context.Context, skid string) (*model.Issuer,
 }
 
 // RegisterIssuer stores the issuer and its anchor, both or neither, as the
-// transaction of the DB does
+// transaction of the DB does; a root requires its anchor, any other issuer
+// takes none
 func (f *fakeDb) RegisterIssuer(_ context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error) {
 	if err := f.enter("RegisterIssuer"); err != nil {
 		return nil, err
 	}
 	if err := m.Validate(); err != nil {
 		return nil, err
+	}
+	if (m.Type == pb.AuthorityType_Root) != (anchor != nil) {
+		return nil, errors.Errorf("a %s issuer with anchor %t", m.Type.String(), anchor != nil)
 	}
 	if anchor != nil {
 		if err := anchor.Validate(); err != nil {

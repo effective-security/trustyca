@@ -446,8 +446,9 @@ func (s *Service) issuerError(ctx context.Context, err error) error {
 // a private trust anchor of its org in the same transaction, and drops the
 // stale resolutions of its label
 func (s *Service) registerIssuer(ctx context.Context, row *model.Issuer) (*model.Issuer, error) {
+	// a root is self-signed, never Pending, so it has its certificate
 	var anchor *model.RootCertificate
-	if row.Type == pb.AuthorityType_Root && row.Pem != "" {
+	if row.Type == pb.AuthorityType_Root {
 		crt, err := certutil.ParseFromPEM([]byte(row.Pem))
 		if err != nil {
 			return nil, httperror.WrapWithCtx(ctx, err, "invalid issuer certificate")

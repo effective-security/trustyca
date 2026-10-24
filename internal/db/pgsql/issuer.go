@@ -16,10 +16,11 @@ import (
 
 // RegisterIssuer inserts an issuer. A Pending issuer carries its CSR, any
 // other status its certificate; the label is unique in its scope and the
-// SKID across the table. The anchor of a root issuer, its own certificate
-// as a trust anchor of its org, is registered as RegisterRoot does in the
-// transaction of the insert, so a root issuer is never stored without it;
-// an anchor registered in another scope fails both with ErrRootConflict.
+// SKID across the table. A root issuer requires its anchor, its own
+// certificate as a trust anchor of its org, which is registered as
+// RegisterRoot does in the transaction of the insert, so a root issuer is
+// never stored without it; any other issuer takes none. An anchor
+// registered in another scope fails both with ErrRootConflict.
 func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error) {
 	im := *m
 	if im.ID.IsZero() {
@@ -30,10 +31,15 @@ func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	if anchor == nil {
+	isRoot := im.Type == pb.AuthorityType_Root
+	switch {
+	case !isRoot && anchor == nil:
 		return p.registerIssuer(ctx, &im)
-	}
-	if anchor.OrgID.UInt64() != im.OrgID.UInt64() || anchor.Sha256 != im.Sha256 {
+	case !isRoot:
+		return nil, errors.New("only a root issuer has an anchor")
+	case anchor == nil:
+		return nil, errors.New("a root issuer requires its anchor")
+	case anchor.OrgID.UInt64() != im.OrgID.UInt64() || anchor.Sha256 != im.Sha256:
 		return nil, errors.New("the anchor must be the certificate of the issuer in its org")
 	}
 

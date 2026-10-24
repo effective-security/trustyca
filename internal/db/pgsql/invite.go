@@ -150,28 +150,19 @@ func (p *Provider) DeleteInvite(ctx context.Context, r *query.DeleteInviteReques
 func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*model.Membership, error) {
 	defer DbMeasureSince(time.Now())
 
-	invite, err := p.GetInvite(ctx, inviteID)
-	if err != nil {
-		return nil, err
-	}
-
 	user, err := p.GetUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-
-	if !strings.EqualFold(user.Email, invite.Email) {
-		return nil, errors.Errorf("invite email does not match user email")
-	}
-	if invite.IsExpired(time.Now()) {
-		return nil, errors.Errorf("invite expired")
-	}
-	return p.acceptInvite(ctx, invite, user.ID)
+	return p.acceptInvite(ctx, inviteID, user)
 }
 
-// acceptInvite adds the grant of an invite and deletes the invite in one
-// transaction, so that an invite is never both granted and pending
-func (p *Provider) acceptInvite(ctx context.Context, invite *model.Invite, userID xdb.ID) (*model.Membership, error) {
+// acceptInvite deletes the invite and adds its grant in one transaction.
+// The grant is made from the row the delete returns, the invite as it is
+// then (a re-invite updates the row in place), so an invite that was
+// withdrawn or accepted after the caller read it is not found and grants
+// nothing; an invite of another email or an expired one rolls back.
+func (p *Provider) acceptInvite(ctx context.Context, inviteID uint64, user *model.User) (*model.Membership, error) {
 	tx, err := p.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -184,19 +175,25 @@ func (p *Provider) acceptInvite(ctx context.Context, invite *model.Invite, userI
 	}()
 
 	txProvider := tx.(*Provider)
+	invite, err := txProvider.takeInvite(ctx, inviteID)
+	if err != nil {
+		return nil, err
+	}
+	if !strings.EqualFold(user.Email, invite.Email) {
+		return nil, errors.Errorf("invite email does not match user email")
+	}
+	if invite.IsExpired(time.Now()) {
+		return nil, errors.Errorf("invite expired")
+	}
+
 	membership, err := txProvider.AddMember(ctx, &model.Membership{
 		OrgID:     invite.OrgID,
 		ProjectID: invite.ProjectID,
-		UserID:    userID,
+		UserID:    user.ID,
 		Role:      invite.Role,
 	})
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to add member")
-	}
-
-	_, err = txProvider.DeleteInviteByID(ctx, invite.ID.UInt64())
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to delete invite")
 	}
 
 	err = tx.Commit()
@@ -206,10 +203,24 @@ func (p *Provider) acceptInvite(ctx context.Context, invite *model.Invite, userI
 	return membership, nil
 }
 
+// takeInvite deletes an invite by ID and returns the deleted row; the
+// delete locks the row until the transaction ends
+func (p *Provider) takeInvite(ctx context.Context, id uint64) (*model.Invite, error) {
+	q, name := query.TakeInvite()
+	defer DbMeasureQuerySince(name, time.Now())
+
+	res, err := xdb.QueryRow[model.Invite](ctx, p, q, id)
+	if err != nil {
+		return nil, xdb.CheckNotFoundError(err, schema.InviteTableInfo.Name, id)
+	}
+	return res, nil
+}
+
 // AcceptInvites moves the pending invites for a user's email to grants at
 // the invites' scopes, and returns the grants it created. Each invite is
-// accepted in a transaction of its own: an invite whose grant or delete
-// fails is logged, stays pending and is not returned.
+// accepted in a transaction of its own: an invite whose grant fails is
+// logged, stays pending and is not returned, and one withdrawn since the
+// list is not found and grants nothing.
 func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error) {
 	invites, err := p.GetUserInvites(ctx, user.Email)
 	if err != nil {
@@ -222,7 +233,7 @@ func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.M
 
 	accepted := make(model.MembershipSlice, 0, len(invites))
 	for _, inv := range invites {
-		m, err := p.acceptInvite(ctx, inv, user.ID)
+		m, err := p.acceptInvite(ctx, inv.ID.UInt64(), user)
 		if err != nil {
 			logger.ContextKV(ctx, xlog.ERROR, "role", inv.Role, "user", user.ID.UnderscoreString(), "err", err.Error())
 			continue

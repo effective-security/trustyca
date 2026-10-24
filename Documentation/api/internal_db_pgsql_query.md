@@ -82,6 +82,7 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
 - [func RegisterRoot\(args ...any\) \(string, string\)](<#RegisterRoot>)
 - [func RegisterUser\(args ...any\) \(string, string\)](<#RegisterUser>)
 - [func SetIssuerCrlNumber\(args ...any\) \(string, string\)](<#SetIssuerCrlNumber>)
+- [func TakeInvite\(args ...any\) \(string, string\)](<#TakeInvite>)
 - [func UpdateCertificate\(args ...any\) \(string, string\)](<#UpdateCertificate>)
 - [func UpdateCertificateStatus\(args ...any\) \(string, string\)](<#UpdateCertificateStatus>)
 - [func UpdateIssuer\(args ...any\) \(string, string\)](<#UpdateIssuer>)
@@ -239,7 +240,7 @@ func DeleteExpiredCertificates(args ...any) (string, string)
 DeleteExpiredCertificates returns SQL query to delete a batch of certificates that expired before a time; the revocations follow by cascade. The arguments are the time and the batch limit.
 
 <a name="DeleteInvite"></a>
-## func [DeleteInvite](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L112>)
+## func [DeleteInvite](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L124>)
 
 ```go
 func DeleteInvite(args ...any) (string, string)
@@ -715,6 +716,15 @@ func SetIssuerCrlNumber(args ...any) (string, string)
 
 SetIssuerCrlNumber returns SQL query to record the number of a published CRL on the issuer whose SKID is the CRL's IKID. The number must be greater than the current one, so the CRL number of an IKID only grows: the arguments are the number, the issuer ID, the IKID and the number.
 
+<a name="TakeInvite"></a>
+## func [TakeInvite](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L89>)
+
+```go
+func TakeInvite(args ...any) (string, string)
+```
+
+TakeInvite returns SQL query to delete an invite by ID and return the deleted row, so that an acceptance grants the invite it deletes
+
 <a name="UpdateCertificate"></a>
 ## func [UpdateCertificate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L78>)
 
@@ -877,7 +887,7 @@ func (r *DeleteExpiredCertificatesRequest) Validate() error
 Validate returns error if the request is not valid
 
 <a name="DeleteInviteRequest"></a>
-## type [DeleteInviteRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L91-L96>)
+## type [DeleteInviteRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L103-L108>)
 
 DeleteInviteRequest defines request to delete invites. ProjectID deletes the Project scope invite of the project; Scope Org deletes the Org scope invite only; otherwise invites of all scopes matching OrgID and Email are deleted.
 
@@ -891,7 +901,7 @@ type DeleteInviteRequest struct {
 ```
 
 <a name="DeleteInviteRequest.QueryParams"></a>
-### func \(\*DeleteInviteRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L99>)
+### func \(\*DeleteInviteRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/invite.go#L111>)
 
 ```go
 func (r *DeleteInviteRequest) QueryParams() xdb.QueryParams

@@ -170,7 +170,7 @@ func (s *Service) AuthProviderForEmail(ctx context.Context, email string) (cl *o
 AuthProviderForEmail checks if the email is allowed to login, and returns oauth2client.Client for the provider. On a local instance \(config.Service.IsLocal\) an address with the localEmailPrefix signs in through the \`local\` provider, which needs no invitation; elsewhere it is an ordinary address.
 
 <a name="Service.AuthProvidersHandler"></a>
-### func \(\*Service\) [AuthProvidersHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L74>)
+### func \(\*Service\) [AuthProvidersHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L75>)
 
 ```go
 func (s *Service) AuthProvidersHandler() restserver.Handle
@@ -206,7 +206,7 @@ func (s *Service) AuthorizeHandler() restserver.Handle
 AuthorizeHandler handles pb.PathForAuthorize
 
 <a name="Service.CallbackHandler"></a>
-### func \(\*Service\) [CallbackHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L111>)
+### func \(\*Service\) [CallbackHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L112>)
 
 ```go
 func (s *Service) CallbackHandler() restserver.Handle
@@ -242,7 +242,7 @@ func (s *Service) Db() db.OrgsDb
 Db returns OrgsDb for unit tests
 
 <a name="Service.ExchangeCode"></a>
-### func \(\*Service\) [ExchangeCode](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L809>)
+### func \(\*Service\) [ExchangeCode](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L818>)
 
 ```go
 func (s *Service) ExchangeCode(ctx context.Context, req *pb.ExchangeCodeRequest) (*pb.Token, error)
@@ -269,7 +269,7 @@ func (s *Service) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.C
 GetCallerScope returns the caller's resolved scope and the method access rules
 
 <a name="Service.GetProviders"></a>
-### func \(\*Service\) [GetProviders](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L49>)
+### func \(\*Service\) [GetProviders](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L50>)
 
 ```go
 func (s *Service) GetProviders(ctx context.Context, req *pb.AuthProvidersRequest) (*pb.AuthProvidersResponse, error)
@@ -278,7 +278,7 @@ func (s *Service) GetProviders(ctx context.Context, req *pb.AuthProvidersRequest
 GetProviders returns the list of supported providers
 
 <a name="Service.GetUserInfo"></a>
-### func \(\*Service\) [GetUserInfo](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L705>)
+### func \(\*Service\) [GetUserInfo](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L714>)
 
 ```go
 func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oauth2client.ClientConfig, _ *oauth2.Config, token *oauth2.Token) (*pb.UserInfo, jwt.MapClaims, error)

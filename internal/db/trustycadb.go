@@ -214,9 +214,9 @@ type CaDb interface {
 	CaReadonlyDb
 
 	// RegisterIssuer inserts an issuer: a Pending one with its CSR, any
-	// other status with its certificate. The anchor of a root issuer (its
-	// certificate as a trust anchor of its org, nil for any other issuer)
-	// is registered in the same transaction, as RegisterRoot does.
+	// other status with its certificate. A root issuer requires its anchor,
+	// its certificate as a trust anchor of its org, registered in the same
+	// transaction as RegisterRoot does; any other issuer takes nil.
 	RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error)
 	// UpdateIssuer changes the lifecycle status or the runtime settings of
 	// an issuer; Destroyed also clears the protected key material

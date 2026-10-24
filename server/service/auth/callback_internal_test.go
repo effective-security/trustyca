@@ -39,6 +39,45 @@ func Test_oauthErrorCode(t *testing.T) {
 	}
 }
 
+func Test_writeOauthResponse(t *testing.T) {
+	t.Parallel()
+	vals := url.Values{
+		pb.OAuthParamError:            {pb.OAuthErrorAccessDenied},
+		pb.OAuthParamErrorDescription: {"no access"},
+	}
+	tcs := []struct {
+		name     string
+		redirect string
+		mode     string
+		exp      string
+	}{
+		{"query", "https://client/cb", "", "https://client/cb?error=access_denied&error_description=no+access"},
+		// the parameters are merged into the query of the redirect URI
+		{"query_of_client", "https://client/cb?tenant=1", "query", "https://client/cb?error=access_denied&error_description=no+access&tenant=1"},
+		{"fragment", "https://client/cb?tenant=1", "fragment", "https://client/cb?tenant=1#error=access_denied&error_description=no+access"},
+		// the fragment of the redirect URI is replaced
+		{"fragment_of_client", "https://client/cb#old", "fragment", "https://client/cb#error=access_denied&error_description=no+access"},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(http.MethodGet, pb.PathForAuthCallback, nil)
+			writeOauthResponse(w, r, &State{RedirectURL: tc.redirect, ResponseMode: tc.mode}, vals)
+			require.Equal(t, http.StatusSeeOther, w.Code)
+			assert.Equal(t, tc.exp, w.Header().Get(header.Location))
+		})
+	}
+
+	// form_post posts the parameters to the redirect URI as it is
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, pb.PathForAuthCallback, nil)
+	writeOauthResponse(w, r, &State{RedirectURL: "https://client/cb?tenant=1", ResponseMode: "form_post"}, vals)
+	require.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `action="https://client/cb?tenant=1"`)
+	assert.Contains(t, w.Body.String(), `name="error" value="access_denied"`)
+}
+
 func Test_writeOauthError(t *testing.T) {
 	t.Parallel()
 	const redirect = "https://localhost:38989/landing"

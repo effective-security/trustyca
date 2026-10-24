@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"slices"
@@ -521,21 +522,29 @@ func writeOauthError(w http.ResponseWriter, r *http.Request, st *State, err erro
 	})
 }
 
+// writeOauthResponse answers the client on its redirect URI in the response
+// mode of the state: the parameters are merged into the query the redirect
+// URI may already have, replace its fragment, or are posted to it
 func writeOauthResponse(w http.ResponseWriter, r *http.Request, st *State, vals url.Values) {
-	if st.ResponseMode == "" || st.ResponseMode == "query" {
-		url := st.RedirectURL + "?" + vals.Encode()
-		http.Redirect(w, r, url, http.StatusSeeOther)
-		return
+	switch st.ResponseMode {
+	case "", "query":
+		u, err := url.Parse(st.RedirectURL)
+		if err != nil {
+			marshal.WriteJSON(w, r, httperror.InvalidRequest("invalid redirect_uri").WithCause(err))
+			return
+		}
+		q := u.Query()
+		maps.Copy(q, vals)
+		u.RawQuery = q.Encode()
+		http.Redirect(w, r, u.String(), http.StatusSeeOther)
+	case "fragment":
+		base, _, _ := strings.Cut(st.RedirectURL, "#")
+		http.Redirect(w, r, base+"#"+vals.Encode(), http.StatusSeeOther)
+	default:
+		// form_post
+		w.Header().Add("Content-Type", "text/html;charset=UTF-8")
+		writeAuthorizeFormPostResponse(w, st.RedirectURL, vals, formPostDefaultTemplate)
 	}
-	if st.ResponseMode == "fragment" {
-		url := st.RedirectURL + "#" + vals.Encode()
-		http.Redirect(w, r, url, http.StatusSeeOther)
-		return
-	}
-
-	// form_post
-	w.Header().Add("Content-Type", "text/html;charset=UTF-8")
-	writeAuthorizeFormPostResponse(w, st.RedirectURL, vals, formPostDefaultTemplate)
 }
 
 var formPostDefaultTemplate = template.Must(template.New("form_post").Parse(`<html>
