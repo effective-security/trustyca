@@ -119,7 +119,8 @@ type OrgsDb interface {
 	// AcceptInvite accepts an org invite for a user
 	AcceptInvite(ctx context.Context, inviteID, userID uint64) (*model.Membership, error)
 	// AcceptInvites moves the pending invites for a user's email to grants
-	// and returns the grants it created
+	// and returns the grants it created; each invite is accepted in a
+	// transaction of its own
 	AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error)
 
 	// CreateEvent returns new Event
@@ -207,14 +208,16 @@ type CaReadonlyDb interface {
 // Every mutation of an existing row names the exact org scope of the row
 // (a zero orgID is the platform), so a row of another org is not found or
 // not deleted. State changes that must agree are one transaction: a
-// certificate and its issue event, a revocation and the certificate status,
-// a CRL and the issuer's CRL number.
+// certificate and its issue event, a root issuer and its trust anchor, a
+// revocation and the certificate status, a CRL and the issuer's CRL number.
 type CaDb interface {
 	CaReadonlyDb
 
 	// RegisterIssuer inserts an issuer: a Pending one with its CSR, any
-	// other status with its certificate
-	RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
+	// other status with its certificate. A root issuer requires its anchor,
+	// its certificate as a trust anchor of its org, registered in the same
+	// transaction as RegisterRoot does; any other issuer takes nil.
+	RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error)
 	// UpdateIssuer changes the lifecycle status or the runtime settings of
 	// an issuer; Destroyed also clears the protected key material
 	UpdateIssuer(ctx context.Context, req *query.UpdateIssuerRequest) (*model.Issuer, error)

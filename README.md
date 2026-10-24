@@ -173,8 +173,10 @@ cached until their next update.
 
 The URL templates of an issuer (`aia.issuer_url`, `crl_url`, `ocsp_url` of
 a ca-config file, `Config` of `RegisterIssuer`) name the AIA routes with
-`:ISSUER_ID` or `${ISSUER_ID}` for the key identifier, as in
-`etc/dev/ca-config.local.yaml`.
+`:ISSUER_ID` for the key identifier, as in `etc/dev/ca-config.local.yaml`.
+The API also accepts `${ISSUER_ID}`, but a ca-config file cannot use it:
+the loader expands `${...}` as an environment variable, and the server
+refuses to start with such a template.
 
 ## Certification Authority
 
@@ -211,9 +213,9 @@ admin certificate; every request names the org:
     # onboard an org: its issuing CA under the platform intermediate, and the template profiles
     trustycactl ca org bootstrap --org $ORG --parent trusty.l1 --templates etc/dev/profiles \
         --cn "Example Issuing CA" --ocsp-profile ocsp \
-        --crl-url 'http://localhost:8888/v1/crl/${ISSUER_ID}' \
-        --ocsp-url 'http://localhost:8888/v1/ocspi/${ISSUER_ID}' \
-        --aia-url 'http://localhost:8888/v1/cert/${ISSUER_ID}'
+        --crl-url http://localhost:8888/v1/crl/:ISSUER_ID \
+        --ocsp-url http://localhost:8888/v1/ocspi/:ISSUER_ID \
+        --aia-url http://localhost:8888/v1/cert/:ISSUER_ID
     # the CA of the org
     trustycactl ca issuer list --org $ORG
     trustycactl ca profile register --org $ORG --file etc/dev/profiles/server.yaml --issuer issuing

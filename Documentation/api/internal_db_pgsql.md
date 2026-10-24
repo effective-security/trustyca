@@ -8,7 +8,7 @@ import "github.com/effective-security/trustyca/internal/db/pgsql"
 
 Package pgsql implements the database interfaces of internal/db on PostgreSQL.
 
-Provider wraps an xdb.Provider; every method builds its SQL through the query package, measures the query and maps a missing row to xdb.ErrorNotFound. A method that writes more than one row \(AcceptInvite, RegisterCertificate with an event, RevokeCertificate, PublishCrl\) opens a transaction with BeginTx and runs every statement on the provider it returns:
+Provider wraps an xdb.Provider; every method builds its SQL through the query package, measures the query and maps a missing row to xdb.ErrorNotFound. A method that writes more than one row \(AcceptInvite, RegisterCertificate with an event, RegisterIssuer with an anchor, RevokeCertificate, PublishCrl\) opens a transaction with BeginTx and runs every statement on the provider it returns:
 
 ```
 tx, err := p.BeginTx(ctx, nil)
@@ -107,7 +107,7 @@ Lists page by offset or by a keyset cursor on id \(listRows\). The tests need th
   - [func \(p \*Provider\) QueryRowContext\(ctx context.Context, query string, args ...any\) \*sql.Row](<#Provider.QueryRowContext>)
   - [func \(p \*Provider\) RegisterAPIKey\(ctx context.Context, m \*model.APIKey\) \(\*model.APIKey, error\)](<#Provider.RegisterAPIKey>)
   - [func \(p \*Provider\) RegisterCertificate\(ctx context.Context, m \*model.Certificate, evt \*model.Event\) \(\*model.Certificate, error\)](<#Provider.RegisterCertificate>)
-  - [func \(p \*Provider\) RegisterIssuer\(ctx context.Context, m \*model.Issuer\) \(\*model.Issuer, error\)](<#Provider.RegisterIssuer>)
+  - [func \(p \*Provider\) RegisterIssuer\(ctx context.Context, m \*model.Issuer, anchor \*model.RootCertificate\) \(\*model.Issuer, error\)](<#Provider.RegisterIssuer>)
   - [func \(p \*Provider\) RegisterOrg\(ctx context.Context, m \*model.Org, ownerID uint64\) \(\*model.Org, error\)](<#Provider.RegisterOrg>)
   - [func \(p \*Provider\) RegisterProfile\(ctx context.Context, m \*model.CertificateProfile\) \(\*model.CertificateProfile, error\)](<#Provider.RegisterProfile>)
   - [func \(p \*Provider\) RegisterProject\(ctx context.Context, m \*model.Project\) \(\*model.Project, error\)](<#Provider.RegisterProject>)
@@ -230,16 +230,16 @@ func (p *Provider) AcceptInvite(ctx context.Context, inviteID, userID uint64) (*
 AcceptInvite accepts an invite for a user, adds the user as a member at the invite's scope with the invited role, and removes the invite.
 
 <a name="Provider.AcceptInvites"></a>
-### func \(\*Provider\) [AcceptInvites](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/invite.go#L208>)
+### func \(\*Provider\) [AcceptInvites](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/invite.go#L224>)
 
 ```go
 func (p *Provider) AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error)
 ```
 
-AcceptInvites moves the pending invites for a user's email to grants at the invites' scopes, and returns the grants it created. An invite whose grant fails is logged and skipped; a grant whose invite is not deleted is still returned.
+AcceptInvites moves the pending invites for a user's email to grants at the invites' scopes, and returns the grants it created. Each invite is accepted in a transaction of its own: an invite whose grant fails is logged, stays pending and is not returned, and one withdrawn since the list is not found and grants nothing.
 
 <a name="Provider.ActivateIssuer"></a>
-### func \(\*Provider\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L98>)
+### func \(\*Provider\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L146>)
 
 ```go
 func (p *Provider) ActivateIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
@@ -396,7 +396,7 @@ func (p *Provider) DeleteInviteByID(ctx context.Context, id uint64) (int64, erro
 DeleteInviteByID deletes an invite by ID
 
 <a name="Provider.DeleteIssuer"></a>
-### func \(\*Provider\) [DeleteIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L209>)
+### func \(\*Provider\) [DeleteIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L257>)
 
 ```go
 func (p *Provider) DeleteIssuer(ctx context.Context, orgID, id uint64) (int64, error)
@@ -423,7 +423,7 @@ func (p *Provider) DeleteMember(ctx context.Context, r *query.DeleteMemberReques
 DeleteMember deletes grants at the requested scope
 
 <a name="Provider.DeleteOrg"></a>
-### func \(\*Provider\) [DeleteOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L159>)
+### func \(\*Provider\) [DeleteOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L161>)
 
 ```go
 func (p *Provider) DeleteOrg(ctx context.Context, id uint64) (map[string]int64, error)
@@ -486,7 +486,7 @@ func (p *Provider) ExpireCertificates(ctx context.Context, req *query.ExpireCert
 ExpireCertificates sets the status of a batch of Active certificates whose validity ended before the time to Expired, lowest IDs first, and returns the number of certificates it changed. The caller repeats the call until a batch is smaller than the limit: a changed row leaves the set, so no offset is needed.
 
 <a name="Provider.FindIssuer"></a>
-### func \(\*Provider\) [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L152>)
+### func \(\*Provider\) [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L200>)
 
 ```go
 func (p *Provider) FindIssuer(ctx context.Context, orgID, projectID uint64, label string) (*model.Issuer, error)
@@ -495,7 +495,7 @@ func (p *Provider) FindIssuer(ctx context.Context, orgID, projectID uint64, labe
 FindIssuer returns the issuer of the exact scope and label: a zero orgID is the platform scope and a zero projectID the org scope. The resolution of a label through the scopes is the caller's.
 
 <a name="Provider.FindOrg"></a>
-### func \(\*Provider\) [FindOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L124>)
+### func \(\*Provider\) [FindOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L126>)
 
 ```go
 func (p *Provider) FindOrg(ctx context.Context, alias string) (*model.Org, error)
@@ -603,7 +603,7 @@ func (p *Provider) GetInviteByOrgAndEmail(ctx context.Context, orgID, projectID 
 GetInviteByOrgAndEmail returns an invite by org, scope and email. projectID 0 returns the Org scope invite.
 
 <a name="Provider.GetIssuer"></a>
-### func \(\*Provider\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L138>)
+### func \(\*Provider\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L186>)
 
 ```go
 func (p *Provider) GetIssuer(ctx context.Context, id uint64) (*model.Issuer, error)
@@ -612,7 +612,7 @@ func (p *Provider) GetIssuer(ctx context.Context, id uint64) (*model.Issuer, err
 GetIssuer returns an issuer by ID
 
 <a name="Provider.GetIssuerBySKID"></a>
-### func \(\*Provider\) [GetIssuerBySKID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L171>)
+### func \(\*Provider\) [GetIssuerBySKID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L219>)
 
 ```go
 func (p *Provider) GetIssuerBySKID(ctx context.Context, skid string) (*model.Issuer, error)
@@ -639,7 +639,7 @@ func (p *Provider) GetLoginsByEmail(ctx context.Context, email string) (model.Lo
 GetLoginsByEmail returns Logins
 
 <a name="Provider.GetOrg"></a>
-### func \(\*Provider\) [GetOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L112>)
+### func \(\*Provider\) [GetOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L114>)
 
 ```go
 func (p *Provider) GetOrg(ctx context.Context, id uint64) (*model.Org, error)
@@ -729,7 +729,7 @@ func (p *Provider) GetUserMemberships(ctx context.Context, userID uint64) (model
 GetUserMemberships returns all grants of a user in active orgs
 
 <a name="Provider.GetUserOrgs"></a>
-### func \(\*Provider\) [GetUserOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L136>)
+### func \(\*Provider\) [GetUserOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L138>)
 
 ```go
 func (p *Provider) GetUserOrgs(ctx context.Context, userID uint64) (model.OrgSlice, error)
@@ -783,7 +783,7 @@ func (p *Provider) ListEvents(ctx context.Context, r *query.ListEventsRequest) (
 ListEvents returns events
 
 <a name="Provider.ListIssuers"></a>
-### func \(\*Provider\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L183>)
+### func \(\*Provider\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L231>)
 
 ```go
 func (p *Provider) ListIssuers(ctx context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error)
@@ -810,7 +810,7 @@ func (p *Provider) ListMemberships(ctx context.Context, req *query.ListMembershi
 ListMemberships lists memberships
 
 <a name="Provider.ListOrgs"></a>
-### func \(\*Provider\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L98>)
+### func \(\*Provider\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L100>)
 
 ```go
 func (p *Provider) ListOrgs(ctx context.Context, req *query.ListOrgsRequest) (*model.OrgResult, error)
@@ -945,22 +945,22 @@ func (p *Provider) RegisterCertificate(ctx context.Context, m *model.Certificate
 RegisterCertificate inserts the issuance record of a certificate; the status defaults to Active. The thumbprint and the issuer and serial number pair are unique. With an event, the insert and the event are one transaction, and the event references the certificate when it has no reference of its own.
 
 <a name="Provider.RegisterIssuer"></a>
-### func \(\*Provider\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L19>)
+### func \(\*Provider\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L24>)
 
 ```go
-func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
+func (p *Provider) RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error)
 ```
 
-RegisterIssuer inserts an issuer. A Pending issuer carries its CSR, any other status its certificate; the label is unique in its scope and the SKID across the table.
+RegisterIssuer inserts an issuer. A Pending issuer carries its CSR, any other status its certificate; the label is unique in its scope and the SKID across the table. A root issuer requires its anchor, its own certificate as a trust anchor of its org, which is registered as RegisterRoot does in the transaction of the insert, so a root issuer is never stored without it; any other issuer takes none. An anchor registered in another scope fails both with ErrRootConflict.
 
 <a name="Provider.RegisterOrg"></a>
-### func \(\*Provider\) [RegisterOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L19>)
+### func \(\*Provider\) [RegisterOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L20>)
 
 ```go
 func (p *Provider) RegisterOrg(ctx context.Context, m *model.Org, ownerID uint64) (*model.Org, error)
 ```
 
-RegisterOrg registers a new org
+RegisterOrg registers a new org and, when ownerID is set, its Owner in one transaction: an org is never left without its Owner
 
 <a name="Provider.RegisterProfile"></a>
 ### func \(\*Provider\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/profile.go#L19>)
@@ -1035,7 +1035,7 @@ func (p *Provider) UpdateCertificate(ctx context.Context, req *query.UpdateCerti
 UpdateCertificate replaces the label, the client metadata or the published locations of a certificate of the exact org scope
 
 <a name="Provider.UpdateIssuer"></a>
-### func \(\*Provider\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L69>)
+### func \(\*Provider\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L117>)
 
 ```go
 func (p *Provider) UpdateIssuer(ctx context.Context, req *query.UpdateIssuerRequest) (*model.Issuer, error)
@@ -1053,7 +1053,7 @@ func (p *Provider) UpdateMemberRole(ctx context.Context, req *query.UpdateMember
 UpdateMemberRole updates the role of a grant at the given scope
 
 <a name="Provider.UpdateOrg"></a>
-### func \(\*Provider\) [UpdateOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L78>)
+### func \(\*Provider\) [UpdateOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L80>)
 
 ```go
 func (p *Provider) UpdateOrg(ctx context.Context, req *query.UpdateOrgRequest) (*model.Org, error)

@@ -27,11 +27,11 @@ func tokenOrg(ctx context.Context) (xdb.ID, error) {
 // preconditionFailed returns the error of a request that the current state
 // of the org or its resources refuses, and that the caller can make pass by
 // changing that state: HTTP 409 Conflict with code "conflict", and gRPC
-// FailedPrecondition. The pinned porto maps FailedPrecondition to HTTP 500,
-// which also hides the message from a REST client, so the error carries
-// both statuses instead of being built by NewGrpcFromCtx. Return it as is:
-// httperror.Wrap with a message rebuilds it from its code, and gRPC gets
-// AlreadyExists. A Go client of the gRPC API still converts it to a 500.
+// FailedPrecondition. The pinned porto maps FailedPrecondition to HTTP 400
+// bad_request, so the error carries both statuses instead of being built by
+// NewGrpcFromCtx. Return it as is: httperror.Wrap with a message rebuilds it
+// from its code, and gRPC gets AlreadyExists. A Go client of the gRPC API
+// still converts it to a 400.
 func preconditionFailed(ctx context.Context, msgFormat string, vals ...any) *httperror.Error {
 	e := httperror.NewFromCtx(ctx, http.StatusConflict, httperror.CodeConflict, msgFormat, vals...)
 	e.RPCStatus = codes.FailedPrecondition

@@ -40,6 +40,7 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 - [func IsSelfSigned\(crt \*x509.Certificate\) bool](<#IsSelfSigned>)
 - [func KeyLabel\(orgID, projectID xdb.ID, label string\) string](<#KeyLabel>)
 - [func KeySpec\(spec \*pb.KeySpec\) \(string, int, error\)](<#KeySpec>)
+- [func LoadBootstrapConfig\(path string\) \(\*authority.Config, error\)](<#LoadBootstrapConfig>)
 - [func PublicKeysEqual\(a, b crypto.PublicKey\) bool](<#PublicKeysEqual>)
 - [func SubjectKeyID\(pub crypto.PublicKey\) \(string, error\)](<#SubjectKeyID>)
 - [type BootstrapResult](<#BootstrapResult>)
@@ -223,6 +224,15 @@ func KeySpec(spec *pb.KeySpec) (string, int, error)
 
 KeySpec returns the algorithm and size of the key to generate for a request; a nil or empty specification takes the defaults, and a size the algorithm does not accept is an error
 
+<a name="LoadBootstrapConfig"></a>
+## func [LoadBootstrapConfig](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L38>)
+
+```go
+func LoadBootstrapConfig(path string) (*authority.Config, error)
+```
+
+LoadBootstrapConfig loads the ca\-config of the platform bootstrap with authority.LoadConfig, which expands \`$VAR\` and \`$\{VAR\}\` as environment variables in every value: a \`$\{ISSUER\_ID\}\` in the AIA, CRL or OCSP URL template of an issuer would become an empty string, and every certificate the issuer signs would name the URL without the issuer. A file whose templates name the issuer that way is refused before it is loaded; file issuers use pbconv.IssuerIDPlaceholder \(\`:ISSUER\_ID\`\).
+
 <a name="PublicKeysEqual"></a>
 ## func [PublicKeysEqual](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L368>)
 
@@ -242,7 +252,7 @@ func SubjectKeyID(pub crypto.PublicKey) (string, error)
 SubjectKeyID returns the key identifier of a public key: the SHA\-1 of its subjectPublicKey bits \(RFC 5280 section 4.2.1.2 method 1\). It is the identifier the CA puts in the certificates it issues, the IKID of the certificates the key signs and the issuer key hash of their OCSP requests, so a Pending issuer is identified by it before it has a certificate.
 
 <a name="BootstrapResult"></a>
-## type [BootstrapResult](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L26-L38>)
+## type [BootstrapResult](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L69-L81>)
 
 BootstrapResult counts the rows a bootstrap registered or updated
 
@@ -617,7 +627,7 @@ func NewRegistry(caDb db.CaReadonlyDb, keys *Keys, opts Options) *Registry
 NewRegistry returns a registry over the CA tables and the key management
 
 <a name="Registry.Bootstrap"></a>
-### func \(\*Registry\) [Bootstrap](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L60>)
+### func \(\*Registry\) [Bootstrap](<https://github.com/effective-security/trustyca/blob/main/internal/ca/bootstrap.go#L105>)
 
 ```go
 func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.Config) (*BootstrapResult, error)
@@ -625,7 +635,7 @@ func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.C
 
 Bootstrap mirrors the issuers, trust anchors and profiles of a ca\-config into the platform rows \(org\_id IS NULL\), so that the platform issuers sign tenant CA certificates and CIS serves their chains from the same tables \(DESIGN.md section 5.1\), then loads every enabled issuer, so that a key that does not load or a delegated OCSP profile that does not bind fails the start instead of the first request.
 
-It is idempotent: a registered issuer with the same key only has its runtime settings refreshed, roots are registered by thumbprint and profiles are replaced by label. It is also safe when several instances start against one fresh DB at once: an issuer insert that loses the race to another instance continues with the row that instance registered. The key of an issuer is a key URI, stored as the reference, or key material, stored wrapped; both are checked against the certificate. An issuer whose certificate is for a new key is an error: renewal keeps the label unique, so the old issuer must be archived under another label first. A disabled issuer is archived, so that it stops signing on every instance, and enabled again when the configuration enables it; a destroyed one has no key and is an error. The anchor of a root issuer is registered again on every start, since it is a separate row that an earlier start may have failed to write.
+It is idempotent: a registered issuer with the same key only has its runtime settings refreshed, roots are registered by thumbprint and profiles are replaced by label. It is also safe when several instances start against one fresh DB at once: an issuer insert that loses the race to another instance continues with the row that instance registered. The key of an issuer is a key URI, stored as the reference, or key material, stored wrapped; both are checked against the certificate. An issuer whose certificate is for a new key is an error: renewal keeps the label unique, so the old issuer must be archived under another label first. A disabled issuer is archived, so that it stops signing on every instance, and enabled again when the configuration enables it; a destroyed one has no key and is an error. The anchor of a root issuer is written in the transaction of the issuer insert, and registered again on every start from the stored certificate, which restores an anchor that was deleted or that a version without the transaction failed to write.
 
 <a name="Registry.FindIssuer"></a>
 ### func \(\*Registry\) [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L226>)

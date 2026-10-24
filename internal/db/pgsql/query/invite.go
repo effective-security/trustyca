@@ -84,6 +84,18 @@ func GetUserInvites(args ...any) (string, string) {
 	})
 }
 
+// TakeInvite returns SQL query to delete an invite by ID and return the
+// deleted row, so that an acceptance grants the invite it deletes
+func TakeInvite(args ...any) (string, string) {
+	const key = "TakeInvite"
+	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
+		return schema.InviteTableInfo.
+			DeleteFrom().
+			Where(schema.Invite.ID.Name+" = ?", nil).
+			Returning(schema.InviteTableInfo.AllColumns())
+	})
+}
+
 // DeleteInviteRequest defines request to delete invites.
 // ProjectID deletes the Project scope invite of the project;
 // Scope Org deletes the Org scope invite only;

@@ -448,8 +448,9 @@ had their key removed from the provider; the last CRL stays published until
 ### 4.3 `root_certificate`
 
 Trust anchors published by CIS: `org_id, skid, subject, sha256, trust, pem, validity`.
-Roots created by `RegisterIssuer(Type=Root)` are inserted automatically;
-external anchors are added with `RegisterRoot`.
+Roots created by `RegisterIssuer(Type=Root)` or imported are inserted in
+the transaction of the issuer row, so a root issuer never exists without
+its anchor; external anchors are added with `RegisterRoot`.
 
 ### 4.4 `certificate_profile`
 
@@ -519,12 +520,14 @@ records where the CRL was uploaded when external publishing is enabled.
    error until the old issuer is archived under another label (section 5.4).
    A `disabled` issuer is archived, so that it stops signing on every
    instance, and becomes Active again when the configuration enables it; a
-   destroyed one is an error. The anchor of a root issuer is registered
-   again on every start, since it is a separate row. After the rows, every
+   destroyed one is an error. The anchor of a root issuer is written with
+   the issuer row, and registered again on every start, which restores a
+   deleted anchor. After the rows, every
    enabled issuer is loaded with its key and delegated OCSP profile, and
    one that does not load fails the start rather than the first request.
    The URL templates of file issuers use `:ISSUER_ID`, because the config
-   loader expands `${...}` as environment variables.
+   loader expands `${...}` as environment variables; a file whose templates
+   name the issuer as `${ISSUER_ID}` or `$ISSUER_ID` fails the start.
 2. **Tenant issuers** are created through `pb.CA` and live only in the DB.
    The first issuing CA of an org is signed by a platform intermediate that
    allows a CA profile: in `etc/dev/ca-config.local.yaml` the L1 CA

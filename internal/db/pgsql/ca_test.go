@@ -34,10 +34,26 @@ func newTestIssuer(orgID, projectID xdb.ID, label string, ca *testutils.TestCA, 
 // registerIssuer registers the issuer and deletes it after the test
 func registerIssuer(t *testing.T, m *model.Issuer) *model.Issuer {
 	t.Helper()
-	res, err := provider.RegisterIssuer(ctx, m)
+	res, err := provider.RegisterIssuer(ctx, m, nil)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_, _ = provider.DeleteIssuer(ctx, res.OrgID.UInt64(), res.ID.UInt64())
+	})
+	return res
+}
+
+// registerRootIssuer registers the root issuer with its certificate as the
+// anchor of its org, and deletes both after the test
+func registerRootIssuer(t *testing.T, m *model.Issuer, crt *x509.Certificate) *model.Issuer {
+	t.Helper()
+	anchor := model.NewRootCertificate(crt, m.OrgID, pb.Trust_Private, m.Pem)
+	// a new anchor keeps the ID it is given
+	anchor.ID = provider.NextID()
+	res, err := provider.RegisterIssuer(ctx, m, anchor)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = provider.DeleteIssuer(ctx, res.OrgID.UInt64(), res.ID.UInt64())
+		_, _ = provider.DeleteRoot(ctx, res.OrgID.UInt64(), anchor.ID.UInt64())
 	})
 	return res
 }

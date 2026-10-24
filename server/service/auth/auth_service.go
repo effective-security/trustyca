@@ -125,9 +125,6 @@ func (s *Service) RegisterRoute(r restserver.Router) {
 	// the org switch of a cookie session, which also replaces the cookie
 	r.POST(pb.PathForAuthOrg, s.AuthOrgHandler())
 
-	r.GET(pb.PathForAuthDone, s.AuthDoneHandler())
-	r.POST(pb.PathForAuthDone, s.AuthDoneHandler())
-
 	r.GET(pb.PathForAuthCallback, s.CallbackHandler())
 	r.POST(pb.PathForAuthCallback, s.CallbackHandler())
 

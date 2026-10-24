@@ -151,8 +151,9 @@ Package boundaries and direct internal imports are listed in
   `trustyca/{org}/{project}/{label}`. Serial numbers come from
   `xpki/authority`, never from a counter.
 - State changes that must agree are one transaction: a certificate insert and
-  its issue event, a revocation and the certificate status, a CRL upsert and
-  the issuer's CRL number (which only grows).
+  its issue event, a root issuer and its trust anchor, a revocation and the
+  certificate status, a CRL upsert and the issuer's CRL number (which only
+  grows).
 - CIS is public and read-only, holds no issuer keys and forwards OCSP signing
   to the CA.
 
@@ -190,8 +191,8 @@ Package boundaries and direct internal imports are listed in
 - A refusal the caller can fix by changing the org's state (deleted org,
   last Owner) is `preconditionFailed` (HTTP 409 `conflict`, gRPC
   FailedPrecondition). Do not build it with `NewGrpcFromCtx(ctx,
-  codes.FailedPrecondition, ...)`: the pinned porto maps that to HTTP 500 and
-  hides the message. Return it unwrapped.
+  codes.FailedPrecondition, ...)`: the pinned porto maps that to HTTP 400
+  `bad_request`, not the 409 the API documents. Return it unwrapped.
 - Map not-found cases explicitly when the response type already supports a
   not-found path. Do not collapse expected not-found errors into generic
   "failed to get ..." responses.

@@ -18,7 +18,6 @@ import (
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/xdb/pkg/flake"
 	"github.com/effective-security/xlog"
-	"github.com/effective-security/xpki/authority"
 	"github.com/effective-security/xpki/crypto11"
 	"github.com/effective-security/xpki/cryptoprov"
 	"github.com/effective-security/xpki/dataprotection"
@@ -373,7 +372,7 @@ func provideCA(cfg *config.Configuration, crypto *cryptoprov.Crypto, dp dataprot
 		Size: cfg.CA.IssuerCacheSize,
 	})
 	if path := cfg.CA.BootstrapConfig; path != "" {
-		acfg, err := authority.LoadConfig(path)
+		acfg, err := ca.LoadBootstrapConfig(path)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "failed to load CA bootstrap config: %s", path)
 		}

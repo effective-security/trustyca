@@ -143,12 +143,23 @@ func (f *fakeDb) GetIssuerBySKID(_ context.Context, skid string) (*model.Issuer,
 	return nil, notFound("issuer", skid)
 }
 
-func (f *fakeDb) RegisterIssuer(_ context.Context, m *model.Issuer) (*model.Issuer, error) {
+// RegisterIssuer stores the issuer and its anchor, both or neither, as the
+// transaction of the DB does; a root requires its anchor, any other issuer
+// takes none
+func (f *fakeDb) RegisterIssuer(_ context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error) {
 	if err := f.enter("RegisterIssuer"); err != nil {
 		return nil, err
 	}
 	if err := m.Validate(); err != nil {
 		return nil, err
+	}
+	if (m.Type == pb.AuthorityType_Root) != (anchor != nil) {
+		return nil, errors.Errorf("a %s issuer with anchor %t", m.Type.String(), anchor != nil)
+	}
+	if anchor != nil {
+		if err := anchor.Validate(); err != nil {
+			return nil, err
+		}
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -175,11 +186,19 @@ func (f *fakeDb) RegisterIssuer(_ context.Context, m *model.Issuer) (*model.Issu
 			return nil, errors.New(`pq: duplicate key value violates unique constraint "unique_issuer_skid"`)
 		}
 	}
+	if anchor != nil {
+		if cur, ok := f.roots[anchor.Sha256]; ok && cur.OrgID.UInt64() != anchor.OrgID.UInt64() {
+			return nil, errors.WithStack(db.ErrRootConflict)
+		}
+	}
 	res := *m
 	res.ID = f.id()
 	res.CreatedAt = xdb.UTC(time.Now())
 	res.UpdatedAt = res.CreatedAt
 	f.issuers[res.ID.UInt64()] = &res
+	if anchor != nil {
+		f.upsertRoot(anchor)
+	}
 	out := res
 	return &out, nil
 }
@@ -237,20 +256,26 @@ func (f *fakeDb) RegisterRoot(_ context.Context, m *model.RootCertificate) (*mod
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if cur, ok := f.roots[m.Sha256]; ok && cur.OrgID.UInt64() != m.OrgID.UInt64() {
+		return nil, errors.WithStack(db.ErrRootConflict)
+	}
+	return f.upsertRoot(m), nil
+}
+
+// upsertRoot stores the anchor, or updates the trust of the anchor of the
+// same scope; the caller holds the lock and checked the scope
+func (f *fakeDb) upsertRoot(m *model.RootCertificate) *model.RootCertificate {
 	if cur, ok := f.roots[m.Sha256]; ok {
-		if cur.OrgID.UInt64() != m.OrgID.UInt64() {
-			return nil, errors.WithStack(db.ErrRootConflict)
-		}
 		cur.Trust = m.Trust
 		res := *cur
-		return &res, nil
+		return &res
 	}
 	res := *m
 	res.ID = f.id()
 	res.CreatedAt = xdb.UTC(time.Now())
 	f.roots[res.Sha256] = &res
 	out := res
-	return &out, nil
+	return &out
 }
 
 func (f *fakeDb) GetProfile(_ context.Context, id uint64) (*model.CertificateProfile, error) {

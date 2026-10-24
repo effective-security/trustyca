@@ -14,7 +14,6 @@ import "github.com/effective-security/trustyca/server/service/auth"
 - [type Request](<#Request>)
   - [func \(c \*Request\) Validate\(\) error](<#Request.Validate>)
 - [type Service](<#Service>)
-  - [func \(s \*Service\) AuthDoneHandler\(\) restserver.Handle](<#Service.AuthDoneHandler>)
   - [func \(s \*Service\) AuthHTTPHandler\(\) restserver.Handle](<#Service.AuthHTTPHandler>)
   - [func \(s \*Service\) AuthOrgHandler\(\) restserver.Handle](<#Service.AuthOrgHandler>)
   - [func \(s \*Service\) AuthProvider\(ctx context.Context, provider pb.IDP\_Enum\) \(\*oauth2client.Client, error\)](<#Service.AuthProvider>)
@@ -134,15 +133,6 @@ type Service struct {
 }
 ```
 
-<a name="Service.AuthDoneHandler"></a>
-### func \(\*Service\) [AuthDoneHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L105>)
-
-```go
-func (s *Service) AuthDoneHandler() restserver.Handle
-```
-
-AuthDoneHandler handles pb.PathForAuthDone
-
 <a name="Service.AuthHTTPHandler"></a>
 ### func \(\*Service\) [AuthHTTPHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L113>)
 
@@ -162,7 +152,7 @@ func (s *Service) AuthOrgHandler() restserver.Handle
 AuthOrgHandler handles pb.PathForAuthOrg: the org switch of a REST caller, the one a cookie session uses. A cookie session \(the auth cookie and no Authorization header\) receives the new token in the auth cookie, with a new CSRF cookie, and the response omits AccessToken; the cookies last until the token expires with RememberMe, else for the browser session. A caller with an Authorization header receives AccessToken, and its cookies are not replaced.
 
 <a name="Service.AuthProvider"></a>
-### func \(\*Service\) [AuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L180>)
+### func \(\*Service\) [AuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L177>)
 
 ```go
 func (s *Service) AuthProvider(ctx context.Context, provider pb.IDP_Enum) (*oauth2client.Client, error)
@@ -171,7 +161,7 @@ func (s *Service) AuthProvider(ctx context.Context, provider pb.IDP_Enum) (*oaut
 OAuthConfig returns oauth2client.Config, to be used in tests
 
 <a name="Service.AuthProviderForEmail"></a>
-### func \(\*Service\) [AuthProviderForEmail](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L200>)
+### func \(\*Service\) [AuthProviderForEmail](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L197>)
 
 ```go
 func (s *Service) AuthProviderForEmail(ctx context.Context, email string) (cl *oauth2client.Client, err error)
@@ -180,7 +170,7 @@ func (s *Service) AuthProviderForEmail(ctx context.Context, email string) (cl *o
 AuthProviderForEmail checks if the email is allowed to login, and returns oauth2client.Client for the provider. On a local instance \(config.Service.IsLocal\) an address with the localEmailPrefix signs in through the \`local\` provider, which needs no invitation; elsewhere it is an ordinary address.
 
 <a name="Service.AuthProvidersHandler"></a>
-### func \(\*Service\) [AuthProvidersHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L68>)
+### func \(\*Service\) [AuthProvidersHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L75>)
 
 ```go
 func (s *Service) AuthProvidersHandler() restserver.Handle
@@ -216,7 +206,7 @@ func (s *Service) AuthorizeHandler() restserver.Handle
 AuthorizeHandler handles pb.PathForAuthorize
 
 <a name="Service.CallbackHandler"></a>
-### func \(\*Service\) [CallbackHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L147>)
+### func \(\*Service\) [CallbackHandler](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L112>)
 
 ```go
 func (s *Service) CallbackHandler() restserver.Handle
@@ -243,7 +233,7 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.Db"></a>
-### func \(\*Service\) [Db](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L168>)
+### func \(\*Service\) [Db](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L165>)
 
 ```go
 func (s *Service) Db() db.OrgsDb
@@ -252,7 +242,7 @@ func (s *Service) Db() db.OrgsDb
 Db returns OrgsDb for unit tests
 
 <a name="Service.ExchangeCode"></a>
-### func \(\*Service\) [ExchangeCode](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L745>)
+### func \(\*Service\) [ExchangeCode](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L818>)
 
 ```go
 func (s *Service) ExchangeCode(ctx context.Context, req *pb.ExchangeCodeRequest) (*pb.Token, error)
@@ -279,7 +269,7 @@ func (s *Service) GetCallerScope(ctx context.Context, req *emptypb.Empty) (*pb.C
 GetCallerScope returns the caller's resolved scope and the method access rules
 
 <a name="Service.GetProviders"></a>
-### func \(\*Service\) [GetProviders](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L43>)
+### func \(\*Service\) [GetProviders](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L50>)
 
 ```go
 func (s *Service) GetProviders(ctx context.Context, req *pb.AuthProvidersRequest) (*pb.AuthProvidersResponse, error)
@@ -288,13 +278,13 @@ func (s *Service) GetProviders(ctx context.Context, req *pb.AuthProvidersRequest
 GetProviders returns the list of supported providers
 
 <a name="Service.GetUserInfo"></a>
-### func \(\*Service\) [GetUserInfo](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L649>)
+### func \(\*Service\) [GetUserInfo](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/callback.go#L714>)
 
 ```go
 func (s *Service) GetUserInfo(ctx context.Context, idpType pb.IDP_Enum, cl *oauth2client.ClientConfig, _ *oauth2.Config, token *oauth2.Token) (*pb.UserInfo, jwt.MapClaims, error)
 ```
 
-
+GetUserInfo returns the user the IdP signed in with the token. A user the service cannot sign in \(no verified email, no name\) is PermissionDenied, a failed call to the IdP is Unavailable; the answer of the IdP stays in the cause, for the server log.
 
 <a name="Service.GetUserToken"></a>
 ### func \(\*Service\) [GetUserToken](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/userinfo.go#L35>)
@@ -324,7 +314,7 @@ func (s *Service) Name() string
 Name returns the service name
 
 <a name="Service.OAuthProvider"></a>
-### func \(\*Service\) [OAuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L174>)
+### func \(\*Service\) [OAuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L171>)
 
 ```go
 func (s *Service) OAuthProvider() *oauth2client.Provider
@@ -342,7 +332,7 @@ func (s *Service) OnStarted() error
 OnStarted is called when the server started and is ready to serve requests
 
 <a name="Service.Protect"></a>
-### func \(\*Service\) [Protect](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L158>)
+### func \(\*Service\) [Protect](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L155>)
 
 ```go
 func (s *Service) Protect(ctx context.Context, v any) (string, error)
@@ -351,7 +341,7 @@ func (s *Service) Protect(ctx context.Context, v any) (string, error)
 Protect returns encrypted value in base64url encoded format
 
 <a name="Service.RegisterGRPC"></a>
-### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L153>)
+### func \(\*Service\) [RegisterGRPC](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L150>)
 
 ```go
 func (s *Service) RegisterGRPC(r *grpc.Server)
@@ -407,7 +397,7 @@ SelectOrg verifies the caller's access to the org and returns a new token scoped
 A cookie session does not receive AccessToken, and gRPC cannot set a cookie: such a session switches the org with POST pb.PathForAuthOrg \(AuthOrgHandler\), which writes the new token into the auth cookie.
 
 <a name="Service.SetAuthProvider"></a>
-### func \(\*Service\) [SetAuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L191>)
+### func \(\*Service\) [SetAuthProvider](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L188>)
 
 ```go
 func (s *Service) SetAuthProvider(ctx context.Context, cfg *oauth2client.ClientConfig) error
@@ -416,7 +406,7 @@ func (s *Service) SetAuthProvider(ctx context.Context, cfg *oauth2client.ClientC
 SetAuthProvider sets the OAuth2 client for the provider, override the existing client if it exists. to be used in tests
 
 <a name="Service.Unprotect"></a>
-### func \(\*Service\) [Unprotect](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L163>)
+### func \(\*Service\) [Unprotect](<https://github.com/effective-security/trustyca/blob/main/server/service/auth/auth_service.go#L160>)
 
 ```go
 func (s *Service) Unprotect(ctx context.Context, protected string, v any) error

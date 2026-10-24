@@ -15,12 +15,55 @@ import (
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
+	"github.com/effective-security/x/configloader"
+	"github.com/effective-security/x/fileutil/resolve"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/authority"
 	"github.com/effective-security/xpki/certutil"
 	"google.golang.org/protobuf/proto"
 )
+
+// issuerIDEnvVariables are the spellings of the issuer placeholder that the
+// config loader expands as an environment variable (os.Expand)
+var issuerIDEnvVariables = []string{pbconv.IssuerIDVariable, "$ISSUER_ID"}
+
+// LoadBootstrapConfig loads the ca-config of the platform bootstrap with
+// authority.LoadConfig, which expands `$VAR` and `${VAR}` as environment
+// variables in every value: a `${ISSUER_ID}` in the AIA, CRL or OCSP URL
+// template of an issuer would become an empty string, and every certificate
+// the issuer signs would name the URL without the issuer. A file whose
+// templates name the issuer that way is refused before it is loaded; file
+// issuers use pbconv.IssuerIDPlaceholder (`:ISSUER_ID`).
+func LoadBootstrapConfig(path string) (*authority.Config, error) {
+	if path == "" {
+		return nil, errors.New("CA config path is required")
+	}
+	// the values as written, before the loader expands them
+	var raw authority.Config
+	err := configloader.Unmarshal(resolve.ExpandPath(path), &raw)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to read CA config")
+	}
+	if raw.Authority != nil {
+		for _, iss := range raw.Authority.Issuers {
+			if iss.AIA == nil {
+				continue
+			}
+			for _, tmpl := range []string{iss.AIA.AiaURL, iss.AIA.CrlURL, iss.AIA.OcspURL} {
+				if slices.ContainsFunc(issuerIDEnvVariables, func(v string) bool { return strings.Contains(tmpl, v) }) {
+					return nil, errors.Errorf("issuer %q: the URL template %q names the issuer as an environment variable, which the config loader expands: use %s",
+						iss.Label, tmpl, pbconv.IssuerIDPlaceholder)
+				}
+			}
+		}
+	}
+	cfg, err := authority.LoadConfig(path)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to load CA config")
+	}
+	return cfg, nil
+}
 
 // BootstrapResult counts the rows a bootstrap registered or updated
 type BootstrapResult struct {
@@ -55,8 +98,10 @@ type BootstrapResult struct {
 // archived under another label first. A disabled issuer is archived, so
 // that it stops signing on every instance, and enabled again when the
 // configuration enables it; a destroyed one has no key and is an error.
-// The anchor of a root issuer is registered again on every start, since it
-// is a separate row that an earlier start may have failed to write.
+// The anchor of a root issuer is written in the transaction of the issuer
+// insert, and registered again on every start from the stored certificate,
+// which restores an anchor that was deleted or that a version without the
+// transaction failed to write.
 func (r *Registry) Bootstrap(ctx context.Context, caDb db.CaDb, cfg *authority.Config) (*BootstrapResult, error) {
 	if cfg == nil {
 		return nil, errors.New("authority configuration is required")
@@ -313,7 +358,13 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 			return out, errors.WithMessage(err, "unable to find parent issuer")
 		}
 	}
-	row, err := caDb.RegisterIssuer(ctx, m)
+	var anchor *model.RootCertificate
+	if m.Type == pb.AuthorityType_Root {
+		// a self-signed issuer is a private anchor of the platform, written
+		// with its row
+		anchor = model.NewRootCertificate(crt, xdb.ID(0), pb.Trust_Private, m.Pem)
+	}
+	row, err := caDb.RegisterIssuer(ctx, m, anchor)
 	if err != nil {
 		if !db.IsUniqueViolation(err, "") {
 			return out, errors.WithMessage(err, "unable to register issuer")
@@ -342,13 +393,7 @@ func (r *Registry) bootstrapIssuer(ctx context.Context, caDb db.CaDb, isscfg *au
 	}
 	r.InvalidateIssuer(row)
 	out.registered = true
-	if row.Type == pb.AuthorityType_Root {
-		_, err = caDb.RegisterRoot(ctx, model.NewRootCertificate(crt, xdb.ID(0), pb.Trust_Private, row.Pem))
-		if err != nil {
-			return out, errors.WithMessage(err, "unable to register root")
-		}
-		out.root = true
-	}
+	out.root = anchor != nil
 	logger.KV(xlog.NOTICE,
 		"status", "issuer_registered",
 		"issuer_id", idString(row.ID),

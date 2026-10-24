@@ -442,43 +442,33 @@ func (s *Service) issuerError(ctx context.Context, err error) error {
 	return httperror.WrapWithCtx(ctx, err, "failed to create issuer")
 }
 
-// registerIssuer inserts the issuer row, registers the certificate of a
-// root as a trust anchor of its org, and drops the stale resolutions of
-// its label
+// registerIssuer inserts the issuer row, with the certificate of a root as
+// a private trust anchor of its org in the same transaction, and drops the
+// stale resolutions of its label
 func (s *Service) registerIssuer(ctx context.Context, row *model.Issuer) (*model.Issuer, error) {
-	registered, err := s.db.RegisterIssuer(ctx, row)
+	// a root is self-signed, never Pending, so it has its certificate
+	var anchor *model.RootCertificate
+	if row.Type == pb.AuthorityType_Root {
+		crt, err := certutil.ParseFromPEM([]byte(row.Pem))
+		if err != nil {
+			return nil, httperror.WrapWithCtx(ctx, err, "invalid issuer certificate")
+		}
+		anchor = model.NewRootCertificate(crt, row.OrgID, pb.Trust_Private, row.Pem)
+	}
+	registered, err := s.db.RegisterIssuer(ctx, row, anchor)
 	if err != nil {
 		switch {
 		case db.IsUniqueViolation(err, db.UniqueIssuerLabel):
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "issuer label is already registered: %s", row.Label)
 		case db.IsUniqueViolation(err, db.UniqueIssuerSkid):
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "issuer key is already registered")
+		case errors.Is(err, db.ErrRootConflict):
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.AlreadyExists, "root certificate is registered in another scope")
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to register issuer")
 	}
-	if registered.Type == pb.AuthorityType_Root && registered.Pem != "" {
-		s.registerRootAnchor(ctx, registered)
-	}
 	s.registry.InvalidateIssuer(registered)
 	return registered, nil
-}
-
-// registerRootAnchor registers the certificate of a root issuer as a
-// private trust anchor of its org. A failure is logged: the issuer is
-// registered, and RegisterRoot is idempotent, so the anchor can be
-// registered again.
-func (s *Service) registerRootAnchor(ctx context.Context, row *model.Issuer) {
-	crt, err := certutil.ParseFromPEM([]byte(row.Pem))
-	if err == nil {
-		_, err = s.db.RegisterRoot(ctx, model.NewRootCertificate(crt, row.OrgID, pb.Trust_Private, row.Pem))
-	}
-	if err != nil {
-		logger.ContextKV(ctx, xlog.ERROR,
-			"reason", "register_root",
-			"issuer_id", row.ID.UnderscoreString(),
-			"org_id", row.OrgID.UnderscoreString(),
-			"err", err.Error())
-	}
 }
 
 // GetIssuer returns an issuer of the org by ID, by label resolved in the

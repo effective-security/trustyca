@@ -143,7 +143,7 @@ func (s *Service) GetCertificate(ctx context.Context, req *privpb.GetCertificate
 GetCertificate returns a certificate of the org by its ID, its Subject Key Identifier \(the newest one of the key\), its SHA\-256 thumbprint, or the key identifier of its issuer and its serial number. A certificate of another org, or of a project the caller cannot read, is not found.
 
 <a name="Service.GetIssuer"></a>
-### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L487>)
+### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L477>)
 
 ```go
 func (s *Service) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error)
@@ -188,7 +188,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertific
 ListCertificates returns the certificates of the org, newest first: of the project of the request, or of the org\-wide scope and every project the caller may read \(DESIGN.md section 3.3\)
 
 <a name="Service.ListIssuers"></a>
-### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L527>)
+### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L517>)
 
 ```go
 func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error)

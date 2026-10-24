@@ -27,11 +27,12 @@ import (
 func sessionIdentity(user *model.User, orgID string, method identity.AuthMethod) identity.Identity {
 	now := time.Now()
 	claims := map[string]any{
-		"sub":   user.ID.String(),
-		"email": user.Email,
-		"jti":   testDb.NextID().String(),
-		"iat":   now.Unix(),
-		"exp":   now.Add(time.Hour).Unix(),
+		"sub":      user.ID.String(),
+		"email":    user.Email,
+		"jti":      testDb.NextID().String(),
+		"iat":      now.Unix(),
+		"exp":      now.Add(time.Hour).Unix(),
+		"provider": pb.IDP_Github.String(),
 	}
 	if orgID != "" {
 		claims[authctx.ClaimOrg] = orgID
@@ -218,11 +219,15 @@ func Test_SelectOrg_CookieSession(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, res.Token.AccessToken)
 	assert.Equal(t, org.ID.String(), res.UserInfo.OrgID)
+	assert.Equal(t, pb.IDP_Github, res.Token.Provider)
 
 	res, err = service.SelectOrg(ctxOf(identity.MethodJWT).Context(), &pb.SelectOrgRequest{OrgID: org.ID.String()})
 	require.NoError(t, err)
 	require.NotEmpty(t, res.Token.AccessToken)
-	assert.Equal(t, org.ID.String(), parseClaims(t, service, res.Token.AccessToken).String(authctx.ClaimOrg))
+	assert.Equal(t, pb.IDP_Github, res.Token.Provider)
+	claims := parseClaims(t, service, res.Token.AccessToken)
+	assert.Equal(t, org.ID.String(), claims.String(authctx.ClaimOrg))
+	assert.Equal(t, pb.IDP_Github.String(), claims.String("provider"), "the new token keeps the provider")
 }
 
 func Test_RevokeTokenHandler_Cookies(t *testing.T) {

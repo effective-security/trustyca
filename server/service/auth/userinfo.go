@@ -51,7 +51,7 @@ func (s *Service) GetUserToken(ctx context.Context, _ *emptypb.Empty) (*pb.UserT
 			IssuedAt:    mapclaims.TimeVal("iat").Format(time.RFC3339),
 			Issuer:      mapclaims.String("iss"),
 			Audience:    mapclaims.String("aud"),
-			Provider:    pb.IDP_Enum_Value[mapclaims.String("provider")],
+			Provider:    tokenProvider(mapclaims),
 		},
 		UserInfo: &pb.UserInfo{
 			ID:            claims.Subject,

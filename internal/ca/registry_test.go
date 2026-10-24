@@ -184,7 +184,7 @@ func TestRegistry_Resolve_Status(t *testing.T) {
 		Provider: f.prov,
 	})
 	require.NoError(t, err)
-	_, err = f.db.RegisterIssuer(f.ctx, pending)
+	_, err = f.db.RegisterIssuer(f.ctx, pending, nil)
 	require.NoError(t, err)
 	f.profile(org, xdb.ID(0), peerProfileDef("pend", "P1", "1h"))
 	_, err = f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: "pend"})

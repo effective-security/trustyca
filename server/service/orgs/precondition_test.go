@@ -28,7 +28,7 @@ import (
 // Test_preconditionFailed covers the public contract of a refusal the
 // state of the org causes: HTTP 409 with the message, gRPC
 // FailedPrecondition. The pinned porto maps FailedPrecondition alone to
-// HTTP 500 and hides the message.
+// HTTP 400 bad_request.
 func Test_preconditionFailed(t *testing.T) {
 	t.Parallel()
 
@@ -104,7 +104,7 @@ func TestService_RegisterProject_PreconditionContract(t *testing.T) {
 		require.True(t, ok, "%v", err)
 		assert.Equal(t, codes.FailedPrecondition, st.Code())
 		assert.Equal(t, "org is deleted", st.Message())
-		// a Go client converting it keeps the message, and reports a 500:
+		// a Go client converting it keeps the message, and reports a 400:
 		// this fails once porto maps FailedPrecondition to 409
 		converted := httperror.NewFromPb(err)
 		assert.Equal(t, "org is deleted", converted.Message)

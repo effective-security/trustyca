@@ -42,9 +42,9 @@ type PageFlags struct {
 // of the certificates it issues, the CRL and OCSP timings and the profiles
 // it may sign
 type IssuerSettings struct {
-	AiaURL                 string   `name:"aia-url" help:"the AIA issuer URL template; $${ISSUER_ID} is replaced with the issuer key identifier"`
-	CrlURL                 string   `name:"crl-url" help:"the CRL distribution point URL template"`
-	OcspURL                string   `name:"ocsp-url" help:"the OCSP URL template"`
+	AiaURL                 string   `name:"aia-url" help:"the AIA issuer URL template; :ISSUER_ID is replaced with the issuer key identifier"`
+	CrlURL                 string   `name:"crl-url" help:"the CRL distribution point URL template, with :ISSUER_ID"`
+	OcspURL                string   `name:"ocsp-url" help:"the OCSP URL template, with :ISSUER_ID"`
 	CrlExpiry              string   `help:"the validity of a CRL, e.g. 48h"`
 	CrlRenewal             string   `help:"how long before its next update a CRL is renewed, e.g. 12h"`
 	OcspExpiry             string   `help:"the validity of an OCSP response, e.g. 1h"`

@@ -68,7 +68,7 @@ var (
 ```
 
 <a name="IsUniqueViolation"></a>
-## func [IsUniqueViolation](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L286>)
+## func [IsUniqueViolation](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L289>)
 
 ```go
 func IsUniqueViolation(err error, prefix string) bool
@@ -77,17 +77,19 @@ func IsUniqueViolation(err error, prefix string) bool
 IsUniqueViolation reports whether the error is a unique constraint violation of a constraint whose name starts with the prefix \(empty for any\), so that a caller maps a conflict without parsing the message
 
 <a name="CaDb"></a>
-## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L212-L272>)
+## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L213-L275>)
 
-CaDb defines an interface for CRUD operations on the CA tables. Every mutation of an existing row names the exact org scope of the row \(a zero orgID is the platform\), so a row of another org is not found or not deleted. State changes that must agree are one transaction: a certificate and its issue event, a revocation and the certificate status, a CRL and the issuer's CRL number.
+CaDb defines an interface for CRUD operations on the CA tables. Every mutation of an existing row names the exact org scope of the row \(a zero orgID is the platform\), so a row of another org is not found or not deleted. State changes that must agree are one transaction: a certificate and its issue event, a root issuer and its trust anchor, a revocation and the certificate status, a CRL and the issuer's CRL number.
 
 ```go
 type CaDb interface {
     CaReadonlyDb
 
     // RegisterIssuer inserts an issuer: a Pending one with its CSR, any
-    // other status with its certificate
-    RegisterIssuer(ctx context.Context, m *model.Issuer) (*model.Issuer, error)
+    // other status with its certificate. A root issuer requires its anchor,
+    // its certificate as a trust anchor of its org, registered in the same
+    // transaction as RegisterRoot does; any other issuer takes nil.
+    RegisterIssuer(ctx context.Context, m *model.Issuer, anchor *model.RootCertificate) (*model.Issuer, error)
     // UpdateIssuer changes the lifecycle status or the runtime settings of
     // an issuer; Destroyed also clears the protected key material
     UpdateIssuer(ctx context.Context, req *query.UpdateIssuerRequest) (*model.Issuer, error)
@@ -146,7 +148,7 @@ type CaDb interface {
 ```
 
 <a name="CaReadonlyDb"></a>
-## type [CaReadonlyDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L148-L204>)
+## type [CaReadonlyDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L149-L205>)
 
 CaReadonlyDb defines an interface for Read operations on the CA tables: issuers, trust anchors, profiles, certificates, revocations and CRLs. Rows with a zero OrgID are the platform's \(org\_id IS NULL\). A Get by ID returns the row of any scope and the caller verifies its org and project; a List names its org scope \(OrgID, Platform or AllOrgs\) or fails with ErrOrgScopeRequired.
 
@@ -211,7 +213,7 @@ type CaReadonlyDb interface {
 ```
 
 <a name="OrgsDb"></a>
-## type [OrgsDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L78-L140>)
+## type [OrgsDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L78-L141>)
 
 OrgsDb defines an interface for CRUD operations on Orgs
 
@@ -260,7 +262,8 @@ type OrgsDb interface {
     // AcceptInvite accepts an org invite for a user
     AcceptInvite(ctx context.Context, inviteID, userID uint64) (*model.Membership, error)
     // AcceptInvites moves the pending invites for a user's email to grants
-    // and returns the grants it created
+    // and returns the grants it created; each invite is accepted in a
+    // transaction of its own
     AcceptInvites(ctx context.Context, user *model.User) (model.MembershipSlice, error)
 
     // CreateEvent returns new Event
@@ -342,7 +345,7 @@ type OrgsReadonlyDb interface {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L307-L312>)
+## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L310-L315>)
 
 Provider provides complete DB access
 
@@ -356,7 +359,7 @@ type Provider interface {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L315>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L318>)
 
 ```go
 func New(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator) (Provider, error)

@@ -113,8 +113,8 @@ func Test_LocalProvider_Token(t *testing.T) {
 	deleteDefaultOrgOnCleanup(t, claims)
 	assert.Equal(t, email, claims.String("email"))
 	assert.Equal(t, strings.TrimSuffix(email, "@example.com"), claims.String("name"))
-	// the claim holds the number of the enum
-	assert.Equal(t, pb.IDP_Local, pb.IDPFromString(claims.String("provider")))
+	// the claim holds the name of the provider
+	assert.Equal(t, pb.IDP_Local.String(), claims.String("provider"))
 	subject := claims.String("sub")
 	require.NotEmpty(t, subject)
 
@@ -219,6 +219,13 @@ func Test_LocalProvider_NotLocal(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "https://"+apiHost+pb.PathForAuthCallback+"?"+cb.Encode(), nil)
 	service.CallbackHandler()(w, r, nil)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "unsupported provider: Local")
+	// the state names the client: the refusal lands on its redirect URI
+	require.Equal(t, http.StatusSeeOther, w.Code, w.Body.String())
+	loc, err := url.Parse(w.Header().Get(header.Location))
+	require.NoError(t, err)
+	assert.Equal(t, consoleRedirect, loc.Scheme+"://"+loc.Host+loc.Path)
+	assert.Equal(t, url.Values{
+		pb.OAuthParamError:            {pb.OAuthErrorInvalidRequest},
+		pb.OAuthParamErrorDescription: {"unsupported provider: Local"},
+	}, loc.Query())
 }

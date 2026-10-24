@@ -221,7 +221,7 @@ func (s *Service) selectOrgToken(ctx context.Context, req *pb.SelectOrgRequest) 
 			IssuedAt:    claims.TimeVal("iat").Format(time.RFC3339),
 			Issuer:      claims.String("iss"),
 			Audience:    claims.String("aud"),
-			Provider:    pb.IDP_Undefined.Parse(claims.String("provider")),
+			Provider:    tokenProvider(claims),
 		},
 		UserInfo: ui,
 	}

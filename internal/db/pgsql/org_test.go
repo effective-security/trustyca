@@ -1,6 +1,7 @@
 package pgsql_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/effective-security/trustyca/api/pb"
@@ -78,6 +79,22 @@ func Test_Org_NotFound(t *testing.T) {
 
 	_, err = provider.FindOrg(ctx, "cp_does-not-exist")
 	assert.EqualError(t, err, "record not found: org: cp_does-not-exist")
+}
+
+func Test_RegisterOrg_OwnerFails(t *testing.T) {
+	// no user has this ID: the owner grant violates its foreign key, and the
+	// org insert must roll back with it
+	ownerID := provider.NextID().UInt64()
+	orgID := provider.NextID()
+	_, err := provider.RegisterOrg(ctx, &model.Org{ID: orgID, Name: "Ownerless Org"}, ownerID)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "unable to add owner")
+
+	_, err = provider.GetOrg(ctx, orgID.UInt64())
+	if !assert.EqualError(t, err, fmt.Sprintf("record not found: org: %d", orgID.UInt64())) {
+		_, err = provider.DeleteOrg(ctx, orgID.UInt64())
+		assert.NoError(t, err)
+	}
 }
 
 func Test_UpdateOrg(t *testing.T) {

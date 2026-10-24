@@ -51,12 +51,6 @@ const (
 	// Response: 303
 	PathForAuthorize = "/v1/auth/authorize"
 
-	// PathForAuthDone completes authorization flow
-	//
-	// Verbs: GET
-	// Response: 200
-	PathForAuthDone = "/v1/auth/done"
-
 	// PathForAuthOrg selects the org of the session, as Auth.SelectOrg does,
 	// and writes the new token into the auth cookie of a cookie session
 	//
@@ -170,6 +164,24 @@ const (
 	OAuthResponseTypeCode    = "code"
 	OAuthResponseTypeToken   = "token"
 	OAuthResponseTypeCookie  = "cookie"
+)
+
+// The error of a failed authorization (RFC 6749 section 4.1.2.1): the
+// callback answers a login that fails after its state is decoded on the
+// redirect URI of the client, with the code in OAuthParamError and the
+// reason in OAuthParamErrorDescription; an IdP answers the callback the
+// same way.
+const (
+	OAuthParamError            = "error"
+	OAuthParamErrorDescription = "error_description"
+
+	OAuthErrorInvalidRequest          = "invalid_request"
+	OAuthErrorUnauthorizedClient      = "unauthorized_client"
+	OAuthErrorAccessDenied            = "access_denied"
+	OAuthErrorUnsupportedResponseType = "unsupported_response_type"
+	OAuthErrorInvalidScope            = "invalid_scope"
+	OAuthErrorServerError             = "server_error"
+	OAuthErrorTemporarilyUnavailable  = "temporarily_unavailable"
 )
 
 // Web pages served by the ui service.
