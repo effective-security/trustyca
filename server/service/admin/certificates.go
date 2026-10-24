@@ -22,7 +22,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListAllCerti
 	if err != nil {
 		return nil, err
 	}
-	cursor, err := listCursor(ctx, req.Cursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseCursor)
 	if err != nil {
 		return nil, err
 	}

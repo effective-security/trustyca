@@ -421,8 +421,8 @@ Schema: `sql/trustycadb/migrations/1_tables.up.sql`. IDs are flake IDs from
 
 | Table                | Purpose                                                                                                  |
 | -------------------- | -------------------------------------------------------------------------------------------------------- |
-| `org`                | tenant; soft-deleted via `status`                                                                        |
-| `project`            | `(org_id, alias)` unique, `(org_id, id)` unique for composite FKs; soft-deleted via `status`             |
+| `org`                | tenant; soft-deleted via `status`; `(name, id)` index for the list by name                                                                        |
+| `project`            | `(org_id, alias)` unique, `(org_id, id)` unique for composite FKs; soft-deleted via `status`; `(name, id)` index for the support list across orgs             |
 | `membership`         | grant `(org_id, project_id NULL, user_id, role)`, `UNIQUE NULLS NOT DISTINCT`, composite FK to `project` |
 | `invite`             | `(org_id, project_id NULL, email, role, expires_at)`, same keys as membership                            |
 | `vw_membership_info` | membership joined with org, project and user names for listing                                           |

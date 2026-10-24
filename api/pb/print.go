@@ -257,6 +257,7 @@ func (r *OrgsResponse) Print(w io.Writer) {
 	}
 	_ = table.Render()
 	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
 }
 
 func (r *UserOrgsResponse) Print(w io.Writer) {
@@ -286,6 +287,7 @@ func (r *ProjectsResponse) Print(w io.Writer) {
 	}
 	_ = table.Render()
 	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
 }
 
 func (r *Project) Print(w io.Writer) {

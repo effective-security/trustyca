@@ -53,8 +53,11 @@ func (s *testSuiteGrpc) Test_ProjectDeleteCmd() {
 }
 
 func (s *testSuiteGrpc) Test_ProjectListCmd() {
-	s.MockOrgs.SetResponse(&pb.ProjectsResponse{Projects: []*pb.Project{testProject}})
-	a := command.ProjectListCmd{}
+	s.MockOrgs.SetResponse(&pb.ProjectsResponse{
+		Projects: []*pb.Project{testProject},
+		NextPage: &pb.NextPage{Cursor: "WyJUZXN0IiwiMjAxIl0"},
+	})
+	a := command.ProjectListCmd{Cursor: "initial"}
 	s.runPrinted(func() error { return a.Run(s.Ctl) })
 
 	a = command.ProjectListCmd{Status: "bogus"}

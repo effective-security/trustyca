@@ -10097,7 +10097,7 @@ func PrintMembers(w io.Writer, val any)
 
 
 <a name="PrintMethodAccesses"></a>
-## func [PrintMethodAccesses](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L410>)
+## func [PrintMethodAccesses](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L412>)
 
 ```go
 func PrintMethodAccesses(w io.Writer, val any)
@@ -10328,7 +10328,7 @@ func (msg *APIKey) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="APIKey.Print"></a>
-### func \(\*APIKey\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L352>)
+### func \(\*APIKey\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L354>)
 
 ```go
 func (r *APIKey) Print(w io.Writer)
@@ -10548,7 +10548,7 @@ func (msg *APIKeysResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="APIKeysResponse.Print"></a>
-### func \(\*APIKeysResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L369>)
+### func \(\*APIKeysResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L371>)
 
 ```go
 func (r *APIKeysResponse) Print(w io.Writer)
@@ -10907,7 +10907,7 @@ func (msg *AddMemberResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="AddMemberResponse.Print"></a>
-### func \(\*AddMemberResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L303>)
+### func \(\*AddMemberResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L305>)
 
 ```go
 func (r *AddMemberResponse) Print(w io.Writer)
@@ -12230,7 +12230,7 @@ func (msg *CallerScope) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CallerScope.Print"></a>
-### func \(\*CallerScope\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L389>)
+### func \(\*CallerScope\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L391>)
 
 ```go
 func (r *CallerScope) Print(w io.Writer)
@@ -12738,7 +12738,7 @@ func (msg *CertProfile) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CertProfile.Print"></a>
-### func \(\*CertProfile\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L496>)
+### func \(\*CertProfile\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L498>)
 
 ```go
 func (r *CertProfile) Print(w io.Writer)
@@ -13031,7 +13031,7 @@ func (msg *Certificate) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="Certificate.Print"></a>
-### func \(\*Certificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L576>)
+### func \(\*Certificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L578>)
 
 ```go
 func (r *Certificate) Print(w io.Writer)
@@ -13323,7 +13323,7 @@ func (msg *CertificateResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CertificateResponse.Print"></a>
-### func \(\*CertificateResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L602>)
+### func \(\*CertificateResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L604>)
 
 ```go
 func (r *CertificateResponse) Print(w io.Writer)
@@ -13556,7 +13556,7 @@ func (msg *CertificateStatusResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CertificateStatusResponse.Print"></a>
-### func \(\*CertificateStatusResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L730>)
+### func \(\*CertificateStatusResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L732>)
 
 ```go
 func (r *CertificateStatusResponse) Print(w io.Writer)
@@ -13901,7 +13901,7 @@ func (msg *CertificatesResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CertificatesResponse.Print"></a>
-### func \(\*CertificatesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L608>)
+### func \(\*CertificatesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L610>)
 
 ```go
 func (r *CertificatesResponse) Print(w io.Writer)
@@ -14358,7 +14358,7 @@ func (msg *Crl) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="Crl.Print"></a>
-### func \(\*Crl\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L672>)
+### func \(\*Crl\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L674>)
 
 ```go
 func (r *Crl) Print(w io.Writer)
@@ -14460,7 +14460,7 @@ func (msg *CrlResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CrlResponse.Print"></a>
-### func \(\*CrlResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L688>)
+### func \(\*CrlResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L690>)
 
 ```go
 func (r *CrlResponse) Print(w io.Writer)
@@ -14562,7 +14562,7 @@ func (msg *CrlsResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="CrlsResponse.Print"></a>
-### func \(\*CrlsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L694>)
+### func \(\*CrlsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L696>)
 
 ```go
 func (r *CrlsResponse) Print(w io.Writer)
@@ -18128,7 +18128,7 @@ func (msg *Issuer) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="Issuer.Print"></a>
-### func \(\*Issuer\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L434>)
+### func \(\*Issuer\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L436>)
 
 ```go
 func (r *Issuer) Print(w io.Writer)
@@ -18541,7 +18541,7 @@ func (msg *IssuerInfo) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="IssuerInfo.Print"></a>
-### func \(\*IssuerInfo\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L713>)
+### func \(\*IssuerInfo\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L715>)
 
 ```go
 func (r *IssuerInfo) Print(w io.Writer)
@@ -19062,7 +19062,7 @@ func (msg *IssuersResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="IssuersResponse.Print"></a>
-### func \(\*IssuersResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L475>)
+### func \(\*IssuersResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L477>)
 
 ```go
 func (r *IssuersResponse) Print(w io.Writer)
@@ -22223,7 +22223,7 @@ func (msg *ProfilesResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ProfilesResponse.Print"></a>
-### func \(\*ProfilesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L522>)
+### func \(\*ProfilesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L524>)
 
 ```go
 func (r *ProfilesResponse) Print(w io.Writer)
@@ -22397,7 +22397,7 @@ func (msg *Project) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="Project.Print"></a>
-### func \(\*Project\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L291>)
+### func \(\*Project\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L293>)
 
 ```go
 func (r *Project) Print(w io.Writer)
@@ -22511,7 +22511,7 @@ func (msg *ProjectsResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ProjectsResponse.Print"></a>
-### func \(\*ProjectsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L279>)
+### func \(\*ProjectsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L280>)
 
 ```go
 func (r *ProjectsResponse) Print(w io.Writer)
@@ -24008,7 +24008,7 @@ func (msg *RevokedCertificate) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RevokedCertificate.Print"></a>
-### func \(\*RevokedCertificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L630>)
+### func \(\*RevokedCertificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L632>)
 
 ```go
 func (r *RevokedCertificate) Print(w io.Writer)
@@ -24110,7 +24110,7 @@ func (msg *RevokedCertificateResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RevokedCertificateResponse.Print"></a>
-### func \(\*RevokedCertificateResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L642>)
+### func \(\*RevokedCertificateResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L644>)
 
 ```go
 func (r *RevokedCertificateResponse) Print(w io.Writer)
@@ -24224,7 +24224,7 @@ func (msg *RevokedCertificatesResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RevokedCertificatesResponse.Print"></a>
-### func \(\*RevokedCertificatesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L648>)
+### func \(\*RevokedCertificatesResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L650>)
 
 ```go
 func (r *RevokedCertificatesResponse) Print(w io.Writer)
@@ -25045,7 +25045,7 @@ func (msg *RootCertificate) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RootCertificate.Print"></a>
-### func \(\*RootCertificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L542>)
+### func \(\*RootCertificate\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L544>)
 
 ```go
 func (r *RootCertificate) Print(w io.Writer)
@@ -25159,7 +25159,7 @@ func (msg *RootsResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RootsResponse.Print"></a>
-### func \(\*RootsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L558>)
+### func \(\*RootsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L560>)
 
 ```go
 func (r *RootsResponse) Print(w io.Writer)
@@ -26477,7 +26477,7 @@ func (msg *Token) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="Token.Print"></a>
-### func \(\*Token\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L312>)
+### func \(\*Token\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L314>)
 
 ```go
 func (r *Token) Print(w io.Writer)
@@ -28038,7 +28038,7 @@ func (msg *UserInfo) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="UserInfo.Print"></a>
-### func \(\*UserInfo\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L326>)
+### func \(\*UserInfo\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L328>)
 
 ```go
 func (r *UserInfo) Print(w io.Writer)
@@ -28256,7 +28256,7 @@ func (msg *UserOrgsResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="UserOrgsResponse.Print"></a>
-### func \(\*UserOrgsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L262>)
+### func \(\*UserOrgsResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L263>)
 
 ```go
 func (r *UserOrgsResponse) Print(w io.Writer)
@@ -28368,7 +28368,7 @@ func (msg *UserTokenResponse) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="UserTokenResponse.Print"></a>
-### func \(\*UserTokenResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L343>)
+### func \(\*UserTokenResponse\) [Print](<https://github.com/effective-security/trustyca/blob/main/api/pb/print.go#L345>)
 
 ```go
 func (r *UserTokenResponse) Print(w io.Writer)

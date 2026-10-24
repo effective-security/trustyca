@@ -79,10 +79,18 @@ func UpdateOrg(args ...any) (string, string) {
 type ListOrgsRequest struct {
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Offset specifies the offset for pagination
+	// Offset specifies the offset for offset pagination
 	Offset uint32
+	// Cursor specifies the position for cursor pagination, decoded by
+	// ParseNameCursor
+	Cursor Cursor
 	// Status specifies the status of the orgs
 	Status pb.ItemStatus_Enum
+}
+
+// Validate fails a request that carries the cursor of another list
+func (r *ListOrgsRequest) Validate() error {
+	return r.Cursor.checkKey(keyName)
 }
 
 // QueryParams returns the query params builder
@@ -91,23 +99,22 @@ func (r *ListOrgsRequest) QueryParams() xdb.QueryParams {
 	if r.Status != pb.ItemStatus_Unknown {
 		b.Set(schema.Org.Status.Position, r.Status)
 	}
-	b.SetPage(r.Limit, r.Offset)
+	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
 
-// ListOrgs returns SQL query
+// ListOrgs returns SQL query: the orgs by name, then by id, paged by
+// offset or by a cursor on that key (ParseNameCursor, EncodeNameCursor)
 func ListOrgs(args ...any) (string, string) {
 	p := xdb.GetQueryParams(args...)
 	key := p.Name()
 
 	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
-		q := schema.OrgTableInfo.
-			Select().
-			Limit(nil).
-			Offset(nil)
+		q := schema.OrgTableInfo.Select()
 		if p.IsSet(schema.Org.Status.Position) {
 			q.Where(schema.Org.Status.Name+" = ?", nil)
 		}
+		pageBy(q, p, OrderDirectionAsc, schema.Org.Name.Name, schema.Org.ID.Name)
 		return q
 	})
 }

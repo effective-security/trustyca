@@ -367,7 +367,7 @@ func TestService_ListCertificates(t *testing.T) {
 	tca.cadb.EXPECT().ListCertificates(gomock.Any(), &query.ListCertificatesRequest{
 		OrgID:      1,
 		ProjectIDs: []uint64{201},
-		Limit:      defaultListLimit,
+		Limit:      xdb.DefaultPageSize,
 	}).Return(&model.CertificateResult{}, nil)
 	res, err = svc.ListCertificates(viewer, &privpb.ListCertificatesRequest{})
 	require.NoError(t, err)
@@ -376,7 +376,7 @@ func TestService_ListCertificates(t *testing.T) {
 	tca.cadb.EXPECT().ListCertificates(gomock.Any(), &query.ListCertificatesRequest{
 		OrgID:     1,
 		ProjectID: 201,
-		Limit:     defaultListLimit,
+		Limit:     xdb.DefaultPageSize,
 	}).Return(&model.CertificateResult{}, nil)
 	_, err = svc.ListCertificates(viewer, &privpb.ListCertificatesRequest{ProjectID: "201"})
 	require.NoError(t, err)
@@ -385,7 +385,7 @@ func TestService_ListCertificates(t *testing.T) {
 	tca.cadb.EXPECT().ListCertificates(gomock.Any(), &query.ListCertificatesRequest{
 		OrgID:     1,
 		ProjectID: 201,
-		Limit:     defaultListLimit,
+		Limit:     xdb.DefaultPageSize,
 	}).Return(&model.CertificateResult{}, nil)
 	_, err = svc.ListCertificates(apiKeyCtx("1", "201"), &privpb.ListCertificatesRequest{})
 	require.NoError(t, err)
@@ -737,7 +737,7 @@ func TestService_ListRevokedCertificates(t *testing.T) {
 	tca.cadb.EXPECT().ListRevokedCertificates(gomock.Any(), &query.ListRevokedCertificatesRequest{
 		OrgID:      1,
 		ProjectIDs: []uint64{201},
-		Limit:      defaultListLimit,
+		Limit:      xdb.DefaultPageSize,
 	}).Return(&model.RevokedCertificateResult{}, nil)
 	res, err = svc.ListRevokedCertificates(viewer, &privpb.ListRevokedCertificatesRequest{})
 	require.NoError(t, err)
@@ -746,7 +746,7 @@ func TestService_ListRevokedCertificates(t *testing.T) {
 	tca.cadb.EXPECT().ListRevokedCertificates(gomock.Any(), &query.ListRevokedCertificatesRequest{
 		OrgID:     1,
 		ProjectID: 201,
-		Limit:     defaultListLimit,
+		Limit:     xdb.DefaultPageSize,
 	}).Return(&model.RevokedCertificateResult{}, nil)
 	_, err = svc.ListRevokedCertificates(apiKeyCtx("1", "201"), &privpb.ListRevokedCertificatesRequest{})
 	require.NoError(t, err)

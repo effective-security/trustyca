@@ -95,7 +95,7 @@ func TestService_ListRoots(t *testing.T) {
 	assert.EqualError(t, err, "forbidden: org not selected")
 
 	// a tenant lists the anchors of its org
-	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: defaultListLimit}).
+	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: xdb.DefaultPageSize}).
 		Return(&model.RootCertificateResult{Rows: []*model.RootCertificate{anchor}}, nil)
 	res, err := svc.ListRoots(ctx, &privpb.ListRootsRequest{})
 	require.NoError(t, err)
@@ -112,19 +112,19 @@ func TestService_ListRoots(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, res.Roots)
 	tca.orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
-	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: defaultListLimit}).
+	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: xdb.DefaultPageSize}).
 		Return(&model.RootCertificateResult{}, nil)
 	_, err = svc.ListRoots(svcCaller, &privpb.ListRootsRequest{OrgID: "1"})
 	require.NoError(t, err)
 
 	// so does the operator: the org its DPoP token selected is not its scope
 	operator := operatorCtx("2")
-	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{Platform: true, Limit: defaultListLimit}).
+	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{Platform: true, Limit: xdb.DefaultPageSize}).
 		Return(&model.RootCertificateResult{}, nil)
 	_, err = svc.ListRoots(operator, &privpb.ListRootsRequest{})
 	require.NoError(t, err)
 	tca.orgsdb.EXPECT().GetOrg(gomock.Any(), uint64(1)).Return(testOrg, nil)
-	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: defaultListLimit}).
+	tca.cadb.EXPECT().ListRoots(gomock.Any(), &query.ListRootsRequest{OrgID: 1, Limit: xdb.DefaultPageSize}).
 		Return(&model.RootCertificateResult{}, nil)
 	_, err = svc.ListRoots(operator, &privpb.ListRootsRequest{OrgID: "1"})
 	require.NoError(t, err)

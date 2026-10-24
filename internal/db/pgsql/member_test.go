@@ -112,6 +112,29 @@ func Test_ProjectMembership(t *testing.T) {
 	require.Len(t, list.Rows, 2)
 	assert.False(t, list.HasNextPage)
 
+	// a page at a time by (name, id)
+	page, err := provider.ListProjects(ctx, &query.ListProjectsRequest{OrgID: org.ID.UInt64(), Limit: 1, Cursor: query.NewCursor(0)})
+	require.NoError(t, err)
+	require.Len(t, page.Rows, 1)
+	assert.Equal(t, list.Rows[0].ID, page.Rows[0].ID)
+	require.True(t, page.HasNextPage)
+	assert.Zero(t, page.NextOffset)
+	next, err := query.ParseNameCursor(page.Cursor)
+	require.NoError(t, err)
+	assert.Equal(t, []any{page.Rows[0].Name, page.Rows[0].ID.UInt64()}, next.Key())
+	page, err = provider.ListProjects(ctx, &query.ListProjectsRequest{OrgID: org.ID.UInt64(), Limit: 1, Cursor: next})
+	require.NoError(t, err)
+	require.Len(t, page.Rows, 1)
+	assert.Equal(t, list.Rows[1].ID, page.Rows[0].ID)
+	assert.False(t, page.HasNextPage)
+	assert.Empty(t, page.Cursor)
+
+	// the cursor of a list by id is refused before the query
+	idCursor, err := query.ParseCursor(query.EncodeCursor(project1.ID))
+	require.NoError(t, err)
+	_, err = provider.ListProjects(ctx, &query.ListProjectsRequest{OrgID: org.ID.UInt64(), Limit: 1, Cursor: idCursor})
+	assert.EqualError(t, err, "invalid cursor: the cursor of another list")
+
 	// only the granted projects
 	list, err = provider.ListProjects(ctx, &query.ListProjectsRequest{OrgID: org.ID.UInt64(), IDs: []uint64{project2.ID.UInt64()}, Limit: 10})
 	require.NoError(t, err)

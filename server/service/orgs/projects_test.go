@@ -119,7 +119,7 @@ func TestService_Projects(t *testing.T) {
 	assert.EqualError(t, err, "not_found: project not found")
 
 	// list: org Admin lists all projects
-	db.EXPECT().ListProjects(gomock.Any(), &query.ListProjectsRequest{OrgID: 1, Limit: 100}).Return(&model.ProjectResult{
+	db.EXPECT().ListProjects(gomock.Any(), &query.ListProjectsRequest{OrgID: 1, Limit: xdb.DefaultPageSize}).Return(&model.ProjectResult{
 		Rows: model.ProjectSlice{testProject},
 	}, nil)
 	list, err := svc.ListProjects(ctx, &pb.ListProjectsRequest{})
@@ -127,7 +127,7 @@ func TestService_Projects(t *testing.T) {
 	require.Len(t, list.Projects, 1)
 
 	// list: a project-only member sees only granted projects
-	db.EXPECT().ListProjects(gomock.Any(), &query.ListProjectsRequest{OrgID: 1, IDs: []uint64{201}, Limit: 100}).Return(&model.ProjectResult{
+	db.EXPECT().ListProjects(gomock.Any(), &query.ListProjectsRequest{OrgID: 1, IDs: []uint64{201}, Limit: xdb.DefaultPageSize}).Return(&model.ProjectResult{
 		Rows: model.ProjectSlice{testProject},
 	}, nil)
 	list, err = projectOnly.ListProjects(testCtx("7", "1"), &pb.ListProjectsRequest{})
@@ -142,6 +142,30 @@ func TestService_Projects(t *testing.T) {
 	db.EXPECT().ListProjects(gomock.Any(), gomock.Any()).Return(nil, errors.New("db failed"))
 	_, err = svc.ListProjects(ctx, &pb.ListProjectsRequest{Limit: 5})
 	assert.EqualError(t, err, "unexpected: failed to list projects")
+
+	// list: the cursor of the previous page continues the listing by name
+	next := query.EncodeNameCursor("Test", xdb.NewID(201))
+	cursor, err := query.ParseNameCursor(next)
+	require.NoError(t, err)
+	db.EXPECT().ListProjects(gomock.Any(), &query.ListProjectsRequest{OrgID: 1, Limit: xdb.DefaultPageSize, Cursor: cursor}).Return(&model.ProjectResult{
+		Rows:        model.ProjectSlice{testProject},
+		HasNextPage: true,
+		Cursor:      next,
+	}, nil)
+	list, err = svc.ListProjects(ctx, &pb.ListProjectsRequest{Cursor: next})
+	require.NoError(t, err)
+	require.NotNil(t, list.NextPage)
+	assert.Equal(t, next, list.NextPage.Cursor)
+	assert.Zero(t, list.NextPage.Offset)
+
+	// list: initial starts cursor pagination
+	db.EXPECT().ListProjects(gomock.Any(), &query.ListProjectsRequest{OrgID: 1, Limit: xdb.DefaultPageSize, Cursor: query.NewCursor(0)}).Return(&model.ProjectResult{}, nil)
+	list, err = svc.ListProjects(ctx, &pb.ListProjectsRequest{Cursor: query.InitialCursor})
+	require.NoError(t, err)
+	assert.Nil(t, list.NextPage)
+
+	_, err = svc.ListProjects(ctx, &pb.ListProjectsRequest{Cursor: "not a cursor"})
+	assert.EqualError(t, err, "bad_request: invalid cursor")
 
 	// delete deactivates
 	db.EXPECT().UpdateProject(gomock.Any(), &query.UpdateProjectRequest{ID: 201, Status: pb.ItemStatus_Inactive}).Return(&model.Project{

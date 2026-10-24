@@ -84,7 +84,7 @@ func TestService_APIKeys(t *testing.T) {
 
 	// list
 	stored := &model.APIKey{ID: xdb.NewID(555), OrgID: xdb.NewID(1), ProjectID: xdb.NewID(201), Label: "ci", Key: "sk_1_x", Secret: "protected", Scopes: []string{"org:read"}, Status: pb.ItemStatus_Active}
-	db.EXPECT().ListAPIKeys(gomock.Any(), &query.ListAPIKeysRequest{OrgID: 1, ProjectID: 201, Limit: 100}).Return(&model.APIKeyResult{Rows: model.APIKeySlice{stored}}, nil)
+	db.EXPECT().ListAPIKeys(gomock.Any(), &query.ListAPIKeysRequest{OrgID: 1, ProjectID: 201, Limit: xdb.DefaultPageSize}).Return(&model.APIKeyResult{Rows: model.APIKeySlice{stored}}, nil)
 	list, err := svc.ListAPIKeys(ctx, &pb.ListAPIKeysRequest{ProjectID: "201"})
 	require.NoError(t, err)
 	require.Len(t, list.APIKeys, 1)

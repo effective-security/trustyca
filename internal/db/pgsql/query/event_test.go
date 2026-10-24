@@ -7,6 +7,8 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
 	"github.com/effective-security/trustyca/internal/db/schema"
+	"github.com/effective-security/xdb"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_EventsQuery(t *testing.T) {
@@ -14,8 +16,29 @@ func Test_EventsQuery(t *testing.T) {
 
 	before := time.Now().Add(-1 * time.Hour)
 	after := time.Now().Add(1 * time.Hour)
+	cursor, err := query.ParseTimeCursor(query.EncodeTimeCursor(xdb.Time(before), xdb.NewID(5)))
+	require.NoError(t, err)
 
 	check(t, []tcase{
+		{
+			// a cursor page filters past the key of the last row
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, ProjectID: 2, Limit: 10, Cursor: cursor}},
+			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
+FROM trustyca.event 
+WHERE org_id = $1 AND project_id = $2 AND (created_at, id) < ($3, $4) 
+ORDER BY created_at DESC, id DESC 
+LIMIT $5`,
+		},
+		{
+			// the first page of cursor pagination is offset 0
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, Limit: 10, Cursor: query.NewCursor(0)}},
+			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
+FROM trustyca.event 
+WHERE org_id = $1 
+ORDER BY created_at DESC, id DESC 
+LIMIT $2 
+OFFSET $3`,
+		},
 		{
 			query.CreateEvent, nil,
 			`INSERT INTO trustyca.event 

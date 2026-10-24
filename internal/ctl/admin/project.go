@@ -17,6 +17,7 @@ type ProjectListCmd struct {
 	Org    string `help:"the org ID to filter by"`
 	Limit  uint32 `help:"the maximum number of records to return"`
 	Offset uint32 `help:"the offset for the offset-based pagination"`
+	Cursor string `help:"the cursor for the cursor-based pagination: initial, or the one of the previous page"`
 }
 
 // Run the command
@@ -30,6 +31,7 @@ func (a *ProjectListCmd) Run(app App) error {
 		OrgID:  a.Org,
 		Limit:  a.Limit,
 		Offset: a.Offset,
+		Cursor: a.Cursor,
 	}
 	if a.Status != "" {
 		req.Status = pb.ItemStatus_Unknown.Parse(a.Status)

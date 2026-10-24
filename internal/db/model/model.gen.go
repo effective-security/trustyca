@@ -107,13 +107,13 @@ func (p *APIKeyResult) GetTableInfo() *xdbschema.TableInfo {
 // Indexes:
 //
 //	certificate_pkey: PRIMARY UNIQUE [id]
-//	idx_certificate_org_id_desc: [org_id,id]
-//	idx_certificate_org_ikid_id_desc: [org_id,ikid,id]
 //	idx_certificate_notafter: [not_after]
+//	idx_certificate_org_id_desc: [id,org_id]
+//	idx_certificate_org_ikid_id_desc: [ikid,id,org_id]
 //	idx_certificate_org_project_id_desc: [org_id,project_id,id]
-//	idx_certificate_org_project_notafter: [not_after,org_id,project_id]
+//	idx_certificate_org_project_notafter: [project_id,org_id,not_after]
 //	idx_certificate_skid: [skid]
-//	unique_certificate_ikid_serial: UNIQUE [serial_number,ikid]
+//	unique_certificate_ikid_serial: UNIQUE [ikid,serial_number]
 //	unique_certificate_sha256: UNIQUE [sha256]
 type Certificate struct {
 	// ID represents 'id' column of 'bigint'
@@ -796,6 +796,7 @@ func (p *MembershipResult) GetTableInfo() *xdbschema.TableInfo {
 // Primary key: id
 // Indexes:
 //
+//	idx_org_name_id: [id,name]
 //	org_pkey: PRIMARY UNIQUE [id]
 //	unique_org_alias: UNIQUE [alias]
 type Org struct {
@@ -804,7 +805,7 @@ type Org struct {
 	// Alias represents 'alias' column of 'character varying'
 	Alias string `db:"alias,varchar,max:32,index" json:",omitempty"`
 	// Name represents 'name' column of 'character varying'
-	Name string `db:"name,varchar,max:64" json:",omitempty"`
+	Name string `db:"name,varchar,max:64,index" json:",omitempty"`
 	// Description represents 'description' column of 'text'
 	Description xdb.NULLString `db:"description,text,null" json:",omitempty"`
 	// Status represents 'status' column of 'integer'
@@ -859,10 +860,11 @@ func (p *OrgResult) GetTableInfo() *xdbschema.TableInfo {
 // Primary key: id
 // Indexes:
 //
+//	idx_project_name_id: [name,id]
 //	idx_project_org_status: [org_id,status]
 //	project_pkey: PRIMARY UNIQUE [id]
 //	unique_project_org_alias: UNIQUE [alias,org_id]
-//	unique_project_org_id: UNIQUE [id,org_id]
+//	unique_project_org_id: UNIQUE [org_id,id]
 type Project struct {
 	// ID represents 'id' column of 'bigint'
 	ID xdb.ID `db:"id,int8,index,primary" json:",omitempty"`
@@ -871,7 +873,7 @@ type Project struct {
 	// Alias represents 'alias' column of 'character varying'
 	Alias string `db:"alias,varchar,max:64,index" json:",omitempty"`
 	// Name represents 'name' column of 'character varying'
-	Name string `db:"name,varchar,max:64" json:",omitempty"`
+	Name string `db:"name,varchar,max:64,index" json:",omitempty"`
 	// Description represents 'description' column of 'text'
 	Description xdb.NULLString `db:"description,text,null" json:",omitempty"`
 	// Status represents 'status' column of 'integer'

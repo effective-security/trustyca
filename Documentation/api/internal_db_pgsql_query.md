@@ -16,7 +16,9 @@ sql, name := query.ListCertificates(qp)
 err := xdb.ExecuteQueryWithPagination(ctx, db, &result, sql, qp)
 ```
 
-Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\_id IS NULL\) or AllOrgs; a mutation matches the exact scope with org\_id IS NOT DISTINCT FROM the org \(OrgArg\). Lists order by id DESC and page by offset or with a Cursor \(ParseCursor, EncodeCursor\).
+Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\_id IS NULL\) or AllOrgs; a mutation matches the exact scope with org\_id IS NOT DISTINCT FROM the org \(OrgArg\).
+
+The CA lists order by id DESC, the events by \(created\_at, id\) DESC, the orgs and the projects by \(name, id\) ASC, and page by offset or with a Cursor: the service decodes the cursor of a request with the parser of the list's sort key \(ParseCursor, ParseTimeCursor, ParseNameCursor\) and the provider encodes the cursor of the next page from the last row with the matching encoder \(EncodeCursor, EncodeTimeCursor, EncodeNameCursor\). A service parses the cursor of its request with ListCursor, which answers an invalid token as an invalid argument, and takes the page size from Limit, xdb.DefaultPageSize when the request names none.
 
 ## Index
 
@@ -34,6 +36,8 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
 - [func DeleteRowByID\(args ...any\) \(string, string\)](<#DeleteRowByID>)
 - [func DeleteRowByOrgAndID\(args ...any\) \(string, string\)](<#DeleteRowByOrgAndID>)
 - [func EncodeCursor\(lastID xdb.ID\) string](<#EncodeCursor>)
+- [func EncodeNameCursor\(lastName string, lastID xdb.ID\) string](<#EncodeNameCursor>)
+- [func EncodeTimeCursor\(lastAt xdb.Time, lastID xdb.ID\) string](<#EncodeTimeCursor>)
 - [func ExpireCertificates\(args ...any\) \(string, string\)](<#ExpireCertificates>)
 - [func FindIssuer\(args ...any\) \(string, string\)](<#FindIssuer>)
 - [func FindProfile\(args ...any\) \(string, string\)](<#FindProfile>)
@@ -54,6 +58,7 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
 - [func GetUserBy\(args ...any\) \(string, string\)](<#GetUserBy>)
 - [func GetUserInvites\(args ...any\) \(string, string\)](<#GetUserInvites>)
 - [func GetUserOrgs\(args ...any\) \(string, string\)](<#GetUserOrgs>)
+- [func Limit\(limit uint32\) uint32](<#Limit>)
 - [func ListAPIKeys\(args ...any\) \(string, string\)](<#ListAPIKeys>)
 - [func ListAllColumns\(args ...any\) \(string, string\)](<#ListAllColumns>)
 - [func ListCertificates\(args ...any\) \(string, string\)](<#ListCertificates>)
@@ -93,9 +98,13 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
 - [func UseAPIKey\(args ...any\) \(string, string\)](<#UseAPIKey>)
 - [type BuildQueryFunc](<#BuildQueryFunc>)
 - [type Cursor](<#Cursor>)
+  - [func ListCursor\(ctx context.Context, cursor string, parse func\(string\) \(Cursor, error\)\) \(Cursor, error\)](<#ListCursor>)
   - [func NewCursor\(lastID uint64\) Cursor](<#NewCursor>)
   - [func ParseCursor\(cursor string\) \(Cursor, error\)](<#ParseCursor>)
+  - [func ParseNameCursor\(cursor string\) \(Cursor, error\)](<#ParseNameCursor>)
+  - [func ParseTimeCursor\(cursor string\) \(Cursor, error\)](<#ParseTimeCursor>)
   - [func \(c Cursor\) IsSet\(\) bool](<#Cursor.IsSet>)
+  - [func \(c Cursor\) Key\(\) \[\]any](<#Cursor.Key>)
   - [func \(c Cursor\) LastID\(\) uint64](<#Cursor.LastID>)
 - [type DeleteExpiredCertificatesRequest](<#DeleteExpiredCertificatesRequest>)
   - [func \(r \*DeleteExpiredCertificatesRequest\) Args\(\) \[\]any](<#DeleteExpiredCertificatesRequest.Args>)
@@ -126,6 +135,7 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
   - [func \(r \*ListCrlsRequest\) Validate\(\) error](<#ListCrlsRequest.Validate>)
 - [type ListEventsRequest](<#ListEventsRequest>)
   - [func \(r \*ListEventsRequest\) QueryParams\(\) xdb.QueryParams](<#ListEventsRequest.QueryParams>)
+  - [func \(r \*ListEventsRequest\) Validate\(\) error](<#ListEventsRequest.Validate>)
 - [type ListIssuersRequest](<#ListIssuersRequest>)
   - [func \(r \*ListIssuersRequest\) QueryParams\(\) xdb.QueryParams](<#ListIssuersRequest.QueryParams>)
   - [func \(r \*ListIssuersRequest\) Validate\(\) error](<#ListIssuersRequest.Validate>)
@@ -133,11 +143,13 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
   - [func \(r \*ListMembershipsRequest\) QueryParams\(\) xdb.QueryParams](<#ListMembershipsRequest.QueryParams>)
 - [type ListOrgsRequest](<#ListOrgsRequest>)
   - [func \(r \*ListOrgsRequest\) QueryParams\(\) xdb.QueryParams](<#ListOrgsRequest.QueryParams>)
+  - [func \(r \*ListOrgsRequest\) Validate\(\) error](<#ListOrgsRequest.Validate>)
 - [type ListProfilesRequest](<#ListProfilesRequest>)
   - [func \(r \*ListProfilesRequest\) QueryParams\(\) xdb.QueryParams](<#ListProfilesRequest.QueryParams>)
   - [func \(r \*ListProfilesRequest\) Validate\(\) error](<#ListProfilesRequest.Validate>)
 - [type ListProjectsRequest](<#ListProjectsRequest>)
   - [func \(r \*ListProjectsRequest\) QueryParams\(\) xdb.QueryParams](<#ListProjectsRequest.QueryParams>)
+  - [func \(r \*ListProjectsRequest\) Validate\(\) error](<#ListProjectsRequest.Validate>)
 - [type ListRevokedCertificatesRequest](<#ListRevokedCertificatesRequest>)
   - [func \(r \*ListRevokedCertificatesRequest\) QueryParams\(\) xdb.QueryParams](<#ListRevokedCertificatesRequest.QueryParams>)
   - [func \(r \*ListRevokedCertificatesRequest\) Validate\(\) error](<#ListRevokedCertificatesRequest.Validate>)
@@ -147,6 +159,7 @@ Tenancy of the CA tables: a list names its org scope with OrgID, Platform \(org\
 - [type ListRootsRequest](<#ListRootsRequest>)
   - [func \(r \*ListRootsRequest\) QueryParams\(\) xdb.QueryParams](<#ListRootsRequest.QueryParams>)
   - [func \(r \*ListRootsRequest\) Validate\(\) error](<#ListRootsRequest.Validate>)
+- [type OrderDirection](<#OrderDirection>)
 - [type RevokeCertificateRequest](<#RevokeCertificateRequest>)
 - [type UpdateCertificateRequest](<#UpdateCertificateRequest>)
   - [func \(r \*UpdateCertificateRequest\) QueryParams\(\) xdb.QueryParams](<#UpdateCertificateRequest.QueryParams>)
@@ -231,7 +244,7 @@ func DeleteCrl(args ...any) (string, string)
 DeleteCrl returns SQL query to delete the CRL of an issuer by the exact org scope \(NULL for the platform\) and IKID
 
 <a name="DeleteExpiredCertificates"></a>
-## func [DeleteExpiredCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L342>)
+## func [DeleteExpiredCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L345>)
 
 ```go
 func DeleteExpiredCertificates(args ...any) (string, string)
@@ -249,7 +262,7 @@ func DeleteInvite(args ...any) (string, string)
 DeleteInvite returns SQL query
 
 <a name="DeleteMember"></a>
-## func [DeleteMember](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L153>)
+## func [DeleteMember](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L158>)
 
 ```go
 func DeleteMember(args ...any) (string, string)
@@ -276,16 +289,34 @@ func DeleteRowByOrgAndID(args ...any) (string, string)
 DeleteRowByOrgAndID returns SQL query to delete a row of a CA table by its exact org scope and ID: the first argument is the table info, the query arguments are the org ID \(NULL for the platform, see OrgArg\) and the row ID
 
 <a name="EncodeCursor"></a>
-## func [EncodeCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L66>)
+## func [EncodeCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L168>)
 
 ```go
 func EncodeCursor(lastID xdb.ID) string
 ```
 
-EncodeCursor returns the cursor of the page that follows the row with the ID
+EncodeCursor returns the cursor of the page that follows the row with the ID, for a list that pages by id
+
+<a name="EncodeNameCursor"></a>
+## func [EncodeNameCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L180>)
+
+```go
+func EncodeNameCursor(lastName string, lastID xdb.ID) string
+```
+
+EncodeNameCursor returns the cursor of the page that follows the row with the name and the ID, for a list that pages by \(name, id\)
+
+<a name="EncodeTimeCursor"></a>
+## func [EncodeTimeCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L174>)
+
+```go
+func EncodeTimeCursor(lastAt xdb.Time, lastID xdb.ID) string
+```
+
+EncodeTimeCursor returns the cursor of the page that follows the row with the creation time and the ID, for a list that pages by \(created\_at, id\)
 
 <a name="ExpireCertificates"></a>
-## func [ExpireCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L293>)
+## func [ExpireCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L296>)
 
 ```go
 func ExpireCertificates(args ...any) (string, string)
@@ -402,7 +433,7 @@ func GetOrgInvites(args ...any) (string, string)
 GetOrgInvites returns SQL query to list invites of all scopes for an org
 
 <a name="GetProjectByAlias"></a>
-## func [GetProjectByAlias](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L142>)
+## func [GetProjectByAlias](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L148>)
 
 ```go
 func GetProjectByAlias(args ...any) (string, string)
@@ -456,13 +487,22 @@ func GetUserInvites(args ...any) (string, string)
 GetUserInvites returns SQL query to list the pending, not expired invites for a user's email
 
 <a name="GetUserOrgs"></a>
-## func [GetUserOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L116>)
+## func [GetUserOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L123>)
 
 ```go
 func GetUserOrgs(args ...any) (string, string)
 ```
 
 GetUserOrgs returns SQL query
+
+<a name="Limit"></a>
+## func [Limit](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L270>)
+
+```go
+func Limit(limit uint32) uint32
+```
+
+Limit returns the page size of a list request
 
 <a name="ListAPIKeys"></a>
 ## func [ListAPIKeys](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/apikey.go#L73>)
@@ -483,7 +523,7 @@ func ListAllColumns(args ...any) (string, string)
 ListAllColumns returns SQL query to list all columns
 
 <a name="ListCertificates"></a>
-## func [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L223>)
+## func [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L226>)
 
 ```go
 func ListCertificates(args ...any) (string, string)
@@ -492,7 +532,7 @@ func ListCertificates(args ...any) (string, string)
 ListCertificates returns SQL query to list certificates
 
 <a name="ListCrls"></a>
-## func [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L125>)
+## func [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L128>)
 
 ```go
 func ListCrls(args ...any) (string, string)
@@ -501,7 +541,7 @@ func ListCrls(args ...any) (string, string)
 ListCrls returns SQL query to list the current CRLs
 
 <a name="ListEvents"></a>
-## func [ListEvents](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L135>)
+## func [ListEvents](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L105>)
 
 ```go
 func ListEvents(args ...any) (string, string)
@@ -510,7 +550,7 @@ func ListEvents(args ...any) (string, string)
 ListEvents returns SQL query
 
 <a name="ListIssuers"></a>
-## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L258>)
+## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L261>)
 
 ```go
 func ListIssuers(args ...any) (string, string)
@@ -519,25 +559,25 @@ func ListIssuers(args ...any) (string, string)
 ListIssuers returns SQL query to list issuers
 
 <a name="ListMemberships"></a>
-## func [ListMemberships](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L104>)
+## func [ListMemberships](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L107>)
 
 ```go
 func ListMemberships(args ...any) (string, string)
 ```
 
-ListMemberships returns SQL query
+ListMemberships returns SQL query: the grants by the email of the user, then by id, so the grants of a user are adjacent in creation order
 
 <a name="ListOrgs"></a>
-## func [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L99>)
+## func [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L108>)
 
 ```go
 func ListOrgs(args ...any) (string, string)
 ```
 
-ListOrgs returns SQL query
+ListOrgs returns SQL query: the orgs by name, then by id, paged by offset or by a cursor on that key \(ParseNameCursor, EncodeNameCursor\)
 
 <a name="ListProfiles"></a>
-## func [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L123>)
+## func [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L126>)
 
 ```go
 func ListProfiles(args ...any) (string, string)
@@ -546,16 +586,16 @@ func ListProfiles(args ...any) (string, string)
 ListProfiles returns SQL query to list certificate profiles
 
 <a name="ListProjects"></a>
-## func [ListProjects](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L118>)
+## func [ListProjects](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L127>)
 
 ```go
 func ListProjects(args ...any) (string, string)
 ```
 
-ListProjects returns SQL query
+ListProjects returns SQL query: the projects by name, then by id, paged by offset or by a cursor on that key \(ParseNameCursor, EncodeNameCursor\)
 
 <a name="ListRevoked"></a>
-## func [ListRevoked](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L151>)
+## func [ListRevoked](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L154>)
 
 ```go
 func ListRevoked(args ...any) (string, string)
@@ -564,7 +604,7 @@ func ListRevoked(args ...any) (string, string)
 ListRevoked returns SQL query to list revocations
 
 <a name="ListRevokedCertificates"></a>
-## func [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L220>)
+## func [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L226>)
 
 ```go
 func ListRevokedCertificates(args ...any) (string, string)
@@ -573,7 +613,7 @@ func ListRevokedCertificates(args ...any) (string, string)
 ListRevokedCertificates returns SQL query to list revoked certificates from the vw\_revoked\_certificate view
 
 <a name="ListRoots"></a>
-## func [ListRoots](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/root.go#L69>)
+## func [ListRoots](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/root.go#L72>)
 
 ```go
 func ListRoots(args ...any) (string, string)
@@ -807,9 +847,9 @@ type BuildQueryFunc func(args ...any) (string, string)
 ```
 
 <a name="Cursor"></a>
-## type [Cursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L22-L25>)
+## type [Cursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L35-L39>)
 
-Cursor is the decoded position of a list request that pages by id, newest first. The zero value selects offset pagination.
+Cursor is the decoded position of a list request that pages by keyset: the typed sort key of the last row of the previous page, in ORDER BY order, which the query binds in a row comparison past that row. The zero value selects offset pagination; NewCursor\(0\) is the first page of cursor pagination. A list decodes its cursor with the parser of its sort key \(ParseCursor, ParseTimeCursor, ParseNameCursor\) and encodes the cursor of its next page with the matching encoder. A parser records the kind of its key, and the Validate of a list request refuses the cursor of another list \(checkKey\) before the query runs.
 
 ```go
 type Cursor struct {
@@ -817,26 +857,53 @@ type Cursor struct {
 }
 ```
 
+<a name="ListCursor"></a>
+### func [ListCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L261>)
+
+```go
+func ListCursor(ctx context.Context, cursor string, parse func(string) (Cursor, error)) (Cursor, error)
+```
+
+ListCursor parses the cursor of a list request with the parser of the list's sort key \(query.ParseNameCursor for the projects\)
+
 <a name="NewCursor"></a>
-### func [NewCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L50>)
+### func [NewCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L57>)
 
 ```go
 func NewCursor(lastID uint64) Cursor
 ```
 
-NewCursor returns the cursor that continues a listing after the row with the ID; a zero ID starts at the newest row
+NewCursor returns the cursor of a list by id that continues after the row with the ID; a zero ID is the first page of cursor pagination of any list
 
 <a name="ParseCursor"></a>
-### func [ParseCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L30>)
+### func [ParseCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L101>)
 
 ```go
 func ParseCursor(cursor string) (Cursor, error)
 ```
 
-ParseCursor decodes the cursor of a list request: empty selects offset pagination, InitialCursor the first page of cursor pagination, otherwise the cursor returned with the previous page
+ParseCursor decodes the cursor of a list that pages by id, newest first \(the CA lists\): empty selects offset pagination, InitialCursor the first page of cursor pagination, otherwise the cursor returned with the previous page, encoded by EncodeCursor
+
+<a name="ParseNameCursor"></a>
+### func [ParseNameCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L126>)
+
+```go
+func ParseNameCursor(cursor string) (Cursor, error)
+```
+
+ParseNameCursor decodes the cursor of a list that pages by \(name, id\), ascending \(the orgs and the projects\), encoded by EncodeNameCursor; empty and InitialCursor are as in ParseCursor
+
+<a name="ParseTimeCursor"></a>
+### func [ParseTimeCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L113>)
+
+```go
+func ParseTimeCursor(cursor string) (Cursor, error)
+```
+
+ParseTimeCursor decodes the cursor of a list that pages by \(created\_at, id\), newest first \(the events\), encoded by EncodeTimeCursor; empty and InitialCursor are as in ParseCursor
 
 <a name="Cursor.IsSet"></a>
-### func \(Cursor\) [IsSet](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L55>)
+### func \(Cursor\) [IsSet](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L65>)
 
 ```go
 func (c Cursor) IsSet() bool
@@ -844,17 +911,26 @@ func (c Cursor) IsSet() bool
 
 IsSet returns true when the request uses cursor pagination
 
+<a name="Cursor.Key"></a>
+### func \(Cursor\) [Key](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L93>)
+
+```go
+func (c Cursor) Key() []any
+```
+
+Key returns a copy of the sort key of the last row of the previous page, after which the listing continues: the ID of a list by id, the time and the ID of a list by \(created\_at, id\), the name and the ID of a list by \(name, id\); nil for the first page and for offset pagination
+
 <a name="Cursor.LastID"></a>
-### func \(Cursor\) [LastID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L61>)
+### func \(Cursor\) [LastID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L81>)
 
 ```go
 func (c Cursor) LastID() uint64
 ```
 
-LastID returns the ID of the last row of the previous page, after which the listing continues; zero for the first page
+LastID returns the ID of the last row of the previous page, the last value of the key, after which the listing continues; zero for the first page and for offset pagination
 
 <a name="DeleteExpiredCertificatesRequest"></a>
-## type [DeleteExpiredCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L311-L317>)
+## type [DeleteExpiredCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L314-L320>)
 
 DeleteExpiredCertificatesRequest defines request to delete the certificates of any status whose validity ended before the time, with their revocations, a batch at a time \(retention\). The batch is the lowest IDs of the remaining rows, so the next batch continues without an offset.
 
@@ -869,7 +945,7 @@ type DeleteExpiredCertificatesRequest struct {
 ```
 
 <a name="DeleteExpiredCertificatesRequest.Args"></a>
-### func \(\*DeleteExpiredCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L332>)
+### func \(\*DeleteExpiredCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L335>)
 
 ```go
 func (r *DeleteExpiredCertificatesRequest) Args() []any
@@ -878,7 +954,7 @@ func (r *DeleteExpiredCertificatesRequest) Args() []any
 Args returns the positional arguments of DeleteExpiredCertificates: the time and the limit
 
 <a name="DeleteExpiredCertificatesRequest.Validate"></a>
-### func \(\*DeleteExpiredCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L320>)
+### func \(\*DeleteExpiredCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L323>)
 
 ```go
 func (r *DeleteExpiredCertificatesRequest) Validate() error
@@ -910,7 +986,7 @@ func (r *DeleteInviteRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="DeleteMemberRequest"></a>
-## type [DeleteMemberRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L132-L137>)
+## type [DeleteMemberRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L137-L142>)
 
 DeleteMemberRequest defines request to delete memberships. ProjectID deletes the Project scope membership of the project; Scope Org deletes the Org scope membership only; otherwise memberships of all scopes matching OrgID and UserID are deleted.
 
@@ -924,7 +1000,7 @@ type DeleteMemberRequest struct {
 ```
 
 <a name="DeleteMemberRequest.QueryParams"></a>
-### func \(\*DeleteMemberRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L140>)
+### func \(\*DeleteMemberRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L145>)
 
 ```go
 func (r *DeleteMemberRequest) QueryParams() xdb.QueryParams
@@ -933,7 +1009,7 @@ func (r *DeleteMemberRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ExpireCertificatesRequest"></a>
-## type [ExpireCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L254-L259>)
+## type [ExpireCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L257-L262>)
 
 ExpireCertificatesRequest defines request to mark the Active certificates whose validity ended before the time as Expired, a batch at a time. The batch is the lowest IDs of the remaining Active certificates: the status change removes a row from the set, so the next batch continues without an offset \(the certificate status task\).
 
@@ -947,7 +1023,7 @@ type ExpireCertificatesRequest struct {
 ```
 
 <a name="ExpireCertificatesRequest.Args"></a>
-### func \(\*ExpireCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L275>)
+### func \(\*ExpireCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L278>)
 
 ```go
 func (r *ExpireCertificatesRequest) Args() []any
@@ -956,7 +1032,7 @@ func (r *ExpireCertificatesRequest) Args() []any
 Args returns the positional arguments of ExpireCertificates: the Expired status, the Active status of the updated rows, the Active status of the batch, the time and the limit
 
 <a name="ExpireCertificatesRequest.Validate"></a>
-### func \(\*ExpireCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L262>)
+### func \(\*ExpireCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L265>)
 
 ```go
 func (r *ExpireCertificatesRequest) Validate() error
@@ -1135,7 +1211,7 @@ type ListCertificatesRequest struct {
 ```
 
 <a name="ListCertificatesRequest.QueryParams"></a>
-### func \(\*ListCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L198>)
+### func \(\*ListCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L201>)
 
 ```go
 func (r *ListCertificatesRequest) QueryParams() xdb.QueryParams
@@ -1185,7 +1261,7 @@ type ListCrlsRequest struct {
 ```
 
 <a name="ListCrlsRequest.QueryParams"></a>
-### func \(\*ListCrlsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L113>)
+### func \(\*ListCrlsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L116>)
 
 ```go
 func (r *ListCrlsRequest) QueryParams() xdb.QueryParams
@@ -1203,9 +1279,9 @@ func (r *ListCrlsRequest) Validate() error
 Validate returns ErrOrgScopeRequired when the request names no org scope
 
 <a name="ListEventsRequest"></a>
-## type [ListEventsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L38-L63>)
+## type [ListEventsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L39-L63>)
 
-ListEventsRequest defines request for Events. The events are sorted by created\_at DESC, id DESC. The latest events are at the top.
+ListEventsRequest defines request for Events, newest first: the events are sorted by created\_at DESC, id DESC, served by the org\-led indexes of the event table, and page by offset or by a cursor on that key \(ParseTimeCursor, EncodeTimeCursor\)
 
 ```go
 type ListEventsRequest struct {
@@ -1227,19 +1303,31 @@ type ListEventsRequest struct {
     Source string
     // Limit specifies maximum number of records to return
     Limit uint32
-    // Offset specifies the offset for pagination
+    // Offset specifies the offset for offset pagination
     Offset uint32
+    // Cursor specifies the position for cursor pagination, decoded by
+    // ParseTimeCursor
+    Cursor Cursor
 }
 ```
 
 <a name="ListEventsRequest.QueryParams"></a>
-### func \(\*ListEventsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L95>)
+### func \(\*ListEventsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L71>)
 
 ```go
 func (r *ListEventsRequest) QueryParams() xdb.QueryParams
 ```
 
 QueryParams returns the query params builder
+
+<a name="ListEventsRequest.Validate"></a>
+### func \(\*ListEventsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L66>)
+
+```go
+func (r *ListEventsRequest) Validate() error
+```
+
+Validate fails a request that carries the cursor of another list
 
 <a name="ListIssuersRequest"></a>
 ## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L194-L228>)
@@ -1285,7 +1373,7 @@ type ListIssuersRequest struct {
 ```
 
 <a name="ListIssuersRequest.QueryParams"></a>
-### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L236>)
+### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L239>)
 
 ```go
 func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
@@ -1303,7 +1391,7 @@ func (r *ListIssuersRequest) Validate() error
 Validate returns ErrOrgScopeRequired when the request names no org scope
 
 <a name="ListMembershipsRequest"></a>
-## type [ListMembershipsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L67-L81>)
+## type [ListMembershipsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L67-L83>)
 
 ListMembershipsRequest defines request to list memberships. Without ProjectID and Scope, memberships of all scopes are returned.
 
@@ -1318,7 +1406,9 @@ type ListMembershipsRequest struct {
     Scope     pb.Scope_Enum
     OrgStatus pb.ItemStatus_Enum
     Role      pb.Role_Enum
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return; zero is
+    // xdb.DefaultPageSize, the bound of the callers that read the whole
+    // scope (the grants of a user, the members of an org)
     Limit uint32
     // Offset specifies the offset for pagination
     Offset uint32
@@ -1326,7 +1416,7 @@ type ListMembershipsRequest struct {
 ```
 
 <a name="ListMembershipsRequest.QueryParams"></a>
-### func \(\*ListMembershipsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L84>)
+### func \(\*ListMembershipsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/member.go#L86>)
 
 ```go
 func (r *ListMembershipsRequest) QueryParams() xdb.QueryParams
@@ -1335,7 +1425,7 @@ func (r *ListMembershipsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListOrgsRequest"></a>
-## type [ListOrgsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L79-L86>)
+## type [ListOrgsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L79-L89>)
 
 ListOrgsRequest defined request for list operation on orgs
 
@@ -1343,21 +1433,33 @@ ListOrgsRequest defined request for list operation on orgs
 type ListOrgsRequest struct {
     // Limit specifies maximum number of records to return
     Limit uint32
-    // Offset specifies the offset for pagination
+    // Offset specifies the offset for offset pagination
     Offset uint32
+    // Cursor specifies the position for cursor pagination, decoded by
+    // ParseNameCursor
+    Cursor Cursor
     // Status specifies the status of the orgs
     Status pb.ItemStatus_Enum
 }
 ```
 
 <a name="ListOrgsRequest.QueryParams"></a>
-### func \(\*ListOrgsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L89>)
+### func \(\*ListOrgsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L97>)
 
 ```go
 func (r *ListOrgsRequest) QueryParams() xdb.QueryParams
 ```
 
 QueryParams returns the query params builder
+
+<a name="ListOrgsRequest.Validate"></a>
+### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/org.go#L92>)
+
+```go
+func (r *ListOrgsRequest) Validate() error
+```
+
+Validate fails a request that carries the cursor of another list
 
 <a name="ListProfilesRequest"></a>
 ## type [ListProfilesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L70-L99>)
@@ -1398,7 +1500,7 @@ type ListProfilesRequest struct {
 ```
 
 <a name="ListProfilesRequest.QueryParams"></a>
-### func \(\*ListProfilesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L107>)
+### func \(\*ListProfilesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L110>)
 
 ```go
 func (r *ListProfilesRequest) QueryParams() xdb.QueryParams
@@ -1416,7 +1518,7 @@ func (r *ListProfilesRequest) Validate() error
 Validate returns ErrOrgScopeRequired when the request names no org scope
 
 <a name="ListProjectsRequest"></a>
-## type [ListProjectsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L83-L95>)
+## type [ListProjectsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L83-L98>)
 
 ListProjectsRequest defines request for list operation on projects
 
@@ -1431,13 +1533,16 @@ type ListProjectsRequest struct {
     IDs []uint64
     // Limit specifies maximum number of records to return
     Limit uint32
-    // Offset specifies the offset for pagination
+    // Offset specifies the offset for offset pagination
     Offset uint32
+    // Cursor specifies the position for cursor pagination, decoded by
+    // ParseNameCursor
+    Cursor Cursor
 }
 ```
 
 <a name="ListProjectsRequest.QueryParams"></a>
-### func \(\*ListProjectsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L98>)
+### func \(\*ListProjectsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L106>)
 
 ```go
 func (r *ListProjectsRequest) QueryParams() xdb.QueryParams
@@ -1445,8 +1550,17 @@ func (r *ListProjectsRequest) QueryParams() xdb.QueryParams
 
 QueryParams returns the query params builder
 
+<a name="ListProjectsRequest.Validate"></a>
+### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L101>)
+
+```go
+func (r *ListProjectsRequest) Validate() error
+```
+
+Validate fails a request that carries the cursor of another list
+
 <a name="ListRevokedCertificatesRequest"></a>
-## type [ListRevokedCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L171-L198>)
+## type [ListRevokedCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L174-L201>)
 
 ListRevokedCertificatesRequest defines request to list revoked certificates with their certificate columns, newest revocation first. The request names its org scope: OrgID, Platform or AllOrgs.
 
@@ -1482,7 +1596,7 @@ type ListRevokedCertificatesRequest struct {
 ```
 
 <a name="ListRevokedCertificatesRequest.QueryParams"></a>
-### func \(\*ListRevokedCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L206>)
+### func \(\*ListRevokedCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L212>)
 
 ```go
 func (r *ListRevokedCertificatesRequest) QueryParams() xdb.QueryParams
@@ -1491,7 +1605,7 @@ func (r *ListRevokedCertificatesRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListRevokedCertificatesRequest.Validate"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L201>)
+### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L204>)
 
 ```go
 func (r *ListRevokedCertificatesRequest) Validate() error
@@ -1534,7 +1648,7 @@ type ListRevokedRequest struct {
 ```
 
 <a name="ListRevokedRequest.QueryParams"></a>
-### func \(\*ListRevokedRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L136>)
+### func \(\*ListRevokedRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L139>)
 
 ```go
 func (r *ListRevokedRequest) QueryParams() xdb.QueryParams
@@ -1576,7 +1690,7 @@ type ListRootsRequest struct {
 ```
 
 <a name="ListRootsRequest.QueryParams"></a>
-### func \(\*ListRootsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/root.go#L61>)
+### func \(\*ListRootsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/root.go#L64>)
 
 ```go
 func (r *ListRootsRequest) QueryParams() xdb.QueryParams
@@ -1592,6 +1706,29 @@ func (r *ListRootsRequest) Validate() error
 ```
 
 Validate returns ErrOrgScopeRequired when the request names no org scope
+
+<a name="OrderDirection"></a>
+## type [OrderDirection](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L217>)
+
+OrderDirection is the direction of the sort key of a list: its columns are all ascending or all descending, and a cursor page filters past the key of the last row with the matching comparison
+
+```go
+type OrderDirection int
+```
+
+<a name="OrderDirectionAsc"></a>
+
+```go
+const (
+    // OrderDirectionAsc lists the rows in ascending order of the key, and
+    // a cursor page the rows greater than the key
+    OrderDirectionAsc OrderDirection = 0
+    // OrderDirectionDesc lists the rows in descending order of the key,
+    // newest first for a key that ends with the id, and a cursor page the
+    // rows less than the key
+    OrderDirectionDesc OrderDirection = 1
+)
+```
 
 <a name="RevokeCertificateRequest"></a>
 ## type [RevokeCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/revoked.go#L16-L27>)

@@ -96,18 +96,27 @@ func (p *Provider) UpdateOrg(ctx context.Context, req *query.UpdateOrgRequest) (
 	return res, nil
 }
 
-// ListOrgs lists orgs
+// ListOrgs lists orgs by name
 func (p *Provider) ListOrgs(ctx context.Context, req *query.ListOrgsRequest) (*model.OrgResult, error) {
+	err := xdb.Validate(req)
+	if err != nil {
+		return nil, err
+	}
 	qp := req.QueryParams()
 	q, name := query.ListOrgs(qp)
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.OrgResult
-	err := xdb.ExecuteQuery(ctx, p, &rs, q, qp)
+	err = listRows(ctx, p, req.Cursor, orgCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}
 	return &rs, nil
+}
+
+// orgCursor returns the cursor of the page after the row
+func orgCursor(last *model.Org) string {
+	return query.EncodeNameCursor(last.Name, last.ID)
 }
 
 // GetOrg returns Org by ID

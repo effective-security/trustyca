@@ -90,16 +90,25 @@ func (p *Provider) FindProject(ctx context.Context, orgID uint64, alias string) 
 	return res, nil
 }
 
-// ListProjects lists projects of an org
+// ListProjects lists projects of an org by name
 func (p *Provider) ListProjects(ctx context.Context, req *query.ListProjectsRequest) (*model.ProjectResult, error) {
+	err := xdb.Validate(req)
+	if err != nil {
+		return nil, err
+	}
 	qp := req.QueryParams()
 	q, name := query.ListProjects(qp)
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.ProjectResult
-	err := xdb.ExecuteQueryWithPagination(ctx, p, &rs, q, qp)
+	err = listRows(ctx, p, req.Cursor, projectCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}
 	return &rs, nil
+}
+
+// projectCursor returns the cursor of the page after the row
+func projectCursor(last *model.Project) string {
+	return query.EncodeNameCursor(last.Name, last.ID)
 }

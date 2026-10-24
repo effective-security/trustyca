@@ -12,6 +12,8 @@
 //	defer tx.Close() // rolls back unless committed
 //	txProvider := tx.(*Provider)
 //
-// Lists page by offset or by a keyset cursor on id (listRows). The tests
-// need the configured local PostgreSQL database.
+// Lists page by offset or by a keyset cursor on their sort key (listRows):
+// id for the CA lists, (created_at, id) for the events, (name, id) for the
+// orgs and the projects. The tests need the configured local PostgreSQL
+// database.
 package pgsql

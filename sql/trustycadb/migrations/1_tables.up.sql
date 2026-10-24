@@ -111,6 +111,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_org_alias
     ON trustyca.org USING btree
     (alias);
 
+-- the orgs listed by name, then by id: a cursor page continues past (name, id)
+CREATE INDEX IF NOT EXISTS idx_org_name_id
+    ON trustyca.org USING btree
+    (name, id);
+
 SELECT create_constraint_if_not_exists(
     'trustyca',
     'org',
@@ -147,6 +152,12 @@ ALTER TABLE trustyca.project
 CREATE INDEX IF NOT EXISTS idx_project_org_status
     ON trustyca.project USING btree
     (org_id, status);
+
+-- the projects of every org listed by name, then by id (the support list
+-- across orgs); the projects of one org are bounded by idx_project_org_status
+CREATE INDEX IF NOT EXISTS idx_project_name_id
+    ON trustyca.project USING btree
+    (name, id);
 
 --
 -- Memberships

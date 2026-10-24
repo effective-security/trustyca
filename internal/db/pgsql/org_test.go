@@ -50,6 +50,31 @@ func Test_Org(t *testing.T) {
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(orgs.Rows), 1)
 
+	// the pages by (name, id) list every org once, whatever the other
+	// tests register meanwhile
+	seen := map[uint64]bool{}
+	req := &query.ListOrgsRequest{Limit: 2, Cursor: query.NewCursor(0)}
+	for pages := 0; pages < 100; pages++ {
+		page, err := provider.ListOrgs(ctx, req)
+		require.NoError(t, err)
+		assert.Zero(t, page.NextOffset)
+		for _, row := range page.Rows {
+			assert.False(t, seen[row.ID.UInt64()], "org %s listed twice", row.ID)
+			seen[row.ID.UInt64()] = true
+		}
+		if !page.HasNextPage {
+			assert.Empty(t, page.Cursor)
+			break
+		}
+		require.Len(t, page.Rows, 2)
+		require.NotEmpty(t, page.Cursor)
+		last := page.Rows[1]
+		req.Cursor, err = query.ParseNameCursor(page.Cursor)
+		require.NoError(t, err)
+		assert.Equal(t, []any{last.Name, last.ID.UInt64()}, req.Cursor.Key())
+	}
+	assert.True(t, seen[org.ID.UInt64()], "the org is listed")
+
 	memberships, err := provider.ListMemberships(ctx, &query.ListMembershipsRequest{OrgID: org.ID.UInt64()})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(memberships))

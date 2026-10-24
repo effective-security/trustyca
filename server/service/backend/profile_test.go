@@ -209,7 +209,7 @@ func TestService_ProfileProjectAccess(t *testing.T) {
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
 		OrgID:      1,
 		ProjectIDs: []uint64{201},
-		Limit:      defaultListLimit,
+		Limit:      xdb.DefaultPageSize,
 	}).Return(&model.CertificateProfileResult{Rows: []*model.CertificateProfile{tca.peer, projectPeer}}, nil)
 	list, err := svc.ListProfiles(viewer, &privpb.ListProfilesRequest{})
 	require.NoError(t, err)
@@ -217,20 +217,20 @@ func TestService_ProfileProjectAccess(t *testing.T) {
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
 		OrgID:     1,
 		ProjectID: 201,
-		Limit:     defaultListLimit,
+		Limit:     xdb.DefaultPageSize,
 	}).Return(&model.CertificateProfileResult{}, nil)
 	_, err = svc.ListProfiles(viewer, &privpb.ListProfilesRequest{ProjectID: "201"})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
 		OrgID:      1,
 		ProjectIDs: []uint64{},
-		Limit:      defaultListLimit,
+		Limit:      xdb.DefaultPageSize,
 	}).Return(&model.CertificateProfileResult{}, nil)
 	_, err = svc.ListProfiles(testCtx(strangerUser, "1"), &privpb.ListProfilesRequest{})
 	require.NoError(t, err)
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
 		OrgID: 1,
-		Limit: defaultListLimit,
+		Limit: xdb.DefaultPageSize,
 	}).Return(&model.CertificateProfileResult{}, nil)
 	_, err = svc.ListProfiles(apiKeyCtx("1", ""), &privpb.ListProfilesRequest{})
 	require.NoError(t, err)
@@ -266,7 +266,7 @@ func TestService_ListProfiles(t *testing.T) {
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
 		OrgID:       1,
 		IssuerLabel: testIssuerLabel,
-		Limit:       defaultListLimit,
+		Limit:       xdb.DefaultPageSize,
 	}).Return(&model.CertificateProfileResult{
 		Rows:        []*model.CertificateProfile{tca.peer},
 		HasNextPage: true,

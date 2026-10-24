@@ -16,7 +16,7 @@ defer tx.Close() // rolls back unless committed
 txProvider := tx.(*Provider)
 ```
 
-Lists page by offset or by a keyset cursor on id \(listRows\). The tests need the configured local PostgreSQL database.
+Lists page by offset or by a keyset cursor on their sort key \(listRows\): id for the CA lists, \(created\_at, id\) for the events, \(name, id\) for the orgs and the projects. The tests need the configured local PostgreSQL database.
 
 ## Index
 
@@ -423,7 +423,7 @@ func (p *Provider) DeleteMember(ctx context.Context, r *query.DeleteMemberReques
 DeleteMember deletes grants at the requested scope
 
 <a name="Provider.DeleteOrg"></a>
-### func \(\*Provider\) [DeleteOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L161>)
+### func \(\*Provider\) [DeleteOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L170>)
 
 ```go
 func (p *Provider) DeleteOrg(ctx context.Context, id uint64) (map[string]int64, error)
@@ -495,7 +495,7 @@ func (p *Provider) FindIssuer(ctx context.Context, orgID, projectID uint64, labe
 FindIssuer returns the issuer of the exact scope and label: a zero orgID is the platform scope and a zero projectID the org scope. The resolution of a label through the scopes is the caller's.
 
 <a name="Provider.FindOrg"></a>
-### func \(\*Provider\) [FindOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L126>)
+### func \(\*Provider\) [FindOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L135>)
 
 ```go
 func (p *Provider) FindOrg(ctx context.Context, alias string) (*model.Org, error)
@@ -576,7 +576,7 @@ func (p *Provider) GetCrls(ctx context.Context, ikids []string) ([]*model.Crl, e
 GetCrls returns the current CRLs of the issuers with the key identifiers, in any order; an issuer without a CRL has none in the result. The CRL publisher reads the CRLs of a page of issuers in one query, so the list is bounded by the caller's page; no key identifiers read nothing.
 
 <a name="Provider.GetEvent"></a>
-### func \(\*Provider\) [GetEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L78>)
+### func \(\*Provider\) [GetEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/event.go#L87>)
 
 ```go
 func (p *Provider) GetEvent(ctx context.Context, id uint64) (*model.Event, error)
@@ -639,7 +639,7 @@ func (p *Provider) GetLoginsByEmail(ctx context.Context, email string) (model.Lo
 GetLoginsByEmail returns Logins
 
 <a name="Provider.GetOrg"></a>
-### func \(\*Provider\) [GetOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L114>)
+### func \(\*Provider\) [GetOrg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L123>)
 
 ```go
 func (p *Provider) GetOrg(ctx context.Context, id uint64) (*model.Org, error)
@@ -729,7 +729,7 @@ func (p *Provider) GetUserMemberships(ctx context.Context, userID uint64) (model
 GetUserMemberships returns all grants of a user in active orgs
 
 <a name="Provider.GetUserOrgs"></a>
-### func \(\*Provider\) [GetUserOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L138>)
+### func \(\*Provider\) [GetUserOrgs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/org.go#L147>)
 
 ```go
 func (p *Provider) GetUserOrgs(ctx context.Context, userID uint64) (model.OrgSlice, error)
@@ -780,7 +780,7 @@ ListCrls lists the current CRLs, newest first; the request names its org scope
 func (p *Provider) ListEvents(ctx context.Context, r *query.ListEventsRequest) (*model.EventResult, error)
 ```
 
-ListEvents returns events
+ListEvents lists events, newest first
 
 <a name="Provider.ListIssuers"></a>
 ### func \(\*Provider\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/issuer.go#L258>)
@@ -816,7 +816,7 @@ ListMemberships lists memberships
 func (p *Provider) ListOrgs(ctx context.Context, req *query.ListOrgsRequest) (*model.OrgResult, error)
 ```
 
-ListOrgs lists orgs
+ListOrgs lists orgs by name
 
 <a name="Provider.ListProfiles"></a>
 ### func \(\*Provider\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/profile.go#L86>)
@@ -834,7 +834,7 @@ ListProfiles lists certificate profiles, newest first; the request names its org
 func (p *Provider) ListProjects(ctx context.Context, req *query.ListProjectsRequest) (*model.ProjectResult, error)
 ```
 
-ListProjects lists projects of an org
+ListProjects lists projects of an org by name
 
 <a name="Provider.ListRevoked"></a>
 ### func \(\*Provider\) [ListRevoked](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/revoked.go#L146>)

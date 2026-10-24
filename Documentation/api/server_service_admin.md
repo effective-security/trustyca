@@ -97,22 +97,22 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListAllIssuersReq
 ListIssuers lists the issuers of the org the request names, of the platform, or of every org and the platform, newest first, for support staff. Private key material is never part of the rows' API view.
 
 <a name="Service.ListOrgs"></a>
-### func \(\*Service\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/orgs.go#L12>)
+### func \(\*Service\) [ListOrgs](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/orgs.go#L13>)
 
 ```go
 func (s *Service) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*pb.OrgsResponse, error)
 ```
 
-
+ListOrgs lists the orgs by name, paged by offset or by cursor
 
 <a name="Service.ListProjects"></a>
-### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/projects.go#L13>)
+### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/projects.go#L15>)
 
 ```go
 func (s *Service) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest) (*pb.ProjectsResponse, error)
 ```
 
-
+ListProjects lists the projects of an org, or of every org, by name, paged by offset or by cursor
 
 <a name="Service.Name"></a>
 ### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L47>)

@@ -10,11 +10,18 @@ import (
 	"github.com/effective-security/xdb"
 )
 
+// ListProjects lists the projects of an org, or of every org, by name,
+// paged by offset or by cursor
 func (s *Service) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest) (*pb.ProjectsResponse, error) {
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseNameCursor)
+	if err != nil {
+		return nil, err
+	}
 	lreq := &query.ListProjectsRequest{
 		Status: req.Status,
 		Limit:  req.Limit,
 		Offset: req.Offset,
+		Cursor: cursor,
 	}
 	if req.OrgID != "" {
 		orgID, err := xdb.ParseID(req.OrgID)

@@ -60,18 +60,27 @@ func (p *Provider) CreateEvent(ctx context.Context, m *model.Event) (*model.Even
 	return res, nil
 }
 
-// ListEvents returns events
+// ListEvents lists events, newest first
 func (p *Provider) ListEvents(ctx context.Context, r *query.ListEventsRequest) (*model.EventResult, error) {
+	err := xdb.Validate(r)
+	if err != nil {
+		return nil, err
+	}
 	qp := r.QueryParams()
 	q, name := query.ListEvents(qp)
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.EventResult
-	err := xdb.ExecuteQueryWithPagination(ctx, p, &rs, q, qp)
+	err = listRows(ctx, p, r.Cursor, eventCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}
 	return &rs, nil
+}
+
+// eventCursor returns the cursor of the page after the row
+func eventCursor(last *model.Event) string {
+	return query.EncodeTimeCursor(last.CreatedAt, last.ID)
 }
 
 // GetEvent returns Event

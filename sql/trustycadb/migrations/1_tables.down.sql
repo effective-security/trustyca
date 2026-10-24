@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS trustyca.root_certificate;
 
 -- Access layer
 DROP TABLE IF EXISTS trustyca.event;
+DROP TABLE IF EXISTS trustyca.apikey;
 DROP TABLE IF EXISTS trustyca.invite;
 DROP VIEW IF EXISTS trustyca.vw_membership_info;
 DROP TABLE IF EXISTS trustyca.membership;
