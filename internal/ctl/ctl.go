@@ -1,6 +1,7 @@
 package ctl
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"io"
@@ -25,7 +26,6 @@ import (
 	"github.com/effective-security/x/fileutil/resolve"
 	"github.com/effective-security/x/format"
 	"github.com/effective-security/x/print"
-	"github.com/effective-security/x/values"
 	"github.com/effective-security/xlog"
 )
 
@@ -56,7 +56,7 @@ type Cli struct {
 	TimeFormat string `name:"time" help:"Print time format: utc|local|ago" hidden:"" default:"utc"`
 
 	Timeout   int    `help:"Connection timeout"  default:"6"`
-	Cert      string `short:"c" help:"Client certificate file for mTLS; its identity replaces the auth token when none is stored"`
+	Cert      string `short:"c" help:"Client certificate file for mTLS"`
 	CertKey   string `short:"k" help:"Client certificate key for mTLS"`
 	TrustedCA string `short:"r" help:"Trusted CA store for server TLS"`
 
@@ -172,7 +172,7 @@ func NewCallerIdentity() (credentials.CallerIdentity, error) {
 	key := os.Getenv("AWS_ACCESS_KEY_ID")
 	secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	session := os.Getenv("AWS_SESSION_TOKEN")
-	region := values.StringsCoalesce(os.Getenv("AWS_DEFAULT_REGION"), os.Getenv("AWS_REGION"))
+	region := cmp.Or(os.Getenv("AWS_DEFAULT_REGION"), os.Getenv("AWS_REGION"))
 
 	if key == "" || secret == "" {
 		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_KEY must be set to use --sts flag")
@@ -218,7 +218,7 @@ clients:
 func (c *Cli) configFileName() string {
 	cfg := c.Cfg
 	if cfg == "" {
-		storage := values.StringsCoalesce(
+		storage := cmp.Or(
 			c.Storage,
 			os.Getenv("TRUSTYCA_STORAGE"),
 			DefaultStoragePath,
@@ -257,7 +257,7 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 		return c.rpcClient, nil
 	}
 
-	host := values.StringsCoalesce(c.Server, os.Getenv("TRUSTYCA_SERVER"))
+	host := cmp.Or(c.Server, os.Getenv("TRUSTYCA_SERVER"))
 	if host == "" {
 		return nil, errors.New("no server specified. Use -s flag or TRUSTYCA_SERVER env var")
 	}
@@ -267,6 +267,13 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 
 	var err error
 
+	// a host the config file does not list, such as the backend listener,
+	// keeps its token and DPoP keys in the storage folder too
+	storage := cmp.Or(
+		c.Storage,
+		os.Getenv("TRUSTYCA_STORAGE"),
+		DefaultStoragePath,
+	)
 	timeout := time.Duration(c.Timeout) * time.Second
 	clientCfg := &rpcclient.Config{
 		DialTimeout:          timeout,
@@ -274,6 +281,7 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 		DialKeepAliveTime:    timeout,
 		Endpoint:             host,
 		UserAgent:            fmt.Sprintf("trustycactl %s", version.Current().String()),
+		StorageFolder:        resolve.ExpandPath(storage),
 	}
 
 	if strings.HasPrefix(host, "https://") {
@@ -287,7 +295,7 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 		if err == nil {
 			rc := f.ConfigForHost(host)
 			if rc != nil {
-				storage := values.StringsCoalesce(
+				storage := cmp.Or(
 					c.Storage,
 					os.Getenv("TRUSTYCA_STORAGE"),
 					rc.StorageFolder,
@@ -324,14 +332,11 @@ func (c *Cli) RPCClient(skipAuth bool) (*rpcclient.Client, error) {
 			// 		return nil, err
 			// 	}
 			// } else {
+			// the operator is a DPoP token, on the backend listener too: a
+			// client certificate is a service identity, never the operator
 			err = clientCfg.LoadAuthTokenOrFromEnv("TRUSTYCA_AUTH_TOKEN")
 			if err != nil {
-				// a client certificate is the identity of a backend caller
-				// (the trustyca-admin role): the token is optional with it
-				if cert == "" {
-					return nil, errors.WithMessage(err, "unable to load auth token")
-				}
-				logger.KV(xlog.DEBUG, "reason", "no_auth_token", "identity", "client_certificate")
+				return nil, errors.WithMessage(err, "unable to load auth token")
 			}
 			//}
 		}
@@ -355,7 +360,7 @@ func (c *Cli) HTTPClient(skipAuth bool) (*retriable.Client, error) {
 		return c.httpClient, nil
 	}
 
-	server := values.StringsCoalesce(c.Server, os.Getenv("TRUSTYCA_SERVER"))
+	server := cmp.Or(c.Server, os.Getenv("TRUSTYCA_SERVER"))
 	if server == "" {
 		return nil, errors.New("no server specified. Use -s flag or TRUSTYCA_SERVER env var")
 	}
@@ -373,7 +378,7 @@ func (c *Cli) HTTPClient(skipAuth bool) (*retriable.Client, error) {
 	}
 
 	// expand Storage in order of priorities: flag, Env, config, default
-	storage := values.StringsCoalesce(
+	storage := cmp.Or(
 		c.Storage,
 		os.Getenv("TRUSTYCA_STORAGE"),
 		client.Config.StorageFolder,
@@ -405,7 +410,11 @@ func (c *Cli) HTTPClient(skipAuth bool) (*retriable.Client, error) {
 			// 	}
 			// 	c.httpClient.WithCallerIdentity(ci)
 			// } else {
-			err = c.httpClient.SetAuthorization()
+			err = client.Config.LoadAuthTokenOrFromEnv("TRUSTYCA_AUTH_TOKEN")
+			if err != nil {
+				return nil, errors.WithMessage(err, "unable to load auth token")
+			}
+			err = client.SetAuthorization()
 			if err != nil {
 				return nil, err
 			}
@@ -490,7 +499,7 @@ func (c *Cli) CISClient() (pb.CISServer, error) {
 // BackendClient returns the CA client of the connection: the CA of the
 // service identities (privpb.Backend), which names the org of every
 // request. It is served by the backend listener over gRPC only, to the
-// trustyca-admin identity of the client certificate (--cert, --cert-key).
+// operator's DPoP token (the trustyca-admin role of its email).
 func (c *Cli) BackendClient() (privpb.BackendServer, error) {
 	if c.HTTP {
 		return nil, errors.New("CA endpoint is allowed only over gRPC")

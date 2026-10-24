@@ -287,8 +287,8 @@ make gen-sql-schema
 
 CI (`.github/workflows/build.yml`) builds and prepares the local stack, runs
 `make test` on pushes and `make covtest` on PRs, then `make docker-citest`,
-and publishes a coverage status against `MIN_TESTCOV`, which the workflow
-does not set yet. CI does not run `make lint` or the race detector; run them
+and publishes a coverage status against `MIN_TESTCOV` (88, set in the
+workflow `env`; raise it as the coverage improves). CI does not run `make lint` or the race detector; run them
 locally. Pushes to `main` that change `.VERSION` create a tag
 `<.VERSION>.<commit count>`.
 

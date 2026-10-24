@@ -17,38 +17,38 @@ func TestFactory(t *testing.T) {
 	require.NotEmpty(t, homeDir, "HOME is not set")
 	f, err := NewFactory([]Config{
 		{
-			Name: ClientNameDefault,
+			Name: ClientNameCA,
 			ServerURL: map[string]string{
 				"local": "https://localhost:8880",
 			},
 			ClientTLS: gserver.TLSInfo{
-				CertFile:      homeDir + "/.trustyca/certs/trustyca_client.pem",
-				KeyFile:       homeDir + "/.trustyca/certs/trustyca_client.key",
+				CertFile:      homeDir + "/.trustyca/certs/trustyca_peer.pem",
+				KeyFile:       homeDir + "/.trustyca/certs/trustyca_peer.key",
 				TrustedCAFile: homeDir + "/.trustyca/certs/trustyca_root.pem",
 			},
 		},
 	}, WithTLS(nil))
 	require.NoError(t, err)
-	_, _, err = f.StatusClient(ClientNameDefault, "invalid")
-	assert.EqualError(t, err, "server invalid not found in client default")
+	_, _, err = f.StatusClient(ClientNameCA, "invalid")
+	assert.EqualError(t, err, "server invalid not found in client ca")
 	_, _, err = f.StatusClient(ClientNameAIA, "local")
 	assert.EqualError(t, err, "client aia not found")
 
-	_, closer, err := f.StatusClient(ClientNameDefault, "local")
+	_, closer, err := f.StatusClient(ClientNameCA, "local")
 	require.NoError(t, err)
 	defer closer.Close()
 
-	_, closer, err = f.OrgsClient(ClientNameDefault, "local")
+	_, closer, err = f.OrgsClient(ClientNameCA, "local")
 	require.NoError(t, err)
 	defer closer.Close()
 
-	_, closer, err = f.CAClient(ClientNameDefault, "local")
+	_, closer, err = f.CAClient(ClientNameCA, "local")
 	require.NoError(t, err)
 	defer closer.Close()
-	_, _, err = f.CAClient(ClientNameDefault, "invalid")
-	assert.EqualError(t, err, "server invalid not found in client default")
+	_, _, err = f.CAClient(ClientNameCA, "invalid")
+	assert.EqualError(t, err, "server invalid not found in client ca")
 
-	_, closer, err = f.CISClient(ClientNameDefault, "local")
+	_, closer, err = f.CISClient(ClientNameCA, "local")
 	require.NoError(t, err)
 	defer closer.Close()
 
@@ -122,7 +122,7 @@ func TestNewFactory_Names(t *testing.T) {
 func TestFactory_WithTLS(t *testing.T) {
 	f, err := NewFactory([]Config{
 		{
-			Name: ClientNameDefault,
+			Name: ClientNameCA,
 			ServerURL: map[string]string{
 				"local": "https://localhost:8880",
 			},
@@ -134,11 +134,11 @@ func TestFactory_WithTLS(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	_, _, err = f.CAClient(ClientNameDefault, "local")
+	_, _, err = f.CAClient(ClientNameCA, "local")
 	require.Error(t, err, "the client TLS files do not exist")
 	assert.Contains(t, err.Error(), "unable to build TLS configuration")
 
-	c, err := f.(*factory).NewClient(ClientNameDefault, "local", WithTLS(&tls.Config{MinVersion: tls.VersionTLS12}))
+	c, err := f.(*factory).NewClient(ClientNameCA, "local", WithTLS(&tls.Config{MinVersion: tls.VersionTLS12}))
 	require.NoError(t, err)
 	defer c.Close()
 	assert.NotNil(t, c.Conn())
@@ -148,7 +148,7 @@ func TestFactoryCNA(t *testing.T) {
 	ci := &callerIdentityMock{}
 	cfgs := []Config{
 		{
-			Name: ClientNameDefault,
+			Name: ClientNameCA,
 			ServerURL: map[string]string{
 				"local": "https://localhost:8880",
 			},
@@ -164,7 +164,7 @@ func TestFactoryCNA(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, f.(*factory).dops.callerIdentity)
 
-	c, err := f.(*factory).NewClient(ClientNameDefault, "local", WithCallerIdentity(ci))
+	c, err := f.(*factory).NewClient(ClientNameCA, "local", WithCallerIdentity(ci))
 	require.NoError(t, err)
 	ops := c.Opts()
 	assert.NotNil(t, ops)

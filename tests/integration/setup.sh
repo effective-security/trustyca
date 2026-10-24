@@ -65,7 +65,7 @@ gen_certs() {
         --san "$TEST_CERTS_SAN" \
         --root-ca "${CITEST_DIR}/root/trustyca_root.pem" \
         --root-ca-key "${CITEST_DIR}/root/trustyca_root.key" \
-        --ca1 --ca2 --bundle --server --peer --client --admin --ra --aia \
+        --ca1 --ca2 --bundle --server --peer --client --ra --aia \
         >"${CITEST_DIR}/gen_certs.log" 2>&1 || {
         echo "*** gen_certs.sh failed:" >&2
         cat "${CITEST_DIR}/gen_certs.log" >&2

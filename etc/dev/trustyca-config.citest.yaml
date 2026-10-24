@@ -50,6 +50,16 @@ servers:
     timeout:
       # a cold container is slower than a warm dev machine
       request: 15s
+    identity_map:
+      jwt_dpop:
+        # the operator of the tests (test_operator.sh) in place of the
+        # operators of the base file; the backend maps the same tokens
+        roles: &operators
+          trustyca-admin:
+            - operator@trustyca.io
   backend:
     timeout:
       request: 15s
+    identity_map:
+      jwt_dpop:
+        roles: *operators

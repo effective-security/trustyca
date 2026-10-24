@@ -23,9 +23,6 @@ import (
 const (
 	// UserAgentWfe is the user agent of the clients of the service
 	UserAgentWfe = "trustyca"
-	// ClientNameDefault is the client of a process that has a single
-	// identity, such as a tool
-	ClientNameDefault = "default"
 	// ClientNameAIA is the client the AIA service forwards OCSP requests to
 	// the backend with: the trustyca-aia identity
 	ClientNameAIA = "aia"

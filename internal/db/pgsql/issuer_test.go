@@ -3,6 +3,7 @@ package pgsql_test
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db"
@@ -344,6 +345,27 @@ func Test_Issuer_RootAnchor(t *testing.T) {
 	wrong = model.NewRootCertificate(foreign.Cert, org.ID, pb.Trust_Private, testutils.CertPEM(foreign.Cert))
 	_, err = provider.RegisterIssuer(ctx, m, wrong)
 	assert.EqualError(t, err, "the anchor must be the certificate of the issuer in its org")
+	// the identity columns are derived from the PEM, not taken as claimed
+	wrong.Sha256 = m.Sha256
+	wrong.Skid = m.Skid
+	_, err = provider.RegisterIssuer(ctx, m, wrong)
+	assert.EqualError(t, err, "the anchor must be the certificate of the issuer in its org")
+	for name, mod := range map[string]func(a *model.RootCertificate){
+		"skid":       func(a *model.RootCertificate) { a.Skid = certutil.GetSubjectKeyID(foreign.Cert) },
+		"subject":    func(a *model.RootCertificate) { a.Subject = foreign.Cert.Subject.String() },
+		"not_before": func(a *model.RootCertificate) { a.NotBefore = a.NotBefore.Add(time.Second) },
+		"not_after":  func(a *model.RootCertificate) { a.NotAfter = a.NotAfter.Add(-time.Second) },
+	} {
+		wrong = model.NewRootCertificate(root.Cert, org.ID, pb.Trust_Private, m.Pem)
+		mod(wrong)
+		_, err = provider.RegisterIssuer(ctx, m, wrong)
+		assert.EqualError(t, err, "the anchor must be the certificate of the issuer in its org", name)
+	}
+	wrong = model.NewRootCertificate(root.Cert, org.ID, pb.Trust_Private, "not a certificate")
+	_, err = provider.RegisterIssuer(ctx, m, wrong)
+	assert.EqualError(t, err, "invalid anchor certificate: unable to parse PEM")
+	_, err = provider.FindIssuer(ctx, org.ID.UInt64(), 0, "ANCHORED")
+	assert.True(t, xdb.IsNotFoundError(err), "no rejected anchor stores the issuer: %v", err)
 
 	anchor := model.NewRootCertificate(root.Cert, org.ID, pb.Trust_Private, m.Pem)
 	res, err := provider.RegisterIssuer(ctx, m, anchor)

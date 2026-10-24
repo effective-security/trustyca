@@ -149,7 +149,7 @@ gen_test_certs: trusty_root
 		--san $(TEST_CERTS_SAN) \
 		--root-ca $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.pem \
 		--root-ca-key $(PROJ_ROOT)/etc/dev/certs/root/trustyca_root.key \
-		--ca1 --ca2  --bundle --server --peer --client --admin --ra --aia --force
+		--ca1 --ca2  --bundle --server --peer --client --ra --aia --force
 
 start-localstack:
 	echo "*** starting localstack"

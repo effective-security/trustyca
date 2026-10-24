@@ -19,6 +19,7 @@ if [[ ${#SUITE[@]} -eq 0 ]]; then
         test_status.sh
         test_auth.sh
         test_cookies.sh
+        test_operator.sh
     )
 fi
 

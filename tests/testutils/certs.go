@@ -67,6 +67,26 @@ func (ca *TestCA) Issue(t testing.TB, cn string, notBefore, notAfter time.Time) 
 	return sign(t, template, ca, &TestCA{Key: key})
 }
 
+// Renew returns the CA with the same key and parent and a new certificate,
+// valid for a year longer: a renewal that keeps the key, which the service
+// refuses
+func (ca *TestCA) Renew(t testing.TB) *TestCA {
+	t.Helper()
+	template := &x509.Certificate{
+		SerialNumber:          randomSerialNumber(t),
+		Subject:               ca.Cert.Subject,
+		NotBefore:             ca.Cert.NotBefore,
+		NotAfter:              ca.Cert.NotAfter.AddDate(1, 0, 0),
+		KeyUsage:              ca.Cert.KeyUsage,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+		SubjectKeyId:          ca.Cert.SubjectKeyId,
+	}
+	renewed := &TestCA{Key: ca.Key, Parent: ca.Parent}
+	renewed.Cert = sign(t, template, ca.Parent, renewed)
+	return renewed
+}
+
 // ChainPEM returns the PEM encoding of the CA certificates above this one,
 // from the parent up to the root; empty for a root
 func (ca *TestCA) ChainPEM() string {

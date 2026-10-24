@@ -186,9 +186,12 @@ The tenants (the Web UI, the CLI, API keys) call `pb.CA` on the `wfe`
 listener with their token, and their requests carry no org: it is the org
 of the token. The Registration Authority (`trustyca-ra`) and the operator
 (`trustyca-admin`) call `privpb.Backend` on the `backend` listener and name
-the org of every request; both identities are TLS client certificates
-mapped by `identity_map.tls` of the listener (`make gen_test_certs`
-creates `trustyca_ra` and `trustyca_admin`). The `backend` service holds
+the org of every request. The RA is a TLS client certificate mapped by
+`identity_map.tls` of the listener (`make gen_test_certs` creates
+`trustyca_ra`); the operator is a DPoP token of the `wfe` whose email
+`identity_map.jwt_dpop.roles` lists under `trustyca-admin` (the backend
+maps the `jwt_dpop` of the wfe), and no certificate maps to it: client
+certificates are for the calls between services. The `backend` service holds
 the issuer keys and is never exposed to the internet: the `ca` service of
 the `wfe` forwards every call to it with the org of the token, in process
 or with the `ca` service client of the `clients` section (the
@@ -203,9 +206,14 @@ of the orgs with the `tenant_ca` profile, and the L2 CA `trusty.svc` the
 platform's own certificates.
 
 `trustycactl ca ...` operates the CA through `privpb.Backend` with the
-admin certificate; every request names the org:
+DPoP token of an operator; every request names the org, whichever org the
+login selected:
 
-    alias trustycactl='bin/trustycactl -s https://localhost:8881 -c ~/.trustyca/certs/trustyca_admin.pem -k ~/.trustyca/certs/trustyca_admin.key -r ~/.trustyca/certs/trustyca_root.pem'
+    alias trustycactl='bin/trustycactl -s https://localhost:8881 -r ~/.trustyca/certs/trustyca_root.pem --storage ~/.trustyca'
+    # once: a DPoP key, and a login bound to it as an operator (the local
+    # provider signs local+denis@tbilicode.com in as denis@tbilicode.com)
+    trustycactl dpop-key gen operator
+    bin/trustyca -s https://localhost:8880 auth login local+denis@tbilicode.com --dpop-key default
     # the platform issuers and anchors, the certificates of every org
     trustycactl ca issuer list --platform
     trustycactl ca root list

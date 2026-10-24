@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"net"
 	"os"
+	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/effective-security/trustyca/api/pb"
@@ -128,6 +131,43 @@ func TestParse(t *testing.T) {
 		_, err = cl.Cli.HTTPClient(true)
 		assert.NoError(t, err)
 	})
+
+	t.Run("auth_token", func(t *testing.T) {
+		t.Setenv("TRUSTYCA_AUTH_TOKEN", "")
+		storage := t.TempDir()
+		var cl struct {
+			Cli
+			Cmd struct{} `kong:"cmd"`
+		}
+		p := mustNew(t, &cl)
+		_, err := p.Parse([]string{
+			"cmd",
+			// a host the config file does not list, as the backend listener
+			"--server", "https://localhost:1",
+			"--timeout", "1",
+			"--cfg", filepath.Join(storage, "config.yaml"),
+			"--storage", storage,
+			"--cert", "~/.trustyca/certs/trustyca_client.pem",
+			"--cert-key", "~/.trustyca/certs/trustyca_client.key",
+			"--trusted-ca", "~/.trustyca/certs/trustyca_root.pem",
+		})
+		require.NoError(t, err)
+
+		// a client certificate is not the operator: the token is required
+		_, err = cl.Cli.RPCClient(false)
+		assert.ErrorContains(t, err, "unable to load auth token: credentials not found")
+
+		_, err = cl.Cli.HTTPClient(false)
+		assert.ErrorContains(t, err, "unable to load auth token: credentials not found")
+
+		// the token of the host is the one of the storage folder
+		exp := strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10)
+		require.NoError(t, os.WriteFile(filepath.Join(storage, ".auth_token"), []byte("access_token=tok&exp="+exp), 0600))
+		_, err = cl.Cli.RPCClient(false)
+		assert.EqualError(t, err, "unable to create client: failed to connect to \"localhost:1\": context deadline exceeded")
+		_, err = cl.Cli.HTTPClient(false)
+		assert.NoError(t, err)
+	})
 }
 
 func TestClients(t *testing.T) {
@@ -173,6 +213,14 @@ func TestClients(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = cl.Cli.BackendClient()
 	assert.NoError(t, err)
+	_, err = cl.Cli.StatusClient()
+	assert.NoError(t, err)
+	_, err = cl.Cli.AuthClient(true)
+	assert.NoError(t, err)
+	_, err = cl.Cli.OrgsClient()
+	assert.NoError(t, err)
+	_, err = cl.Cli.CISClient()
+	assert.NoError(t, err)
 
 	cl.Cli.HTTP = true
 	_, err = cl.Cli.HTTPClient(true)
@@ -181,6 +229,14 @@ func TestClients(t *testing.T) {
 	assert.EqualError(t, err, "admin endpoint is allowed only over gRPC")
 	_, err = cl.Cli.BackendClient()
 	assert.EqualError(t, err, "CA endpoint is allowed only over gRPC")
+	_, err = cl.Cli.StatusClient()
+	assert.NoError(t, err)
+	_, err = cl.Cli.AuthClient(true)
+	assert.NoError(t, err)
+	_, err = cl.Cli.OrgsClient()
+	assert.NoError(t, err)
+	_, err = cl.Cli.CISClient()
+	assert.NoError(t, err)
 }
 
 func mustNew(t *testing.T, cli any, options ...kong.Option) *kong.Kong {

@@ -223,6 +223,19 @@ func serviceCtx(role string) context.Context {
 	return authctx.NewTrustyCtx(context.Background(), identity.NewRequestContext(uid, "/test"))
 }
 
+// operatorCtx returns a request context of the operator (trustyca-admin)
+// signed in with DPoP: its token selected the org, which is not the scope of
+// its requests
+func operatorCtx(orgID string) context.Context {
+	claims := map[string]any{
+		"sub":            "7",
+		"email":          "operator@trustyca.io",
+		authctx.ClaimOrg: orgID,
+	}
+	uid := identity.NewIdentity("trustyca-admin", "7", orgID, claims, "tok", "DPoP", identity.MethodDPoP)
+	return authctx.NewTrustyCtx(context.Background(), identity.NewRequestContext(uid, "/test"))
+}
+
 // eventRecorder captures the events the service emits
 type eventRecorder struct {
 	mu     sync.Mutex
