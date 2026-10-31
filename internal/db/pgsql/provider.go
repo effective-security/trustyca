@@ -62,7 +62,7 @@ func (p *Provider) Name() string {
 // If a non-default isolation level is used that the driver doesn't support,
 // an error will be returned.
 func (p *Provider) BeginTx(ctx context.Context, opts *sql.TxOptions) (xdb.Provider, error) {
-	tx, err := p.prov.BeginTx(ctx, nil)
+	tx, err := p.prov.BeginTx(ctx, opts)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

@@ -254,6 +254,28 @@ func (p *Provider) GetIssuerBySKID(ctx context.Context, skid string) (*model.Iss
 	return res, nil
 }
 
+// CountIssuers counts the issuers of the org of the request by lifecycle
+// status; a status without issuers has no entry
+func (p *Provider) CountIssuers(ctx context.Context, req *query.CountIssuersRequest) (model.IssuerCounts, error) {
+	err := xdb.Validate(req)
+	if err != nil {
+		return nil, err
+	}
+	qp := req.QueryParams()
+	q, name := query.CountIssuers(qp)
+	defer DbMeasureQuerySince(name, time.Now())
+
+	rows, err := xdb.ExecuteListQuery[model.StatusCount](ctx, p, q, qp.Args()...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	res := make(model.IssuerCounts, len(rows))
+	for _, row := range rows {
+		res[pb.IssuerStatus_Enum(row.Status)] = uint64(row.Count)
+	}
+	return res, nil
+}
+
 // ListIssuers lists issuers, newest first; the request names its org scope
 func (p *Provider) ListIssuers(ctx context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error) {
 	err := xdb.Validate(req)

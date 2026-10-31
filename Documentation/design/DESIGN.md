@@ -476,6 +476,7 @@ Immutable issuance record plus mutable `label`, `metadata`, `locations`,
 | `(org_id, id DESC)`               | `ListCertificates` of an org, newest first, keyset cursor on `id`     |
 | `(org_id, project_id, id DESC)`   | `ListCertificates` of a project                                       |
 | `(org_id, project_id, not_after)` | expiring certificates per tenant                                      |
+| `(org_id, project_id, status, not_after)` | the counts of the tenant summary (`GetSummary`): by status, and the Active certificates expiring within a period, as index-only scans |
 | `(not_after)`                     | the `cert_status` task: expiry and retention, all orgs                |
 | `(org_id, ikid, id DESC)`         | list per issuer; the org leads, since an issuer belongs to one org    |
 | `(skid)`                          | lookup by subject key                                                 |
@@ -759,6 +760,7 @@ maps these to `auth org`, `auth allowed`, `auth scope`, `org ...`,
 | Profiles          | `RegisterProfile` (upsert by label), `GetProfile`, `ListProfiles`, `DeleteProfile`                                                |
 | Certificates      | `SignCertificate`, `GetCertificate`, `ListCertificates`, `UpdateCertificateLabel`, `RevokeCertificate`, `ListRevokedCertificates` |
 | Revocation status | `GetCRL`, `PublishCrls`, `SignOCSP`                                                                                               |
+| Summary           | `GetSummary` (`Viewer,APIKey` with `ca:read`): the counts of the dashboard for the org or a `ProjectID`                           |
 
 The CA has two APIs with these methods (section 2.1). `pb.CA` is the API
 of the tenants on the `wfe`: its requests carry an optional `ProjectID`
@@ -779,6 +781,32 @@ matching `ca:*`/`certs:*` scopes so the
 same `CheckAccess` applies when a user token or an API key reaches the CA,
 on the `wfe` and again on the `backend` for a forwarded caller. Conventions: string IDs, enum wrappers,
 `Limit/Offset/Cursor` plus `NextPage` on every `List`, no HTTP annotations.
+
+`GetSummary` answers the tiles of the console's dashboard in one call,
+exact and at one time (`At`): the issuers by lifecycle status, the
+certificates by status, the Active certificates expiring within 7, 30 and
+90 days (cumulative; a certificate past its `NotAfter` is expired, not
+expiring, whatever its status column says), and the issuers that publish
+CRLs (Active and Archived, with a valid certificate) by the state of their
+current CRL: current, due within the renewal period of the issuer, overdue
+(next update passed) or missing. The scope is the org, the `ProjectID` of
+the request (the project of a restricted API key), or, for a member with
+project grants only, the org-wide rows and those of its projects, as the
+lists cover them. The counts are `count(*)` statements served by the
+org-led indexes (`(org_id, project_id, status)` on `issuer`,
+`(org_id, project_id, status, not_after)` on `certificate`), so a project's
+counts read its own entries and an org's read every entry of the org once
+per statement: milliseconds for a tenant with tens of thousands of
+certificates, a few hundred milliseconds for one with millions
+([perf/load-certificates.md](../perf/load-certificates.md)). They are
+index-only scans, so they need a current visibility map: autovacuum keeps
+it, and a bulk import is followed by a `VACUUM`. A counter table
+maintained by the writers would make them constant; it is not needed at
+the volumes of section 4.5 and stays an option. The reads of one
+summary run on one read-only repeatable-read transaction, so the counts
+and the buckets agree with each other at `At`. The CRL states come from a
+projection of the issuer rows and the next update of their CRL (never a
+PEM, which grows with the revocations) and load no key.
 
 The operator drives the CA with `trustycactl ca issuer|profile|root|cert|crl
 ...` and `ca org bootstrap` through `privpb.Backend` on the backend

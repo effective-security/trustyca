@@ -35,10 +35,10 @@ const (
 	publishAttempts = 2
 )
 
-// crlStatuses are the lifecycle statuses of the issuers that publish CRLs:
+// CrlStatuses are the lifecycle statuses of the issuers that publish CRLs:
 // an Archived issuer signs no certificate but keeps answering for the ones
 // it issued (DESIGN.md section 4.2)
-var crlStatuses = []pb.IssuerStatus_Enum{
+var CrlStatuses = []pb.IssuerStatus_Enum{
 	pb.IssuerStatus_Active,
 	pb.IssuerStatus_Archived,
 }
@@ -106,7 +106,7 @@ type PublishCrlsResult struct {
 // CRLs; the CRLs published before it are in the result.
 func (p *CrlPublisher) PublishCrls(ctx context.Context, req *PublishCrlsRequest) (*PublishCrlsResult, error) {
 	res := &PublishCrlsResult{}
-	for _, status := range crlStatuses {
+	for _, status := range CrlStatuses {
 		cursor := query.NewCursor(0)
 		for {
 			page, err := p.db.ListIssuers(ctx, &query.ListIssuersRequest{
@@ -157,6 +157,65 @@ func (p *CrlPublisher) currentCrls(ctx context.Context, rows []*model.Issuer) (m
 	res := make(map[string]*model.Crl, len(crls))
 	for _, crl := range crls {
 		res[crl.Ikid] = crl
+	}
+	return res, nil
+}
+
+// CrlCounts reports the issuers that publish CRLs, the Active and Archived
+// issuers whose certificate is valid, by the state of their current CRL at
+// a time: Issuers is Current, Due, Overdue and Missing together
+type CrlCounts struct {
+	// Issuers is the number of issuers that publish CRLs
+	Issuers int
+	// Current is the number of CRLs whose next update is later than the
+	// renewal period of their issuer
+	Current int
+	// Due is the number of CRLs whose next update is within the renewal
+	// period of their issuer
+	Due int
+	// Overdue is the number of CRLs whose next update has passed
+	Overdue int
+	// Missing is the number of issuers that have published no CRL
+	Missing int
+}
+
+// CountCrls classifies the CRL states of the issuers that publish CRLs
+// (db.CaReadonlyDb.ListCrlStates for CrlStatuses, read with the other
+// counts of the summary at one snapshot) at the time: an issuer without a
+// CRL is Missing, a CRL whose next update is not after the time is Overdue,
+// one within the renewal period of its issuer (as CrlDue judges it) is
+// Due, any other is Current. An issuer whose certificate has expired
+// publishes no CRL and is not counted. The renewal period comes from the
+// settings of the issuer, so an issuer whose config does not parse fails
+// the count, as the lists fail on it; a Missing or Overdue CRL needs no
+// settings.
+func CountCrls(states []*model.CrlState, now time.Time) (*CrlCounts, error) {
+	res := &CrlCounts{}
+	for _, state := range states {
+		if expiredAt(state.NotAfter, now) {
+			continue
+		}
+		res.Issuers++
+		switch {
+		case state.NextUpdate.IsZero():
+			res.Missing++
+		case !state.NextUpdate.UTC().After(now):
+			res.Overdue++
+		default:
+			cfg, err := state.GetConfig()
+			if err != nil {
+				return nil, err
+			}
+			renewal, err := renewalOf(state.ID, state.Label, cfg)
+			if err != nil {
+				return nil, err
+			}
+			if crlDueAt(state.NextUpdate.UTC(), renewal, now) {
+				res.Due++
+			} else {
+				res.Current++
+			}
+		}
 	}
 	return res, nil
 }
@@ -291,9 +350,16 @@ func crlRenewal(row *model.Issuer) (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
-	acfg, err := pbconv.IssuerConfigFromPb(row.Label, cfg)
+	return renewalOf(row.ID, row.Label, cfg)
+}
+
+// renewalOf returns the CRL renewal period of the settings of the issuer
+// with the ID and label: the value of the settings, or the authority
+// default
+func renewalOf(id xdb.ID, label string, cfg *pb.IssuerConfig) (time.Duration, error) {
+	acfg, err := pbconv.IssuerConfigFromPb(label, cfg)
 	if err != nil {
-		return 0, errors.WithMessagef(err, "invalid config of issuer %s", idString(row.ID))
+		return 0, errors.WithMessagef(err, "invalid config of issuer %s", idString(id))
 	}
 	return acfg.AIA.GetCRLRenewal(), nil
 }
@@ -393,11 +459,23 @@ func (p *CrlPublisher) currentCrl(ctx context.Context, ikid string) (*model.Crl,
 // has none, or the next update of the current one is within the renewal
 // period
 func CrlDue(current *model.Crl, renewal time.Duration, now time.Time) bool {
-	return current == nil || !current.NextUpdate.UTC().After(now.Add(renewal))
+	return current == nil || crlDueAt(current.NextUpdate.UTC(), renewal, now)
+}
+
+// crlDueAt reports whether a CRL with the next update must be published at
+// the time: the next update is within the renewal period
+func crlDueAt(nextUpdate time.Time, renewal time.Duration, now time.Time) bool {
+	return !nextUpdate.After(now.Add(renewal))
 }
 
 // issuerExpired reports whether the certificate of the issuer row is no
 // longer valid at the time
 func issuerExpired(row *model.Issuer, now time.Time) bool {
-	return !row.NotAfter.IsZero() && !row.NotAfter.UTC().After(now)
+	return expiredAt(row.NotAfter, now)
+}
+
+// expiredAt reports whether a validity that ends at the time, when set, has
+// ended at now
+func expiredAt(notAfter xdb.Time, now time.Time) bool {
+	return !notAfter.IsZero() && !notAfter.UTC().After(now)
 }

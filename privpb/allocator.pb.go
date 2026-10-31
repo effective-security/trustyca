@@ -171,4 +171,8 @@ var methods = map[string]*MethodInfo{
 	Backend_SignOCSP_FullMethodName: {
 		Allocator: func() any { return new(pb.OCSPRequest) },
 	},
+
+	Backend_GetSummary_FullMethodName: {
+		Allocator: func() any { return new(GetSummaryRequest) },
+	},
 }

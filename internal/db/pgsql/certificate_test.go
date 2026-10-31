@@ -542,3 +542,102 @@ func Test_Certificate_Expiry_Revoked(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, pb.CertificateStatus_Revoked, got.Status, "the revocation is kept")
 }
+
+// Test_Certificate_Counts covers the counts of the tenant summary: by
+// status and by expiry period, for the org, a project and the visible
+// projects
+func Test_Certificate_Counts(t *testing.T) {
+	_, org := setupOwnerAndOrg(t, "Test_Certificate_Counts")
+	project, err := provider.RegisterProject(ctx, &model.Project{OrgID: org.ID, Name: "Counts"})
+	require.NoError(t, err)
+	other, err := provider.RegisterProject(ctx, &model.Project{OrgID: org.ID, Name: "Other"})
+	require.NoError(t, err)
+
+	root := testutils.NewTestCA(t, "Counts Root", nil)
+	ca := testutils.NewTestCA(t, "Counts L2", root)
+	registerIssuer(t, newTestIssuer(org.ID, xdb.ID(0), "COUNTS_L2", ca, pb.AuthorityType_Issuing, xdb.ID(0)))
+	now := time.Now()
+	const day = 24 * time.Hour
+	issue := func(cn string, projectID xdb.ID, notAfter time.Time, status pb.CertificateStatus_Enum) *model.Certificate {
+		notBefore := now.Add(-time.Hour)
+		if notAfter.Before(notBefore) {
+			notBefore = notAfter.Add(-time.Hour)
+		}
+		crt := ca.Issue(t, cn, notBefore, notAfter)
+		return registerCertificate(t, crt, ca, org.ID, projectID, "peer", func(m *model.Certificate) {
+			m.Status = status
+		})
+	}
+	// org-wide: an Active certificate expiring in 3 days; the project: Active
+	// ones expiring in 20 and 60 days, an Active one past its validity that
+	// the status task has not marked yet, an Expired and a Revoked one; the
+	// other project: an Active one expiring in 50 days
+	issue("org-3d.example.com", xdb.ID(0), now.Add(3*day), pb.CertificateStatus_Active)
+	issue("prj-20d.example.com", project.ID, now.Add(20*day), pb.CertificateStatus_Active)
+	issue("prj-60d.example.com", project.ID, now.Add(60*day), pb.CertificateStatus_Active)
+	issue("prj-past.example.com", project.ID, now.Add(-time.Minute), pb.CertificateStatus_Active)
+	issue("prj-expired.example.com", project.ID, now.Add(-day), pb.CertificateStatus_Expired)
+	revoked := issue("prj-revoked.example.com", project.ID, now.Add(40*day), pb.CertificateStatus_Active)
+	_, err = provider.RevokeCertificate(ctx, &query.RevokeCertificateRequest{
+		CertificateID: revoked.ID.UInt64(),
+		OrgID:         org.ID.UInt64(),
+		Reason:        pb.ReasonCode_KeyCompromise,
+	})
+	require.NoError(t, err)
+	issue("other-50d.example.com", other.ID, now.Add(50*day), pb.CertificateStatus_Active)
+
+	periods := []time.Duration{7 * day, 30 * day, 90 * day}
+	orgID := org.ID.UInt64()
+	count := func(projectID uint64, projectIDs []uint64) *model.CertificateCounts {
+		t.Helper()
+		res, err := provider.CountCertificates(ctx, &query.CountCertificatesRequest{
+			OrgID:      orgID,
+			ProjectID:  projectID,
+			ProjectIDs: projectIDs,
+			Now:        now,
+			Expiring:   periods,
+		})
+		require.NoError(t, err)
+		return res
+	}
+	active, expired, revokedStatus := pb.CertificateStatus_Active, pb.CertificateStatus_Expired, pb.CertificateStatus_Revoked
+
+	// the org: a certificate past its validity counts as Active until the
+	// status task marks it, and is not expiring
+	res := count(0, nil)
+	assert.Equal(t, map[pb.CertificateStatus_Enum]uint64{active: 5, expired: 1, revokedStatus: 1}, res.ByStatus)
+	assert.Equal(t, []uint64{1, 2, 4}, res.Expiring)
+
+	// a project
+	res = count(project.ID.UInt64(), nil)
+	assert.Equal(t, map[pb.CertificateStatus_Enum]uint64{active: 3, expired: 1, revokedStatus: 1}, res.ByStatus)
+	assert.Equal(t, []uint64{0, 1, 2}, res.Expiring)
+
+	// the visible projects: the org-wide rows and the project's; an empty
+	// list is the org-wide rows only; a project takes precedence
+	res = count(0, []uint64{project.ID.UInt64()})
+	assert.Equal(t, map[pb.CertificateStatus_Enum]uint64{active: 4, expired: 1, revokedStatus: 1}, res.ByStatus)
+	assert.Equal(t, []uint64{1, 2, 3}, res.Expiring)
+	res = count(0, []uint64{})
+	assert.Equal(t, map[pb.CertificateStatus_Enum]uint64{active: 1}, res.ByStatus)
+	assert.Equal(t, []uint64{1, 1, 1}, res.Expiring)
+	res = count(project.ID.UInt64(), []uint64{other.ID.UInt64()})
+	assert.Equal(t, map[pb.CertificateStatus_Enum]uint64{active: 3, expired: 1, revokedStatus: 1}, res.ByStatus)
+	assert.Equal(t, []uint64{0, 1, 2}, res.Expiring)
+
+	// without periods, and without rows
+	res, err = provider.CountCertificates(ctx, &query.CountCertificatesRequest{OrgID: orgID})
+	require.NoError(t, err)
+	assert.Equal(t, map[pb.CertificateStatus_Enum]uint64{active: 5, expired: 1, revokedStatus: 1}, res.ByStatus)
+	assert.Empty(t, res.Expiring)
+	res, err = provider.CountCertificates(ctx, &query.CountCertificatesRequest{OrgID: 1, Now: now, Expiring: periods})
+	require.NoError(t, err)
+	assert.Empty(t, res.ByStatus)
+	assert.Equal(t, []uint64{0, 0, 0}, res.Expiring)
+
+	// the request is validated
+	_, err = provider.CountCertificates(ctx, &query.CountCertificatesRequest{})
+	assert.EqualError(t, err, "org ID is required")
+	_, err = provider.CountCertificates(ctx, &query.CountCertificatesRequest{OrgID: orgID, Expiring: periods})
+	assert.EqualError(t, err, "expiry time is required")
+}

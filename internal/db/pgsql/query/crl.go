@@ -1,12 +1,15 @@
 package query
 
 import (
+	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xdb/xsql"
+	"github.com/lib/pq"
 )
 
 // PublishCrl returns SQL query to store the current CRL of an issuer: the
@@ -134,6 +137,86 @@ func ListCrls(args ...any) (string, string) {
 		if p.IsSet(schema.Crl.NextUpdate.Position) {
 			q.Where(schema.Crl.NextUpdate.Name+" < ?", nil)
 		}
+		pageByIDDesc(q, p)
+		return q
+	})
+}
+
+// ListCrlStatesRequest defines request to list the issuers of an org that
+// publish CRLs with the state of their current CRL, newest first: the
+// columns the tenant summary classifies (the key identifier, the end of
+// the validity, the settings and the next update of the CRL), never a PEM.
+// The org is required: the states are a tenant's.
+type ListCrlStatesRequest struct {
+	// OrgID is the org whose issuers are listed
+	OrgID uint64
+	// ProjectID limits the result to the project
+	ProjectID uint64
+	// ProjectIDs limits the result to the org-wide rows and the rows of the
+	// projects, for a caller with grants in some projects only; nil applies
+	// no project filter and an empty list keeps the org-wide rows.
+	// ProjectID takes precedence.
+	ProjectIDs []uint64
+	// Statuses are the lifecycle statuses of the issuers that publish CRLs
+	Statuses []pb.IssuerStatus_Enum
+	// Limit specifies maximum number of records to return
+	Limit uint32
+	// Cursor specifies the position for cursor pagination
+	Cursor Cursor
+}
+
+// Validate returns ErrOrgRequired when the request names no org, and an
+// error without a status
+func (r *ListCrlStatesRequest) Validate() error {
+	err := checkCountScope(r.OrgID)
+	if err != nil {
+		return err
+	}
+	if len(r.Statuses) == 0 {
+		return errors.New("issuer statuses are required")
+	}
+	return r.Cursor.checkKey(keyID)
+}
+
+// QueryParams returns the query params builder
+func (r *ListCrlStatesRequest) QueryParams() xdb.QueryParams {
+	b := xdb.NewQueryParams("ListCrlStates")
+	setOrgScope(b, schema.Issuer.OrgID.Position, r.OrgID, false)
+	setProjectScope(b, schema.Issuer.ProjectID.Position, r.ProjectID, pb.Scope_Undefined)
+	setVisibleProjects(b, schema.Issuer.ProjectID.Position, r.ProjectIDs)
+	statuses := make(pq.Int32Array, len(r.Statuses))
+	for i, status := range r.Statuses {
+		statuses[i] = int32(status)
+	}
+	b.Set(schema.Issuer.Status.Position, statuses)
+	setPage(b, r.Limit, 0, r.Cursor)
+	return b
+}
+
+// crlStateColumns are the columns of a model.CrlState: the issuer columns
+// the classification reads, and the next update of the current CRL of the
+// issuer, found by the IKID of the CRL, which is the SKID of the issuer
+var crlStateColumns = strings.Join([]string{
+	schema.Issuer.ID.Name,
+	schema.Issuer.Label.Name,
+	schema.Issuer.Skid.Name,
+	schema.Issuer.NotAfter.Name,
+	schema.Issuer.Config.Name,
+	"(SELECT " + schema.Crl.NextUpdate.Name +
+		" FROM " + schema.CrlTableInfo.SchemaName +
+		" WHERE " + schema.CrlTableInfo.SchemaName + "." + schema.Crl.Ikid.Name +
+		" = " + schema.IssuerTableInfo.SchemaName + "." + schema.Issuer.Skid.Name + ")",
+}, ", ")
+
+// ListCrlStates returns SQL query to list the CRL states of the issuers of
+// a scope with the statuses, newest first
+func ListCrlStates(args ...any) (string, string) {
+	p := xdb.GetQueryParams(args...)
+	key := p.Name()
+	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
+		q := schema.IssuerTableInfo.Select(crlStateColumns)
+		whereTenancy(q, p, schema.Issuer.OrgID.Position, schema.Issuer.ProjectID.Position)
+		q.Where(schema.Issuer.Status.Name+" = ANY(?)", nil)
 		pageByIDDesc(q, p)
 		return q
 	})

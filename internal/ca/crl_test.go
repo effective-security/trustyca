@@ -389,3 +389,60 @@ func TestCrlPublisher_PublishCrls(t *testing.T) {
 	_, err = pub.PublishCrls(f.ctx, &ca.PublishCrlsRequest{AllOrgs: true})
 	assert.EqualError(t, err, "unable to read current CRLs: GetCrls failed")
 }
+
+// TestCountCrls covers the CRL counts of the tenant summary: the issuers
+// that publish CRLs by the state of their current CRL at a time, from the
+// projected states the DB lists
+func TestCountCrls(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	valid := now.Add(365 * 24 * time.Hour)
+	var nextID uint64
+	state := func(label string, notAfter, nextUpdate time.Time, cfg *pb.IssuerConfig) *model.CrlState {
+		nextID++
+		m := &model.CrlState{
+			ID:       xdb.NewID(nextID),
+			Label:    label,
+			Skid:     label,
+			NotAfter: xdb.UTC(notAfter),
+		}
+		if !nextUpdate.IsZero() {
+			m.NextUpdate = xdb.UTC(nextUpdate)
+		}
+		if cfg != nil {
+			var err error
+			m.Config, err = model.MarshalJSONValue(cfg)
+			require.NoError(t, err)
+		}
+		return m
+	}
+
+	states := []*model.CrlState{
+		state("missing", valid, time.Time{}, nil),
+		state("current", valid, now.Add(48*time.Hour), nil),
+		// the default renewal period is 12 hours; a custom one of a day
+		state("due", valid, now.Add(time.Hour), nil),
+		state("due-custom", valid, now.Add(20*time.Hour), &pb.IssuerConfig{CrlRenewal: "24h"}),
+		state("overdue", valid, now.Add(-time.Minute), nil),
+		// an expired issuer certificate publishes no CRL
+		state("expired", now.Add(-time.Minute), now.Add(48*time.Hour), nil),
+	}
+	res, err := ca.CountCrls(states, now)
+	require.NoError(t, err)
+	assert.Equal(t, &ca.CrlCounts{Issuers: 5, Current: 1, Due: 2, Overdue: 1, Missing: 1}, res)
+
+	res, err = ca.CountCrls(nil, now)
+	require.NoError(t, err)
+	assert.Equal(t, &ca.CrlCounts{}, res)
+
+	// the settings are read for a CRL that is neither missing nor overdue
+	bad := &pb.IssuerConfig{CrlRenewal: "x"}
+	_, err = ca.CountCrls([]*model.CrlState{state("bad", valid, now.Add(48*time.Hour), bad)}, now)
+	assert.ErrorContains(t, err, "invalid config of issuer")
+	res, err = ca.CountCrls([]*model.CrlState{
+		state("bad-missing", valid, time.Time{}, bad),
+		state("bad-overdue", valid, now.Add(-time.Minute), bad),
+	}, now)
+	require.NoError(t, err)
+	assert.Equal(t, &ca.CrlCounts{Issuers: 2, Overdue: 1, Missing: 1}, res)
+}

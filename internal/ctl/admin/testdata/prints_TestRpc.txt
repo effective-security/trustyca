@@ -1013,3 +1013,77 @@ MIIBtest
 -----END CERTIFICATE-----
 
 
+- TestRpc/Test_SummaryCmd/json:
+{
+	"At": "2026-03-01T00:00:00Z",
+	"Issuers": [
+		{
+			"Status": 1,
+			"Count": 1
+		},
+		{
+			"Status": 2,
+			"Count": 3
+		},
+		{
+			"Status": 3
+		},
+		{
+			"Status": 4
+		}
+	],
+	"Certificates": [
+		{
+			"Status": 1,
+			"Count": 120
+		},
+		{
+			"Status": 2,
+			"Count": 40
+		},
+		{
+			"Status": 3,
+			"Count": 2
+		}
+	],
+	"Expiring": [
+		{
+			"Days": 7,
+			"Count": 1
+		},
+		{
+			"Days": 30,
+			"Count": 5
+		},
+		{
+			"Days": 90,
+			"Count": 17
+		}
+	],
+	"Crls": {
+		"Issuers": 3,
+		"Current": 1,
+		"Due": 1,
+		"Overdue": 1
+	}
+}
+
+- TestRpc/Test_SummaryCmd/txt:
+ At                      │ 2026-03-01T00:00:00Z 
+ Issuers Pending         │ 1                    
+ Issuers Active          │ 3                    
+ Issuers Archived        │ 0                    
+ Issuers Destroyed       │ 0                    
+ Certificates Active     │ 120                  
+ Certificates Expired    │ 40                   
+ Certificates Revoked    │ 2                    
+ Expiring within 7 days  │ 1                    
+ Expiring within 30 days │ 5                    
+ Expiring within 90 days │ 17                   
+ CRL issuers             │ 3                    
+ CRLs current            │ 1                    
+ CRLs due                │ 1                    
+ CRLs overdue            │ 1                    
+ CRLs missing            │ 0                    
+
+

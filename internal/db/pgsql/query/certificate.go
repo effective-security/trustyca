@@ -249,6 +249,108 @@ func ListCertificates(args ...any) (string, string) {
 	})
 }
 
+// CountCertificatesRequest defines request to count the certificates of an
+// org by status, and the Active certificates whose validity ends within
+// periods after a time: of the whole org, of one project, or of the
+// org-wide scope and the projects of ProjectIDs. The org is required: the
+// counts are a tenant's.
+type CountCertificatesRequest struct {
+	// OrgID is the org whose certificates are counted
+	OrgID uint64
+	// ProjectID limits the count to the project
+	ProjectID uint64
+	// ProjectIDs limits the count to the org-wide rows and the rows of the
+	// projects, for a caller with grants in some projects only; nil applies
+	// no project filter and an empty list keeps the org-wide rows.
+	// ProjectID takes precedence.
+	ProjectIDs []uint64
+	// Now is the start of the expiry periods: a certificate whose validity
+	// ended before it is expired, not expiring, whatever its status
+	Now time.Time
+	// Expiring are the periods after Now within which the Active
+	// certificates are counted, ascending; each period counts the
+	// certificates of the shorter ones too. Empty counts no expiring
+	// certificates.
+	Expiring []time.Duration
+}
+
+// Validate returns ErrOrgRequired when the request names no org, and an
+// error when the periods are not positive and ascending
+func (r *CountCertificatesRequest) Validate() error {
+	err := checkCountScope(r.OrgID)
+	if err != nil {
+		return err
+	}
+	if len(r.Expiring) > 0 && r.Now.IsZero() {
+		return errors.New("expiry time is required")
+	}
+	var prev time.Duration
+	for _, within := range r.Expiring {
+		if within <= prev {
+			return errors.New("expiry periods must be positive and ascending")
+		}
+		prev = within
+	}
+	return nil
+}
+
+// QueryParams returns the query params builder of CountCertificates
+func (r *CountCertificatesRequest) QueryParams() xdb.QueryParams {
+	b := xdb.NewQueryParams("CountCertificates")
+	r.setScope(b)
+	return b
+}
+
+// ExpiringParams returns the query params builder of
+// CountExpiringCertificates for a period: the Active certificates of the
+// scope whose validity ends at or after Now and before Now plus the period
+func (r *CountCertificatesRequest) ExpiringParams(within time.Duration) xdb.QueryParams {
+	b := xdb.NewQueryParams("CountExpiringCertificates")
+	r.setScope(b)
+	b.Set(schema.Certificate.Status.Position, pb.CertificateStatus_Active)
+	now := r.Now.UTC()
+	b.AddArgs(now, now.Add(within))
+	return b
+}
+
+// setScope records the tenancy of the request
+func (r *CountCertificatesRequest) setScope(b *xdb.QueryParamsBuilder) {
+	setOrgScope(b, schema.Certificate.OrgID.Position, r.OrgID, false)
+	setProjectScope(b, schema.Certificate.ProjectID.Position, r.ProjectID, pb.Scope_Undefined)
+	setVisibleProjects(b, schema.Certificate.ProjectID.Position, r.ProjectIDs)
+}
+
+// CountCertificates returns SQL query to count the certificates of a scope
+// by status: a row per status with certificates, read from the entries of
+// idx_certificate_org_project_status_notafter
+func CountCertificates(args ...any) (string, string) {
+	p := xdb.GetQueryParams(args...)
+	key := p.Name()
+	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
+		q := schema.CertificateTableInfo.Select(schema.Certificate.Status.Name + ", " + exprCount)
+		whereTenancy(q, p, schema.Certificate.OrgID.Position, schema.Certificate.ProjectID.Position)
+		q.GroupBy(schema.Certificate.Status.Name)
+		return q
+	})
+}
+
+// CountExpiringCertificates returns SQL query to count the certificates of
+// a scope and a status whose validity ends within a period: the arguments
+// after the scope are the status, the start and the end of the period. The
+// range of a project is served by idx_certificate_org_project_status_notafter.
+func CountExpiringCertificates(args ...any) (string, string) {
+	p := xdb.GetQueryParams(args...)
+	key := p.Name()
+	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
+		q := schema.CertificateTableInfo.Select(exprCount)
+		whereTenancy(q, p, schema.Certificate.OrgID.Position, schema.Certificate.ProjectID.Position)
+		q.Where(schema.Certificate.Status.Name+" = ?", nil)
+		q.Where(schema.Certificate.NotAfter.Name+" >= ?", nil)
+		q.Where(schema.Certificate.NotAfter.Name+" < ?", nil)
+		return q
+	})
+}
+
 // ExpireCertificatesRequest defines request to mark the Active certificates
 // whose validity ended before the time as Expired, a batch at a time. The
 // batch is the lowest IDs of the remaining Active certificates: the status

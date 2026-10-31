@@ -34,6 +34,7 @@ res, err := svc.SignCertificate(ctx, &privpb.SignCertificateRequest{
   - [func \(s \*Service\) GetCertificate\(ctx context.Context, req \*privpb.GetCertificateRequest\) \(\*pb.CertificateResponse, error\)](<#Service.GetCertificate>)
   - [func \(s \*Service\) GetIssuer\(ctx context.Context, req \*privpb.GetIssuerRequest\) \(\*pb.Issuer, error\)](<#Service.GetIssuer>)
   - [func \(s \*Service\) GetProfile\(ctx context.Context, req \*privpb.GetProfileRequest\) \(\*pb.CertProfile, error\)](<#Service.GetProfile>)
+  - [func \(s \*Service\) GetSummary\(ctx context.Context, req \*privpb.GetSummaryRequest\) \(\*pb.SummaryResponse, error\)](<#Service.GetSummary>)
   - [func \(s \*Service\) ImportIssuer\(ctx context.Context, req \*privpb.ImportIssuerRequest\) \(\*pb.Issuer, error\)](<#Service.ImportIssuer>)
   - [func \(s \*Service\) IsReady\(\) bool](<#Service.IsReady>)
   - [func \(s \*Service\) ListCertificates\(ctx context.Context, req \*privpb.ListCertificatesRequest\) \(\*pb.CertificatesResponse, error\)](<#Service.ListCertificates>)
@@ -159,6 +160,15 @@ func (s *Service) GetProfile(ctx context.Context, req *privpb.GetProfileRequest)
 ```
 
 GetProfile returns a profile of the org by ID, or by label resolved in the project then in the org
+
+<a name="Service.GetSummary"></a>
+### func \(\*Service\) [GetSummary](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/summary.go#L53>)
+
+```go
+func (s *Service) GetSummary(ctx context.Context, req *privpb.GetSummaryRequest) (*pb.SummaryResponse, error)
+```
+
+GetSummary returns the counts of the tenant's dashboard: the issuers by status, the certificates by status and the Active ones that expire within 7, 30 and 90 days, and the issuers that publish CRLs by the state of their CRL. The scope is the org, the project the request names \(or the project of a restricted API key\) or, for a member with project grants only, the org\-wide rows and those of its projects, as the lists cover them. The counts are read at one snapshot \(db.GetSummaryCounts\) and from the tables only, so a backend without an issuer registry serves them.
 
 <a name="Service.ImportIssuer"></a>
 ### func \(\*Service\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L161>)

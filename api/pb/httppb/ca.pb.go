@@ -101,6 +101,9 @@ func GetCAHTTPHandler(s pb.CAServer, withAccessCheck pb.CheckAccessFunc) restser
 		case pb.CA_SignOCSP_FullMethodName:
 			res, err = s.SignOCSP(ctx, req.(*pb.OCSPRequest))
 
+		case pb.CA_GetSummary_FullMethodName:
+			res, err = s.GetSummary(ctx, req.(*pb.GetSummaryRequest))
+
 		default:
 			err = httperror.Malformed("invalid action: %s", action)
 		}

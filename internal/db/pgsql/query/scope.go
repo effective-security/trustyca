@@ -28,6 +28,18 @@ const orgIsExpr = orgIDColumn + " IS NOT DISTINCT FROM ?"
 // org, nor the platform, nor every org: a list of CA rows fails closed
 var ErrOrgScopeRequired = errors.New("org scope is required: set OrgID, Platform or AllOrgs")
 
+// ErrOrgRequired is returned by a count request that names no org: the
+// counts of the tenant summary are an org's
+var ErrOrgRequired = errors.New("org ID is required")
+
+// checkCountScope fails a count request that names no org
+func checkCountScope(orgID uint64) error {
+	if orgID == 0 {
+		return errors.WithStack(ErrOrgRequired)
+	}
+	return nil
+}
+
 // OrgArg returns the org_id argument of an exact scope: a zero org is the
 // platform's NULL
 func OrgArg(orgID uint64) xdb.ID {

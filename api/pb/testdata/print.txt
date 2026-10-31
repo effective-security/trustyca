@@ -156,6 +156,23 @@ Invites:
 
 
 
+- SummaryResponse:
+
+ At                      │ 2026-03-01T00:00:00Z 
+ Issuers Pending         │ 1                    
+ Issuers Active          │ 3                    
+ Certificates Active     │ 120                  
+ Certificates Revoked    │ 2                    
+ Expiring within 7 days  │ 1                    
+ Expiring within 30 days │ 5                    
+ CRL issuers             │ 3                    
+ CRLs current            │ 2                    
+ CRLs due                │ 0                    
+ CRLs overdue            │ 0                    
+ CRLs missing            │ 1                    
+
+
+
 - Token:
 
  Token     │ test-token    

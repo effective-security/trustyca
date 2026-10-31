@@ -592,6 +592,32 @@ var CertificateResponse_MessageDescription = &api.MessageDescription{
 	},
 }
 
+var CertificateStatusCount_MessageDescription = &api.MessageDescription{
+	Name:          "CertificateStatusCount",
+	Display:       "Certificate Status Count",
+	FullName:      "pb.CertificateStatusCount",
+	Documentation: `CertificateStatusCount is the number of certificates of a status`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:            "Status",
+			FullName:        "pb.CertificateStatusCount.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.CertificateStatus_Enum_EnumDescription,
+			Documentation:   `Status of the certificates`,
+		},
+		{
+			Name:          "Count",
+			FullName:      "pb.CertificateStatusCount.Count",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Count of the certificates of the status`,
+		},
+	},
+}
+
 var CertificatesResponse_MessageDescription = &api.MessageDescription{
 	Name:          "CertificatesResponse",
 	Display:       "Certificates Response",
@@ -710,6 +736,62 @@ var Crl_MessageDescription = &api.MessageDescription{
 	},
 }
 
+var CrlCounts_MessageDescription = &api.MessageDescription{
+	Name:     "CrlCounts",
+	Display:  "Crl Counts",
+	FullName: "pb.CrlCounts",
+	Documentation: `CrlCounts counts the issuers that publish CRLs, the Active and Archived
+issuers whose certificate is valid, by the state of their current CRL at
+the time of the summary: Issuers is Current, Due, Overdue and Missing
+together.`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Issuers",
+			FullName:      "pb.CrlCounts.Issuers",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Issuers is the number of issuers that publish CRLs`,
+		},
+		{
+			Name:          "Current",
+			FullName:      "pb.CrlCounts.Current",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Current is the number of CRLs whose next update is later than the
+renewal period of their issuer`,
+		},
+		{
+			Name:          "Due",
+			FullName:      "pb.CrlCounts.Due",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Due is the number of CRLs whose next update is within the renewal
+period of their issuer; the renewal task publishes them on its next
+run`,
+		},
+		{
+			Name:          "Overdue",
+			FullName:      "pb.CrlCounts.Overdue",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Overdue is the number of CRLs whose next update has passed: relying
+parties see a stale CRL until it is published`,
+		},
+		{
+			Name:          "Missing",
+			FullName:      "pb.CrlCounts.Missing",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Missing is the number of issuers that have published no CRL yet`,
+		},
+	},
+}
+
 var CrlResponse_MessageDescription = &api.MessageDescription{
 	Name:          "CrlResponse",
 	Display:       "Crl Response",
@@ -738,6 +820,32 @@ var CrlsResponse_MessageDescription = &api.MessageDescription{
 			Type:       "[]struct",
 			StructName: "pb.Crl",
 			SearchType: "flat_object",
+		},
+	},
+}
+
+var ExpiryBucket_MessageDescription = &api.MessageDescription{
+	Name:     "ExpiryBucket",
+	Display:  "Expiry Bucket",
+	FullName: "pb.ExpiryBucket",
+	Documentation: `ExpiryBucket is the number of Active certificates whose validity ends
+within a number of days after the time of the summary`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Days",
+			FullName:      "pb.ExpiryBucket.Days",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Days after the time of the summary`,
+		},
+		{
+			Name:          "Count",
+			FullName:      "pb.ExpiryBucket.Count",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Count of the Active certificates that expire within the days`,
 		},
 	},
 }
@@ -1085,6 +1193,32 @@ var IssuerSerial_MessageDescription = &api.MessageDescription{
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
 			Documentation: `SerialNumber provides certificate's serial number`,
+		},
+	},
+}
+
+var IssuerStatusCount_MessageDescription = &api.MessageDescription{
+	Name:          "IssuerStatusCount",
+	Display:       "Issuer Status Count",
+	FullName:      "pb.IssuerStatusCount",
+	Documentation: `IssuerStatusCount is the number of issuers of a lifecycle status`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:            "Status",
+			FullName:        "pb.IssuerStatusCount.Status",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: pb.IssuerStatus_Enum_EnumDescription,
+			Documentation:   `Status of the issuers`,
+		},
+		{
+			Name:          "Count",
+			FullName:      "pb.IssuerStatusCount.Count",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Count of the issuers of the status`,
 		},
 	},
 }
@@ -1611,6 +1745,62 @@ fetch. If there are no more pages to fetch, NextPage will be empty.`,
 	},
 }
 
+var SummaryResponse_MessageDescription = &api.MessageDescription{
+	Name:     "SummaryResponse",
+	Display:  "Summary Response",
+	FullName: "pb.SummaryResponse",
+	Documentation: `SummaryResponse returns the counts of the rows of the scope at the time
+of the request. The counts are exact: a count of the certificates of a
+scope reads their index entries, so it grows with the tenant.`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "At",
+			FullName:      "pb.SummaryResponse.At",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `At is the time of the counts, RFC3339`,
+		},
+		{
+			Name:       "Issuers",
+			FullName:   "pb.SummaryResponse.Issuers",
+			Type:       "[]struct",
+			StructName: "pb.IssuerStatusCount",
+			SearchType: "flat_object",
+			Documentation: `Issuers counts the issuers by lifecycle status; every status is
+reported, with a zero count when the scope has none`,
+		},
+		{
+			Name:       "Certificates",
+			FullName:   "pb.SummaryResponse.Certificates",
+			Type:       "[]struct",
+			StructName: "pb.CertificateStatusCount",
+			SearchType: "flat_object",
+			Documentation: `Certificates counts the certificates by status; every status is
+reported, with a zero count when the scope has none`,
+		},
+		{
+			Name:       "Expiring",
+			FullName:   "pb.SummaryResponse.Expiring",
+			Type:       "[]struct",
+			StructName: "pb.ExpiryBucket",
+			SearchType: "flat_object",
+			Documentation: `Expiring counts the Active certificates whose validity ends within
+the days after At. The buckets are cumulative: 7, 30 and 90 days. A
+certificate past its NotAfter is expired, not expiring, whatever its
+status.`,
+		},
+		{
+			Name:          "Crls",
+			FullName:      "pb.SummaryResponse.Crls",
+			Type:          "struct",
+			StructName:    "pb.CrlCounts",
+			SearchType:    "flat_object",
+			Documentation: `Crls counts the issuers that publish CRLs by the state of their CRL`,
+		},
+	},
+}
+
 var X509Extension_MessageDescription = &api.MessageDescription{
 	Name:          "X509Extension",
 	Display:       "X509 Extension",
@@ -2027,6 +2217,37 @@ service forwards, or the org a service identity names`,
 			SearchOptions: api.SearchOption_Sortable,
 			RequiredOr:    []string{"ID"},
 			Documentation: `Label of the profile, resolved as (Org, Project) then (Org)`,
+		},
+	},
+}
+
+var GetSummaryRequest_MessageDescription = &api.MessageDescription{
+	Name:     "GetSummaryRequest",
+	Display:  "Get Summary Request",
+	FullName: "privpb.GetSummaryRequest",
+	Documentation: `GetSummaryRequest specifies the scope of the summary
+with the org named explicitly: the request of Backend.GetSummary`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "OrgID",
+			FullName:      "privpb.GetSummaryRequest.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Required:      true,
+			Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "privpb.GetSummaryRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID limits the summary to the project; empty summarizes the
+org-wide rows and the projects the caller may read`,
 		},
 	},
 }
@@ -3408,13 +3629,17 @@ var (
 		"pb.CertificatePolicy":                               CertificatePolicy_MessageDescription,
 		"pb.CertificatePolicyQualifier":                      CertificatePolicyQualifier_MessageDescription,
 		"pb.CertificateResponse":                             CertificateResponse_MessageDescription,
+		"pb.CertificateStatusCount":                          CertificateStatusCount_MessageDescription,
 		"pb.CertificatesResponse":                            CertificatesResponse_MessageDescription,
 		"pb.Crl":                                             Crl_MessageDescription,
+		"pb.CrlCounts":                                       CrlCounts_MessageDescription,
 		"pb.CrlResponse":                                     CrlResponse_MessageDescription,
 		"pb.CrlsResponse":                                    CrlsResponse_MessageDescription,
+		"pb.ExpiryBucket":                                    ExpiryBucket_MessageDescription,
 		"pb.Issuer":                                          Issuer_MessageDescription,
 		"pb.IssuerConfig":                                    IssuerConfig_MessageDescription,
 		"pb.IssuerSerial":                                    IssuerSerial_MessageDescription,
+		"pb.IssuerStatusCount":                               IssuerStatusCount_MessageDescription,
 		"pb.IssuersResponse":                                 IssuersResponse_MessageDescription,
 		"pb.KeySpec":                                         KeySpec_MessageDescription,
 		"pb.NextPage":                                        NextPage_MessageDescription,
@@ -3430,6 +3655,7 @@ var (
 		"pb.RevokedCertificatesResponse":                     RevokedCertificatesResponse_MessageDescription,
 		"pb.RootCertificate":                                 RootCertificate_MessageDescription,
 		"pb.RootsResponse":                                   RootsResponse_MessageDescription,
+		"pb.SummaryResponse":                                 SummaryResponse_MessageDescription,
 		"pb.X509Extension":                                   X509Extension_MessageDescription,
 		"pb.X509Name":                                        X509Name_MessageDescription,
 		"pb.X509Subject":                                     X509Subject_MessageDescription,
@@ -3439,6 +3665,7 @@ var (
 		"privpb.GetCrlRequest":                               GetCrlRequest_MessageDescription,
 		"privpb.GetIssuerRequest":                            GetIssuerRequest_MessageDescription,
 		"privpb.GetProfileRequest":                           GetProfileRequest_MessageDescription,
+		"privpb.GetSummaryRequest":                           GetSummaryRequest_MessageDescription,
 		"privpb.ImportIssuerRequest":                         ImportIssuerRequest_MessageDescription,
 		"privpb.ListAllCertificatesRequest":                  ListAllCertificatesRequest_MessageDescription,
 		"privpb.ListAllIssuersRequest":                       ListAllIssuersRequest_MessageDescription,
@@ -3471,13 +3698,17 @@ var (
 		"pb.CertificatePolicy":                               func() any { return new(pb.CertificatePolicy) },
 		"pb.CertificatePolicyQualifier":                      func() any { return new(pb.CertificatePolicyQualifier) },
 		"pb.CertificateResponse":                             func() any { return new(pb.CertificateResponse) },
+		"pb.CertificateStatusCount":                          func() any { return new(pb.CertificateStatusCount) },
 		"pb.CertificatesResponse":                            func() any { return new(pb.CertificatesResponse) },
 		"pb.Crl":                                             func() any { return new(pb.Crl) },
+		"pb.CrlCounts":                                       func() any { return new(pb.CrlCounts) },
 		"pb.CrlResponse":                                     func() any { return new(pb.CrlResponse) },
 		"pb.CrlsResponse":                                    func() any { return new(pb.CrlsResponse) },
+		"pb.ExpiryBucket":                                    func() any { return new(pb.ExpiryBucket) },
 		"pb.Issuer":                                          func() any { return new(pb.Issuer) },
 		"pb.IssuerConfig":                                    func() any { return new(pb.IssuerConfig) },
 		"pb.IssuerSerial":                                    func() any { return new(pb.IssuerSerial) },
+		"pb.IssuerStatusCount":                               func() any { return new(pb.IssuerStatusCount) },
 		"pb.IssuersResponse":                                 func() any { return new(pb.IssuersResponse) },
 		"pb.KeySpec":                                         func() any { return new(pb.KeySpec) },
 		"pb.NextPage":                                        func() any { return new(pb.NextPage) },
@@ -3493,6 +3724,7 @@ var (
 		"pb.RevokedCertificatesResponse":                     func() any { return new(pb.RevokedCertificatesResponse) },
 		"pb.RootCertificate":                                 func() any { return new(pb.RootCertificate) },
 		"pb.RootsResponse":                                   func() any { return new(pb.RootsResponse) },
+		"pb.SummaryResponse":                                 func() any { return new(pb.SummaryResponse) },
 		"pb.X509Extension":                                   func() any { return new(pb.X509Extension) },
 		"pb.X509Name":                                        func() any { return new(pb.X509Name) },
 		"pb.X509Subject":                                     func() any { return new(pb.X509Subject) },
@@ -3502,6 +3734,7 @@ var (
 		"privpb.GetCrlRequest":                               func() any { return new(GetCrlRequest) },
 		"privpb.GetIssuerRequest":                            func() any { return new(GetIssuerRequest) },
 		"privpb.GetProfileRequest":                           func() any { return new(GetProfileRequest) },
+		"privpb.GetSummaryRequest":                           func() any { return new(GetSummaryRequest) },
 		"privpb.ImportIssuerRequest":                         func() any { return new(ImportIssuerRequest) },
 		"privpb.ListAllCertificatesRequest":                  func() any { return new(ListAllCertificatesRequest) },
 		"privpb.ListAllIssuersRequest":                       func() any { return new(ListAllIssuersRequest) },
@@ -3542,6 +3775,9 @@ func (m *GetIssuerRequest) Validate(ctx context.Context) error {
 }
 func (m *GetProfileRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, GetProfileRequest_MessageDescription)
+}
+func (m *GetSummaryRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, GetSummaryRequest_MessageDescription)
 }
 func (m *ImportIssuerRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, ImportIssuerRequest_MessageDescription)

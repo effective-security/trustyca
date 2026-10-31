@@ -26,6 +26,9 @@ The CA lists order by id DESC, the events by \(created\_at, id\) DESC, the orgs 
 - [Variables](<#variables>)
 - [func ActivateIssuer\(args ...any\) \(string, string\)](<#ActivateIssuer>)
 - [func AddMember\(args ...any\) \(string, string\)](<#AddMember>)
+- [func CountCertificates\(args ...any\) \(string, string\)](<#CountCertificates>)
+- [func CountExpiringCertificates\(args ...any\) \(string, string\)](<#CountExpiringCertificates>)
+- [func CountIssuers\(args ...any\) \(string, string\)](<#CountIssuers>)
 - [func CreateEvent\(args ...any\) \(string, string\)](<#CreateEvent>)
 - [func CreateInvite\(args ...any\) \(string, string\)](<#CreateInvite>)
 - [func DeleteAPIKey\(args ...any\) \(string, string\)](<#DeleteAPIKey>)
@@ -62,6 +65,7 @@ The CA lists order by id DESC, the events by \(created\_at, id\) DESC, the orgs 
 - [func ListAPIKeys\(args ...any\) \(string, string\)](<#ListAPIKeys>)
 - [func ListAllColumns\(args ...any\) \(string, string\)](<#ListAllColumns>)
 - [func ListCertificates\(args ...any\) \(string, string\)](<#ListCertificates>)
+- [func ListCrlStates\(args ...any\) \(string, string\)](<#ListCrlStates>)
 - [func ListCrls\(args ...any\) \(string, string\)](<#ListCrls>)
 - [func ListEvents\(args ...any\) \(string, string\)](<#ListEvents>)
 - [func ListIssuers\(args ...any\) \(string, string\)](<#ListIssuers>)
@@ -97,6 +101,13 @@ The CA lists order by id DESC, the events by \(created\_at, id\) DESC, the orgs 
 - [func UpdateUser\(args ...any\) \(string, string\)](<#UpdateUser>)
 - [func UseAPIKey\(args ...any\) \(string, string\)](<#UseAPIKey>)
 - [type BuildQueryFunc](<#BuildQueryFunc>)
+- [type CountCertificatesRequest](<#CountCertificatesRequest>)
+  - [func \(r \*CountCertificatesRequest\) ExpiringParams\(within time.Duration\) xdb.QueryParams](<#CountCertificatesRequest.ExpiringParams>)
+  - [func \(r \*CountCertificatesRequest\) QueryParams\(\) xdb.QueryParams](<#CountCertificatesRequest.QueryParams>)
+  - [func \(r \*CountCertificatesRequest\) Validate\(\) error](<#CountCertificatesRequest.Validate>)
+- [type CountIssuersRequest](<#CountIssuersRequest>)
+  - [func \(r \*CountIssuersRequest\) QueryParams\(\) xdb.QueryParams](<#CountIssuersRequest.QueryParams>)
+  - [func \(r \*CountIssuersRequest\) Validate\(\) error](<#CountIssuersRequest.Validate>)
 - [type Cursor](<#Cursor>)
   - [func ListCursor\(ctx context.Context, cursor string, parse func\(string\) \(Cursor, error\)\) \(Cursor, error\)](<#ListCursor>)
   - [func NewCursor\(lastID uint64\) Cursor](<#NewCursor>)
@@ -130,6 +141,9 @@ The CA lists order by id DESC, the events by \(created\_at, id\) DESC, the orgs 
 - [type ListCertificatesRequest](<#ListCertificatesRequest>)
   - [func \(r \*ListCertificatesRequest\) QueryParams\(\) xdb.QueryParams](<#ListCertificatesRequest.QueryParams>)
   - [func \(r \*ListCertificatesRequest\) Validate\(\) error](<#ListCertificatesRequest.Validate>)
+- [type ListCrlStatesRequest](<#ListCrlStatesRequest>)
+  - [func \(r \*ListCrlStatesRequest\) QueryParams\(\) xdb.QueryParams](<#ListCrlStatesRequest.QueryParams>)
+  - [func \(r \*ListCrlStatesRequest\) Validate\(\) error](<#ListCrlStatesRequest.Validate>)
 - [type ListCrlsRequest](<#ListCrlsRequest>)
   - [func \(r \*ListCrlsRequest\) QueryParams\(\) xdb.QueryParams](<#ListCrlsRequest.QueryParams>)
   - [func \(r \*ListCrlsRequest\) Validate\(\) error](<#ListCrlsRequest.Validate>)
@@ -161,6 +175,11 @@ The CA lists order by id DESC, the events by \(created\_at, id\) DESC, the orgs 
   - [func \(r \*ListRootsRequest\) Validate\(\) error](<#ListRootsRequest.Validate>)
 - [type OrderDirection](<#OrderDirection>)
 - [type RevokeCertificateRequest](<#RevokeCertificateRequest>)
+- [type SummaryRequest](<#SummaryRequest>)
+  - [func \(r \*SummaryRequest\) Certificates\(\) \*CountCertificatesRequest](<#SummaryRequest.Certificates>)
+  - [func \(r \*SummaryRequest\) CrlStates\(cursor Cursor\) \*ListCrlStatesRequest](<#SummaryRequest.CrlStates>)
+  - [func \(r \*SummaryRequest\) Issuers\(\) \*CountIssuersRequest](<#SummaryRequest.Issuers>)
+  - [func \(r \*SummaryRequest\) Validate\(\) error](<#SummaryRequest.Validate>)
 - [type UpdateCertificateRequest](<#UpdateCertificateRequest>)
   - [func \(r \*UpdateCertificateRequest\) QueryParams\(\) xdb.QueryParams](<#UpdateCertificateRequest.QueryParams>)
 - [type UpdateIssuerRequest](<#UpdateIssuerRequest>)
@@ -182,6 +201,12 @@ const InitialCursor = "initial"
 ```
 
 ## Variables
+
+<a name="ErrOrgRequired"></a>ErrOrgRequired is returned by a count request that names no org: the counts of the tenant summary are an org's
+
+```go
+var ErrOrgRequired = errors.New("org ID is required")
+```
 
 <a name="ErrOrgScopeRequired"></a>ErrOrgScopeRequired is returned by a list request that names neither an org, nor the platform, nor every org: a list of CA rows fails closed
 
@@ -206,6 +231,33 @@ func AddMember(args ...any) (string, string)
 ```
 
 AddMember returns SQL query to create or update a membership at its scope
+
+<a name="CountCertificates"></a>
+## func [CountCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L326>)
+
+```go
+func CountCertificates(args ...any) (string, string)
+```
+
+CountCertificates returns SQL query to count the certificates of a scope by status: a row per status with certificates, read from the entries of idx\_certificate\_org\_project\_status\_notafter
+
+<a name="CountExpiringCertificates"></a>
+## func [CountExpiringCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L341>)
+
+```go
+func CountExpiringCertificates(args ...any) (string, string)
+```
+
+CountExpiringCertificates returns SQL query to count the certificates of a scope and a status whose validity ends within a period: the arguments after the scope are the status, the start and the end of the period. The range of a project is served by idx\_certificate\_org\_project\_status\_notafter.
+
+<a name="CountIssuers"></a>
+## func [CountIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L224>)
+
+```go
+func CountIssuers(args ...any) (string, string)
+```
+
+CountIssuers returns SQL query to count the issuers of a scope by status: a row per status with issuers, served by the idx\_issuer\_org\_project\_status index
 
 <a name="CreateEvent"></a>
 ## func [CreateEvent](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L13>)
@@ -235,7 +287,7 @@ func DeleteAPIKey(args ...any) (string, string)
 DeleteAPIKey returns SQL query to delete an API key of an org
 
 <a name="DeleteCrl"></a>
-## func [DeleteCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L68>)
+## func [DeleteCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L71>)
 
 ```go
 func DeleteCrl(args ...any) (string, string)
@@ -244,7 +296,7 @@ func DeleteCrl(args ...any) (string, string)
 DeleteCrl returns SQL query to delete the CRL of an issuer by the exact org scope \(NULL for the platform\) and IKID
 
 <a name="DeleteExpiredCertificates"></a>
-## func [DeleteExpiredCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L345>)
+## func [DeleteExpiredCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L447>)
 
 ```go
 func DeleteExpiredCertificates(args ...any) (string, string)
@@ -271,7 +323,7 @@ func DeleteMember(args ...any) (string, string)
 DeleteMember returns SQL query
 
 <a name="DeleteRowByID"></a>
-## func [DeleteRowByID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L42>)
+## func [DeleteRowByID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L43>)
 
 ```go
 func DeleteRowByID(args ...any) (string, string)
@@ -280,7 +332,7 @@ func DeleteRowByID(args ...any) (string, string)
 DeleteRowByID returns SQL query, the first argument is the table info
 
 <a name="DeleteRowByOrgAndID"></a>
-## func [DeleteRowByOrgAndID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L53>)
+## func [DeleteRowByOrgAndID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L54>)
 
 ```go
 func DeleteRowByOrgAndID(args ...any) (string, string)
@@ -316,7 +368,7 @@ func EncodeTimeCursor(lastAt xdb.Time, lastID xdb.ID) string
 EncodeTimeCursor returns the cursor of the page that follows the row with the creation time and the ID, for a list that pages by \(created\_at, id\)
 
 <a name="ExpireCertificates"></a>
-## func [ExpireCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L296>)
+## func [ExpireCertificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L398>)
 
 ```go
 func ExpireCertificates(args ...any) (string, string)
@@ -379,7 +431,7 @@ func GetCertificateForUpdate(args ...any) (string, string)
 GetCertificateForUpdate returns SQL query to read a certificate by ID and exact org scope \(NULL for the platform\), and lock the row for the rest of the transaction
 
 <a name="GetCrlByIKID"></a>
-## func [GetCrlByIKID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L46>)
+## func [GetCrlByIKID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L49>)
 
 ```go
 func GetCrlByIKID(args ...any) (string, string)
@@ -388,7 +440,7 @@ func GetCrlByIKID(args ...any) (string, string)
 GetCrlByIKID returns SQL query to find the current CRL of an issuer
 
 <a name="GetCrlsByIKIDs"></a>
-## func [GetCrlsByIKIDs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L57>)
+## func [GetCrlsByIKIDs](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L60>)
 
 ```go
 func GetCrlsByIKIDs(args ...any) (string, string)
@@ -451,7 +503,7 @@ func GetRevoked(args ...any) (string, string)
 GetRevoked returns SQL query to find the revocation of a certificate
 
 <a name="GetRowByColumn"></a>
-## func [GetRowByColumn](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L31>)
+## func [GetRowByColumn](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L32>)
 
 ```go
 func GetRowByColumn(args ...any) (string, string)
@@ -460,7 +512,7 @@ func GetRowByColumn(args ...any) (string, string)
 GetRowByColumn returns SQL query, the first argument is the table info, the second argument is the column name
 
 <a name="GetRowByID"></a>
-## func [GetRowByID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L20>)
+## func [GetRowByID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L21>)
 
 ```go
 func GetRowByID(args ...any) (string, string)
@@ -514,7 +566,7 @@ func ListAPIKeys(args ...any) (string, string)
 ListAPIKeys selects API keys from the database
 
 <a name="ListAllColumns"></a>
-## func [ListAllColumns](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L62>)
+## func [ListAllColumns](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L63>)
 
 ```go
 func ListAllColumns(args ...any) (string, string)
@@ -531,8 +583,17 @@ func ListCertificates(args ...any) (string, string)
 
 ListCertificates returns SQL query to list certificates
 
+<a name="ListCrlStates"></a>
+## func [ListCrlStates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L213>)
+
+```go
+func ListCrlStates(args ...any) (string, string)
+```
+
+ListCrlStates returns SQL query to list the CRL states of the issuers of a scope with the statuses, newest first
+
 <a name="ListCrls"></a>
-## func [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L128>)
+## func [ListCrls](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L131>)
 
 ```go
 func ListCrls(args ...any) (string, string)
@@ -550,7 +611,7 @@ func ListEvents(args ...any) (string, string)
 ListEvents returns SQL query
 
 <a name="ListIssuers"></a>
-## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L261>)
+## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L305>)
 
 ```go
 func ListIssuers(args ...any) (string, string)
@@ -622,7 +683,7 @@ func ListRoots(args ...any) (string, string)
 ListRoots returns SQL query to list trust anchors
 
 <a name="LocationsArg"></a>
-## func [LocationsArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L67>)
+## func [LocationsArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L79>)
 
 ```go
 func LocationsArg(locations []string) pq.StringArray
@@ -631,7 +692,7 @@ func LocationsArg(locations []string) pq.StringArray
 LocationsArg returns the value of a NOT NULL varchar\[\] locations column: pq.StringArray writes a nil slice as NULL, so an empty array is written instead
 
 <a name="MetadataArg"></a>
-## func [MetadataArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L57>)
+## func [MetadataArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L69>)
 
 ```go
 func MetadataArg(m xdb.Metadata) any
@@ -640,7 +701,7 @@ func MetadataArg(m xdb.Metadata) any
 MetadataArg returns the value of a NOT NULL jsonb metadata column: xdb.Metadata.Value\(\) returns NULL for an empty map, so an explicit empty object is written instead
 
 <a name="OrgArg"></a>
-## func [OrgArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L33>)
+## func [OrgArg](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/scope.go#L45>)
 
 ```go
 func OrgArg(orgID uint64) xdb.ID
@@ -649,7 +710,7 @@ func OrgArg(orgID uint64) xdb.ID
 OrgArg returns the org\_id argument of an exact scope: a zero org is the platform's NULL
 
 <a name="PublishCrl"></a>
-## func [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L15>)
+## func [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L18>)
 
 ```go
 func PublishCrl(args ...any) (string, string)
@@ -838,13 +899,104 @@ func UseAPIKey(args ...any) (string, string)
 UseAPIKey increments the used count and sets the used at time
 
 <a name="BuildQueryFunc"></a>
-## type [BuildQueryFunc](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L16>)
+## type [BuildQueryFunc](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/common.go#L17>)
 
 BuildQueryFunc returns SQL query and name
 
 ```go
 type BuildQueryFunc func(args ...any) (string, string)
 ```
+
+<a name="CountCertificatesRequest"></a>
+## type [CountCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L257-L275>)
+
+CountCertificatesRequest defines request to count the certificates of an org by status, and the Active certificates whose validity ends within periods after a time: of the whole org, of one project, or of the org\-wide scope and the projects of ProjectIDs. The org is required: the counts are a tenant's.
+
+```go
+type CountCertificatesRequest struct {
+    // OrgID is the org whose certificates are counted
+    OrgID uint64
+    // ProjectID limits the count to the project
+    ProjectID uint64
+    // ProjectIDs limits the count to the org-wide rows and the rows of the
+    // projects, for a caller with grants in some projects only; nil applies
+    // no project filter and an empty list keeps the org-wide rows.
+    // ProjectID takes precedence.
+    ProjectIDs []uint64
+    // Now is the start of the expiry periods: a certificate whose validity
+    // ended before it is expired, not expiring, whatever its status
+    Now time.Time
+    // Expiring are the periods after Now within which the Active
+    // certificates are counted, ascending; each period counts the
+    // certificates of the shorter ones too. Empty counts no expiring
+    // certificates.
+    Expiring []time.Duration
+}
+```
+
+<a name="CountCertificatesRequest.ExpiringParams"></a>
+### func \(\*CountCertificatesRequest\) [ExpiringParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L307>)
+
+```go
+func (r *CountCertificatesRequest) ExpiringParams(within time.Duration) xdb.QueryParams
+```
+
+ExpiringParams returns the query params builder of CountExpiringCertificates for a period: the Active certificates of the scope whose validity ends at or after Now and before Now plus the period
+
+<a name="CountCertificatesRequest.QueryParams"></a>
+### func \(\*CountCertificatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L298>)
+
+```go
+func (r *CountCertificatesRequest) QueryParams() xdb.QueryParams
+```
+
+QueryParams returns the query params builder of CountCertificates
+
+<a name="CountCertificatesRequest.Validate"></a>
+### func \(\*CountCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L279>)
+
+```go
+func (r *CountCertificatesRequest) Validate() error
+```
+
+Validate returns ErrOrgRequired when the request names no org, and an error when the periods are not positive and ascending
+
+<a name="CountIssuersRequest"></a>
+## type [CountIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L195-L205>)
+
+CountIssuersRequest defines request to count the issuers of an org by lifecycle status: of the whole org, of one project, or of the org\-wide scope and the projects of ProjectIDs. The org is required: the counts are a tenant's.
+
+```go
+type CountIssuersRequest struct {
+    // OrgID is the org whose issuers are counted
+    OrgID uint64
+    // ProjectID limits the count to the project
+    ProjectID uint64
+    // ProjectIDs limits the count to the org-wide rows and the rows of the
+    // projects, for a caller with grants in some projects only; nil applies
+    // no project filter and an empty list keeps the org-wide rows.
+    // ProjectID takes precedence.
+    ProjectIDs []uint64
+}
+```
+
+<a name="CountIssuersRequest.QueryParams"></a>
+### func \(\*CountIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L213>)
+
+```go
+func (r *CountIssuersRequest) QueryParams() xdb.QueryParams
+```
+
+QueryParams returns the query params builder
+
+<a name="CountIssuersRequest.Validate"></a>
+### func \(\*CountIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L208>)
+
+```go
+func (r *CountIssuersRequest) Validate() error
+```
+
+Validate returns ErrOrgRequired when the request names no org
 
 <a name="Cursor"></a>
 ## type [Cursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/cursor.go#L35-L39>)
@@ -930,7 +1082,7 @@ func (c Cursor) LastID() uint64
 LastID returns the ID of the last row of the previous page, the last value of the key, after which the listing continues; zero for the first page and for offset pagination
 
 <a name="DeleteExpiredCertificatesRequest"></a>
-## type [DeleteExpiredCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L314-L320>)
+## type [DeleteExpiredCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L416-L422>)
 
 DeleteExpiredCertificatesRequest defines request to delete the certificates of any status whose validity ended before the time, with their revocations, a batch at a time \(retention\). The batch is the lowest IDs of the remaining rows, so the next batch continues without an offset.
 
@@ -945,7 +1097,7 @@ type DeleteExpiredCertificatesRequest struct {
 ```
 
 <a name="DeleteExpiredCertificatesRequest.Args"></a>
-### func \(\*DeleteExpiredCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L335>)
+### func \(\*DeleteExpiredCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L437>)
 
 ```go
 func (r *DeleteExpiredCertificatesRequest) Args() []any
@@ -954,7 +1106,7 @@ func (r *DeleteExpiredCertificatesRequest) Args() []any
 Args returns the positional arguments of DeleteExpiredCertificates: the time and the limit
 
 <a name="DeleteExpiredCertificatesRequest.Validate"></a>
-### func \(\*DeleteExpiredCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L323>)
+### func \(\*DeleteExpiredCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L425>)
 
 ```go
 func (r *DeleteExpiredCertificatesRequest) Validate() error
@@ -1009,7 +1161,7 @@ func (r *DeleteMemberRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ExpireCertificatesRequest"></a>
-## type [ExpireCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L257-L262>)
+## type [ExpireCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L359-L364>)
 
 ExpireCertificatesRequest defines request to mark the Active certificates whose validity ended before the time as Expired, a batch at a time. The batch is the lowest IDs of the remaining Active certificates: the status change removes a row from the set, so the next batch continues without an offset \(the certificate status task\).
 
@@ -1023,7 +1175,7 @@ type ExpireCertificatesRequest struct {
 ```
 
 <a name="ExpireCertificatesRequest.Args"></a>
-### func \(\*ExpireCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L278>)
+### func \(\*ExpireCertificatesRequest\) [Args](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L380>)
 
 ```go
 func (r *ExpireCertificatesRequest) Args() []any
@@ -1032,7 +1184,7 @@ func (r *ExpireCertificatesRequest) Args() []any
 Args returns the positional arguments of ExpireCertificates: the Expired status, the Active status of the updated rows, the Active status of the batch, the time and the limit
 
 <a name="ExpireCertificatesRequest.Validate"></a>
-### func \(\*ExpireCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L265>)
+### func \(\*ExpireCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L367>)
 
 ```go
 func (r *ExpireCertificatesRequest) Validate() error
@@ -1228,8 +1380,51 @@ func (r *ListCertificatesRequest) Validate() error
 
 Validate returns ErrOrgScopeRequired when the request names no org scope
 
+<a name="ListCrlStatesRequest"></a>
+## type [ListCrlStatesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L150-L166>)
+
+ListCrlStatesRequest defines request to list the issuers of an org that publish CRLs with the state of their current CRL, newest first: the columns the tenant summary classifies \(the key identifier, the end of the validity, the settings and the next update of the CRL\), never a PEM. The org is required: the states are a tenant's.
+
+```go
+type ListCrlStatesRequest struct {
+    // OrgID is the org whose issuers are listed
+    OrgID uint64
+    // ProjectID limits the result to the project
+    ProjectID uint64
+    // ProjectIDs limits the result to the org-wide rows and the rows of the
+    // projects, for a caller with grants in some projects only; nil applies
+    // no project filter and an empty list keeps the org-wide rows.
+    // ProjectID takes precedence.
+    ProjectIDs []uint64
+    // Statuses are the lifecycle statuses of the issuers that publish CRLs
+    Statuses []pb.IssuerStatus_Enum
+    // Limit specifies maximum number of records to return
+    Limit uint32
+    // Cursor specifies the position for cursor pagination
+    Cursor Cursor
+}
+```
+
+<a name="ListCrlStatesRequest.QueryParams"></a>
+### func \(\*ListCrlStatesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L182>)
+
+```go
+func (r *ListCrlStatesRequest) QueryParams() xdb.QueryParams
+```
+
+QueryParams returns the query params builder
+
+<a name="ListCrlStatesRequest.Validate"></a>
+### func \(\*ListCrlStatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L170>)
+
+```go
+func (r *ListCrlStatesRequest) Validate() error
+```
+
+Validate returns ErrOrgRequired when the request names no org, and an error without a status
+
 <a name="ListCrlsRequest"></a>
-## type [ListCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L82-L105>)
+## type [ListCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L85-L108>)
 
 ListCrlsRequest defines request to list the current CRLs, newest first. The request names its org scope: OrgID, Platform or AllOrgs; the CRL renewal task lists every org with ExpiringBefore set to now plus the renewal period.
 
@@ -1261,7 +1456,7 @@ type ListCrlsRequest struct {
 ```
 
 <a name="ListCrlsRequest.QueryParams"></a>
-### func \(\*ListCrlsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L116>)
+### func \(\*ListCrlsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L119>)
 
 ```go
 func (r *ListCrlsRequest) QueryParams() xdb.QueryParams
@@ -1270,7 +1465,7 @@ func (r *ListCrlsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListCrlsRequest.Validate"></a>
-### func \(\*ListCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L108>)
+### func \(\*ListCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/crl.go#L111>)
 
 ```go
 func (r *ListCrlsRequest) Validate() error
@@ -1335,7 +1530,7 @@ func (r *ListEventsRequest) Validate() error
 Validate fails a request that carries the cursor of another list
 
 <a name="ListIssuersRequest"></a>
-## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L194-L228>)
+## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L238-L272>)
 
 ListIssuersRequest defines request to list issuers, newest first. The request names its org scope: OrgID, Platform or AllOrgs; without ProjectID and Scope the issuers of every scope of the org are returned.
 
@@ -1378,7 +1573,7 @@ type ListIssuersRequest struct {
 ```
 
 <a name="ListIssuersRequest.QueryParams"></a>
-### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L239>)
+### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L283>)
 
 ```go
 func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
@@ -1387,7 +1582,7 @@ func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L231>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L275>)
 
 ```go
 func (r *ListIssuersRequest) Validate() error
@@ -1754,6 +1949,69 @@ type RevokeCertificateRequest struct {
     ReasonText string
 }
 ```
+
+<a name="SummaryRequest"></a>
+## type [SummaryRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/summary.go#L14-L32>)
+
+SummaryRequest defines request for the counts of the tenant summary, read at one snapshot: the issuers by status, the certificates by status and by expiry period, and the CRL states of the issuers that publish CRLs, of an org, one of its projects or the org\-wide scope and the projects of ProjectIDs
+
+```go
+type SummaryRequest struct {
+    // OrgID is the org of the summary
+    OrgID uint64
+    // ProjectID limits the summary to the project
+    ProjectID uint64
+    // ProjectIDs limits the summary to the org-wide rows and the rows of the
+    // projects, for a caller with grants in some projects only; nil applies
+    // no project filter and an empty list keeps the org-wide rows.
+    // ProjectID takes precedence.
+    ProjectIDs []uint64
+    // Now is the time of the summary: the start of the expiry periods
+    Now time.Time
+    // Expiring are the periods after Now within which the Active
+    // certificates are counted, ascending
+    Expiring []time.Duration
+    // CrlStatuses are the lifecycle statuses of the issuers that publish
+    // CRLs
+    CrlStatuses []pb.IssuerStatus_Enum
+}
+```
+
+<a name="SummaryRequest.Certificates"></a>
+### func \(\*SummaryRequest\) [Certificates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/summary.go#L57>)
+
+```go
+func (r *SummaryRequest) Certificates() *CountCertificatesRequest
+```
+
+Certificates returns the request of the certificate counts of the scope
+
+<a name="SummaryRequest.CrlStates"></a>
+### func \(\*SummaryRequest\) [CrlStates](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/summary.go#L70>)
+
+```go
+func (r *SummaryRequest) CrlStates(cursor Cursor) *ListCrlStatesRequest
+```
+
+CrlStates returns the request of a page of the CRL states of the scope: the first page with NewCursor\(0\), the next with the cursor of the previous page, the default page size
+
+<a name="SummaryRequest.Issuers"></a>
+### func \(\*SummaryRequest\) [Issuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/summary.go#L48>)
+
+```go
+func (r *SummaryRequest) Issuers() *CountIssuersRequest
+```
+
+Issuers returns the request of the issuer counts of the scope
+
+<a name="SummaryRequest.Validate"></a>
+### func \(\*SummaryRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/summary.go#L35>)
+
+```go
+func (r *SummaryRequest) Validate() error
+```
+
+Validate validates the requests of the three reads
 
 <a name="UpdateCertificateRequest"></a>
 ## type [UpdateCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/certificate.go#L48-L59>)

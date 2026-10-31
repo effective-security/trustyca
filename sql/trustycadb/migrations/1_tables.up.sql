@@ -523,6 +523,14 @@ CREATE INDEX IF NOT EXISTS idx_certificate_org_project_notafter
     ON trustyca.certificate USING btree
     (org_id, project_id, not_after);
 
+-- the counts of the tenant summary: the certificates of an org or of a
+-- project by status, and the Active ones whose validity ends within a
+-- period, as index-only scans; the org-wide counts read every entry of the
+-- org, a project's the entries of the project
+CREATE INDEX IF NOT EXISTS idx_certificate_org_project_status_notafter
+    ON trustyca.certificate USING btree
+    (org_id, project_id, status, not_after);
+
 -- listing per issuer within the org: an issuer belongs to one org, so the
 -- org leads and a foreign key identifier finds nothing without a scan; the
 -- support list across orgs resolves the org of the issuer first

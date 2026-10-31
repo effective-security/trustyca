@@ -188,6 +188,50 @@ func GetIssuerBySKID(args ...any) (string, string) {
 	})
 }
 
+// CountIssuersRequest defines request to count the issuers of an org by
+// lifecycle status: of the whole org, of one project, or of the org-wide
+// scope and the projects of ProjectIDs. The org is required: the counts
+// are a tenant's.
+type CountIssuersRequest struct {
+	// OrgID is the org whose issuers are counted
+	OrgID uint64
+	// ProjectID limits the count to the project
+	ProjectID uint64
+	// ProjectIDs limits the count to the org-wide rows and the rows of the
+	// projects, for a caller with grants in some projects only; nil applies
+	// no project filter and an empty list keeps the org-wide rows.
+	// ProjectID takes precedence.
+	ProjectIDs []uint64
+}
+
+// Validate returns ErrOrgRequired when the request names no org
+func (r *CountIssuersRequest) Validate() error {
+	return checkCountScope(r.OrgID)
+}
+
+// QueryParams returns the query params builder
+func (r *CountIssuersRequest) QueryParams() xdb.QueryParams {
+	b := xdb.NewQueryParams("CountIssuers")
+	setOrgScope(b, schema.Issuer.OrgID.Position, r.OrgID, false)
+	setProjectScope(b, schema.Issuer.ProjectID.Position, r.ProjectID, pb.Scope_Undefined)
+	setVisibleProjects(b, schema.Issuer.ProjectID.Position, r.ProjectIDs)
+	return b
+}
+
+// CountIssuers returns SQL query to count the issuers of a scope by
+// status: a row per status with issuers, served by the
+// idx_issuer_org_project_status index
+func CountIssuers(args ...any) (string, string) {
+	p := xdb.GetQueryParams(args...)
+	key := p.Name()
+	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
+		q := schema.IssuerTableInfo.Select(schema.Issuer.Status.Name + ", " + exprCount)
+		whereTenancy(q, p, schema.Issuer.OrgID.Position, schema.Issuer.ProjectID.Position)
+		q.GroupBy(schema.Issuer.Status.Name)
+		return q
+	})
+}
+
 // ListIssuersRequest defines request to list issuers, newest first.
 // The request names its org scope: OrgID, Platform or AllOrgs; without
 // ProjectID and Scope the issuers of every scope of the org are returned.

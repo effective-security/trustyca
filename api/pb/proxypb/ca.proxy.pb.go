@@ -794,3 +794,48 @@ func (s *postproxyCAClient) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (
 	}
 	return &res, nil
 }
+
+// GetSummary returns the counts of the tenant's dashboard: the issuers
+// by status, the certificates by status and by expiry, and the issuers
+// that publish CRLs by the state of their CRL, for the org or for one
+// project. Without a project, a member with project grants only gets
+// the org-wide rows and those of its projects, as the lists do.
+func (s *proxyCAServer) GetSummary(ctx context.Context, req *pb.GetSummaryRequest, opts ...grpc.CallOption) (*pb.SummaryResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetSummary(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetSummary returns the counts of the tenant's dashboard: the issuers
+// by status, the certificates by status and by expiry, and the issuers
+// that publish CRLs by the state of their CRL, for the org or for one
+// project. Without a project, a member with project grants only gets
+// the org-wide rows and those of its projects, as the lists do.
+func (s *proxyCAClient) GetSummary(ctx context.Context, req *pb.GetSummaryRequest) (*pb.SummaryResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetSummary(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetSummary returns the counts of the tenant's dashboard: the issuers
+// by status, the certificates by status and by expiry, and the issuers
+// that publish CRLs by the state of their CRL, for the org or for one
+// project. Without a project, a member with project grants only gets
+// the org-wide rows and those of its projects, as the lists do.
+func (s *postproxyCAClient) GetSummary(ctx context.Context, req *pb.GetSummaryRequest) (*pb.SummaryResponse, error) {
+	var res pb.SummaryResponse
+	path := pb.CA_GetSummary_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}

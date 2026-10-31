@@ -132,5 +132,58 @@ ORDER BY id DESC
 LIMIT $3 
 OFFSET $4`,
 		},
+		{
+			// the counts of the summary by status: the org, a project, the
+			// visible projects
+			query.CountCertificates, []any{&query.CountCertificatesRequest{OrgID: 1}},
+			`SELECT status, COUNT(*) 
+FROM trustyca.certificate 
+WHERE org_id = $1 
+GROUP BY status`,
+		},
+		{
+			query.CountCertificates, []any{&query.CountCertificatesRequest{OrgID: 1, ProjectID: 2}},
+			`SELECT status, COUNT(*) 
+FROM trustyca.certificate 
+WHERE org_id = $1 AND project_id = $2 
+GROUP BY status`,
+		},
+		{
+			query.CountCertificates, []any{&query.CountCertificatesRequest{OrgID: 1, ProjectIDs: []uint64{2, 3}}},
+			`SELECT status, COUNT(*) 
+FROM trustyca.certificate 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) 
+GROUP BY status`,
+		},
+		{
+			// the Active certificates expiring within a period
+			func(args ...any) (string, string) {
+				return query.CountExpiringCertificates((&query.CountCertificatesRequest{OrgID: 1, Now: now}).ExpiringParams(time.Hour))
+			}, nil,
+			`SELECT COUNT(*) 
+FROM trustyca.certificate 
+WHERE org_id = $1 AND status = $2 AND not_after >= $3 AND not_after < $4`,
+		},
+		{
+			func(args ...any) (string, string) {
+				return query.CountExpiringCertificates((&query.CountCertificatesRequest{OrgID: 1, ProjectIDs: []uint64{2}, Now: now}).ExpiringParams(time.Hour))
+			}, nil,
+			`SELECT COUNT(*) 
+FROM trustyca.certificate 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) AND status = $3 AND not_after >= $4 AND not_after < $5`,
+		},
 	})
+
+	// the arguments of a period follow the scope: the status, the start and
+	// the end of the period
+	qp := (&query.CountCertificatesRequest{OrgID: 1, ProjectID: 2, Now: now}).ExpiringParams(time.Hour)
+	require.Equal(t, []any{uint64(1), uint64(2), pb.CertificateStatus_Active, now.UTC(), now.UTC().Add(time.Hour)}, qp.Args())
+
+	// a count names its org, and its periods are positive and ascending
+	require.EqualError(t, (&query.CountCertificatesRequest{}).Validate(), "org ID is required")
+	require.EqualError(t, (&query.CountCertificatesRequest{OrgID: 1, Expiring: []time.Duration{time.Hour}}).Validate(), "expiry time is required")
+	require.EqualError(t, (&query.CountCertificatesRequest{OrgID: 1, Now: now, Expiring: []time.Duration{time.Hour, time.Hour}}).Validate(), "expiry periods must be positive and ascending")
+	require.NoError(t, (&query.CountCertificatesRequest{OrgID: 1, Now: now, Expiring: []time.Duration{time.Hour, 2 * time.Hour}}).Validate())
+	require.NoError(t, (&query.CountCertificatesRequest{OrgID: 1}).Validate())
+	require.EqualError(t, (&query.CountIssuersRequest{}).Validate(), "org ID is required")
 }

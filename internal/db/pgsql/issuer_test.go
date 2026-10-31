@@ -401,3 +401,44 @@ func Test_Issuer_RootAnchor(t *testing.T) {
 	_, err = provider.GetIssuerBySKID(ctx, certutil.GetSubjectKeyID(shared.Cert))
 	assert.True(t, xdb.IsNotFoundError(err), "the issuer is not stored: %v", err)
 }
+
+// Test_Issuer_Counts covers the counts of the tenant summary by lifecycle
+// status, for the org, a project and the visible projects
+func Test_Issuer_Counts(t *testing.T) {
+	_, org := setupOwnerAndOrg(t, "Test_Issuer_Counts")
+	project, err := provider.RegisterProject(ctx, &model.Project{OrgID: org.ID, Name: "Counts"})
+	require.NoError(t, err)
+
+	root := testutils.NewTestCA(t, "Issuer Counts Root", nil)
+	registerIssuer(t, newTestIssuer(org.ID, xdb.ID(0), "CNT_ORG", testutils.NewTestCA(t, "Issuer Counts L2", root), pb.AuthorityType_Issuing, xdb.ID(0)))
+	registerIssuer(t, newTestIssuer(org.ID, project.ID, "CNT_PRJ", testutils.NewTestCA(t, "Issuer Counts L2 Project", root), pb.AuthorityType_Issuing, xdb.ID(0)))
+	archived := registerIssuer(t, newTestIssuer(org.ID, project.ID, "CNT_ARCHIVED", testutils.NewTestCA(t, "Issuer Counts L2 Archived", root), pb.AuthorityType_Issuing, xdb.ID(0)))
+	_, err = provider.UpdateIssuer(ctx, &query.UpdateIssuerRequest{
+		ID:     archived.ID.UInt64(),
+		OrgID:  org.ID.UInt64(),
+		Status: pb.IssuerStatus_Archived,
+	})
+	require.NoError(t, err)
+
+	orgID := org.ID.UInt64()
+	count := func(projectID uint64, projectIDs []uint64) model.IssuerCounts {
+		t.Helper()
+		res, err := provider.CountIssuers(ctx, &query.CountIssuersRequest{
+			OrgID:      orgID,
+			ProjectID:  projectID,
+			ProjectIDs: projectIDs,
+		})
+		require.NoError(t, err)
+		return res
+	}
+	active, archivedStatus := pb.IssuerStatus_Active, pb.IssuerStatus_Archived
+	assert.Equal(t, model.IssuerCounts{active: 2, archivedStatus: 1}, count(0, nil), "the org")
+	assert.Equal(t, model.IssuerCounts{active: 1, archivedStatus: 1}, count(project.ID.UInt64(), nil), "a project")
+	assert.Equal(t, model.IssuerCounts{active: 2, archivedStatus: 1}, count(0, []uint64{project.ID.UInt64()}), "the visible projects")
+	assert.Equal(t, model.IssuerCounts{active: 1}, count(0, []uint64{}), "the org-wide rows only")
+	assert.Equal(t, model.IssuerCounts{active: 1, archivedStatus: 1}, count(project.ID.UInt64(), []uint64{}), "a project takes precedence")
+	assert.Empty(t, count(project.ID.UInt64()+1, nil), "a project without issuers")
+
+	_, err = provider.CountIssuers(ctx, &query.CountIssuersRequest{})
+	assert.EqualError(t, err, "org ID is required")
+}

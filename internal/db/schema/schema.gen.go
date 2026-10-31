@@ -30,7 +30,7 @@ var CertificateTableInfo = xdbschema.TableInfo{
 	Name:       "certificate",
 	PrimaryKey: "id",
 	Columns:    []string{"id", "org_id", "project_id", "skid", "ikid", "serial_number", "not_before", "not_after", "subject", "issuer", "sha256", "profile", "label", "locations", "metadata", "pem", "issuers_pem", "status", "created_at"},
-	Indexes:    []string{"certificate_pkey", "idx_certificate_notafter", "idx_certificate_org_id_desc", "idx_certificate_org_ikid_id_desc", "idx_certificate_org_project_id_desc", "idx_certificate_org_project_notafter", "idx_certificate_skid", "unique_certificate_ikid_serial", "unique_certificate_sha256"},
+	Indexes:    []string{"certificate_pkey", "idx_certificate_notafter", "idx_certificate_org_id_desc", "idx_certificate_org_ikid_id_desc", "idx_certificate_org_project_id_desc", "idx_certificate_org_project_notafter", "idx_certificate_org_project_status_notafter", "idx_certificate_skid", "unique_certificate_ikid_serial", "unique_certificate_sha256"},
 	Dialect:    xsql.Postgres,
 }
 
@@ -266,11 +266,12 @@ var APIKey = struct {
 //	certificate_pkey: PRIMARY UNIQUE [id]
 //	idx_certificate_notafter: [not_after]
 //	idx_certificate_org_id_desc: [id,org_id]
-//	idx_certificate_org_ikid_id_desc: [ikid,id,org_id]
+//	idx_certificate_org_ikid_id_desc: [id,org_id,ikid]
 //	idx_certificate_org_project_id_desc: [org_id,project_id,id]
 //	idx_certificate_org_project_notafter: [project_id,org_id,not_after]
+//	idx_certificate_org_project_status_notafter: [status,org_id,project_id,not_after]
 //	idx_certificate_skid: [skid]
-//	unique_certificate_ikid_serial: UNIQUE [ikid,serial_number]
+//	unique_certificate_ikid_serial: UNIQUE [serial_number,ikid]
 //	unique_certificate_sha256: UNIQUE [sha256]
 var Certificate = struct {
 	Table        *xdbschema.TableInfo

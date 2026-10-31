@@ -1914,6 +1914,64 @@ func (x *PublishCrlsRequest) GetForce() bool {
 	return false
 }
 
+// GetSummaryRequest specifies the scope of the summary
+// with the org named explicitly: the request of Backend.GetSummary
+type GetSummaryRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// OrgID of the owning org: the org of the token of the caller the CA
+	// service forwards, or the org a service identity names
+	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+	// ProjectID limits the summary to the project; empty summarizes the
+	// org-wide rows and the projects the caller may read
+	ProjectID     string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSummaryRequest) Reset() {
+	*x = GetSummaryRequest{}
+	mi := &file_backend_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSummaryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSummaryRequest) ProtoMessage() {}
+
+func (x *GetSummaryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_backend_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSummaryRequest.ProtoReflect.Descriptor instead.
+func (*GetSummaryRequest) Descriptor() ([]byte, []int) {
+	return file_backend_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetSummaryRequest) GetOrgID() string {
+	if x != nil {
+		return x.OrgID
+	}
+	return ""
+}
+
+func (x *GetSummaryRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
 var File_backend_proto protoreflect.FileDescriptor
 
 const file_backend_proto_rawDesc = "" +
@@ -2076,7 +2134,10 @@ const file_backend_proto_rawDesc = "" +
 	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x12\n" +
 	"\x04IKID\x18\x03 \x01(\tR\x04IKID\x12\x14\n" +
-	"\x05Force\x18\x04 \x01(\bR\x05Force2\x84\v\n" +
+	"\x05Force\x18\x04 \x01(\bR\x05Force\"M\n" +
+	"\x11GetSummaryRequest\x12\x1a\n" +
+	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectID2\xc2\v\n" +
 	"\aBackend\x12;\n" +
 	"\x0eRegisterIssuer\x12\x1d.privpb.RegisterIssuerRequest\x1a\n" +
 	".pb.Issuer\x127\n" +
@@ -2104,7 +2165,9 @@ const file_backend_proto_rawDesc = "" +
 	"\x17ListRevokedCertificates\x12&.privpb.ListRevokedCertificatesRequest\x1a\x1f.pb.RevokedCertificatesResponse\x120\n" +
 	"\x06GetCRL\x12\x15.privpb.GetCrlRequest\x1a\x0f.pb.CrlResponse\x12;\n" +
 	"\vPublishCrls\x12\x1a.privpb.PublishCrlsRequest\x1a\x10.pb.CrlsResponse\x12-\n" +
-	"\bSignOCSP\x12\x0f.pb.OCSPRequest\x1a\x10.pb.OCSPResponseB/Z-github.com/effective-security/trustyca/privpbb\x06proto3"
+	"\bSignOCSP\x12\x0f.pb.OCSPRequest\x1a\x10.pb.OCSPResponse\x12<\n" +
+	"\n" +
+	"GetSummary\x12\x19.privpb.GetSummaryRequest\x1a\x13.pb.SummaryResponseB/Z-github.com/effective-security/trustyca/privpbb\x06proto3"
 
 var (
 	file_backend_proto_rawDescOnce sync.Once
@@ -2118,7 +2181,7 @@ func file_backend_proto_rawDescGZIP() []byte {
 	return file_backend_proto_rawDescData
 }
 
-var file_backend_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_backend_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_backend_proto_goTypes = []any{
 	(*RegisterIssuerRequest)(nil),          // 0: privpb.RegisterIssuerRequest
 	(*ImportIssuerRequest)(nil),            // 1: privpb.ImportIssuerRequest
@@ -2140,58 +2203,60 @@ var file_backend_proto_goTypes = []any{
 	(*RevokeCertificateRequest)(nil),       // 17: privpb.RevokeCertificateRequest
 	(*GetCrlRequest)(nil),                  // 18: privpb.GetCrlRequest
 	(*PublishCrlsRequest)(nil),             // 19: privpb.PublishCrlsRequest
-	nil,                                    // 20: privpb.SignCertificateRequest.MetadataEntry
-	nil,                                    // 21: privpb.UpdateCertificateLabelRequest.MetadataEntry
-	(pb.AuthorityType_Enum)(0),             // 22: pb.AuthorityType.Enum
-	(*pb.X509Subject)(nil),                 // 23: pb.X509Subject
-	(*pb.KeySpec)(nil),                     // 24: pb.KeySpec
-	(*pb.IssuerConfig)(nil),                // 25: pb.IssuerConfig
-	(*pb.X509Extension)(nil),               // 26: pb.X509Extension
-	(pb.IssuerStatus_Enum)(0),              // 27: pb.IssuerStatus.Enum
-	(pb.Trust_Enum)(0),                     // 28: pb.Trust.Enum
-	(*pb.CertProfile)(nil),                 // 29: pb.CertProfile
-	(pb.EncodingFormat_Enum)(0),            // 30: pb.EncodingFormat.Enum
-	(*pb.IssuerSerial)(nil),                // 31: pb.IssuerSerial
-	(pb.CertificateStatus_Enum)(0),         // 32: pb.CertificateStatus.Enum
-	(pb.ReasonCode_Enum)(0),                // 33: pb.ReasonCode.Enum
-	(*pb.OCSPRequest)(nil),                 // 34: pb.OCSPRequest
-	(*pb.Issuer)(nil),                      // 35: pb.Issuer
-	(*pb.IssuersResponse)(nil),             // 36: pb.IssuersResponse
-	(*pb.RootCertificate)(nil),             // 37: pb.RootCertificate
-	(*pb.RootsResponse)(nil),               // 38: pb.RootsResponse
-	(*pb.ProfilesResponse)(nil),            // 39: pb.ProfilesResponse
-	(*emptypb.Empty)(nil),                  // 40: google.protobuf.Empty
-	(*pb.CertificateResponse)(nil),         // 41: pb.CertificateResponse
-	(*pb.CertificatesResponse)(nil),        // 42: pb.CertificatesResponse
-	(*pb.RevokedCertificateResponse)(nil),  // 43: pb.RevokedCertificateResponse
-	(*pb.RevokedCertificatesResponse)(nil), // 44: pb.RevokedCertificatesResponse
-	(*pb.CrlResponse)(nil),                 // 45: pb.CrlResponse
-	(*pb.CrlsResponse)(nil),                // 46: pb.CrlsResponse
-	(*pb.OCSPResponse)(nil),                // 47: pb.OCSPResponse
+	(*GetSummaryRequest)(nil),              // 20: privpb.GetSummaryRequest
+	nil,                                    // 21: privpb.SignCertificateRequest.MetadataEntry
+	nil,                                    // 22: privpb.UpdateCertificateLabelRequest.MetadataEntry
+	(pb.AuthorityType_Enum)(0),             // 23: pb.AuthorityType.Enum
+	(*pb.X509Subject)(nil),                 // 24: pb.X509Subject
+	(*pb.KeySpec)(nil),                     // 25: pb.KeySpec
+	(*pb.IssuerConfig)(nil),                // 26: pb.IssuerConfig
+	(*pb.X509Extension)(nil),               // 27: pb.X509Extension
+	(pb.IssuerStatus_Enum)(0),              // 28: pb.IssuerStatus.Enum
+	(pb.Trust_Enum)(0),                     // 29: pb.Trust.Enum
+	(*pb.CertProfile)(nil),                 // 30: pb.CertProfile
+	(pb.EncodingFormat_Enum)(0),            // 31: pb.EncodingFormat.Enum
+	(*pb.IssuerSerial)(nil),                // 32: pb.IssuerSerial
+	(pb.CertificateStatus_Enum)(0),         // 33: pb.CertificateStatus.Enum
+	(pb.ReasonCode_Enum)(0),                // 34: pb.ReasonCode.Enum
+	(*pb.OCSPRequest)(nil),                 // 35: pb.OCSPRequest
+	(*pb.Issuer)(nil),                      // 36: pb.Issuer
+	(*pb.IssuersResponse)(nil),             // 37: pb.IssuersResponse
+	(*pb.RootCertificate)(nil),             // 38: pb.RootCertificate
+	(*pb.RootsResponse)(nil),               // 39: pb.RootsResponse
+	(*pb.ProfilesResponse)(nil),            // 40: pb.ProfilesResponse
+	(*emptypb.Empty)(nil),                  // 41: google.protobuf.Empty
+	(*pb.CertificateResponse)(nil),         // 42: pb.CertificateResponse
+	(*pb.CertificatesResponse)(nil),        // 43: pb.CertificatesResponse
+	(*pb.RevokedCertificateResponse)(nil),  // 44: pb.RevokedCertificateResponse
+	(*pb.RevokedCertificatesResponse)(nil), // 45: pb.RevokedCertificatesResponse
+	(*pb.CrlResponse)(nil),                 // 46: pb.CrlResponse
+	(*pb.CrlsResponse)(nil),                // 47: pb.CrlsResponse
+	(*pb.OCSPResponse)(nil),                // 48: pb.OCSPResponse
+	(*pb.SummaryResponse)(nil),             // 49: pb.SummaryResponse
 }
 var file_backend_proto_depIdxs = []int32{
-	22, // 0: privpb.RegisterIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
-	23, // 1: privpb.RegisterIssuerRequest.Subject:type_name -> pb.X509Subject
-	24, // 2: privpb.RegisterIssuerRequest.KeySpec:type_name -> pb.KeySpec
-	25, // 3: privpb.RegisterIssuerRequest.Config:type_name -> pb.IssuerConfig
-	26, // 4: privpb.RegisterIssuerRequest.Extensions:type_name -> pb.X509Extension
-	22, // 5: privpb.ImportIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
-	25, // 6: privpb.ImportIssuerRequest.Config:type_name -> pb.IssuerConfig
-	27, // 7: privpb.ListIssuersRequest.Status:type_name -> pb.IssuerStatus.Enum
-	22, // 8: privpb.ListIssuersRequest.Type:type_name -> pb.AuthorityType.Enum
-	25, // 9: privpb.UpdateIssuerRequest.Config:type_name -> pb.IssuerConfig
-	27, // 10: privpb.UpdateIssuerRequest.Status:type_name -> pb.IssuerStatus.Enum
-	28, // 11: privpb.RegisterRootRequest.Trust:type_name -> pb.Trust.Enum
-	29, // 12: privpb.RegisterProfileRequest.Profile:type_name -> pb.CertProfile
-	30, // 13: privpb.SignCertificateRequest.RequestFormat:type_name -> pb.EncodingFormat.Enum
-	23, // 14: privpb.SignCertificateRequest.Subject:type_name -> pb.X509Subject
-	26, // 15: privpb.SignCertificateRequest.Extensions:type_name -> pb.X509Extension
-	20, // 16: privpb.SignCertificateRequest.Metadata:type_name -> privpb.SignCertificateRequest.MetadataEntry
-	21, // 17: privpb.UpdateCertificateLabelRequest.Metadata:type_name -> privpb.UpdateCertificateLabelRequest.MetadataEntry
-	31, // 18: privpb.GetCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
-	32, // 19: privpb.ListCertificatesRequest.Status:type_name -> pb.CertificateStatus.Enum
-	31, // 20: privpb.RevokeCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
-	33, // 21: privpb.RevokeCertificateRequest.Reason:type_name -> pb.ReasonCode.Enum
+	23, // 0: privpb.RegisterIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
+	24, // 1: privpb.RegisterIssuerRequest.Subject:type_name -> pb.X509Subject
+	25, // 2: privpb.RegisterIssuerRequest.KeySpec:type_name -> pb.KeySpec
+	26, // 3: privpb.RegisterIssuerRequest.Config:type_name -> pb.IssuerConfig
+	27, // 4: privpb.RegisterIssuerRequest.Extensions:type_name -> pb.X509Extension
+	23, // 5: privpb.ImportIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
+	26, // 6: privpb.ImportIssuerRequest.Config:type_name -> pb.IssuerConfig
+	28, // 7: privpb.ListIssuersRequest.Status:type_name -> pb.IssuerStatus.Enum
+	23, // 8: privpb.ListIssuersRequest.Type:type_name -> pb.AuthorityType.Enum
+	26, // 9: privpb.UpdateIssuerRequest.Config:type_name -> pb.IssuerConfig
+	28, // 10: privpb.UpdateIssuerRequest.Status:type_name -> pb.IssuerStatus.Enum
+	29, // 11: privpb.RegisterRootRequest.Trust:type_name -> pb.Trust.Enum
+	30, // 12: privpb.RegisterProfileRequest.Profile:type_name -> pb.CertProfile
+	31, // 13: privpb.SignCertificateRequest.RequestFormat:type_name -> pb.EncodingFormat.Enum
+	24, // 14: privpb.SignCertificateRequest.Subject:type_name -> pb.X509Subject
+	27, // 15: privpb.SignCertificateRequest.Extensions:type_name -> pb.X509Extension
+	21, // 16: privpb.SignCertificateRequest.Metadata:type_name -> privpb.SignCertificateRequest.MetadataEntry
+	22, // 17: privpb.UpdateCertificateLabelRequest.Metadata:type_name -> privpb.UpdateCertificateLabelRequest.MetadataEntry
+	32, // 18: privpb.GetCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
+	33, // 19: privpb.ListCertificatesRequest.Status:type_name -> pb.CertificateStatus.Enum
+	32, // 20: privpb.RevokeCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
+	34, // 21: privpb.RevokeCertificateRequest.Reason:type_name -> pb.ReasonCode.Enum
 	0,  // 22: privpb.Backend.RegisterIssuer:input_type -> privpb.RegisterIssuerRequest
 	1,  // 23: privpb.Backend.ImportIssuer:input_type -> privpb.ImportIssuerRequest
 	2,  // 24: privpb.Backend.ActivateIssuer:input_type -> privpb.ActivateIssuerRequest
@@ -2212,30 +2277,32 @@ var file_backend_proto_depIdxs = []int32{
 	16, // 39: privpb.Backend.ListRevokedCertificates:input_type -> privpb.ListRevokedCertificatesRequest
 	18, // 40: privpb.Backend.GetCRL:input_type -> privpb.GetCrlRequest
 	19, // 41: privpb.Backend.PublishCrls:input_type -> privpb.PublishCrlsRequest
-	34, // 42: privpb.Backend.SignOCSP:input_type -> pb.OCSPRequest
-	35, // 43: privpb.Backend.RegisterIssuer:output_type -> pb.Issuer
-	35, // 44: privpb.Backend.ImportIssuer:output_type -> pb.Issuer
-	35, // 45: privpb.Backend.ActivateIssuer:output_type -> pb.Issuer
-	35, // 46: privpb.Backend.UpdateIssuer:output_type -> pb.Issuer
-	35, // 47: privpb.Backend.GetIssuer:output_type -> pb.Issuer
-	36, // 48: privpb.Backend.ListIssuers:output_type -> pb.IssuersResponse
-	37, // 49: privpb.Backend.RegisterRoot:output_type -> pb.RootCertificate
-	38, // 50: privpb.Backend.ListRoots:output_type -> pb.RootsResponse
-	29, // 51: privpb.Backend.RegisterProfile:output_type -> pb.CertProfile
-	29, // 52: privpb.Backend.GetProfile:output_type -> pb.CertProfile
-	39, // 53: privpb.Backend.ListProfiles:output_type -> pb.ProfilesResponse
-	40, // 54: privpb.Backend.DeleteProfile:output_type -> google.protobuf.Empty
-	41, // 55: privpb.Backend.SignCertificate:output_type -> pb.CertificateResponse
-	41, // 56: privpb.Backend.GetCertificate:output_type -> pb.CertificateResponse
-	42, // 57: privpb.Backend.ListCertificates:output_type -> pb.CertificatesResponse
-	41, // 58: privpb.Backend.UpdateCertificateLabel:output_type -> pb.CertificateResponse
-	43, // 59: privpb.Backend.RevokeCertificate:output_type -> pb.RevokedCertificateResponse
-	44, // 60: privpb.Backend.ListRevokedCertificates:output_type -> pb.RevokedCertificatesResponse
-	45, // 61: privpb.Backend.GetCRL:output_type -> pb.CrlResponse
-	46, // 62: privpb.Backend.PublishCrls:output_type -> pb.CrlsResponse
-	47, // 63: privpb.Backend.SignOCSP:output_type -> pb.OCSPResponse
-	43, // [43:64] is the sub-list for method output_type
-	22, // [22:43] is the sub-list for method input_type
+	35, // 42: privpb.Backend.SignOCSP:input_type -> pb.OCSPRequest
+	20, // 43: privpb.Backend.GetSummary:input_type -> privpb.GetSummaryRequest
+	36, // 44: privpb.Backend.RegisterIssuer:output_type -> pb.Issuer
+	36, // 45: privpb.Backend.ImportIssuer:output_type -> pb.Issuer
+	36, // 46: privpb.Backend.ActivateIssuer:output_type -> pb.Issuer
+	36, // 47: privpb.Backend.UpdateIssuer:output_type -> pb.Issuer
+	36, // 48: privpb.Backend.GetIssuer:output_type -> pb.Issuer
+	37, // 49: privpb.Backend.ListIssuers:output_type -> pb.IssuersResponse
+	38, // 50: privpb.Backend.RegisterRoot:output_type -> pb.RootCertificate
+	39, // 51: privpb.Backend.ListRoots:output_type -> pb.RootsResponse
+	30, // 52: privpb.Backend.RegisterProfile:output_type -> pb.CertProfile
+	30, // 53: privpb.Backend.GetProfile:output_type -> pb.CertProfile
+	40, // 54: privpb.Backend.ListProfiles:output_type -> pb.ProfilesResponse
+	41, // 55: privpb.Backend.DeleteProfile:output_type -> google.protobuf.Empty
+	42, // 56: privpb.Backend.SignCertificate:output_type -> pb.CertificateResponse
+	42, // 57: privpb.Backend.GetCertificate:output_type -> pb.CertificateResponse
+	43, // 58: privpb.Backend.ListCertificates:output_type -> pb.CertificatesResponse
+	42, // 59: privpb.Backend.UpdateCertificateLabel:output_type -> pb.CertificateResponse
+	44, // 60: privpb.Backend.RevokeCertificate:output_type -> pb.RevokedCertificateResponse
+	45, // 61: privpb.Backend.ListRevokedCertificates:output_type -> pb.RevokedCertificatesResponse
+	46, // 62: privpb.Backend.GetCRL:output_type -> pb.CrlResponse
+	47, // 63: privpb.Backend.PublishCrls:output_type -> pb.CrlsResponse
+	48, // 64: privpb.Backend.SignOCSP:output_type -> pb.OCSPResponse
+	49, // 65: privpb.Backend.GetSummary:output_type -> pb.SummaryResponse
+	44, // [44:66] is the sub-list for method output_type
+	22, // [22:44] is the sub-list for method input_type
 	22, // [22:22] is the sub-list for extension type_name
 	22, // [22:22] is the sub-list for extension extendee
 	0,  // [0:22] is the sub-list for field type_name
@@ -2252,7 +2319,7 @@ func file_backend_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_backend_proto_rawDesc), len(file_backend_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -109,11 +109,12 @@ func (p *APIKeyResult) GetTableInfo() *xdbschema.TableInfo {
 //	certificate_pkey: PRIMARY UNIQUE [id]
 //	idx_certificate_notafter: [not_after]
 //	idx_certificate_org_id_desc: [id,org_id]
-//	idx_certificate_org_ikid_id_desc: [ikid,id,org_id]
+//	idx_certificate_org_ikid_id_desc: [id,org_id,ikid]
 //	idx_certificate_org_project_id_desc: [org_id,project_id,id]
 //	idx_certificate_org_project_notafter: [project_id,org_id,not_after]
+//	idx_certificate_org_project_status_notafter: [status,org_id,project_id,not_after]
 //	idx_certificate_skid: [skid]
-//	unique_certificate_ikid_serial: UNIQUE [ikid,serial_number]
+//	unique_certificate_ikid_serial: UNIQUE [serial_number,ikid]
 //	unique_certificate_sha256: UNIQUE [sha256]
 type Certificate struct {
 	// ID represents 'id' column of 'bigint'
@@ -151,7 +152,7 @@ type Certificate struct {
 	// IssuersPem represents 'issuers_pem' column of 'text'
 	IssuersPem string `db:"issuers_pem,text" json:",omitempty"`
 	// Status represents 'status' column of 'integer'
-	Status pb.CertificateStatus_Enum `db:"status,int4" json:",omitempty"`
+	Status pb.CertificateStatus_Enum `db:"status,int4,index" json:",omitempty"`
 	// CreatedAt represents 'created_at' column of 'timestamp with time zone'
 	CreatedAt xdb.Time `db:"created_at,timestamptz" json:",omitempty"`
 }

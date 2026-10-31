@@ -204,6 +204,64 @@ func (p *Provider) GetCertificateByIssuerSerial(ctx context.Context, ikid, seria
 	return res, nil
 }
 
+// CountCertificates counts the certificates of the org of the request by
+// status, and the Active ones whose validity ends within each period of
+// the request: one statement per period, a range of the expiring entries
+func (p *Provider) CountCertificates(ctx context.Context, req *query.CountCertificatesRequest) (*model.CertificateCounts, error) {
+	err := xdb.Validate(req)
+	if err != nil {
+		return nil, err
+	}
+	byStatus, err := p.countCertificates(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	res := &model.CertificateCounts{
+		ByStatus: byStatus,
+		Expiring: make([]uint64, 0, len(req.Expiring)),
+	}
+	for _, within := range req.Expiring {
+		n, err := p.countExpiringCertificates(ctx, req, within)
+		if err != nil {
+			return nil, err
+		}
+		res.Expiring = append(res.Expiring, n)
+	}
+	return res, nil
+}
+
+// countCertificates counts the certificates of the scope by status
+func (p *Provider) countCertificates(ctx context.Context, req *query.CountCertificatesRequest) (map[pb.CertificateStatus_Enum]uint64, error) {
+	qp := req.QueryParams()
+	q, name := query.CountCertificates(qp)
+	defer DbMeasureQuerySince(name, time.Now())
+
+	rows, err := xdb.ExecuteListQuery[model.StatusCount](ctx, p, q, qp.Args()...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	res := make(map[pb.CertificateStatus_Enum]uint64, len(rows))
+	for _, row := range rows {
+		res[pb.CertificateStatus_Enum(row.Status)] = uint64(row.Count)
+	}
+	return res, nil
+}
+
+// countExpiringCertificates counts the Active certificates of the scope
+// whose validity ends within the period after the time of the request
+func (p *Provider) countExpiringCertificates(ctx context.Context, req *query.CountCertificatesRequest, within time.Duration) (uint64, error) {
+	qp := req.ExpiringParams(within)
+	q, name := query.CountExpiringCertificates(qp)
+	defer DbMeasureQuerySince(name, time.Now())
+
+	var n int64
+	err := p.QueryRowContext(ctx, q, qp.Args()...).Scan(&n)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	return uint64(n), nil
+}
+
 // ListCertificates lists certificates, newest first; the request names its
 // org scope
 func (p *Provider) ListCertificates(ctx context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {

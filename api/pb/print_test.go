@@ -116,6 +116,30 @@ func TestPrintPb(t *testing.T) {
 		capturePrint(callerStatusResponse)
 	})
 
+	t.Run("SummaryResponse", func(t *testing.T) {
+		t.Parallel()
+		capturePrint(&pb.SummaryResponse{
+			At: "2026-03-01T00:00:00Z",
+			Issuers: []*pb.IssuerStatusCount{
+				{Status: pb.IssuerStatus_Pending, Count: 1},
+				{Status: pb.IssuerStatus_Active, Count: 3},
+			},
+			Certificates: []*pb.CertificateStatusCount{
+				{Status: pb.CertificateStatus_Active, Count: 120},
+				{Status: pb.CertificateStatus_Revoked, Count: 2},
+			},
+			Expiring: []*pb.ExpiryBucket{
+				{Days: 7, Count: 1},
+				{Days: 30, Count: 5},
+			},
+			Crls: &pb.CrlCounts{
+				Issuers: 3,
+				Current: 2,
+				Missing: 1,
+			},
+		})
+	})
+
 	t.Run("Membership", func(t *testing.T) {
 		t.Parallel()
 		membership := &pb.Membership{

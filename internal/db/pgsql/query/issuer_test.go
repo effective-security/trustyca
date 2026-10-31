@@ -18,6 +18,28 @@ func Test_IssuerQuery(t *testing.T) {
 
 	check(t, []tcase{
 		{
+			// the counts of the summary: the org, a project, the visible projects
+			query.CountIssuers, []any{&query.CountIssuersRequest{OrgID: 1}},
+			`SELECT status, COUNT(*) 
+FROM trustyca.issuer 
+WHERE org_id = $1 
+GROUP BY status`,
+		},
+		{
+			query.CountIssuers, []any{&query.CountIssuersRequest{OrgID: 1, ProjectID: 2, ProjectIDs: []uint64{3}}},
+			`SELECT status, COUNT(*) 
+FROM trustyca.issuer 
+WHERE org_id = $1 AND project_id = $2 
+GROUP BY status`,
+		},
+		{
+			query.CountIssuers, []any{&query.CountIssuersRequest{OrgID: 1, ProjectIDs: []uint64{}}},
+			`SELECT status, COUNT(*) 
+FROM trustyca.issuer 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) 
+GROUP BY status`,
+		},
+		{
 			query.RegisterIssuer, nil,
 			`INSERT INTO trustyca.issuer 
 ( id, org_id, project_id, label, type, status, parent_id, skid, ikid, serial_number, subject, issuer, sha256, not_before, not_after, pem, chain_pem, root_pem, csr_pem, key_provider, key_id, key_protected, config, crl_number, created_at, updated_at 

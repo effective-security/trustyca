@@ -171,6 +171,31 @@ func crlCursor(last *model.Crl) string {
 	return query.EncodeCursor(last.ID)
 }
 
+// ListCrlStates lists the issuers of the org of the request with the
+// lifecycle statuses of the request, newest first, with the state of their
+// current CRL: the columns the tenant summary classifies, never a PEM
+func (p *Provider) ListCrlStates(ctx context.Context, req *query.ListCrlStatesRequest) (*model.CrlStateResult, error) {
+	err := xdb.Validate(req)
+	if err != nil {
+		return nil, err
+	}
+	qp := req.QueryParams()
+	q, name := query.ListCrlStates(qp)
+	defer DbMeasureQuerySince(name, time.Now())
+
+	var rs model.CrlStateResult
+	err = listRows(ctx, p, req.Cursor, crlStateCursor, &rs, q, qp)
+	if err != nil {
+		return nil, err
+	}
+	return &rs, nil
+}
+
+// crlStateCursor returns the cursor of the page after the row
+func crlStateCursor(last *model.CrlState) string {
+	return query.EncodeCursor(last.ID)
+}
+
 // DeleteCrl deletes the current CRL of the issuer with the key identifier in
 // the exact org scope (a zero orgID is the platform) and returns the number
 // of deleted rows

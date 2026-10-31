@@ -237,6 +237,12 @@ var methods = map[string]*MethodInfo{
 		Scopes:       []string{"ca:write"},
 	},
 
+	CA_GetSummary_FullMethodName: {
+		Allocator:    func() any { return new(GetSummaryRequest) },
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"ca:read"},
+	},
+
 	CIS_GetRoots_FullMethodName: {
 		Allocator: func() any { return new(GetRootsRequest) },
 	},

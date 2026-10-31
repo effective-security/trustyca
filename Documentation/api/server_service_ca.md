@@ -33,6 +33,7 @@ res, err := svc.SignCertificate(ctx, &pb.SignCertificateRequest{
   - [func \(s \*Service\) GetCertificate\(ctx context.Context, req \*pb.GetCertificateRequest\) \(\*pb.CertificateResponse, error\)](<#Service.GetCertificate>)
   - [func \(s \*Service\) GetIssuer\(ctx context.Context, req \*pb.GetIssuerRequest\) \(\*pb.Issuer, error\)](<#Service.GetIssuer>)
   - [func \(s \*Service\) GetProfile\(ctx context.Context, req \*pb.GetProfileRequest\) \(\*pb.CertProfile, error\)](<#Service.GetProfile>)
+  - [func \(s \*Service\) GetSummary\(ctx context.Context, req \*pb.GetSummaryRequest\) \(\*pb.SummaryResponse, error\)](<#Service.GetSummary>)
   - [func \(s \*Service\) ImportIssuer\(ctx context.Context, req \*pb.ImportIssuerRequest\) \(\*pb.Issuer, error\)](<#Service.ImportIssuer>)
   - [func \(s \*Service\) IsReady\(\) bool](<#Service.IsReady>)
   - [func \(s \*Service\) ListCertificates\(ctx context.Context, req \*pb.ListCertificatesRequest\) \(\*pb.CertificatesResponse, error\)](<#Service.ListCertificates>)
@@ -152,6 +153,15 @@ func (s *Service) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*p
 ```
 
 GetProfile returns a profile of the org \(Backend.GetProfile\)
+
+<a name="Service.GetSummary"></a>
+### func \(\*Service\) [GetSummary](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L143>)
+
+```go
+func (s *Service) GetSummary(ctx context.Context, req *pb.GetSummaryRequest) (*pb.SummaryResponse, error)
+```
+
+GetSummary returns the counts of the org's dashboard \(Backend.GetSummary\)
 
 <a name="Service.ImportIssuer"></a>
 ### func \(\*Service\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/ca/forward.go#L29>)

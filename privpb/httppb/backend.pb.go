@@ -102,6 +102,9 @@ func GetBackendHTTPHandler(s privpb.BackendServer, withAccessCheck privpb.CheckA
 		case privpb.Backend_SignOCSP_FullMethodName:
 			res, err = s.SignOCSP(ctx, req.(*pb.OCSPRequest))
 
+		case privpb.Backend_GetSummary_FullMethodName:
+			res, err = s.GetSummary(ctx, req.(*privpb.GetSummaryRequest))
+
 		default:
 			err = httperror.Malformed("invalid action: %s", action)
 		}

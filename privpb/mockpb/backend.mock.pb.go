@@ -255,3 +255,13 @@ func (m *MockBackendServer) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (
 	}
 	return m.next().(*pb.OCSPResponse), nil
 }
+
+// GetSummary returns the counts of the issuers, certificates and CRLs
+// of the org, or of one of its projects (CA.GetSummary)
+
+func (m *MockBackendServer) GetSummary(ctx context.Context, req *privpb.GetSummaryRequest) (*pb.SummaryResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.SummaryResponse), nil
+}

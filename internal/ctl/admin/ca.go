@@ -22,6 +22,7 @@ type CACmd struct {
 	Cert    CertCmd    `cmd:"" help:"certificate commands"`
 	Crl     CrlCmd     `cmd:"" help:"CRL commands"`
 	Org     CAOrgCmd   `cmd:"" help:"org onboarding commands"`
+	Summary SummaryCmd `cmd:"" help:"the counts of the issuers, certificates and CRLs of an org"`
 }
 
 // OrgScope names the org of a CA request, and its project when the rows
