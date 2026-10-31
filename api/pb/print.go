@@ -290,6 +290,19 @@ func (r *ProjectsResponse) Print(w io.Writer) {
 	printNextPage(w, r.NextPage)
 }
 
+func (r *EventsResponse) Print(w io.Writer) {
+	table := createTable(w)
+	table.Header([]string{"ID", "Created", "Type", "Project", "Title", "Description", "By", "Source"})
+	for _, evt := range r.Events {
+		_ = table.Append([]string{
+			evt.ID, format.Time(evt.CreatedAt), evt.Type.DisplayName(), evt.ProjectID, evt.Title, evt.Description, evt.Email, evt.Source,
+		})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
+}
+
 func (r *Project) Print(w io.Writer) {
 	table := createTableSimple(w)
 	_ = table.Append([]string{"ID", r.ID})

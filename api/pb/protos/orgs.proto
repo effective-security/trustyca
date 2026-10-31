@@ -196,6 +196,26 @@ service Orgs {
     }
 
     //
+    // Events
+    //
+
+    // ListEvents returns the audit events of the org selected in the token,
+    // newest first: every event of the org for a caller with an org-wide
+    // role or an org-wide API key, the org-wide events and those of the
+    // caller's projects for a member with project grants only, and the
+    // events of one project with ProjectID, or for an API key restricted to
+    // the project
+    rpc ListEvents(ListEventsRequest) returns (EventsResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "org:read";
+        option (google.api.http)      = {
+            post: "/pb.Orgs/ListEvents",
+            body: "*"
+        };
+        option (es.api.cli_cmd) = "event list";
+    }
+
+    //
     // API Keys
     //
 
@@ -499,7 +519,30 @@ message DeleteProjectRequest {
     string ProjectID = 1 [json_name = "ProjectID", (es.api.required) = true];
 }
 
-// EventsResponse returns list of Event
+// ListEventsRequest specifies a page of the audit events of the org
+// selected in the token, newest first (Orgs.ListEvents); the list pages by
+// cursor only
+message ListEventsRequest {
+    // ProjectID limits the result to the events of the project, in which
+    // the caller needs a role; empty lists the events of the org the caller
+    // may see
+    string ProjectID = 1 [json_name = "ProjectID"];
+    // Type limits the result to one event type; Unknown returns every type
+    EventType.Enum Type = 2 [json_name = "Type"];
+    // After is the inclusive start of the CreatedAt range in RFC3339
+    // format; empty is unbounded
+    string After = 3 [json_name = "After"];
+    // Before is the exclusive end of the CreatedAt range in RFC3339 format,
+    // later than After; empty is unbounded
+    string Before = 4 [json_name = "Before"];
+    // Limit specifies maximum number of records to return
+    uint32 Limit = 5 [json_name = "Limit"];
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
+    string Cursor = 6 [json_name = "Cursor"];
+}
+
+// EventsResponse returns a page of events, newest first
 message EventsResponse {
     // Events is the list of events
     repeated Event Events = 1 [json_name = "Events"];

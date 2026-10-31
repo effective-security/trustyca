@@ -41,6 +41,11 @@ type ListEventsRequest struct {
 	OrgID uint64
 	// ProjectID specifies the project
 	ProjectID uint64
+	// ProjectIDs limits the result to the org-wide events and the events of
+	// the projects, for a caller with grants in some projects only; nil
+	// applies no project filter and an empty list keeps the org-wide
+	// events. ProjectID takes precedence.
+	ProjectIDs []uint64
 	// After specifies the inclusive start of the created_at range
 	After *time.Time
 	// Before specifies the exclusive end of the created_at range
@@ -74,9 +79,8 @@ func (r *ListEventsRequest) QueryParams() xdb.QueryParams {
 	if r.OrgID > 0 {
 		b.Set(schema.Event.OrgID.Position, r.OrgID)
 	}
-	if r.ProjectID > 0 {
-		b.Set(schema.Event.ProjectID.Position, r.ProjectID)
-	}
+	setProjectScope(b, schema.Event.ProjectID.Position, r.ProjectID, pb.Scope_Undefined)
+	setVisibleProjects(b, schema.Event.ProjectID.Position, r.ProjectIDs)
 	if r.Type != pb.EventType_Unknown {
 		b.Set(schema.Event.Type.Position, r.Type)
 	}
@@ -112,9 +116,7 @@ func ListEvents(args ...any) (string, string) {
 		if p.IsSet(schema.Event.OrgID.Position) {
 			q.Where("org_id = ?", nil)
 		}
-		if p.IsSet(schema.Event.ProjectID.Position) {
-			q.Where("project_id = ?", nil)
-		}
+		whereProjectScope(q, p, schema.Event.ProjectID.Position)
 		if p.IsSet(schema.Event.Type.Position) {
 			q.Where("type = ?", nil)
 		}

@@ -1503,6 +1503,133 @@ var DeleteProjectRequest_MessageDescription = &api.MessageDescription{
 	},
 }
 
+var Event_MessageDescription = &api.MessageDescription{
+	Name:          "Event",
+	FullName:      "pb.Event",
+	Documentation: `Event describes event`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "ID",
+			FullName:      "pb.Event.ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ID is the event ID`,
+		},
+		{
+			Name:          "OrgID",
+			FullName:      "pb.Event.OrgID",
+			Display:       "Org ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `OrgID is the org ID if the event is related to a org.`,
+		},
+		{
+			Name:            "Type",
+			FullName:        "pb.Event.Type",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: EventType_Enum_EnumDescription,
+		},
+		{
+			Name:          "Title",
+			FullName:      "pb.Event.Title",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "Description",
+			FullName:      "pb.Event.Description",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+		},
+		{
+			Name:          "ReferenceID",
+			FullName:      "pb.Event.ReferenceID",
+			Display:       "Reference ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ReferenceID is the ID of the referenced entity.`,
+		},
+		{
+			Name:          "Email",
+			FullName:      "pb.Event.Email",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Email is the email of the user who performed the action, optional`,
+		},
+		{
+			Name:          "Source",
+			FullName:      "pb.Event.Source",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Source is the source of the event, optional`,
+		},
+		{
+			Name:       "Metadata",
+			FullName:   "pb.Event.Metadata",
+			Type:       "[]struct",
+			StructName: "pb.KVPair",
+			SearchType: "flat_object",
+			Documentation: `Metadata is additional data of the event. Orgs.ListEvents returns it
+to the members of the org, so an emitter records only values the
+tenant may see; no emitter records any today`,
+		},
+		{
+			Name:          "CreatedAt",
+			FullName:      "pb.Event.CreatedAt",
+			Display:       "Created At",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `CreatedAt is the timestamp of the event creation in RFC3339 format.`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "pb.Event.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID is the project ID if the event is related to a project.`,
+		},
+	},
+}
+
+var EventsResponse_MessageDescription = &api.MessageDescription{
+	Name:          "EventsResponse",
+	Display:       "Events Response",
+	FullName:      "pb.EventsResponse",
+	Documentation: `EventsResponse returns a page of events, newest first`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "Events",
+			FullName:      "pb.EventsResponse.Events",
+			Type:          "[]struct",
+			StructName:    "pb.Event",
+			SearchType:    "flat_object",
+			Documentation: `Events is the list of events`,
+		},
+		{
+			Name:       "NextPage",
+			FullName:   "pb.EventsResponse.NextPage",
+			Display:    "Next Page",
+			Type:       "struct",
+			StructName: "pb.NextPage",
+			SearchType: "flat_object",
+			Documentation: `NextPage specifies pagination information, if there are more pages to
+fetch. If there are no more pages to fetch, NextPage will be empty.`,
+		},
+	},
+}
+
 var ExchangeCodeRequest_MessageDescription = &api.MessageDescription{
 	Name:     "ExchangeCodeRequest",
 	Display:  "Exchange Code Request",
@@ -2692,6 +2819,72 @@ in RFC3339 format`,
 			Documentation: `Cursor specifies cursor for the cursor-based pagination.
 Use "initial" to start the pagination or pass the cursor returned from
 the previous request.`,
+		},
+	},
+}
+
+var ListEventsRequest_MessageDescription = &api.MessageDescription{
+	Name:     "ListEventsRequest",
+	Display:  "List Events Request",
+	FullName: "pb.ListEventsRequest",
+	Documentation: `ListEventsRequest specifies a page of the audit events of the org
+selected in the token, newest first (Orgs.ListEvents); the list pages by
+cursor only`,
+	Fields: []*api.FieldMeta{
+		{
+			Name:          "ProjectID",
+			FullName:      "pb.ListEventsRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID limits the result to the events of the project, in which
+the caller needs a role; empty lists the events of the org the caller
+may see`,
+		},
+		{
+			Name:            "Type",
+			FullName:        "pb.ListEventsRequest.Type",
+			Type:            "int32",
+			SearchType:      "integer",
+			SearchOptions:   api.SearchOption_Sortable,
+			EnumDescription: EventType_Enum_EnumDescription,
+			Documentation:   `Type limits the result to one event type; Unknown returns every type`,
+		},
+		{
+			Name:          "After",
+			FullName:      "pb.ListEventsRequest.After",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `After is the inclusive start of the CreatedAt range in RFC3339
+format; empty is unbounded`,
+		},
+		{
+			Name:          "Before",
+			FullName:      "pb.ListEventsRequest.Before",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Before is the exclusive end of the CreatedAt range in RFC3339 format,
+later than After; empty is unbounded`,
+		},
+		{
+			Name:          "Limit",
+			FullName:      "pb.ListEventsRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "pb.ListEventsRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 	},
 }
@@ -4888,6 +5081,8 @@ var (
 		"pb.DeleteMemberRequest":                         DeleteMemberRequest_MessageDescription,
 		"pb.DeleteProfileRequest":                        DeleteProfileRequest_MessageDescription,
 		"pb.DeleteProjectRequest":                        DeleteProjectRequest_MessageDescription,
+		"pb.Event":                                       Event_MessageDescription,
+		"pb.EventsResponse":                              EventsResponse_MessageDescription,
 		"pb.ExchangeCodeRequest":                         ExchangeCodeRequest_MessageDescription,
 		"pb.GetCertificateInfoRequest":                   GetCertificateInfoRequest_MessageDescription,
 		"pb.GetCertificateRequest":                       GetCertificateRequest_MessageDescription,
@@ -4910,6 +5105,7 @@ var (
 		"pb.KeySpec":                                     KeySpec_MessageDescription,
 		"pb.ListAPIKeysRequest":                          ListAPIKeysRequest_MessageDescription,
 		"pb.ListCertificatesRequest":                     ListCertificatesRequest_MessageDescription,
+		"pb.ListEventsRequest":                           ListEventsRequest_MessageDescription,
 		"pb.ListIssuersRequest":                          ListIssuersRequest_MessageDescription,
 		"pb.ListProfilesRequest":                         ListProfilesRequest_MessageDescription,
 		"pb.ListProjectsRequest":                         ListProjectsRequest_MessageDescription,
@@ -4996,6 +5192,8 @@ var (
 		"pb.DeleteMemberRequest":                         func() any { return new(DeleteMemberRequest) },
 		"pb.DeleteProfileRequest":                        func() any { return new(DeleteProfileRequest) },
 		"pb.DeleteProjectRequest":                        func() any { return new(DeleteProjectRequest) },
+		"pb.Event":                                       func() any { return new(Event) },
+		"pb.EventsResponse":                              func() any { return new(EventsResponse) },
 		"pb.ExchangeCodeRequest":                         func() any { return new(ExchangeCodeRequest) },
 		"pb.GetCertificateInfoRequest":                   func() any { return new(GetCertificateInfoRequest) },
 		"pb.GetCertificateRequest":                       func() any { return new(GetCertificateRequest) },
@@ -5018,6 +5216,7 @@ var (
 		"pb.KeySpec":                                     func() any { return new(KeySpec) },
 		"pb.ListAPIKeysRequest":                          func() any { return new(ListAPIKeysRequest) },
 		"pb.ListCertificatesRequest":                     func() any { return new(ListCertificatesRequest) },
+		"pb.ListEventsRequest":                           func() any { return new(ListEventsRequest) },
 		"pb.ListIssuersRequest":                          func() any { return new(ListIssuersRequest) },
 		"pb.ListProfilesRequest":                         func() any { return new(ListProfilesRequest) },
 		"pb.ListProjectsRequest":                         func() any { return new(ListProjectsRequest) },
@@ -5141,6 +5340,9 @@ func (m *ListAPIKeysRequest) Validate(ctx context.Context) error {
 func (m *ListCertificatesRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, ListCertificatesRequest_MessageDescription)
 }
+func (m *ListEventsRequest) Validate(ctx context.Context) error {
+	return api.ValidateRequest(ctx, m, ListEventsRequest_MessageDescription)
+}
 func (m *ListIssuersRequest) Validate(ctx context.Context) error {
 	return api.ValidateRequest(ctx, m, ListIssuersRequest_MessageDescription)
 }
@@ -5233,6 +5435,9 @@ func (m *CrlResponse) GetMessageDescription() *api.MessageDescription {
 }
 func (m *CrlsResponse) GetMessageDescription() *api.MessageDescription {
 	return CrlsResponse_MessageDescription
+}
+func (m *EventsResponse) GetMessageDescription() *api.MessageDescription {
+	return EventsResponse_MessageDescription
 }
 func (m *Issuer) GetMessageDescription() *api.MessageDescription {
 	return Issuer_MessageDescription

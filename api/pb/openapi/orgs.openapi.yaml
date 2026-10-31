@@ -369,6 +369,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /pb.Orgs/ListEvents:
+        post:
+            tags:
+                - Orgs
+            description: |-
+                ListEvents returns the audit events of the org selected in the token,
+                 newest first: every event of the org for a caller with an org-wide
+                 role or an org-wide API key, the org-wide events and those of the
+                 caller's projects for a member with project grants only, and the
+                 events of one project with ProjectID, or for an API key restricted to
+                 the project
+            operationId: Orgs_ListEvents
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ListEventsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EventsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /pb.Orgs/ListProjects:
         post:
             tags:
@@ -657,6 +688,61 @@ components:
                 ProjectID:
                     type: string
             description: DeleteProjectRequest specifies request to deactivate a project
+        Event:
+            type: object
+            properties:
+                ID:
+                    type: string
+                    description: ID is the event ID
+                OrgID:
+                    type: string
+                    description: OrgID is the org ID if the event is related to a org.
+                Type:
+                    type: integer
+                    format: enum
+                Title:
+                    type: string
+                Description:
+                    type: string
+                ReferenceID:
+                    type: string
+                    description: ReferenceID is the ID of the referenced entity.
+                Email:
+                    type: string
+                    description: Email is the email of the user who performed the action, optional
+                Source:
+                    type: string
+                    description: Source is the source of the event, optional
+                Metadata:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/KVPair'
+                    description: |-
+                        Metadata is additional data of the event. Orgs.ListEvents returns it
+                         to the members of the org, so an emitter records only values the
+                         tenant may see; no emitter records any today
+                CreatedAt:
+                    type: string
+                    description: CreatedAt is the timestamp of the event creation in RFC3339 format.
+                ProjectID:
+                    type: string
+                    description: ProjectID is the project ID if the event is related to a project.
+            description: Event describes event
+        EventsResponse:
+            type: object
+            properties:
+                Events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Event'
+                    description: Events is the list of events
+                NextPage:
+                    allOf:
+                        - $ref: '#/components/schemas/NextPage'
+                    description: |-
+                        NextPage specifies pagination information, if there are more pages to
+                         fetch. If there are no more pages to fetch, NextPage will be empty.
+            description: EventsResponse returns a page of events, newest first
         GetMembersRequest:
             type: object
             properties:
@@ -735,6 +821,42 @@ components:
                 Status:
                     type: integer
                     format: enum
+        ListEventsRequest:
+            type: object
+            properties:
+                ProjectID:
+                    type: string
+                    description: |-
+                        ProjectID limits the result to the events of the project, in which
+                         the caller needs a role; empty lists the events of the org the caller
+                         may see
+                Type:
+                    type: integer
+                    description: Type limits the result to one event type; Unknown returns every type
+                    format: enum
+                After:
+                    type: string
+                    description: |-
+                        After is the inclusive start of the CreatedAt range in RFC3339
+                         format; empty is unbounded
+                Before:
+                    type: string
+                    description: |-
+                        Before is the exclusive end of the CreatedAt range in RFC3339 format,
+                         later than After; empty is unbounded
+                Limit:
+                    type: integer
+                    description: Limit specifies maximum number of records to return
+                    format: uint32
+                Cursor:
+                    type: string
+                    description: |-
+                        Cursor continues the listing: empty or "initial" returns the first
+                         page, the Cursor of the previous NextPage the page after it
+            description: |-
+                ListEventsRequest specifies a page of the audit events of the org
+                 selected in the token, newest first (Orgs.ListEvents); the list pages by
+                 cursor only
         ListProjectsRequest:
             type: object
             properties:

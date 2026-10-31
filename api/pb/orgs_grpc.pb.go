@@ -37,6 +37,7 @@ const (
 	Orgs_GetProject_FullMethodName         = "/pb.Orgs/GetProject"
 	Orgs_ListProjects_FullMethodName       = "/pb.Orgs/ListProjects"
 	Orgs_DeleteProject_FullMethodName      = "/pb.Orgs/DeleteProject"
+	Orgs_ListEvents_FullMethodName         = "/pb.Orgs/ListEvents"
 	Orgs_CreateAPIKey_FullMethodName       = "/pb.Orgs/CreateAPIKey"
 	Orgs_ListAPIKeys_FullMethodName        = "/pb.Orgs/ListAPIKeys"
 	Orgs_DeleteAPIKey_FullMethodName       = "/pb.Orgs/DeleteAPIKey"
@@ -101,6 +102,13 @@ type OrgsClient interface {
 	// DeleteProject deactivates a project. Records owned by the project are
 	// kept.
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// ListEvents returns the audit events of the org selected in the token,
+	// newest first: every event of the org for a caller with an org-wide
+	// role or an org-wide API key, the org-wide events and those of the
+	// caller's projects for a member with project grants only, and the
+	// events of one project with ProjectID, or for an API key restricted to
+	// the project
+	ListEvents(ctx context.Context, in *ListEventsRequest, opts ...grpc.CallOption) (*EventsResponse, error)
 	// CreateAPIKey creates a new API key
 	CreateAPIKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error)
 	// ListAPIKeys lists the API keys of the org selected in the token
@@ -277,6 +285,16 @@ func (c *orgsClient) DeleteProject(ctx context.Context, in *DeleteProjectRequest
 	return out, nil
 }
 
+func (c *orgsClient) ListEvents(ctx context.Context, in *ListEventsRequest, opts ...grpc.CallOption) (*EventsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EventsResponse)
+	err := c.cc.Invoke(ctx, Orgs_ListEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *orgsClient) CreateAPIKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(APIKey)
@@ -366,6 +384,13 @@ type OrgsServer interface {
 	// DeleteProject deactivates a project. Records owned by the project are
 	// kept.
 	DeleteProject(context.Context, *DeleteProjectRequest) (*Project, error)
+	// ListEvents returns the audit events of the org selected in the token,
+	// newest first: every event of the org for a caller with an org-wide
+	// role or an org-wide API key, the org-wide events and those of the
+	// caller's projects for a member with project grants only, and the
+	// events of one project with ProjectID, or for an API key restricted to
+	// the project
+	ListEvents(context.Context, *ListEventsRequest) (*EventsResponse, error)
 	// CreateAPIKey creates a new API key
 	CreateAPIKey(context.Context, *CreateAPIKeyRequest) (*APIKey, error)
 	// ListAPIKeys lists the API keys of the org selected in the token
@@ -428,6 +453,9 @@ func (UnimplementedOrgsServer) ListProjects(context.Context, *ListProjectsReques
 }
 func (UnimplementedOrgsServer) DeleteProject(context.Context, *DeleteProjectRequest) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteProject not implemented")
+}
+func (UnimplementedOrgsServer) ListEvents(context.Context, *ListEventsRequest) (*EventsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListEvents not implemented")
 }
 func (UnimplementedOrgsServer) CreateAPIKey(context.Context, *CreateAPIKeyRequest) (*APIKey, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateAPIKey not implemented")
@@ -746,6 +774,24 @@ func _Orgs_DeleteProject_Handler(srv any, ctx context.Context, dec func(any) err
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Orgs_ListEvents_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(ListEventsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgsServer).ListEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Orgs_ListEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(OrgsServer).ListEvents(ctx, req.(*ListEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Orgs_CreateAPIKey_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(CreateAPIKeyRequest)
 	if err := dec(in); err != nil {
@@ -870,6 +916,10 @@ var Orgs_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteProject",
 			Handler:    _Orgs_DeleteProject_Handler,
+		},
+		{
+			MethodName: "ListEvents",
+			Handler:    _Orgs_ListEvents_Handler,
 		},
 		{
 			MethodName: "CreateAPIKey",

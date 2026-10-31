@@ -56,6 +56,8 @@ Commands:
   api-key create                  create an API key; the secret is shown once
   api-key list                    list API keys
   api-key delete                  delete an API key
+  event list                      list the audit events of the selected org,
+                                  newest first
   cert get                        get a certificate by ID, key identifier,
                                   thumbprint or issuer and serial
   cert status                     get the revocation status of a certificate

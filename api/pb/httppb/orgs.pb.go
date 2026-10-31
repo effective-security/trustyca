@@ -87,6 +87,9 @@ func GetOrgsHTTPHandler(s pb.OrgsServer, withAccessCheck pb.CheckAccessFunc) res
 		case pb.Orgs_DeleteProject_FullMethodName:
 			res, err = s.DeleteProject(ctx, req.(*pb.DeleteProjectRequest))
 
+		case pb.Orgs_ListEvents_FullMethodName:
+			res, err = s.ListEvents(ctx, req.(*pb.ListEventsRequest))
+
 		case pb.Orgs_CreateAPIKey_FullMethodName:
 			res, err = s.CreateAPIKey(ctx, req.(*pb.CreateAPIKeyRequest))
 

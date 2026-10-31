@@ -261,6 +261,7 @@ org Viewer. It is computed, never stored: `Grants.ResolvedOrgRole()` returns
 `Viewer` with `RoleSource_Project`, and `Grants.Roles(0)` contains only
 `Viewer`. That allows the org to appear in the selector, be selected, its
 summary read and its projects listed; `ListProjects` returns only the granted
+projects and `ListEvents` the org-wide events and those of the granted
 projects (`Grants.CanListAllProjects` is false without an org-wide role).
 Unlike an explicit org Viewer, the derived Viewer is not inherited by other
 projects. When the last project grant is removed the derived access
@@ -353,7 +354,8 @@ scopes are `org:read`, `project:read`, `ca:read`, `ca:write`, `certs:read`,
 The service layer adds the checks the interceptor cannot express: resource
 ownership (a project resolved by alias is authorized after resolution with
 `CheckRole(..., Viewer)`), collection filtering (`ListProjects` returns granted
-projects unless the caller has an org-wide role), and grantability
+projects and `ListEvents` the events of the granted projects unless the
+caller has an org-wide role), and grantability
 (section 3.6). Cross-org project IDs, inactive projects and unknown projects
 are all reported as not found so existence is not leaked.
 
@@ -740,11 +742,12 @@ Tenant requests carry no `OrgID`; the server takes the org from the token.
 | Members   | `GetMembers`; `AddMember`, `ChangeMemberRole`, `DeleteMember`, `DeleteInvite`                                                                | `Support,Security`; `Admin`, judged at org scope or at `ProjectID`      |
 | Projects  | `RegisterProject`, `UpdateProject`, `DeleteProject`; `GetProject`; `ListProjects`                                                            | `Admin`; `Viewer,APIKey` (`project:read`); `Viewer,APIKey` (`org:read`) |
 | API keys  | `CreateAPIKey`, `ListAPIKeys`, `DeleteAPIKey`                                                                                                | `Admin`                                                                 |
+| Events    | `ListEvents` (the events of the org the caller may see, newest first, cursor only; section 11)                                             | `Viewer,APIKey` (`org:read`), judged at org scope or at `ProjectID`     |
 
 `Auth.SelectOrg(OrgID)` switches the org and returns the new token. The CLI
 maps these to `auth org`, `auth allowed`, `auth scope`, `org ...`,
-`member ...` (org-wide grants), `project ...` / `project member ...` and
-`api-key ...`. Its read-only `cert get|status`, `issuer get`, `crl get` and
+`member ...` (org-wide grants), `project ...` / `project member ...`,
+`api-key ...` and `event list`. Its read-only `cert get|status`, `issuer get`, `crl get` and
 `root list` commands read the CIS (section 9.3) with the token of the login.
 
 ### 9.2 CA (`api/pb/protos/ca.proto`)
@@ -903,6 +906,17 @@ service (`auth`, `orgs`). Services build events with `internal/events` and
 emit them after the action succeeds; the row is written in the background
 and a failed write is logged, not returned to the caller. `DeleteInvite` has
 no event type and records nothing.
+
+`Orgs.ListEvents` returns the events of the org selected in the token to its
+members (`Viewer,APIKey` with `org:read`), newest first and paged by cursor
+only: every event of the org for an org-wide role or an org-wide API key,
+the org-wide events and those of the caller's projects for a member with
+project grants only, and the events of one project with `ProjectID`, or of
+the project an API key is restricted to; `Type`, `After` and `Before` filter
+the page. The `metadata` of an event is visible to the tenant through it, so
+an emitter records only values the tenant may see (none records any today).
+The `trustyca event list` command, the activity panel and the audit tab of
+the console read it.
 
 The auth service records the user lifecycle: `UserSignup` on a new user's
 first login, `OrgMemberAccepted`/`ProjectMemberAccepted` for the invites it

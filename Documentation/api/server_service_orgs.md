@@ -27,6 +27,7 @@ import "github.com/effective-security/trustyca/server/service/orgs"
   - [func \(s \*Service\) GetUserOrgs\(ctx context.Context, \_ \*emptypb.Empty\) \(\*pb.UserOrgsResponse, error\)](<#Service.GetUserOrgs>)
   - [func \(s \*Service\) IsReady\(\) bool](<#Service.IsReady>)
   - [func \(s \*Service\) ListAPIKeys\(ctx context.Context, req \*pb.ListAPIKeysRequest\) \(\*pb.APIKeysResponse, error\)](<#Service.ListAPIKeys>)
+  - [func \(s \*Service\) ListEvents\(ctx context.Context, req \*pb.ListEventsRequest\) \(\*pb.EventsResponse, error\)](<#Service.ListEvents>)
   - [func \(s \*Service\) ListProjects\(ctx context.Context, req \*pb.ListProjectsRequest\) \(\*pb.ProjectsResponse, error\)](<#Service.ListProjects>)
   - [func \(s \*Service\) Name\(\) string](<#Service.Name>)
   - [func \(s \*Service\) OrgsHTTPHandler\(\) restserver.Handle](<#Service.OrgsHTTPHandler>)
@@ -209,6 +210,15 @@ func (s *Service) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (
 ```
 
 ListAPIKeys lists the API keys of the org selected in the token, or of a project when ProjectID is set
+
+<a name="Service.ListEvents"></a>
+### func \(\*Service\) [ListEvents](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/events.go#L22>)
+
+```go
+func (s *Service) ListEvents(ctx context.Context, req *pb.ListEventsRequest) (*pb.EventsResponse, error)
+```
+
+ListEvents returns the audit events of the org selected in the token, newest first and paged by cursor: every event of the org for a caller with an org\-wide role or an org\-wide API key, the org\-wide events and those of the caller's projects for a member with project grants only, and the events of one project when the request names it \(the interceptor authorized the caller's role in it\) or when an API key is restricted to it. A project of another org or an inactive project is not found.
 
 <a name="Service.ListProjects"></a>
 ### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L178>)
