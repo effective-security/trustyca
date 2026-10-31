@@ -98,13 +98,13 @@ func New(caDb db.CaDb, orgsDb db.OrgsDb, authorizer authctx.Authorizer, registry
 New returns the backend service over the issuer registry; without a registry every method fails with Unavailable
 
 <a name="Service.ActivateIssuer"></a>
-### func \(\*Service\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L234>)
+### func \(\*Service\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L235>)
 
 ```go
 func (s *Service) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuerRequest) (*pb.Issuer, error)
 ```
 
-ActivateIssuer sets the externally signed certificate of a Pending issuer of the org and activates it; the certificate must be for the key of the issuer and its chain must verify
+ActivateIssuer sets the externally signed certificate of a Pending issuer of the org and activates it; the certificate must be for the key of the issuer and its chain must verify. A request that names a project activates an issuer of that project only.
 
 <a name="Service.Close"></a>
 ### func \(\*Service\) [Close](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/backend_service.go#L83>)
@@ -116,13 +116,13 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.DeleteProfile"></a>
-### func \(\*Service\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/profile.go#L157>)
+### func \(\*Service\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/profile.go#L158>)
 
 ```go
 func (s *Service) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRequest) (*emptypb.Empty, error)
 ```
 
-DeleteProfile deletes a profile of the org
+DeleteProfile deletes a profile of the org; a request that names a project deletes a profile of that project only
 
 <a name="Service.GetCRL"></a>
 ### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/crl.go#L146>)
@@ -143,7 +143,7 @@ func (s *Service) GetCertificate(ctx context.Context, req *privpb.GetCertificate
 GetCertificate returns a certificate of the org by its ID, its Subject Key Identifier \(the newest one of the key\), its SHA\-256 thumbprint, or the key identifier of its issuer and its serial number. A certificate of another org, or of a project the caller cannot read, is not found.
 
 <a name="Service.GetIssuer"></a>
-### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L477>)
+### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L487>)
 
 ```go
 func (s *Service) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (*pb.Issuer, error)
@@ -188,7 +188,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertific
 ListCertificates returns the certificates of the org, newest first: of the project of the request, or of the org\-wide scope and every project the caller may read \(DESIGN.md section 3.3\)
 
 <a name="Service.ListIssuers"></a>
-### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L517>)
+### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L527>)
 
 ```go
 func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error)
@@ -314,12 +314,12 @@ func (s *Service) UpdateCertificateLabel(ctx context.Context, req *privpb.Update
 UpdateCertificateLabel replaces the label a client gave a certificate, and its client metadata when the request carries any. The request names the project of the certificate when the caller's role is granted there only \(the interceptor authorizes that scope\); a certificate of another project is then not found. There is no event type for the change: it is logged, not recorded in the audit trail.
 
 <a name="Service.UpdateIssuer"></a>
-### func \(\*Service\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L290>)
+### func \(\*Service\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L296>)
 
 ```go
 func (s *Service) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequest) (*pb.Issuer, error)
 ```
 
-UpdateIssuer replaces the runtime settings of an issuer of the org, or moves it along its lifecycle: Active to Archived, Archived to Destroyed. Destroying an issuer removes its key from the crypto provider when the provider manages keys, and clears a wrapped software key.
+UpdateIssuer replaces the runtime settings of an issuer of the org, or moves it along its lifecycle: Active to Archived, Archived to Destroyed. Destroying an issuer removes its key from the crypto provider when the provider manages keys, and clears a wrapped software key. A request that names a project changes an issuer of that project only.
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)

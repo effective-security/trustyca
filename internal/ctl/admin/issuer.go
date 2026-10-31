@@ -211,6 +211,7 @@ func (a *IssuerImportCmd) Run(app App) error {
 // issuer and activates it
 type IssuerActivateCmd struct {
 	Org           string `required:"" help:"the ID of the org"`
+	Project       string `help:"the ID of the project the issuer belongs to; empty for any"`
 	ID            string `arg:"" help:"the ID of the pending issuer"`
 	Certificate   string `required:"" help:"the PEM file of the signed issuer certificate"`
 	Intermediates string `help:"the PEM file of the intermediate CA certificates"`
@@ -237,6 +238,7 @@ func (a *IssuerActivateCmd) Run(app App) error {
 	}
 	res, err := client.ActivateIssuer(app.Context(), &privpb.ActivateIssuerRequest{
 		OrgID:         a.Org,
+		ProjectID:     a.Project,
 		ID:            a.ID,
 		Certificate:   cert,
 		Intermediates: intermediates,
@@ -250,37 +252,41 @@ func (a *IssuerActivateCmd) Run(app App) error {
 
 // IssuerArchiveCmd archives an active issuer
 type IssuerArchiveCmd struct {
-	Org string `required:"" help:"the ID of the org"`
-	ID  string `arg:"" help:"the ID of the issuer"`
+	Org     string `required:"" help:"the ID of the org"`
+	Project string `help:"the ID of the project the issuer belongs to; empty for any"`
+	ID      string `arg:"" help:"the ID of the issuer"`
 }
 
 // Run the command
 func (a *IssuerArchiveCmd) Run(app App) error {
-	return updateIssuerStatus(app, a.Org, a.ID, pb.IssuerStatus_Archived)
+	return updateIssuerStatus(app, a.Org, a.Project, a.ID, pb.IssuerStatus_Archived)
 }
 
 // IssuerDestroyCmd destroys the key of an archived issuer; its CRL and OCSP
 // are no longer produced
 type IssuerDestroyCmd struct {
-	Org string `required:"" help:"the ID of the org"`
-	ID  string `arg:"" help:"the ID of the issuer"`
+	Org     string `required:"" help:"the ID of the org"`
+	Project string `help:"the ID of the project the issuer belongs to; empty for any"`
+	ID      string `arg:"" help:"the ID of the issuer"`
 }
 
 // Run the command
 func (a *IssuerDestroyCmd) Run(app App) error {
-	return updateIssuerStatus(app, a.Org, a.ID, pb.IssuerStatus_Destroyed)
+	return updateIssuerStatus(app, a.Org, a.Project, a.ID, pb.IssuerStatus_Destroyed)
 }
 
-// updateIssuerStatus moves an issuer of the org to the status and prints it
-func updateIssuerStatus(app App, orgID, id string, status pb.IssuerStatus_Enum) error {
+// updateIssuerStatus moves an issuer of the org, of the project when one is
+// named, to the status and prints it
+func updateIssuerStatus(app App, orgID, projectID, id string, status pb.IssuerStatus_Enum) error {
 	client, err := app.BackendClient()
 	if err != nil {
 		return err
 	}
 	res, err := client.UpdateIssuer(app.Context(), &privpb.UpdateIssuerRequest{
-		OrgID:  orgID,
-		ID:     id,
-		Status: status,
+		OrgID:     orgID,
+		ProjectID: projectID,
+		ID:        id,
+		Status:    status,
 	})
 	if err != nil {
 		return err

@@ -230,7 +230,8 @@ func (s *Service) ImportIssuer(ctx context.Context, req *privpb.ImportIssuerRequ
 
 // ActivateIssuer sets the externally signed certificate of a Pending
 // issuer of the org and activates it; the certificate must be for the key
-// of the issuer and its chain must verify
+// of the issuer and its chain must verify. A request that names a project
+// activates an issuer of that project only.
 func (s *Service) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuerRequest) (*pb.Issuer, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
@@ -246,7 +247,11 @@ func (s *Service) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuer
 	if err != nil {
 		return nil, err
 	}
-	row, err := s.scope.Issuer(ctx, orgID, req.ID, pb.CA_ActivateIssuer_FullMethodName)
+	projectID, err := s.scope.RequestProject(ctx, orgID, req.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	row, err := s.scope.Issuer(ctx, orgID, projectID, req.ID, pb.CA_ActivateIssuer_FullMethodName)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +291,8 @@ func (s *Service) ActivateIssuer(ctx context.Context, req *privpb.ActivateIssuer
 // UpdateIssuer replaces the runtime settings of an issuer of the org, or
 // moves it along its lifecycle: Active to Archived, Archived to Destroyed.
 // Destroying an issuer removes its key from the crypto provider when the
-// provider manages keys, and clears a wrapped software key.
+// provider manages keys, and clears a wrapped software key. A request that
+// names a project changes an issuer of that project only.
 func (s *Service) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequest) (*pb.Issuer, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
@@ -302,7 +308,11 @@ func (s *Service) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequ
 	if err != nil {
 		return nil, err
 	}
-	row, err := s.scope.Issuer(ctx, orgID, req.ID, pb.CA_UpdateIssuer_FullMethodName)
+	projectID, err := s.scope.RequestProject(ctx, orgID, req.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	row, err := s.scope.Issuer(ctx, orgID, projectID, req.ID, pb.CA_UpdateIssuer_FullMethodName)
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +495,7 @@ func (s *Service) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (
 	var row *model.Issuer
 	switch {
 	case req.ID != "":
-		row, err = s.scope.Issuer(ctx, orgID, req.ID, pb.CA_GetIssuer_FullMethodName)
+		row, err = s.scope.Issuer(ctx, orgID, xdb.ID(0), req.ID, pb.CA_GetIssuer_FullMethodName)
 	case req.Label != "":
 		var projectID xdb.ID
 		projectID, err = s.scope.Project(ctx, orgID, req.ProjectID)

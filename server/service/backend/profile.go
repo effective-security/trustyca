@@ -91,7 +91,7 @@ func (s *Service) GetProfile(ctx context.Context, req *privpb.GetProfileRequest)
 	var row *model.CertificateProfile
 	switch {
 	case req.ID != "":
-		row, err = s.scope.Profile(ctx, orgID, req.ID, pb.CA_GetProfile_FullMethodName)
+		row, err = s.scope.Profile(ctx, orgID, xdb.ID(0), req.ID, pb.CA_GetProfile_FullMethodName)
 	case req.Label != "":
 		var projectID xdb.ID
 		projectID, err = s.scope.Project(ctx, orgID, req.ProjectID)
@@ -153,7 +153,8 @@ func (s *Service) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequ
 	return list, nil
 }
 
-// DeleteProfile deletes a profile of the org
+// DeleteProfile deletes a profile of the org; a request that names a
+// project deletes a profile of that project only
 func (s *Service) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRequest) (*emptypb.Empty, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
@@ -162,7 +163,11 @@ func (s *Service) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRe
 	if err != nil {
 		return nil, err
 	}
-	row, err := s.scope.Profile(ctx, orgID, req.ID, pb.CA_DeleteProfile_FullMethodName)
+	projectID, err := s.scope.RequestProject(ctx, orgID, req.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	row, err := s.scope.Profile(ctx, orgID, projectID, req.ID, pb.CA_DeleteProfile_FullMethodName)
 	if err != nil {
 		return nil, err
 	}
