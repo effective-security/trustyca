@@ -111,7 +111,9 @@ func (s *Service) GetProfile(ctx context.Context, req *privpb.GetProfileRequest)
 // ListProfiles returns the profiles of the org, newest first; a project
 // limits the result to its own profiles. Without a project, a member with
 // project grants only lists the org-wide profiles and those of its
-// projects.
+// projects. IDs and Labels narrow the list to the profiles of a page of
+// certificates, at most maxListKeys each; a profile outside the scope is
+// not returned.
 func (s *Service) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequest) (*pb.ProfilesResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
@@ -128,10 +130,20 @@ func (s *Service) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequ
 	if err != nil {
 		return nil, err
 	}
+	ids, err := parseIDs(ctx, req.IDs, "profile IDs")
+	if err != nil {
+		return nil, err
+	}
+	labels, err := listKeys(ctx, req.Labels, "labels")
+	if err != nil {
+		return nil, err
+	}
 	q := &query.ListProfilesRequest{
 		OrgID:       orgID.UInt64(),
 		ProjectID:   projectID.UInt64(),
 		IssuerLabel: req.IssuerLabel,
+		IDs:         ids,
+		Labels:      labels,
 		Limit:       query.Limit(req.Limit),
 		Offset:      req.Offset,
 		Cursor:      cursor,

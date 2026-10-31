@@ -218,7 +218,13 @@ type ListAllIssuersRequest struct {
 	// Status filters by lifecycle status; Unknown returns all
 	Status pb.IssuerStatus_Enum `protobuf:"varint,8,opt,name=Status,proto3,enum=pb.IssuerStatus_Enum" json:"Status,omitempty"`
 	// Type filters by authority type; Unknown returns all
-	Type          pb.AuthorityType_Enum `protobuf:"varint,9,opt,name=Type,proto3,enum=pb.AuthorityType_Enum" json:"Type,omitempty"`
+	Type pb.AuthorityType_Enum `protobuf:"varint,9,opt,name=Type,proto3,enum=pb.AuthorityType_Enum" json:"Type,omitempty"`
+	// IDs limits the result to the issuers with the IDs, at most 500
+	IDs []string `protobuf:"bytes,10,rep,name=IDs,proto3" json:"IDs,omitempty"`
+	// IKIDs limits the result to the issuers with the key identifiers (the
+	// SKID of the issuer, the IKID of the certificates it issued), at most
+	// 500
+	IKIDs         []string `protobuf:"bytes,11,rep,name=IKIDs,proto3" json:"IKIDs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -314,6 +320,20 @@ func (x *ListAllIssuersRequest) GetType() pb.AuthorityType_Enum {
 		return x.Type
 	}
 	return pb.AuthorityType_Enum(0)
+}
+
+func (x *ListAllIssuersRequest) GetIDs() []string {
+	if x != nil {
+		return x.IDs
+	}
+	return nil
+}
+
+func (x *ListAllIssuersRequest) GetIKIDs() []string {
+	if x != nil {
+		return x.IKIDs
+	}
+	return nil
 }
 
 // ListAllCertificatesRequest specifies a paginated list of certificates across
@@ -466,7 +486,7 @@ const file_admin_proto_rawDesc = "" +
 	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12+\n" +
 	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\x12\x14\n" +
-	"\x05OrgID\x18\x05 \x01(\tR\x05OrgID\"\x9e\x02\n" +
+	"\x05OrgID\x18\x05 \x01(\tR\x05OrgID\"\xc6\x02\n" +
 	"\x15ListAllIssuersRequest\x12\x14\n" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
@@ -476,7 +496,10 @@ const file_admin_proto_rawDesc = "" +
 	"\tProjectID\x18\x06 \x01(\tR\tProjectID\x12\x14\n" +
 	"\x05Label\x18\a \x01(\tR\x05Label\x12-\n" +
 	"\x06Status\x18\b \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\x12*\n" +
-	"\x04Type\x18\t \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\"\xbc\x02\n" +
+	"\x04Type\x18\t \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\x12\x10\n" +
+	"\x03IDs\x18\n" +
+	" \x03(\tR\x03IDs\x12\x14\n" +
+	"\x05IKIDs\x18\v \x03(\tR\x05IKIDs\"\xbc\x02\n" +
 	"\x1aListAllCertificatesRequest\x12\x14\n" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +

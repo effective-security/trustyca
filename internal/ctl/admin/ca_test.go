@@ -178,7 +178,7 @@ func (s *testSuiteGrpc) Test_IssuerListCmd() {
 		Issuers:  []*pb.Issuer{ctlIssuer(), ctlPlatformIssuer()},
 		NextPage: &pb.NextPage{Cursor: "next-cursor"},
 	})
-	cmd := &admin.IssuerListCmd{Status: "Active", Type: "Issuing", PageFlags: admin.PageFlags{Limit: 10}}
+	cmd := &admin.IssuerListCmd{Status: "Active", Type: "Issuing", IDs: []string{"10"}, IKIDs: []string{"0a1b2c"}, PageFlags: admin.PageFlags{Limit: 10}}
 	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockAdmin.Err)
 
 	s.EqualError((&admin.IssuerListCmd{Status: "Nope"}).Run(s.Ctl), "invalid status: Nope")
@@ -275,7 +275,7 @@ func (s *testSuiteGrpc) Test_ProfileListCmd() {
 		Profiles: []*pb.CertProfile{ctlProfile("server", "issuing"), ctlProfile("ocsp", "*")},
 		NextPage: &pb.NextPage{Offset: 2},
 	})
-	cmd := &admin.ProfileListCmd{OrgScope: admin.OrgScope{Org: "5"}, Issuer: "issuing"}
+	cmd := &admin.ProfileListCmd{OrgScope: admin.OrgScope{Org: "5"}, Issuer: "issuing", IDs: []string{"20"}, Labels: []string{"peer"}}
 	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 }
 

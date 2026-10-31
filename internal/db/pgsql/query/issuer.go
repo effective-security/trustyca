@@ -7,6 +7,7 @@ import (
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xdb/xsql"
+	"github.com/lib/pq"
 )
 
 // RegisterIssuer returns SQL query to insert an issuer
@@ -263,6 +264,13 @@ type ListIssuersRequest struct {
 	Status pb.IssuerStatus_Enum
 	// Type limits the result to the authority type
 	Type pb.AuthorityType_Enum
+	// IDs limits the result to the issuers with the IDs; empty applies no
+	// filter
+	IDs []uint64
+	// IKIDs limits the result to the issuers with the key identifiers, as
+	// the certificates they issued carry them (the SKID of the issuer);
+	// empty applies no filter
+	IKIDs []string
 	// Limit specifies maximum number of records to return
 	Limit uint32
 	// Offset specifies the offset for offset pagination
@@ -297,6 +305,12 @@ func (r *ListIssuersRequest) QueryParams() xdb.QueryParams {
 	if r.Type != pb.AuthorityType_Unknown {
 		b.Set(schema.Issuer.Type.Position, r.Type)
 	}
+	if len(r.IDs) > 0 {
+		b.Set(schema.Issuer.ID.Position, idArray(r.IDs))
+	}
+	if len(r.IKIDs) > 0 {
+		b.Set(schema.Issuer.Skid.Position, pq.StringArray(r.IKIDs))
+	}
 	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
@@ -319,6 +333,12 @@ func ListIssuers(args ...any) (string, string) {
 		}
 		if p.IsSet(schema.Issuer.Type.Position) {
 			q.Where(schema.Issuer.Type.Name+" = ?", nil)
+		}
+		if p.IsSet(schema.Issuer.ID.Position) {
+			q.Where(schema.Issuer.ID.Name+" = ANY(?)", nil)
+		}
+		if p.IsSet(schema.Issuer.Skid.Position) {
+			q.Where(schema.Issuer.Skid.Name+" = ANY(?)", nil)
 		}
 		pageByIDDesc(q, p)
 		return q

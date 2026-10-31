@@ -26,6 +26,10 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListAllIssuersReq
 	if err != nil {
 		return nil, err
 	}
+	ids, err := parseIDs(ctx, req.IDs, "issuer IDs")
+	if err != nil {
+		return nil, err
+	}
 	res, err := s.ca.ListIssuers(ctx, &query.ListIssuersRequest{
 		OrgID:     scope.orgID,
 		Platform:  scope.platform,
@@ -34,6 +38,8 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListAllIssuersReq
 		Label:     req.Label,
 		Status:    req.Status,
 		Type:      req.Type,
+		IDs:       ids,
+		IKIDs:     req.IKIDs,
 		Limit:     req.Limit,
 		Offset:    req.Offset,
 		Cursor:    cursor,

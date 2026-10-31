@@ -5,7 +5,6 @@ import (
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xdb/xsql"
-	"github.com/lib/pq"
 )
 
 // RegisterProject returns SQL query to create a project
@@ -112,11 +111,7 @@ func (r *ListProjectsRequest) QueryParams() xdb.QueryParams {
 		b.Set(schema.Project.Status.Position, r.Status)
 	}
 	if r.IDs != nil {
-		ids := make([]int64, len(r.IDs))
-		for i, id := range r.IDs {
-			ids[i] = int64(id)
-		}
-		b.Set(schema.Project.ID.Position, pq.Array(ids))
+		b.Set(schema.Project.ID.Position, idArray(r.IDs))
 	}
 	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b

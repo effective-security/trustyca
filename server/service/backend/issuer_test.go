@@ -979,6 +979,25 @@ func TestService_ListIssuers(t *testing.T) {
 	assert.Empty(t, res.Issuers)
 	assert.Nil(t, res.NextPage)
 
+	// the issuers of a page of certificates, by ID and by the key
+	// identifier the certificates carry; the identifiers are parsed and
+	// bounded
+	tca.cadb.EXPECT().ListIssuers(gomock.Any(), &query.ListIssuersRequest{
+		OrgID: 1,
+		IDs:   []uint64{5, 6},
+		IKIDs: []string{"k1", "k2"},
+		Limit: xdb.DefaultPageSize,
+	}).Return(&model.IssuerResult{Rows: []*model.Issuer{tca.issuer}}, nil)
+	res, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{IDs: []string{"5", "6"}, IKIDs: []string{"k1", "k2"}})
+	require.NoError(t, err)
+	require.Len(t, res.Issuers, 1)
+	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{IDs: []string{"5", "x"}})
+	assert.EqualError(t, err, "bad_request: invalid issuer IDs: x")
+	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{IKIDs: make([]string, maxListKeys+1)})
+	assert.EqualError(t, err, "bad_request: too many IKIDs: at most 500")
+	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{IDs: make([]string, maxListKeys+1)})
+	assert.EqualError(t, err, "bad_request: too many issuer IDs: at most 500")
+
 	tca.cadb.EXPECT().ListIssuers(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
 	_, err = svc.ListIssuers(ctx, &privpb.ListIssuersRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list issuers")

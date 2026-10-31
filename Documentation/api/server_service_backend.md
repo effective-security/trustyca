@@ -117,7 +117,7 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.DeleteProfile"></a>
-### func \(\*Service\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/profile.go#L158>)
+### func \(\*Service\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/profile.go#L170>)
 
 ```go
 func (s *Service) DeleteProfile(ctx context.Context, req *privpb.DeleteProfileRequest) (*emptypb.Empty, error)
@@ -198,22 +198,22 @@ func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertific
 ListCertificates returns the certificates of the org, newest first: of the project of the request, or of the org\-wide scope and every project the caller may read \(DESIGN.md section 3.3\)
 
 <a name="Service.ListIssuers"></a>
-### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L527>)
+### func \(\*Service\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/issuer.go#L530>)
 
 ```go
 func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error)
 ```
 
-ListIssuers returns the issuers of the org, newest first; a project limits the result to its own issuers. Without a project, a member with project grants only lists the org\-wide issuers and those of its projects.
+ListIssuers returns the issuers of the org, newest first; a project limits the result to its own issuers. Without a project, a member with project grants only lists the org\-wide issuers and those of its projects. IDs and IKIDs \(the key identifiers the certificates carry\) narrow the list to the issuers of a page of certificates, at most maxListKeys each; an issuer outside the scope is not returned.
 
 <a name="Service.ListProfiles"></a>
-### func \(\*Service\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/profile.go#L115>)
+### func \(\*Service\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/profile.go#L117>)
 
 ```go
 func (s *Service) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequest) (*pb.ProfilesResponse, error)
 ```
 
-ListProfiles returns the profiles of the org, newest first; a project limits the result to its own profiles. Without a project, a member with project grants only lists the org\-wide profiles and those of its projects.
+ListProfiles returns the profiles of the org, newest first; a project limits the result to its own profiles. Without a project, a member with project grants only lists the org\-wide profiles and those of its projects. IDs and Labels narrow the list to the profiles of a page of certificates, at most maxListKeys each; a profile outside the scope is not returned.
 
 <a name="Service.ListRevokedCertificates"></a>
 ### func \(\*Service\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/server/service/backend/cert.go#L256>)

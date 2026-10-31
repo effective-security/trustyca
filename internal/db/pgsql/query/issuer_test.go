@@ -159,6 +159,17 @@ ORDER BY id DESC
 LIMIT $5`,
 		},
 		{
+			// the issuers of a page of certificates: by ID, and by the key
+			// identifier the certificates carry
+			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, IDs: []uint64{4, 5}, IKIDs: []string{"k1", "k2"}, Limit: 10}},
+			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 
+FROM trustyca.issuer 
+WHERE org_id = $1 AND id = ANY($2) AND skid = ANY($3) 
+ORDER BY id DESC 
+LIMIT $4 
+OFFSET $5`,
+		},
+		{
 			// an exact project takes precedence over the visible projects
 			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, ProjectID: 2, ProjectIDs: []uint64{3}, Limit: 10}},
 			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 

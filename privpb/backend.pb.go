@@ -507,7 +507,13 @@ type ListIssuersRequest struct {
 	// Cursor specifies cursor for the cursor-based pagination.
 	// Use "initial" to start the pagination or pass the cursor returned from
 	// the previous request.
-	Cursor        string `protobuf:"bytes,7,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	Cursor string `protobuf:"bytes,7,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	// IDs limits the result to the issuers with the IDs, at most 500
+	IDs []string `protobuf:"bytes,8,rep,name=IDs,proto3" json:"IDs,omitempty"`
+	// IKIDs limits the result to the issuers with the key identifiers (the
+	// SKID of the issuer, the IKID of the certificates it issued), at most
+	// 500
+	IKIDs         []string `protobuf:"bytes,9,rep,name=IKIDs,proto3" json:"IKIDs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -589,6 +595,20 @@ func (x *ListIssuersRequest) GetCursor() string {
 		return x.Cursor
 	}
 	return ""
+}
+
+func (x *ListIssuersRequest) GetIDs() []string {
+	if x != nil {
+		return x.IDs
+	}
+	return nil
+}
+
+func (x *ListIssuersRequest) GetIKIDs() []string {
+	if x != nil {
+		return x.IKIDs
+	}
+	return nil
 }
 
 // UpdateIssuerRequest updates issuer config or status
@@ -977,7 +997,12 @@ type ListProfilesRequest struct {
 	// Offset specifies offset for the offset-based pagination
 	Offset uint32 `protobuf:"varint,5,opt,name=Offset,proto3" json:"Offset,omitempty"`
 	// Cursor specifies cursor for the cursor-based pagination
-	Cursor        string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	Cursor string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	// IDs limits the result to the profiles with the IDs, at most 500
+	IDs []string `protobuf:"bytes,7,rep,name=IDs,proto3" json:"IDs,omitempty"`
+	// Labels limits the result to the profiles with the labels, in every
+	// scope the request covers, at most 500
+	Labels        []string `protobuf:"bytes,8,rep,name=Labels,proto3" json:"Labels,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1052,6 +1077,20 @@ func (x *ListProfilesRequest) GetCursor() string {
 		return x.Cursor
 	}
 	return ""
+}
+
+func (x *ListProfilesRequest) GetIDs() []string {
+	if x != nil {
+		return x.IDs
+	}
+	return nil
+}
+
+func (x *ListProfilesRequest) GetLabels() []string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
 }
 
 // DeleteProfileRequest deletes a profile
@@ -2021,7 +2060,7 @@ const file_backend_proto_rawDesc = "" +
 	"\x02ID\x18\x03 \x01(\tB\x0e\xf2\xf3\x18\n" +
 	"Label,IKIDR\x02ID\x12!\n" +
 	"\x05Label\x18\x04 \x01(\tB\v\xf2\xf3\x18\aID,IKIDR\x05Label\x12 \n" +
-	"\x04IKID\x18\x05 \x01(\tB\f\xf2\xf3\x18\bID,LabelR\x04IKID\"\xef\x01\n" +
+	"\x04IKID\x18\x05 \x01(\tB\f\xf2\xf3\x18\bID,LabelR\x04IKID\"\x97\x02\n" +
 	"\x12ListIssuersRequest\x12\x1a\n" +
 	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12-\n" +
@@ -2029,7 +2068,9 @@ const file_backend_proto_rawDesc = "" +
 	"\x04Type\x18\x04 \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\x12\x14\n" +
 	"\x05Limit\x18\x05 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x06 \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\a \x01(\tR\x06Cursor\"\xbe\x01\n" +
+	"\x06Cursor\x18\a \x01(\tR\x06Cursor\x12\x10\n" +
+	"\x03IDs\x18\b \x03(\tR\x03IDs\x12\x14\n" +
+	"\x05IKIDs\x18\t \x03(\tR\x05IKIDs\"\xbe\x01\n" +
 	"\x13UpdateIssuerRequest\x12\x1a\n" +
 	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
 	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12(\n" +
@@ -2053,14 +2094,16 @@ const file_backend_proto_rawDesc = "" +
 	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x19\n" +
 	"\x02ID\x18\x03 \x01(\tB\t\xf2\xf3\x18\x05LabelR\x02ID\x12\x1c\n" +
-	"\x05Label\x18\x04 \x01(\tB\x06\xf2\xf3\x18\x02IDR\x05Label\"\xb7\x01\n" +
+	"\x05Label\x18\x04 \x01(\tB\x06\xf2\xf3\x18\x02IDR\x05Label\"\xe1\x01\n" +
 	"\x13ListProfilesRequest\x12\x1a\n" +
 	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12 \n" +
 	"\vIssuerLabel\x18\x03 \x01(\tR\vIssuerLabel\x12\x14\n" +
 	"\x05Limit\x18\x04 \x01(\rR\x05Limit\x12\x16\n" +
 	"\x06Offset\x18\x05 \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\"f\n" +
+	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\x12\x10\n" +
+	"\x03IDs\x18\a \x03(\tR\x03IDs\x12\x16\n" +
+	"\x06Labels\x18\b \x03(\tR\x06Labels\"f\n" +
 	"\x14DeleteProfileRequest\x12\x1a\n" +
 	"\x05OrgID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x05OrgID\x12\x14\n" +
 	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12\x1c\n" +

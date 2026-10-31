@@ -330,6 +330,22 @@ func TestService_ListProfiles(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, res.Profiles)
 
+	// the profiles of a page of certificates, by ID and by label; the
+	// identifiers are parsed and bounded
+	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
+		OrgID:  1,
+		IDs:    []uint64{7},
+		Labels: []string{"peer", "server"},
+		Limit:  xdb.DefaultPageSize,
+	}).Return(&model.CertificateProfileResult{Rows: []*model.CertificateProfile{tca.peer}}, nil)
+	res, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{IDs: []string{"7"}, Labels: []string{"peer", "server"}})
+	require.NoError(t, err)
+	require.Len(t, res.Profiles, 1)
+	_, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{IDs: []string{"x"}})
+	assert.EqualError(t, err, "bad_request: invalid profile IDs: x")
+	_, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{Labels: make([]string, maxListKeys+1)})
+	assert.EqualError(t, err, "bad_request: too many labels: at most 500")
+
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
 	_, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{})
 	assert.EqualError(t, err, "unexpected: failed to list profiles")

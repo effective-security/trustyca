@@ -72,6 +72,16 @@ LIMIT $2
 OFFSET $3`,
 		},
 		{
+			// the profiles of a page of certificates: by ID and by label
+			query.ListProfiles, []any{&query.ListProfilesRequest{OrgID: 1, ProjectIDs: []uint64{2}, IDs: []uint64{4}, Labels: []string{"peer", "server"}, Limit: 10}},
+			`SELECT ` + schema.CertificateProfileTableInfo.AllColumns() + ` 
+FROM trustyca.certificate_profile 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) AND id = ANY($3) AND label = ANY($4) 
+ORDER BY id DESC 
+LIMIT $5 
+OFFSET $6`,
+		},
+		{
 			query.ListProfiles, []any{&query.ListProfilesRequest{OrgID: 1, ProjectID: 2, Limit: 10, Cursor: cursor}},
 			`SELECT ` + schema.CertificateProfileTableInfo.AllColumns() + ` 
 FROM trustyca.certificate_profile 

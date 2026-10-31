@@ -20,12 +20,14 @@ type IssuerCmd struct {
 // IssuerListCmd lists issuers across orgs, the support view of
 // privpb.Admin
 type IssuerListCmd struct {
-	Org       string `help:"the ID of the org; empty lists every org and the platform"`
-	Project   string `help:"the ID of the project, with --org"`
-	Platform  bool   `help:"the platform issuers only"`
-	Label     string `help:"the label to filter by"`
-	Status    string `help:"the status to filter by: Pending|Active|Archived|Destroyed"`
-	Type      string `help:"the type to filter by: Root|Intermediate|Issuing|Shaken|ShakenDelegated"`
+	Org       string   `help:"the ID of the org; empty lists every org and the platform"`
+	Project   string   `help:"the ID of the project, with --org"`
+	Platform  bool     `help:"the platform issuers only"`
+	Label     string   `help:"the label to filter by"`
+	Status    string   `help:"the status to filter by: Pending|Active|Archived|Destroyed"`
+	Type      string   `help:"the type to filter by: Root|Intermediate|Issuing|Shaken|ShakenDelegated"`
+	IDs       []string `name:"id" help:"the IDs of the issuers to return"`
+	IKIDs     []string `name:"ikid" help:"the key identifiers of the issuers to return, as their certificates carry them"`
 	PageFlags `embed:""`
 }
 
@@ -50,6 +52,8 @@ func (a *IssuerListCmd) Run(app App) error {
 		Label:     a.Label,
 		Status:    status,
 		Type:      typ,
+		IDs:       a.IDs,
+		IKIDs:     a.IKIDs,
 		Limit:     a.Limit,
 		Offset:    a.Offset,
 		Cursor:    a.Cursor,

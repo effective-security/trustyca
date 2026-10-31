@@ -154,6 +154,12 @@ message ListAllIssuersRequest {
     pb.IssuerStatus.Enum Status = 8 [json_name = "Status"];
     // Type filters by authority type; Unknown returns all
     pb.AuthorityType.Enum Type = 9 [json_name = "Type"];
+    // IDs limits the result to the issuers with the IDs, at most 500
+    repeated string IDs = 10 [json_name = "IDs"];
+    // IKIDs limits the result to the issuers with the key identifiers (the
+    // SKID of the issuer, the IKID of the certificates it issued), at most
+    // 500
+    repeated string IKIDs = 11 [json_name = "IKIDs"];
 }
 
 // ListAllCertificatesRequest specifies a paginated list of certificates across

@@ -2543,6 +2543,24 @@ the list covers`,
 			EnumDescription: pb.AuthorityType_Enum_EnumDescription,
 			Documentation:   `Type filters by authority type; Unknown returns all`,
 		},
+		{
+			Name:          "IDs",
+			FullName:      "privpb.ListAllIssuersRequest.IDs",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IDs limits the result to the issuers with the IDs, at most 500`,
+		},
+		{
+			Name:          "IKIDs",
+			FullName:      "privpb.ListAllIssuersRequest.IKIDs",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IKIDs limits the result to the issuers with the key identifiers (the
+SKID of the issuer, the IKID of the certificates it issued), at most
+500`,
+		},
 	},
 }
 
@@ -2711,6 +2729,24 @@ issuers`,
 Use "initial" to start the pagination or pass the cursor returned from
 the previous request.`,
 		},
+		{
+			Name:          "IDs",
+			FullName:      "privpb.ListIssuersRequest.IDs",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IDs limits the result to the issuers with the IDs, at most 500`,
+		},
+		{
+			Name:          "IKIDs",
+			FullName:      "privpb.ListIssuersRequest.IKIDs",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IKIDs limits the result to the issuers with the key identifiers (the
+SKID of the issuer, the IKID of the certificates it issued), at most
+500`,
+		},
 	},
 }
 
@@ -2822,6 +2858,23 @@ profiles`,
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
 			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+		},
+		{
+			Name:          "IDs",
+			FullName:      "privpb.ListProfilesRequest.IDs",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IDs limits the result to the profiles with the IDs, at most 500`,
+		},
+		{
+			Name:          "Labels",
+			FullName:      "privpb.ListProfilesRequest.Labels",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Labels limits the result to the profiles with the labels, in every
+scope the request covers, at most 500`,
 		},
 	},
 }

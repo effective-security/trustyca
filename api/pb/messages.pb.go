@@ -3103,6 +3103,27 @@ issuers`,
 Use "initial" to start the pagination or pass the cursor returned from
 the previous request.`,
 		},
+		{
+			Name:          "IDs",
+			FullName:      "pb.ListIssuersRequest.IDs",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IDs limits the result to the issuers with the IDs, at most 500: the
+issuers of a page of certificates in one call. An issuer outside the
+scope of the request is not returned.`,
+		},
+		{
+			Name:          "IKIDs",
+			FullName:      "pb.ListIssuersRequest.IKIDs",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IKIDs limits the result to the issuers with the key identifiers, as
+the certificates they issued carry them (the SKID of the issuer), at
+most 500: the labels of the issuers of a page of certificates in one
+call`,
+		},
 	},
 }
 
@@ -3154,6 +3175,25 @@ profiles`,
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
 			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+		},
+		{
+			Name:          "IDs",
+			FullName:      "pb.ListProfilesRequest.IDs",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `IDs limits the result to the profiles with the IDs, at most 500. A
+profile outside the scope of the request is not returned.`,
+		},
+		{
+			Name:          "Labels",
+			FullName:      "pb.ListProfilesRequest.Labels",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Labels limits the result to the profiles with the labels, in every
+scope the request covers, at most 500: the profiles of a page of
+certificates in one call`,
 		},
 	},
 }
