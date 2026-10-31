@@ -221,7 +221,7 @@ func (s *testSuiteGrpc) Test_IssuerImportCmd() {
 
 func (s *testSuiteGrpc) Test_IssuerActivateCmd() {
 	s.MockBackend.SetResponse(ctlIssuer())
-	cmd := &admin.IssuerActivateCmd{Org: "5", ID: "10", Certificate: s.tempPEM("signed.pem"), Root: s.tempPEM("root.pem")}
+	cmd := &admin.IssuerActivateCmd{Org: "5", Project: "7", ID: "10", Certificate: s.tempPEM("signed.pem"), Root: s.tempPEM("root.pem")}
 	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	cmd.Certificate = filepath.Join(s.T().TempDir(), "missing.pem")
@@ -232,7 +232,7 @@ func (s *testSuiteGrpc) Test_IssuerArchiveDestroyCmd() {
 	archived := ctlIssuer()
 	archived.Status = pb.IssuerStatus_Archived
 	s.MockBackend.SetResponse(archived)
-	cmd := &admin.IssuerArchiveCmd{Org: "5", ID: "10"}
+	cmd := &admin.IssuerArchiveCmd{Org: "5", Project: "7", ID: "10"}
 	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 
 	destroyed := ctlIssuer()
@@ -283,7 +283,7 @@ func (s *testSuiteGrpc) Test_ProfileRegisterCmd() {
 
 func (s *testSuiteGrpc) Test_ProfileDeleteCmd() {
 	s.MockBackend.SetResponse(&emptypb.Empty{})
-	cmd := &admin.ProfileDeleteCmd{Org: "5", ID: "20"}
+	cmd := &admin.ProfileDeleteCmd{Org: "5", Project: "7", ID: "20"}
 	s.Require().NoError(cmd.Run(s.Ctl))
 	s.Empty(s.Out.String())
 

@@ -194,11 +194,12 @@ func (s *tenantScope) ListProjects(ctx context.Context, orgID xdb.ID) ([]uint64,
 	return grants.GrantedProjectIDs(), nil
 }
 
-// Issuer returns the issuer with the ID when it belongs to the org and
-// the caller may call the method on it (RowAccess); an issuer of another
-// org, of the platform or of a project the caller cannot read is reported
-// as not found
-func (s *tenantScope) Issuer(ctx context.Context, orgID xdb.ID, idVal, method string) (*model.Issuer, error) {
+// Issuer returns the issuer with the ID when it belongs to the org and,
+// when the request names a project (a non-zero projectID, verified by
+// RequestProject), to that project, and the caller may call the method on
+// it (RowAccess); an issuer of another org, of the platform, of another
+// project or of a project the caller cannot read is reported as not found
+func (s *tenantScope) Issuer(ctx context.Context, orgID, projectID xdb.ID, idVal, method string) (*model.Issuer, error) {
 	id, err := parseID(ctx, idVal, "issuer ID")
 	if err != nil {
 		return nil, err
@@ -210,7 +211,16 @@ func (s *tenantScope) Issuer(ctx context.Context, orgID xdb.ID, idVal, method st
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "unable to find issuer")
 	}
+	if !inProject(row.ProjectID, projectID) {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found")
+	}
 	return s.VisibleIssuer(ctx, orgID, row, method)
+}
+
+// inProject reports whether a row belongs to the project a request names;
+// a request that names none (a zero ID) accepts a row of any project
+func inProject(rowProjectID, projectID xdb.ID) bool {
+	return projectID.IsZero() || rowProjectID.UInt64() == projectID.UInt64()
 }
 
 // VisibleIssuer returns the issuer row when it belongs to the org and the
@@ -242,11 +252,12 @@ func (s *tenantScope) IssuerByLabel(ctx context.Context, orgID, projectID xdb.ID
 	return row, nil
 }
 
-// Profile returns the profile with the ID when it belongs to the org and
-// the caller may call the method on it (RowAccess); a profile of another
-// org, of the platform or of a project the caller cannot read is reported
-// as not found
-func (s *tenantScope) Profile(ctx context.Context, orgID xdb.ID, idVal, method string) (*model.CertificateProfile, error) {
+// Profile returns the profile with the ID when it belongs to the org and,
+// when the request names a project (a non-zero projectID, verified by
+// RequestProject), to that project, and the caller may call the method on
+// it (RowAccess); a profile of another org, of the platform, of another
+// project or of a project the caller cannot read is reported as not found
+func (s *tenantScope) Profile(ctx context.Context, orgID, projectID xdb.ID, idVal, method string) (*model.CertificateProfile, error) {
 	id, err := parseID(ctx, idVal, "profile ID")
 	if err != nil {
 		return nil, err
@@ -258,7 +269,7 @@ func (s *tenantScope) Profile(ctx context.Context, orgID xdb.ID, idVal, method s
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "unable to find profile")
 	}
-	if row.OrgID.UInt64() != orgID.UInt64() {
+	if row.OrgID.UInt64() != orgID.UInt64() || !inProject(row.ProjectID, projectID) {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "profile not found")
 	}
 	err = s.RowAccess(ctx, orgID, row.ProjectID, method, "profile")

@@ -225,6 +225,17 @@ Pending issuer`,
 			SearchOptions: api.SearchOption_Sortable,
 			Documentation: `Root provides the Root CA certificate in PEM format`,
 		},
+		{
+			Name:          "ProjectID",
+			FullName:      "pb.ActivateIssuerRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the issuer's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the issuer must belong to it.`,
+		},
 	},
 }
 
@@ -1459,6 +1470,17 @@ var DeleteProfileRequest_MessageDescription = &api.MessageDescription{
 			SearchOptions: api.SearchOption_Sortable,
 			Required:      true,
 			Documentation: `ID of the profile`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "pb.DeleteProfileRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the profile's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the profile must belong to it.`,
 		},
 	},
 }
@@ -4464,6 +4486,17 @@ var UpdateIssuerRequest_MessageDescription = &api.MessageDescription{
 			SearchOptions:   api.SearchOption_Sortable,
 			EnumDescription: IssuerStatus_Enum_EnumDescription,
 			Documentation:   `Status changes the status when provided: Archived or Destroyed`,
+		},
+		{
+			Name:          "ProjectID",
+			FullName:      "pb.UpdateIssuerRequest.ProjectID",
+			Display:       "Project ID",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `ProjectID of the issuer's project. A caller whose role is granted
+in the project only must name it, since the request is authorized at
+that scope; the issuer must belong to it.`,
 		},
 	},
 }

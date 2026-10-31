@@ -117,8 +117,9 @@ func (a *ProfileRegisterCmd) Run(app App) error {
 
 // ProfileDeleteCmd deletes a profile of an org
 type ProfileDeleteCmd struct {
-	Org string `required:"" help:"the ID of the org"`
-	ID  string `arg:"" help:"the ID of the profile"`
+	Org     string `required:"" help:"the ID of the org"`
+	Project string `help:"the ID of the project the profile belongs to; empty for any"`
+	ID      string `arg:"" help:"the ID of the profile"`
 }
 
 // Run the command
@@ -128,8 +129,9 @@ func (a *ProfileDeleteCmd) Run(app App) error {
 		return err
 	}
 	_, err = client.DeleteProfile(app.Context(), &privpb.DeleteProfileRequest{
-		OrgID: a.Org,
-		ID:    a.ID,
+		OrgID:     a.Org,
+		ProjectID: a.Project,
+		ID:        a.ID,
 	})
 	if err != nil {
 		return err

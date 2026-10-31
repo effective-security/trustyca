@@ -294,7 +294,11 @@ type ActivateIssuerRequest struct {
 	// Intermediates provides the intermediate CA certificates in PEM format
 	Intermediates string `protobuf:"bytes,4,opt,name=Intermediates,proto3" json:"Intermediates,omitempty"`
 	// Root provides the Root CA certificate in PEM format
-	Root          string `protobuf:"bytes,5,opt,name=Root,proto3" json:"Root,omitempty"`
+	Root string `protobuf:"bytes,5,opt,name=Root,proto3" json:"Root,omitempty"`
+	// ProjectID of the issuer's project. A caller whose role is granted
+	// in the project only must name it, since the request is authorized at
+	// that scope; the issuer must belong to it.
+	ProjectID     string `protobuf:"bytes,6,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -353,6 +357,13 @@ func (x *ActivateIssuerRequest) GetIntermediates() string {
 func (x *ActivateIssuerRequest) GetRoot() string {
 	if x != nil {
 		return x.Root
+	}
+	return ""
+}
+
+func (x *ActivateIssuerRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
 	}
 	return ""
 }
@@ -587,7 +598,11 @@ type UpdateIssuerRequest struct {
 	// Config replaces runtime settings when provided
 	Config *IssuerConfig `protobuf:"bytes,3,opt,name=Config,proto3" json:"Config,omitempty"`
 	// Status changes the status when provided: Archived or Destroyed
-	Status        IssuerStatus_Enum `protobuf:"varint,4,opt,name=Status,proto3,enum=pb.IssuerStatus_Enum" json:"Status,omitempty"`
+	Status IssuerStatus_Enum `protobuf:"varint,4,opt,name=Status,proto3,enum=pb.IssuerStatus_Enum" json:"Status,omitempty"`
+	// ProjectID of the issuer's project. A caller whose role is granted
+	// in the project only must name it, since the request is authorized at
+	// that scope; the issuer must belong to it.
+	ProjectID     string `protobuf:"bytes,5,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -641,6 +656,13 @@ func (x *UpdateIssuerRequest) GetStatus() IssuerStatus_Enum {
 		return x.Status
 	}
 	return IssuerStatus_Unknown
+}
+
+func (x *UpdateIssuerRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
 }
 
 // RegisterRootRequest registers an external trust anchor
@@ -1079,7 +1101,11 @@ func (x *ProfilesResponse) GetNextPage() *NextPage {
 type DeleteProfileRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// ID of the profile
-	ID            string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	ID string `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	// ProjectID of the profile's project. A caller whose role is granted
+	// in the project only must name it, since the request is authorized at
+	// that scope; the profile must belong to it.
+	ProjectID     string `protobuf:"bytes,3,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1117,6 +1143,13 @@ func (*DeleteProfileRequest) Descriptor() ([]byte, []int) {
 func (x *DeleteProfileRequest) GetID() string {
 	if x != nil {
 		return x.ID
+	}
+	return ""
+}
+
+func (x *DeleteProfileRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
 	}
 	return ""
 }
@@ -2240,12 +2273,13 @@ const file_ca_proto_rawDesc = "" +
 	"\x06KeyPem\x18\t \x01(\tB\n" +
 	"\xf2\xf3\x18\x06KeyURIR\x06KeyPem\x12(\n" +
 	"\x06Config\x18\n" +
-	" \x01(\v2\x10.pb.IssuerConfigR\x06ConfigJ\x04\b\x01\x10\x02R\x05OrgID\"\x9c\x01\n" +
+	" \x01(\v2\x10.pb.IssuerConfigR\x06ConfigJ\x04\b\x01\x10\x02R\x05OrgID\"\xba\x01\n" +
 	"\x15ActivateIssuerRequest\x12\x14\n" +
 	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12&\n" +
 	"\vCertificate\x18\x03 \x01(\tB\x04\xe8\xf3\x18\x01R\vCertificate\x12$\n" +
 	"\rIntermediates\x18\x04 \x01(\tR\rIntermediates\x12\x12\n" +
-	"\x04Root\x18\x05 \x01(\tR\x04RootJ\x04\b\x01\x10\x02R\x05OrgID\"\xa2\x01\n" +
+	"\x04Root\x18\x05 \x01(\tR\x04Root\x12\x1c\n" +
+	"\tProjectID\x18\x06 \x01(\tR\tProjectIDJ\x04\b\x01\x10\x02R\x05OrgID\"\xa2\x01\n" +
 	"\x10GetIssuerRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
 	"\x02ID\x18\x03 \x01(\tB\x0e\xf2\xf3\x18\n" +
@@ -2262,11 +2296,12 @@ const file_ca_proto_rawDesc = "" +
 	"\x0fIssuersResponse\x12$\n" +
 	"\aIssuers\x18\x01 \x03(\v2\n" +
 	".pb.IssuerR\aIssuers\x12(\n" +
-	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"\x91\x01\n" +
+	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"\xaf\x01\n" +
 	"\x13UpdateIssuerRequest\x12\x14\n" +
 	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12(\n" +
 	"\x06Config\x18\x03 \x01(\v2\x10.pb.IssuerConfigR\x06Config\x12-\n" +
-	"\x06Status\x18\x04 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06StatusJ\x04\b\x01\x10\x02R\x05OrgID\"`\n" +
+	"\x06Status\x18\x04 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\x12\x1c\n" +
+	"\tProjectID\x18\x05 \x01(\tR\tProjectIDJ\x04\b\x01\x10\x02R\x05OrgID\"`\n" +
 	"\x13RegisterRootRequest\x12\x16\n" +
 	"\x03Pem\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x03Pem\x12$\n" +
 	"\x05Trust\x18\x03 \x01(\x0e2\x0e.pb.Trust.EnumR\x05TrustJ\x04\b\x01\x10\x02R\x05OrgID\"e\n" +
@@ -2292,9 +2327,10 @@ const file_ca_proto_rawDesc = "" +
 	"\x06Cursor\x18\x06 \x01(\tR\x06CursorJ\x04\b\x01\x10\x02R\x05OrgID\"i\n" +
 	"\x10ProfilesResponse\x12+\n" +
 	"\bProfiles\x18\x01 \x03(\v2\x0f.pb.CertProfileR\bProfiles\x12(\n" +
-	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"9\n" +
+	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"W\n" +
 	"\x14DeleteProfileRequest\x12\x14\n" +
-	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02IDJ\x04\b\x01\x10\x02R\x05OrgID\"\xae\x04\n" +
+	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID\x12\x1c\n" +
+	"\tProjectID\x18\x03 \x01(\tR\tProjectIDJ\x04\b\x01\x10\x02R\x05OrgID\"\xae\x04\n" +
 	"\x16SignCertificateRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x1e\n" +
 	"\aProfile\x18\x03 \x01(\tB\x04\xe8\xf3\x18\x01R\aProfile\x12 \n" +

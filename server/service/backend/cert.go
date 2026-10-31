@@ -328,7 +328,7 @@ func (s *Service) findCertificate(ctx context.Context, orgID xdb.ID, sel *certif
 	if row == nil || row.OrgID.UInt64() != orgID.UInt64() {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "certificate not found")
 	}
-	if !sel.projectID.IsZero() && row.ProjectID.UInt64() != sel.projectID.UInt64() {
+	if !inProject(row.ProjectID, sel.projectID) {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "certificate not found")
 	}
 	err = s.scope.RowAccess(ctx, orgID, row.ProjectID, method, "certificate")

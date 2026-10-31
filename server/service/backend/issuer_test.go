@@ -10,6 +10,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/authctx"
 	core "github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/db"
 	"github.com/effective-security/trustyca/internal/db/model"
@@ -835,6 +836,31 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 	_, err = svc.UpdateIssuer(viewer, &privpb.UpdateIssuerRequest{ID: projectIssuer.ID.String(), Status: pb.IssuerStatus_Destroyed})
 	assert.EqualError(t, err, "forbidden: access denied", "a project Viewer")
 
+	// a project Admin names its project, the scope the interceptor
+	// authorizes; an issuer outside the named project is not found, as a
+	// project the caller cannot read is
+	projectIssuer2 := tca.newChild(t, tca.root, testCAProfile, testOrgID(), testProject.ID, "PRJ2", pb.AuthorityType_Issuing, nil)
+	_, err = svc.UpdateIssuer(admin, &privpb.UpdateIssuerRequest{ProjectID: "202", ID: projectIssuer2.ID.String(), Status: pb.IssuerStatus_Archived})
+	assert.EqualError(t, err, "not_found: issuer not found", "an issuer of another project")
+	_, err = svc.UpdateIssuer(admin, &privpb.UpdateIssuerRequest{ProjectID: "201", ID: tca.issuer.ID.String(), Status: pb.IssuerStatus_Archived})
+	assert.EqualError(t, err, "not_found: issuer not found", "an org-wide issuer is not the project's")
+	_, err = svc.UpdateIssuer(admin, &privpb.UpdateIssuerRequest{ProjectID: "301", ID: projectIssuer2.ID.String(), Status: pb.IssuerStatus_Archived})
+	assert.EqualError(t, err, "not_found: project not found")
+	_, err = svc.UpdateIssuer(projectAdmin, &privpb.UpdateIssuerRequest{ProjectID: "202", ID: sibling.ID.String(), Status: pb.IssuerStatus_Archived})
+	assert.EqualError(t, err, "not_found: issuer not found", "a project without a grant, which the interceptor refuses first")
+	tca.cadb.EXPECT().UpdateIssuer(gomock.Any(), &query.UpdateIssuerRequest{ID: projectIssuer2.ID.UInt64(), OrgID: 1, Status: pb.IssuerStatus_Archived}).DoAndReturn(
+		func(_ context.Context, _ *query.UpdateIssuerRequest) (*model.Issuer, error) {
+			return tca.rows.update(projectIssuer2.ID, func(m *model.Issuer) { m.Status = pb.IssuerStatus_Archived }), nil
+		})
+	res, err = svc.UpdateIssuer(projectAdmin, &privpb.UpdateIssuerRequest{ProjectID: "201", ID: projectIssuer2.ID.String(), Status: pb.IssuerStatus_Archived})
+	require.NoError(t, err)
+	assert.Equal(t, pb.IssuerStatus_Archived, res.Status)
+	pendingPrj := tca.newPending(t, testOrgID(), testProject.ID, "PEXT")
+	_, err = svc.ActivateIssuer(admin, &privpb.ActivateIssuerRequest{ProjectID: "202", ID: pendingPrj.ID.String(), Certificate: "junk"})
+	assert.EqualError(t, err, "not_found: issuer not found", "a pending issuer of another project")
+	_, err = svc.ActivateIssuer(projectAdmin, &privpb.ActivateIssuerRequest{ProjectID: "201", ID: pendingPrj.ID.String(), Certificate: "junk"})
+	assert.ErrorContains(t, err, "bad_request: failed to activate issuer: invalid certificate", "the project Admin reaches the activation of its project")
+
 	// the parent of a new issuer is visible from the scope of the new
 	// issuer: org-wide or of the same project, never of another project
 	req := &privpb.RegisterIssuerRequest{
@@ -869,6 +895,37 @@ func TestService_IssuerProjectAccess(t *testing.T) {
 		Profile:  testCAProfile,
 	})
 	assert.EqualError(t, err, "bad_request: a Root issuer is self-signed: parent ID is not allowed")
+}
+
+// the interceptor authorizes the issuer mutations at the project the
+// request names (authctx.ProjectRequester), on the wfe and on the backend
+var (
+	_ authctx.ProjectRequester = (*pb.ActivateIssuerRequest)(nil)
+	_ authctx.ProjectRequester = (*pb.UpdateIssuerRequest)(nil)
+	_ authctx.ProjectRequester = (*privpb.ActivateIssuerRequest)(nil)
+	_ authctx.ProjectRequester = (*privpb.UpdateIssuerRequest)(nil)
+)
+
+func TestService_IssuerMutations_CheckAccess(t *testing.T) {
+	t.Parallel()
+	authorizer := newFakeAuthorizer()
+	projectAdmin := testCtx(projectAdminUser, "1")
+	admin := testCtx(orgAdminUser, "1")
+
+	err := authctx.CheckAccess(projectAdmin, authorizer, &privpb.UpdateIssuerRequest{ID: "1", Status: pb.IssuerStatus_Archived}, pb.CA_UpdateIssuer_FullMethodName)
+	assert.ErrorContains(t, err, "forbidden: ", "org scope, where a project Admin is a Viewer")
+	err = authctx.CheckAccess(projectAdmin, authorizer, &privpb.UpdateIssuerRequest{ProjectID: "201", ID: "1", Status: pb.IssuerStatus_Archived}, pb.CA_UpdateIssuer_FullMethodName)
+	require.NoError(t, err)
+	err = authctx.CheckAccess(projectAdmin, authorizer, &privpb.UpdateIssuerRequest{ProjectID: "202", ID: "1", Status: pb.IssuerStatus_Archived}, pb.CA_UpdateIssuer_FullMethodName)
+	assert.ErrorContains(t, err, "forbidden: ", "a project without a grant")
+	err = authctx.CheckAccess(projectAdmin, authorizer, &privpb.ActivateIssuerRequest{ID: "1", Certificate: "x"}, pb.CA_ActivateIssuer_FullMethodName)
+	assert.ErrorContains(t, err, "forbidden: ")
+	err = authctx.CheckAccess(projectAdmin, authorizer, &privpb.ActivateIssuerRequest{ProjectID: "201", ID: "1", Certificate: "x"}, pb.CA_ActivateIssuer_FullMethodName)
+	require.NoError(t, err)
+	err = authctx.CheckAccess(testCtx(projectViewerUser, "1"), authorizer, &privpb.ActivateIssuerRequest{ProjectID: "201", ID: "1", Certificate: "x"}, pb.CA_ActivateIssuer_FullMethodName)
+	assert.ErrorContains(t, err, "forbidden: ", "a project Viewer")
+	err = authctx.CheckAccess(admin, authorizer, &privpb.UpdateIssuerRequest{ID: "1", Status: pb.IssuerStatus_Archived}, pb.CA_UpdateIssuer_FullMethodName)
+	require.NoError(t, err, "an org-wide role at org scope")
 }
 
 func TestService_ListIssuers(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
+	"github.com/effective-security/trustyca/internal/authctx"
 	core "github.com/effective-security/trustyca/internal/ca"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/trustyca/internal/db/pgsql/query"
@@ -246,6 +247,45 @@ func TestService_ProfileProjectAccess(t *testing.T) {
 	tca.cadb.EXPECT().DeleteProfile(gomock.Any(), uint64(1), projectPeer.ID.UInt64()).DoAndReturn(tca.rows.deleteProfile)
 	_, err = svc.DeleteProfile(projectAdmin, &privpb.DeleteProfileRequest{ID: projectPeer.ID.String()})
 	require.NoError(t, err)
+
+	// a project Admin names its project, the scope the interceptor
+	// authorizes; a profile outside the named project is not found
+	projectPeer2 := tca.addProfile(testOrgID(), testProject.ID, peerProfileDef("prj2", testIssuerLabel, "1h"))
+	_, err = svc.DeleteProfile(admin, &privpb.DeleteProfileRequest{ProjectID: "202", ID: projectPeer2.ID.String()})
+	assert.EqualError(t, err, "not_found: profile not found", "a profile of another project")
+	_, err = svc.DeleteProfile(admin, &privpb.DeleteProfileRequest{ProjectID: "201", ID: tca.peer.ID.String()})
+	assert.EqualError(t, err, "not_found: profile not found", "an org-wide profile is not the project's")
+	_, err = svc.DeleteProfile(admin, &privpb.DeleteProfileRequest{ProjectID: "301", ID: projectPeer2.ID.String()})
+	assert.EqualError(t, err, "not_found: project not found")
+	_, err = svc.DeleteProfile(projectAdmin, &privpb.DeleteProfileRequest{ProjectID: "202", ID: siblingPeer.ID.String()})
+	assert.EqualError(t, err, "not_found: profile not found", "a project without a grant, which the interceptor refuses first")
+	tca.cadb.EXPECT().DeleteProfile(gomock.Any(), uint64(1), projectPeer2.ID.UInt64()).DoAndReturn(tca.rows.deleteProfile)
+	_, err = svc.DeleteProfile(projectAdmin, &privpb.DeleteProfileRequest{ProjectID: "201", ID: projectPeer2.ID.String()})
+	require.NoError(t, err)
+}
+
+// the interceptor authorizes DeleteProfile at the project the request
+// names (authctx.ProjectRequester), on the wfe and on the backend
+var (
+	_ authctx.ProjectRequester = (*pb.DeleteProfileRequest)(nil)
+	_ authctx.ProjectRequester = (*privpb.DeleteProfileRequest)(nil)
+)
+
+func TestService_DeleteProfile_CheckAccess(t *testing.T) {
+	t.Parallel()
+	authorizer := newFakeAuthorizer()
+	projectAdmin := testCtx(projectAdminUser, "1")
+
+	err := authctx.CheckAccess(projectAdmin, authorizer, &privpb.DeleteProfileRequest{ID: "1"}, pb.CA_DeleteProfile_FullMethodName)
+	assert.ErrorContains(t, err, "forbidden: ", "org scope, where a project Admin is a Viewer")
+	err = authctx.CheckAccess(projectAdmin, authorizer, &privpb.DeleteProfileRequest{ProjectID: "201", ID: "1"}, pb.CA_DeleteProfile_FullMethodName)
+	require.NoError(t, err)
+	err = authctx.CheckAccess(projectAdmin, authorizer, &privpb.DeleteProfileRequest{ProjectID: "202", ID: "1"}, pb.CA_DeleteProfile_FullMethodName)
+	assert.ErrorContains(t, err, "forbidden: ", "a project without a grant")
+	err = authctx.CheckAccess(testCtx(projectViewerUser, "1"), authorizer, &privpb.DeleteProfileRequest{ProjectID: "201", ID: "1"}, pb.CA_DeleteProfile_FullMethodName)
+	assert.ErrorContains(t, err, "forbidden: ", "a project Viewer")
+	err = authctx.CheckAccess(testCtx(orgAdminUser, "1"), authorizer, &privpb.DeleteProfileRequest{ID: "1"}, pb.CA_DeleteProfile_FullMethodName)
+	require.NoError(t, err, "an org-wide role at org scope")
 }
 
 func TestService_ListProfiles(t *testing.T) {

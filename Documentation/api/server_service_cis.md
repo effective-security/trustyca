@@ -95,7 +95,7 @@ func (s *Service) Close()
 Close the subservices and its resources
 
 <a name="Service.GetCRL"></a>
-### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L156>)
+### func \(\*Service\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L152>)
 
 ```go
 func (s *Service) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (*pb.CrlResponse, error)
@@ -104,7 +104,7 @@ func (s *Service) GetCRL(ctx context.Context, req *pb.GetCrlRequest) (*pb.CrlRes
 GetCRL returns the current CRL of the issuer with the key identifier
 
 <a name="Service.GetCertificate"></a>
-### func \(\*Service\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L100>)
+### func \(\*Service\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L96>)
 
 ```go
 func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateInfoRequest) (*pb.CertificateResponse, error)
@@ -113,7 +113,7 @@ func (s *Service) GetCertificate(ctx context.Context, req *pb.GetCertificateInfo
 GetCertificate returns the public view of a certificate by its ID, its Subject Key Identifier \(the newest certificate of the key\), its SHA\-256 thumbprint, or the key identifier of its issuer and its serial number. The tenancy and the client\-owned fields \(label, metadata, profile\) are not part of the view.
 
 <a name="Service.GetCertificateStatus"></a>
-### func \(\*Service\) [GetCertificateStatus](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L117>)
+### func \(\*Service\) [GetCertificateStatus](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L113>)
 
 ```go
 func (s *Service) GetCertificateStatus(ctx context.Context, req *pb.GetCertificateInfoRequest) (*pb.CertificateStatusResponse, error)
@@ -122,7 +122,7 @@ func (s *Service) GetCertificateStatus(ctx context.Context, req *pb.GetCertifica
 GetCertificateStatus returns the revocation status of a certificate named as in GetCertificate: Active, Expired \(an Active certificate whose validity has ended, before the cert\_status task marks it\) or Revoked with the time and reason of its revocation
 
 <a name="Service.GetIssuer"></a>
-### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L58>)
+### func \(\*Service\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L54>)
 
 ```go
 func (s *Service) GetIssuer(ctx context.Context, req *pb.GetIssuerInfoRequest) (*pb.IssuerInfo, error)
@@ -131,7 +131,7 @@ func (s *Service) GetIssuer(ctx context.Context, req *pb.GetIssuerInfoRequest) (
 GetIssuer returns the public view of the issuer with the key identifier: its chain, status and the AIA, CRL and OCSP URLs of its settings with the key identifier in place of the placeholder. A Pending issuer has no certificate and is not found.
 
 <a name="Service.GetRoots"></a>
-### func \(\*Service\) [GetRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L25>)
+### func \(\*Service\) [GetRoots](<https://github.com/effective-security/trustyca/blob/main/server/service/cis/cis.go#L21>)
 
 ```go
 func (s *Service) GetRoots(ctx context.Context, req *pb.GetRootsRequest) (*pb.RootsResponse, error)

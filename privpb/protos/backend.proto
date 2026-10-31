@@ -170,6 +170,10 @@ message ActivateIssuerRequest {
     string Intermediates = 4 [json_name = "Intermediates"];
     // Root provides the Root CA certificate in PEM format
     string Root = 5 [json_name = "Root"];
+    // ProjectID of the issuer's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the issuer must belong to it.
+    string ProjectID = 6 [json_name = "ProjectID"];
 }
 
 // GetIssuerRequest specifies an issuer by ID, label or IKID
@@ -223,6 +227,10 @@ message UpdateIssuerRequest {
     pb.IssuerConfig Config = 3 [json_name = "Config"];
     // Status changes the status when provided: Archived or Destroyed
     pb.IssuerStatus.Enum Status = 4 [json_name = "Status"];
+    // ProjectID of the issuer's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the issuer must belong to it.
+    string ProjectID = 5 [json_name = "ProjectID"];
 }
 
 // RegisterRootRequest registers an external trust anchor
@@ -306,6 +314,10 @@ message DeleteProfileRequest {
     string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
     // ID of the profile
     string ID = 2 [json_name = "ID", (es.api.required) = true];
+    // ProjectID of the profile's project. A caller whose role is granted
+    // in the project only must name it, since the request is authorized at
+    // that scope; the profile must belong to it.
+    string ProjectID = 3 [json_name = "ProjectID"];
 }
 
 // SignCertificateRequest specifies certificate sign request
