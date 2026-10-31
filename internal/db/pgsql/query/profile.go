@@ -5,6 +5,7 @@ import (
 	"github.com/effective-security/trustyca/internal/db/schema"
 	"github.com/effective-security/xdb"
 	"github.com/effective-security/xdb/xsql"
+	"github.com/lib/pq"
 )
 
 // RegisterProfile returns SQL query to create a certificate profile, or to
@@ -90,6 +91,12 @@ type ListProfilesRequest struct {
 	IssuerLabel string
 	// Status limits the result to the status
 	Status pb.ItemStatus_Enum
+	// IDs limits the result to the profiles with the IDs; empty applies no
+	// filter
+	IDs []uint64
+	// Labels limits the result to the profiles with the labels, in every
+	// scope the request covers; empty applies no filter
+	Labels []string
 	// Limit specifies maximum number of records to return
 	Limit uint32
 	// Offset specifies the offset for offset pagination
@@ -118,6 +125,12 @@ func (r *ListProfilesRequest) QueryParams() xdb.QueryParams {
 	if r.Status != pb.ItemStatus_Unknown {
 		b.Set(schema.CertificateProfile.Status.Position, r.Status)
 	}
+	if len(r.IDs) > 0 {
+		b.Set(schema.CertificateProfile.ID.Position, idArray(r.IDs))
+	}
+	if len(r.Labels) > 0 {
+		b.Set(schema.CertificateProfile.Label.Position, pq.StringArray(r.Labels))
+	}
 	setPage(b, r.Limit, r.Offset, r.Cursor)
 	return b
 }
@@ -134,6 +147,12 @@ func ListProfiles(args ...any) (string, string) {
 		}
 		if p.IsSet(schema.CertificateProfile.Status.Position) {
 			q.Where(schema.CertificateProfile.Status.Name+" = ?", nil)
+		}
+		if p.IsSet(schema.CertificateProfile.ID.Position) {
+			q.Where(schema.CertificateProfile.ID.Name+" = ANY(?)", nil)
+		}
+		if p.IsSet(schema.CertificateProfile.Label.Position) {
+			q.Where(schema.CertificateProfile.Label.Name+" = ANY(?)", nil)
 		}
 		pageByIDDesc(q, p)
 		return q

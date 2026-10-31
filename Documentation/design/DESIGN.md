@@ -781,6 +781,11 @@ matching `ca:*`/`certs:*` scopes so the
 same `CheckAccess` applies when a user token or an API key reaches the CA,
 on the `wfe` and again on the `backend` for a forwarded caller. Conventions: string IDs, enum wrappers,
 `Limit/Offset/Cursor` plus `NextPage` on every `List`, no HTTP annotations.
+`ListIssuers` takes `IDs` and `IKIDs` (the key identifiers the certificates
+carry), `ListProfiles` `IDs` and `Labels`, at most 500 each, so a client
+resolves the issuers and profiles of a page of certificates in one call
+each; the identifiers narrow the list within its scope and an unknown one
+is ignored.
 
 `GetSummary` answers the tiles of the console's dashboard in one call,
 exact and at one time (`At`): the issuers by lifecycle status, the

@@ -216,6 +216,12 @@ message ListIssuersRequest {
     // Use "initial" to start the pagination or pass the cursor returned from
     // the previous request.
     string Cursor = 7 [json_name = "Cursor"];
+    // IDs limits the result to the issuers with the IDs, at most 500
+    repeated string IDs = 8 [json_name = "IDs"];
+    // IKIDs limits the result to the issuers with the key identifiers (the
+    // SKID of the issuer, the IKID of the certificates it issued), at most
+    // 500
+    repeated string IKIDs = 9 [json_name = "IKIDs"];
 }
 
 // UpdateIssuerRequest updates issuer config or status
@@ -307,6 +313,11 @@ message ListProfilesRequest {
     uint32 Offset = 5 [json_name = "Offset"];
     // Cursor specifies cursor for the cursor-based pagination
     string Cursor = 6 [json_name = "Cursor"];
+    // IDs limits the result to the profiles with the IDs, at most 500
+    repeated string IDs = 7 [json_name = "IDs"];
+    // Labels limits the result to the profiles with the labels, in every
+    // scope the request covers, at most 500
+    repeated string Labels = 8 [json_name = "Labels"];
 }
 
 // DeleteProfileRequest deletes a profile

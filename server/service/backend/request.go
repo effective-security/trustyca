@@ -40,6 +40,40 @@ func parseID(ctx context.Context, val, what string) (xdb.ID, error) {
 	return id, nil
 }
 
+// maxListKeys is the number of identifiers a list filter accepts (IDs,
+// IKIDs, labels): the issuers or profiles of a page of certificates
+const maxListKeys = xdb.DefaultPageSize
+
+// listKeys returns the identifiers of a list filter: an empty list is no
+// filter, more than maxListKeys is InvalidArgument
+func listKeys(ctx context.Context, vals []string, what string) ([]string, error) {
+	if len(vals) > maxListKeys {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "too many %s: at most %d", what, maxListKeys)
+	}
+	if len(vals) == 0 {
+		return nil, nil
+	}
+	return vals, nil
+}
+
+// parseIDs parses the IDs of a list filter: an empty list is no filter,
+// more than maxListKeys or an ID that does not parse is InvalidArgument
+func parseIDs(ctx context.Context, vals []string, what string) ([]uint64, error) {
+	vals, err := listKeys(ctx, vals, what)
+	if err != nil || vals == nil {
+		return nil, err
+	}
+	ids := make([]uint64, 0, len(vals))
+	for _, val := range vals {
+		id, err := xdb.ParseID(val)
+		if err != nil {
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid %s: %s", what, val)
+		}
+		ids = append(ids, id.UInt64())
+	}
+	return ids, nil
+}
+
 // issuerPb converts an issuer row to its API message
 func issuerPb(ctx context.Context, row *model.Issuer) (*pb.Issuer, error) {
 	res, err := row.Pb()

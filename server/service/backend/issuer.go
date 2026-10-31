@@ -524,6 +524,9 @@ func (s *Service) GetIssuer(ctx context.Context, req *privpb.GetIssuerRequest) (
 // ListIssuers returns the issuers of the org, newest first; a project
 // limits the result to its own issuers. Without a project, a member with
 // project grants only lists the org-wide issuers and those of its projects.
+// IDs and IKIDs (the key identifiers the certificates carry) narrow the
+// list to the issuers of a page of certificates, at most maxListKeys each;
+// an issuer outside the scope is not returned.
 func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersRequest) (*pb.IssuersResponse, error) {
 	if req == nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing request")
@@ -540,11 +543,21 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersReques
 	if err != nil {
 		return nil, err
 	}
+	ids, err := parseIDs(ctx, req.IDs, "issuer IDs")
+	if err != nil {
+		return nil, err
+	}
+	ikids, err := listKeys(ctx, req.IKIDs, "IKIDs")
+	if err != nil {
+		return nil, err
+	}
 	q := &query.ListIssuersRequest{
 		OrgID:     orgID.UInt64(),
 		ProjectID: projectID.UInt64(),
 		Status:    req.Status,
 		Type:      req.Type,
+		IDs:       ids,
+		IKIDs:     ikids,
 		Limit:     query.Limit(req.Limit),
 		Offset:    req.Offset,
 		Cursor:    cursor,

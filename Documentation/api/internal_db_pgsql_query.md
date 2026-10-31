@@ -215,7 +215,7 @@ var ErrOrgScopeRequired = errors.New("org scope is required: set OrgID, Platform
 ```
 
 <a name="ActivateIssuer"></a>
-## func [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L109>)
+## func [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L110>)
 
 ```go
 func ActivateIssuer(args ...any) (string, string)
@@ -251,7 +251,7 @@ func CountExpiringCertificates(args ...any) (string, string)
 CountExpiringCertificates returns SQL query to count the certificates of a scope and a status whose validity ends within a period: the arguments after the scope are the status, the start and the end of the period. The range of a project is served by idx\_certificate\_org\_project\_status\_notafter.
 
 <a name="CountIssuers"></a>
-## func [CountIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L224>)
+## func [CountIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L225>)
 
 ```go
 func CountIssuers(args ...any) (string, string)
@@ -377,7 +377,7 @@ func ExpireCertificates(args ...any) (string, string)
 ExpireCertificates returns SQL query to set the status of a batch of Active certificates that expired before a time to Expired: the arguments are the Expired status, the Active status of the updated rows, the Active status of the batch, the time and the batch limit. The batch subquery is evaluated on the snapshot the statement started with, so the status is checked again on the updated rows: PostgreSQL rechecks that predicate on the current version of a row the statement waited for, and a certificate RevokeCertificate revoked meanwhile keeps Revoked.
 
 <a name="FindIssuer"></a>
-## func [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L169>)
+## func [FindIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L170>)
 
 ```go
 func FindIssuer(args ...any) (string, string)
@@ -386,7 +386,7 @@ func FindIssuer(args ...any) (string, string)
 FindIssuer returns SQL query to find an issuer by scope and label
 
 <a name="FindProfile"></a>
-## func [FindProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L55>)
+## func [FindProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L56>)
 
 ```go
 func FindProfile(args ...any) (string, string)
@@ -458,7 +458,7 @@ func GetInvite(args ...any) (string, string)
 GetInvite returns SQL query to get an invite by org, scope and email
 
 <a name="GetIssuerBySKID"></a>
-## func [GetIssuerBySKID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L182>)
+## func [GetIssuerBySKID](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L183>)
 
 ```go
 func GetIssuerBySKID(args ...any) (string, string)
@@ -485,7 +485,7 @@ func GetOrgInvites(args ...any) (string, string)
 GetOrgInvites returns SQL query to list invites of all scopes for an org
 
 <a name="GetProjectByAlias"></a>
-## func [GetProjectByAlias](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L148>)
+## func [GetProjectByAlias](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L143>)
 
 ```go
 func GetProjectByAlias(args ...any) (string, string)
@@ -611,7 +611,7 @@ func ListEvents(args ...any) (string, string)
 ListEvents returns SQL query
 
 <a name="ListIssuers"></a>
-## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L305>)
+## func [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L319>)
 
 ```go
 func ListIssuers(args ...any) (string, string)
@@ -638,7 +638,7 @@ func ListOrgs(args ...any) (string, string)
 ListOrgs returns SQL query: the orgs by name, then by id, paged by offset or by a cursor on that key \(ParseNameCursor, EncodeNameCursor\)
 
 <a name="ListProfiles"></a>
-## func [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L126>)
+## func [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L139>)
 
 ```go
 func ListProfiles(args ...any) (string, string)
@@ -647,7 +647,7 @@ func ListProfiles(args ...any) (string, string)
 ListProfiles returns SQL query to list certificate profiles
 
 <a name="ListProjects"></a>
-## func [ListProjects](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L127>)
+## func [ListProjects](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L122>)
 
 ```go
 func ListProjects(args ...any) (string, string)
@@ -737,7 +737,7 @@ func RegisterCertificate(args ...any) (string, string)
 RegisterCertificate returns SQL query to insert an issued certificate
 
 <a name="RegisterIssuer"></a>
-## func [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L13>)
+## func [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L14>)
 
 ```go
 func RegisterIssuer(args ...any) (string, string)
@@ -764,7 +764,7 @@ func RegisterOrg(args ...any) (string, string)
 RegisterOrg registers a new org
 
 <a name="RegisterProfile"></a>
-## func [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L13>)
+## func [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L14>)
 
 ```go
 func RegisterProfile(args ...any) (string, string)
@@ -773,7 +773,7 @@ func RegisterProfile(args ...any) (string, string)
 RegisterProfile returns SQL query to create a certificate profile, or to replace the issuer label, status and config of the profile with the same label in the same scope
 
 <a name="RegisterProject"></a>
-## func [RegisterProject](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L12>)
+## func [RegisterProject](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L11>)
 
 ```go
 func RegisterProject(args ...any) (string, string)
@@ -809,7 +809,7 @@ func RegisterUser(args ...any) (string, string)
 RegisterUser returns SQL query to register a user
 
 <a name="SetIssuerCrlNumber"></a>
-## func [SetIssuerCrlNumber](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L139>)
+## func [SetIssuerCrlNumber](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L140>)
 
 ```go
 func SetIssuerCrlNumber(args ...any) (string, string)
@@ -845,7 +845,7 @@ func UpdateCertificateStatus(args ...any) (string, string)
 UpdateCertificateStatus returns SQL query to set the status of a certificate: the arguments are the status and the ID
 
 <a name="UpdateIssuer"></a>
-## func [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L82>)
+## func [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L83>)
 
 ```go
 func UpdateIssuer(args ...any) (string, string)
@@ -872,7 +872,7 @@ func UpdateOrg(args ...any) (string, string)
 UpdateOrg returns SQL query to update a org's name and description
 
 <a name="UpdateProject"></a>
-## func [UpdateProject](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L58>)
+## func [UpdateProject](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L57>)
 
 ```go
 func UpdateProject(args ...any) (string, string)
@@ -962,7 +962,7 @@ func (r *CountCertificatesRequest) Validate() error
 Validate returns ErrOrgRequired when the request names no org, and an error when the periods are not positive and ascending
 
 <a name="CountIssuersRequest"></a>
-## type [CountIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L195-L205>)
+## type [CountIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L196-L206>)
 
 CountIssuersRequest defines request to count the issuers of an org by lifecycle status: of the whole org, of one project, or of the org\-wide scope and the projects of ProjectIDs. The org is required: the counts are a tenant's.
 
@@ -981,7 +981,7 @@ type CountIssuersRequest struct {
 ```
 
 <a name="CountIssuersRequest.QueryParams"></a>
-### func \(\*CountIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L213>)
+### func \(\*CountIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L214>)
 
 ```go
 func (r *CountIssuersRequest) QueryParams() xdb.QueryParams
@@ -990,7 +990,7 @@ func (r *CountIssuersRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="CountIssuersRequest.Validate"></a>
-### func \(\*CountIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L208>)
+### func \(\*CountIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L209>)
 
 ```go
 func (r *CountIssuersRequest) Validate() error
@@ -1193,7 +1193,7 @@ func (r *ExpireCertificatesRequest) Validate() error
 Validate returns error if the request is not valid
 
 <a name="FindIssuerRequest"></a>
-## type [FindIssuerRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L154-L158>)
+## type [FindIssuerRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L155-L159>)
 
 FindIssuerRequest specifies an issuer by its exact scope and label: a zero OrgID is the platform scope, a zero ProjectID the org scope
 
@@ -1206,7 +1206,7 @@ type FindIssuerRequest struct {
 ```
 
 <a name="FindIssuerRequest.QueryParams"></a>
-### func \(\*FindIssuerRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L161>)
+### func \(\*FindIssuerRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L162>)
 
 ```go
 func (r *FindIssuerRequest) QueryParams() xdb.QueryParams
@@ -1215,7 +1215,7 @@ func (r *FindIssuerRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="FindProfileRequest"></a>
-## type [FindProfileRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L40-L44>)
+## type [FindProfileRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L41-L45>)
 
 FindProfileRequest specifies a profile by its exact scope and label: a zero OrgID is the platform scope, a zero ProjectID the org scope
 
@@ -1228,7 +1228,7 @@ type FindProfileRequest struct {
 ```
 
 <a name="FindProfileRequest.QueryParams"></a>
-### func \(\*FindProfileRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L47>)
+### func \(\*FindProfileRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L48>)
 
 ```go
 func (r *FindProfileRequest) QueryParams() xdb.QueryParams
@@ -1530,7 +1530,7 @@ func (r *ListEventsRequest) Validate() error
 Validate fails a request that carries the cursor of another list
 
 <a name="ListIssuersRequest"></a>
-## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L238-L272>)
+## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L239-L280>)
 
 ListIssuersRequest defines request to list issuers, newest first. The request names its org scope: OrgID, Platform or AllOrgs; without ProjectID and Scope the issuers of every scope of the org are returned.
 
@@ -1563,6 +1563,13 @@ type ListIssuersRequest struct {
     Status pb.IssuerStatus_Enum
     // Type limits the result to the authority type
     Type pb.AuthorityType_Enum
+    // IDs limits the result to the issuers with the IDs; empty applies no
+    // filter
+    IDs []uint64
+    // IKIDs limits the result to the issuers with the key identifiers, as
+    // the certificates they issued carry them (the SKID of the issuer);
+    // empty applies no filter
+    IKIDs []string
     // Limit specifies maximum number of records to return
     Limit uint32
     // Offset specifies the offset for offset pagination
@@ -1573,7 +1580,7 @@ type ListIssuersRequest struct {
 ```
 
 <a name="ListIssuersRequest.QueryParams"></a>
-### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L283>)
+### func \(\*ListIssuersRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L291>)
 
 ```go
 func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
@@ -1582,7 +1589,7 @@ func (r *ListIssuersRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L275>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L283>)
 
 ```go
 func (r *ListIssuersRequest) Validate() error
@@ -1662,7 +1669,7 @@ func (r *ListOrgsRequest) Validate() error
 Validate fails a request that carries the cursor of another list
 
 <a name="ListProfilesRequest"></a>
-## type [ListProfilesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L70-L99>)
+## type [ListProfilesRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L71-L106>)
 
 ListProfilesRequest defines request to list certificate profiles, newest first. The request names its org scope: OrgID, Platform or AllOrgs; without ProjectID and Scope the profiles of every scope of the org are returned.
 
@@ -1690,6 +1697,12 @@ type ListProfilesRequest struct {
     IssuerLabel string
     // Status limits the result to the status
     Status pb.ItemStatus_Enum
+    // IDs limits the result to the profiles with the IDs; empty applies no
+    // filter
+    IDs []uint64
+    // Labels limits the result to the profiles with the labels, in every
+    // scope the request covers; empty applies no filter
+    Labels []string
     // Limit specifies maximum number of records to return
     Limit uint32
     // Offset specifies the offset for offset pagination
@@ -1700,7 +1713,7 @@ type ListProfilesRequest struct {
 ```
 
 <a name="ListProfilesRequest.QueryParams"></a>
-### func \(\*ListProfilesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L110>)
+### func \(\*ListProfilesRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L117>)
 
 ```go
 func (r *ListProfilesRequest) QueryParams() xdb.QueryParams
@@ -1709,7 +1722,7 @@ func (r *ListProfilesRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListProfilesRequest.Validate"></a>
-### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L102>)
+### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/profile.go#L109>)
 
 ```go
 func (r *ListProfilesRequest) Validate() error
@@ -1718,7 +1731,7 @@ func (r *ListProfilesRequest) Validate() error
 Validate returns ErrOrgScopeRequired when the request names no org scope
 
 <a name="ListProjectsRequest"></a>
-## type [ListProjectsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L83-L98>)
+## type [ListProjectsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L82-L97>)
 
 ListProjectsRequest defines request for list operation on projects
 
@@ -1742,7 +1755,7 @@ type ListProjectsRequest struct {
 ```
 
 <a name="ListProjectsRequest.QueryParams"></a>
-### func \(\*ListProjectsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L106>)
+### func \(\*ListProjectsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L105>)
 
 ```go
 func (r *ListProjectsRequest) QueryParams() xdb.QueryParams
@@ -1751,7 +1764,7 @@ func (r *ListProjectsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListProjectsRequest.Validate"></a>
-### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L101>)
+### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L100>)
 
 ```go
 func (r *ListProjectsRequest) Validate() error
@@ -2043,7 +2056,7 @@ func (r *UpdateCertificateRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="UpdateIssuerRequest"></a>
-## type [UpdateIssuerRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L53-L63>)
+## type [UpdateIssuerRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L54-L64>)
 
 UpdateIssuerRequest defines request to update the lifecycle status or the runtime settings of an issuer. The DB layer does not enforce the status transitions \(Pending \-\> Active \-\> Archived \-\> Destroyed\): the service does.
 
@@ -2062,7 +2075,7 @@ type UpdateIssuerRequest struct {
 ```
 
 <a name="UpdateIssuerRequest.QueryParams"></a>
-### func \(\*UpdateIssuerRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L66>)
+### func \(\*UpdateIssuerRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/issuer.go#L67>)
 
 ```go
 func (r *UpdateIssuerRequest) QueryParams() xdb.QueryParams
@@ -2117,7 +2130,7 @@ func (r *UpdateOrgRequest) QueryParams() xdb.QueryParams
 UpdateOrgRequest returns the query params builder
 
 <a name="UpdateProjectRequest"></a>
-## type [UpdateProjectRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L33-L38>)
+## type [UpdateProjectRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L32-L37>)
 
 UpdateProjectRequest defines request for updating a project
 
@@ -2131,7 +2144,7 @@ type UpdateProjectRequest struct {
 ```
 
 <a name="UpdateProjectRequest.QueryParams"></a>
-### func \(\*UpdateProjectRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L41>)
+### func \(\*UpdateProjectRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/project.go#L40>)
 
 ```go
 func (r *UpdateProjectRequest) QueryParams() xdb.QueryParams

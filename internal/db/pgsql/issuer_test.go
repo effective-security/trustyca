@@ -127,6 +127,25 @@ func Test_Issuer(t *testing.T) {
 	require.Len(t, list.Rows, 1)
 	assert.Equal(t, orgIssuer.ID.UInt64(), list.Rows[0].ID.UInt64(), "no grant in the project: the org-wide rows only")
 
+	// the issuers of a page of certificates: by ID, and by the key
+	// identifier the certificates carry; an issuer of another scope is not
+	// found through them
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), IDs: []uint64{orgIssuer.ID.UInt64(), prjIssuer.ID.UInt64(), 1}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, list.Rows, 2)
+	assert.Equal(t, prjIssuer.ID.UInt64(), list.Rows[0].ID.UInt64())
+	assert.Equal(t, orgIssuer.ID.UInt64(), list.Rows[1].ID.UInt64())
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), IKIDs: []string{orgIssuer.Skid, "nope"}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, list.Rows, 1)
+	assert.Equal(t, orgIssuer.ID.UInt64(), list.Rows[0].ID.UInt64())
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), ProjectID: project.ID.UInt64(), IKIDs: []string{orgIssuer.Skid}, Limit: 10})
+	require.NoError(t, err)
+	assert.Empty(t, list.Rows, "an org-wide issuer is not in the scope of the project")
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64() + 1, IDs: []uint64{orgIssuer.ID.UInt64()}, Limit: 10})
+	require.NoError(t, err)
+	assert.Empty(t, list.Rows, "another org")
+
 	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), ParentID: orgIssuer.ID.UInt64(), Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 1)

@@ -26,7 +26,9 @@ type ProfileCmd struct {
 // ProfileListCmd lists the profiles of an org
 type ProfileListCmd struct {
 	OrgScope  `embed:""`
-	Issuer    string `help:"the issuer label to filter by"`
+	Issuer    string   `help:"the issuer label to filter by"`
+	IDs       []string `name:"id" help:"the IDs of the profiles to return"`
+	Labels    []string `name:"label" help:"the labels of the profiles to return"`
 	PageFlags `embed:""`
 }
 
@@ -40,6 +42,8 @@ func (a *ProfileListCmd) Run(app App) error {
 		OrgID:       a.Org,
 		ProjectID:   a.Project,
 		IssuerLabel: a.Issuer,
+		IDs:         a.IDs,
+		Labels:      a.Labels,
 		Limit:       a.Limit,
 		Offset:      a.Offset,
 		Cursor:      a.Cursor,

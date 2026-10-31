@@ -87,6 +87,16 @@ func TestService_ListIssuers(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Issuers, 1)
 
+	// the issuers of a page of certificates, by ID and by the key
+	// identifier the certificates carry
+	caDb.EXPECT().ListIssuers(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error) {
+		assert.Equal(t, &query.ListIssuersRequest{AllOrgs: true, IDs: []uint64{5, 6}, IKIDs: []string{"k1"}, Limit: 10}, req)
+		return &model.IssuerResult{Rows: rows.Rows[:1]}, nil
+	})
+	res, err = svc.ListIssuers(ctx, &privpb.ListAllIssuersRequest{IDs: []string{"5", "6"}, IKIDs: []string{"k1"}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, res.Issuers, 1)
+
 	// the requests the service refuses
 	for _, tc := range []struct {
 		req *privpb.ListAllIssuersRequest
@@ -94,6 +104,7 @@ func TestService_ListIssuers(t *testing.T) {
 	}{
 		{req: nil, err: "bad_request: missing request"},
 		{req: &privpb.ListAllIssuersRequest{OrgID: "nope"}, err: "bad_request: invalid org ID"},
+		{req: &privpb.ListAllIssuersRequest{IDs: []string{"5", "nope"}}, err: "bad_request: invalid issuer IDs: nope"},
 		{req: &privpb.ListAllIssuersRequest{ProjectID: "201"}, err: "bad_request: org ID is required with a project ID"},
 		{req: &privpb.ListAllIssuersRequest{OrgID: "100", ProjectID: "nope"}, err: "bad_request: invalid project ID"},
 		{req: &privpb.ListAllIssuersRequest{Cursor: "nope"}, err: "bad_request: invalid cursor"},

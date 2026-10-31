@@ -133,6 +133,22 @@ func Test_Profile(t *testing.T) {
 	require.Len(t, list.Rows, 1)
 	assert.Equal(t, orgProfile.ID.UInt64(), list.Rows[0].ID.UInt64(), "no project grant: the org-wide rows only")
 
+	// the profiles of a page of certificates: by ID and by label, in every
+	// scope the request covers
+	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), IDs: []uint64{orgProfile.ID.UInt64(), 1}, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, list.Rows, 1)
+	assert.Equal(t, orgProfile.ID.UInt64(), list.Rows[0].ID.UInt64())
+	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), Labels: []string{orgProfile.Label, "nope"}, Limit: 10})
+	require.NoError(t, err)
+	require.NotEmpty(t, list.Rows)
+	for _, row := range list.Rows {
+		assert.Equal(t, orgProfile.Label, row.Label)
+	}
+	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), Labels: []string{"nope"}, Limit: 10})
+	require.NoError(t, err)
+	assert.Empty(t, list.Rows)
+
 	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), IssuerLabel: "L3", Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 1)

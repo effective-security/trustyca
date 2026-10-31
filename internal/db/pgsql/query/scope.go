@@ -117,12 +117,18 @@ func setVisibleProjects(b *xdb.QueryParamsBuilder, pos uint32, projectIDs []uint
 	if projectIDs == nil || b.IsSet(pos) || isNullColumn(b, projectIDColumn) {
 		return
 	}
-	ids := make([]int64, len(projectIDs))
-	for i, id := range projectIDs {
-		ids[i] = int64(id)
-	}
-	b.Set(pos, pq.Array(ids))
+	b.Set(pos, idArray(projectIDs))
 	b.SetFlags(visibleProjectsFlag)
+}
+
+// idArray returns the argument of an `= ANY(?)` filter on a bigint ID
+// column
+func idArray(ids []uint64) pq.Int64Array {
+	res := make(pq.Int64Array, len(ids))
+	for i, id := range ids {
+		res[i] = int64(id)
+	}
+	return res
 }
 
 // whereProjectScope adds the project scope predicate recorded by

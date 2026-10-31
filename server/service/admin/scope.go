@@ -47,6 +47,22 @@ func parseListScope(ctx context.Context, orgIDVal, projectIDVal string, platform
 	return res, nil
 }
 
+// parseIDs parses the IDs of a list filter; an empty list is no filter
+func parseIDs(ctx context.Context, vals []string, what string) ([]uint64, error) {
+	if len(vals) == 0 {
+		return nil, nil
+	}
+	ids := make([]uint64, 0, len(vals))
+	for _, val := range vals {
+		id, err := xdb.ParseID(val)
+		if err != nil {
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid %s: %s", what, val)
+		}
+		ids = append(ids, id.UInt64())
+	}
+	return ids, nil
+}
+
 // parseTime parses an optional RFC3339 time of a request
 func parseTime(ctx context.Context, val, what string) (*time.Time, error) {
 	if val == "" {
