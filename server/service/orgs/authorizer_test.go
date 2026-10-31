@@ -118,6 +118,22 @@ func testCtx(userID, orgID string) context.Context {
 	return authctx.NewTrustyCtx(context.Background(), identity.NewRequestContext(uid, "/test"))
 }
 
+// apiKeyCtx returns a request context of an API key of the org with the
+// scopes, restricted to the project when one is given
+func apiKeyCtx(orgID, projectID string, scopes ...string) context.Context {
+	claims := map[string]any{
+		"sub":                "key-1",
+		authctx.ClaimOrg:     orgID,
+		authctx.ClaimOrgRole: pb.Role_APIKey.String(),
+		authctx.ClaimScope:   scopes,
+	}
+	if projectID != "" {
+		claims[authctx.ClaimProject] = projectID
+	}
+	uid := identity.NewIdentity("apikey", "key-1", orgID, claims, "tok", "Bearer", identity.MethodJWT)
+	return authctx.NewTrustyCtx(context.Background(), identity.NewRequestContext(uid, "/test"))
+}
+
 func orgGrant(userID uint64, role pb.Role_Enum) *model.MembershipInfo {
 	return &model.MembershipInfo{
 		ID:      xdb.NewID(1000 + userID),

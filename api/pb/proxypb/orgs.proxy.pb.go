@@ -603,6 +603,54 @@ func (s *postproxyOrgsClient) DeleteProject(ctx context.Context, req *pb.DeleteP
 	return &res, nil
 }
 
+// ListEvents returns the audit events of the org selected in the token,
+// newest first: every event of the org for a caller with an org-wide
+// role or an org-wide API key, the org-wide events and those of the
+// caller's projects for a member with project grants only, and the
+// events of one project with ProjectID, or for an API key restricted to
+// the project
+func (s *proxyOrgsServer) ListEvents(ctx context.Context, req *pb.ListEventsRequest, opts ...grpc.CallOption) (*pb.EventsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.ListEvents(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListEvents returns the audit events of the org selected in the token,
+// newest first: every event of the org for a caller with an org-wide
+// role or an org-wide API key, the org-wide events and those of the
+// caller's projects for a member with project grants only, and the
+// events of one project with ProjectID, or for an API key restricted to
+// the project
+func (s *proxyOrgsClient) ListEvents(ctx context.Context, req *pb.ListEventsRequest) (*pb.EventsResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.ListEvents(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// ListEvents returns the audit events of the org selected in the token,
+// newest first: every event of the org for a caller with an org-wide
+// role or an org-wide API key, the org-wide events and those of the
+// caller's projects for a member with project grants only, and the
+// events of one project with ProjectID, or for an API key restricted to
+// the project
+func (s *postproxyOrgsClient) ListEvents(ctx context.Context, req *pb.ListEventsRequest) (*pb.EventsResponse, error) {
+	var res pb.EventsResponse
+	path := pb.Orgs_ListEvents_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 // CreateAPIKey creates a new API key
 func (s *proxyOrgsServer) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest, opts ...grpc.CallOption) (*pb.APIKey, error) {
 	// add correlation ID to outgoing RPC calls

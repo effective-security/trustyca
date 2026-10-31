@@ -75,6 +75,35 @@ LIMIT $4
 OFFSET $5`,
 		},
 		{
+			// the org-wide events and the events of the caller's projects
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, ProjectIDs: []uint64{2, 3}, Type: pb.EventType_ProjectCreated, Limit: 10, Cursor: cursor}},
+			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
+FROM trustyca.event 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) AND type = $3 AND (created_at, id) < ($4, $5) 
+ORDER BY created_at DESC, id DESC 
+LIMIT $6`,
+		},
+		{
+			// the org-wide events only, for a caller without a project
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, ProjectIDs: []uint64{}, Limit: 10, Cursor: query.NewCursor(0)}},
+			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
+FROM trustyca.event 
+WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) 
+ORDER BY created_at DESC, id DESC 
+LIMIT $3 
+OFFSET $4`,
+		},
+		{
+			// an exact project takes precedence over the visible projects
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, ProjectID: 2, ProjectIDs: []uint64{2, 3}, Limit: 10, Cursor: query.NewCursor(0)}},
+			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
+FROM trustyca.event 
+WHERE org_id = $1 AND project_id = $2 
+ORDER BY created_at DESC, id DESC 
+LIMIT $3 
+OFFSET $4`,
+		},
+		{
 			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, Before: &before, After: &after}},
 			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
 FROM trustyca.event 

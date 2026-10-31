@@ -202,7 +202,9 @@ message Event {
     string Email = 7 [json_name = "Email"];
     // Source is the source of the event, optional
     string Source = 8 [json_name = "Source"];
-    // Metadata is a list of internal metadata associated with the event
+    // Metadata is additional data of the event. Orgs.ListEvents returns it
+    // to the members of the org, so an emitter records only values the
+    // tenant may see; no emitter records any today
     repeated KVPair Metadata = 9 [json_name = "Metadata"];
     // CreatedAt is the timestamp of the event creation in RFC3339 format.
     string CreatedAt = 10 [json_name = "CreatedAt"];

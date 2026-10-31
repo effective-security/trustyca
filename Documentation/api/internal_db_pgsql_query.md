@@ -541,7 +541,7 @@ func ListCrls(args ...any) (string, string)
 ListCrls returns SQL query to list the current CRLs
 
 <a name="ListEvents"></a>
-## func [ListEvents](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L105>)
+## func [ListEvents](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L109>)
 
 ```go
 func ListEvents(args ...any) (string, string)
@@ -1279,7 +1279,7 @@ func (r *ListCrlsRequest) Validate() error
 Validate returns ErrOrgScopeRequired when the request names no org scope
 
 <a name="ListEventsRequest"></a>
-## type [ListEventsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L39-L63>)
+## type [ListEventsRequest](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L39-L68>)
 
 ListEventsRequest defines request for Events, newest first: the events are sorted by created\_at DESC, id DESC, served by the org\-led indexes of the event table, and page by offset or by a cursor on that key \(ParseTimeCursor, EncodeTimeCursor\)
 
@@ -1289,6 +1289,11 @@ type ListEventsRequest struct {
     OrgID uint64
     // ProjectID specifies the project
     ProjectID uint64
+    // ProjectIDs limits the result to the org-wide events and the events of
+    // the projects, for a caller with grants in some projects only; nil
+    // applies no project filter and an empty list keeps the org-wide
+    // events. ProjectID takes precedence.
+    ProjectIDs []uint64
     // After specifies the inclusive start of the created_at range
     After *time.Time
     // Before specifies the exclusive end of the created_at range
@@ -1312,7 +1317,7 @@ type ListEventsRequest struct {
 ```
 
 <a name="ListEventsRequest.QueryParams"></a>
-### func \(\*ListEventsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L71>)
+### func \(\*ListEventsRequest\) [QueryParams](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L76>)
 
 ```go
 func (r *ListEventsRequest) QueryParams() xdb.QueryParams
@@ -1321,7 +1326,7 @@ func (r *ListEventsRequest) QueryParams() xdb.QueryParams
 QueryParams returns the query params builder
 
 <a name="ListEventsRequest.Validate"></a>
-### func \(\*ListEventsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L66>)
+### func \(\*ListEventsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/pgsql/query/event.go#L71>)
 
 ```go
 func (r *ListEventsRequest) Validate() error

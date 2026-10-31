@@ -691,7 +691,9 @@ type Event struct {
 	Email string `protobuf:"bytes,7,opt,name=Email,proto3" json:"Email,omitempty"`
 	// Source is the source of the event, optional
 	Source string `protobuf:"bytes,8,opt,name=Source,proto3" json:"Source,omitempty"`
-	// Metadata is a list of internal metadata associated with the event
+	// Metadata is additional data of the event. Orgs.ListEvents returns it
+	// to the members of the org, so an emitter records only values the
+	// tenant may see; no emitter records any today
 	Metadata []*KVPair `protobuf:"bytes,9,rep,name=Metadata,proto3" json:"Metadata,omitempty"`
 	// CreatedAt is the timestamp of the event creation in RFC3339 format.
 	CreatedAt string `protobuf:"bytes,10,opt,name=CreatedAt,proto3" json:"CreatedAt,omitempty"`

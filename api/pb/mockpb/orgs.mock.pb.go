@@ -200,6 +200,20 @@ func (m *MockOrgsServer) DeleteProject(ctx context.Context, req *pb.DeleteProjec
 	return m.next().(*pb.Project), nil
 }
 
+// ListEvents returns the audit events of the org selected in the token,
+// newest first: every event of the org for a caller with an org-wide
+// role or an org-wide API key, the org-wide events and those of the
+// caller's projects for a member with project grants only, and the
+// events of one project with ProjectID, or for an API key restricted to
+// the project
+
+func (m *MockOrgsServer) ListEvents(ctx context.Context, req *pb.ListEventsRequest) (*pb.EventsResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.EventsResponse), nil
+}
+
 // CreateAPIKey creates a new API key
 
 func (m *MockOrgsServer) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest) (*pb.APIKey, error) {

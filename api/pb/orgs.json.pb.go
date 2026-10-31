@@ -254,6 +254,16 @@ func (msg *DeleteProjectRequest) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON implements json.Marshaler
+func (msg *ListEventsRequest) MarshalJSON() ([]byte, error) {
+	return JsonMarshalOptions.Marshal(msg)
+}
+
+// UnmarshalJSON implements json.Unmarshaler
+func (msg *ListEventsRequest) UnmarshalJSON(b []byte) error {
+	return JsonUnmarshalOptions.Unmarshal(b, msg)
+}
+
+// MarshalJSON implements json.Marshaler
 func (msg *EventsResponse) MarshalJSON() ([]byte, error) {
 	return JsonMarshalOptions.Marshal(msg)
 }

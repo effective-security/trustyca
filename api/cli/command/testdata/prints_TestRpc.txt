@@ -176,6 +176,47 @@ MIIBcrl
 -----END X509 CRL-----
 
 
+- TestRpc/Test_EventListCmd/json:
+{
+	"Events": [
+		{
+			"ID": "301",
+			"OrgID": "100",
+			"Type": 9,
+			"Title": "Project created",
+			"Description": "project \"Test\" created",
+			"ReferenceID": "201",
+			"Email": "test@example.com",
+			"Source": "orgs",
+			"CreatedAt": "2026-10-30T12:00:00Z",
+			"ProjectID": "201"
+		},
+		{
+			"ID": "300",
+			"OrgID": "100",
+			"Type": 1,
+			"Title": "Org created",
+			"Email": "test@example.com",
+			"Source": "orgs",
+			"CreatedAt": "2026-10-30T11:00:00Z"
+		}
+	],
+	"NextPage": {
+		"Cursor": "WyIyMDI2LTEwLTMwVDExOjAwOjAwWiIsIjMwMCJd"
+	}
+}
+
+- TestRpc/Test_EventListCmd/txt:
+┌─────┬──────────────────────┬─────────────────┬─────────┬─────────────────┬────────────────────────┬──────────────────┬────────┐
+│ ID  │       CREATED        │      TYPE       │ PROJECT │      TITLE      │      DESCRIPTION       │        BY        │ SOURCE │
+├─────┼──────────────────────┼─────────────────┼─────────┼─────────────────┼────────────────────────┼──────────────────┼────────┤
+│ 301 │ 2026-10-30T12:00:00Z │ Project Created │ 201     │ Project created │ project "Test" created │ test@example.com │ orgs   │
+│ 300 │ 2026-10-30T11:00:00Z │ Org Created     │         │ Org created     │                        │ test@example.com │ orgs   │
+└─────┴──────────────────────┴─────────────────┴─────────┴─────────────────┴────────────────────────┴──────────────────┴────────┘
+
+Next page: --cursor WyIyMDI2LTEwLTMwVDExOjAwOjAwWiIsIjMwMCJd
+
+
 - TestRpc/Test_InviteDeleteCmd/json:
 {}
 

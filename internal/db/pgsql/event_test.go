@@ -243,6 +243,52 @@ func Test_Event(t *testing.T) {
 
 // Test_EventWithoutMetadata covers events built without metadata, as most
 // services emit them: the NOT NULL metadata column gets an empty object
+// Test_Event_VisibleProjects lists the org-wide events and the events of
+// some projects, as the orgs service does for a member with project grants
+// only
+func Test_Event_VisibleProjects(t *testing.T) {
+	owner, org := setupOwnerAndOrg(t, "Test_Event_Projects")
+	project, err := provider.RegisterProject(ctx, &model.Project{OrgID: org.ID, Name: "Events"})
+	require.NoError(t, err)
+	other, err := provider.RegisterProject(ctx, &model.Project{OrgID: org.ID, Name: "Other"})
+	require.NoError(t, err)
+
+	create := func(projectID xdb.ID, title string) uint64 {
+		evt, err := provider.CreateEvent(ctx, &model.Event{
+			OrgID:     org.ID,
+			ProjectID: projectID,
+			Type:      pb.EventType_ProjectUpdated,
+			Title:     title,
+			Email:     xdb.NULLString(owner.Email),
+			Source:    xdb.NULLString("test"),
+		})
+		require.NoError(t, err)
+		return evt.ID.UInt64()
+	}
+	orgWide := create(xdb.ID(0), "org-wide")
+	inProject := create(project.ID, "project")
+	inOther := create(other.ID, "other")
+
+	list := func(req *query.ListEventsRequest) []uint64 {
+		req.OrgID = org.ID.UInt64()
+		req.Limit = 10
+		req.Cursor = query.NewCursor(0)
+		res, err := provider.ListEvents(ctx, req)
+		require.NoError(t, err)
+		assert.False(t, res.HasNextPage)
+		requireNewestFirst(t, res.Rows)
+		return eventIDs(res.Rows)
+	}
+	// no project filter: every event of the org
+	assert.Equal(t, []uint64{inOther, inProject, orgWide}, list(&query.ListEventsRequest{}))
+	// the org-wide events and the events of one project
+	assert.Equal(t, []uint64{inProject, orgWide}, list(&query.ListEventsRequest{ProjectIDs: []uint64{project.ID.UInt64()}}))
+	// the org-wide events only
+	assert.Equal(t, []uint64{orgWide}, list(&query.ListEventsRequest{ProjectIDs: []uint64{}}))
+	// an exact project takes precedence
+	assert.Equal(t, []uint64{inOther}, list(&query.ListEventsRequest{ProjectID: other.ID.UInt64(), ProjectIDs: []uint64{project.ID.UInt64()}}))
+}
+
 func Test_EventWithoutMetadata(t *testing.T) {
 	owner, org := setupOwnerAndOrg(t, "Test_EventWithoutMetadata")
 

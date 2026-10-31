@@ -354,6 +354,13 @@ var methods = map[string]*MethodInfo{
 		AllowedRoles: []string{"Admin"},
 	},
 
+	Orgs_ListEvents_FullMethodName: {
+		Allocator:    func() any { return new(ListEventsRequest) },
+		CliCmd:       "event list",
+		AllowedRoles: []string{"Viewer", "APIKey"},
+		Scopes:       []string{"org:read"},
+	},
+
 	Orgs_CreateAPIKey_FullMethodName: {
 		Allocator:    func() any { return new(CreateAPIKeyRequest) },
 		CliCmd:       "api-key create",

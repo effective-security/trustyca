@@ -22,6 +22,7 @@ type app struct {
 	Server     command.ServerCmd     `cmd:"" help:"print remote server status"`
 	Project    command.ProjectCmd    `cmd:"" help:"project commands"`
 	APIKey     command.APIKeyCmd     `cmd:"" name:"api-key" help:"API key commands"`
+	Event      command.EventCmd      `cmd:"" help:"audit event commands"`
 	Cert       command.CertCmd       `cmd:"" help:"certificate information commands"`
 	Issuer     command.IssuerCmd     `cmd:"" help:"issuer information commands"`
 	Crl        command.CrlCmd        `cmd:"" help:"CRL information commands"`

@@ -1792,7 +1792,105 @@ func (x *DeleteProjectRequest) GetProjectID() string {
 	return ""
 }
 
-// EventsResponse returns list of Event
+// ListEventsRequest specifies a page of the audit events of the org
+// selected in the token, newest first (Orgs.ListEvents); the list pages by
+// cursor only
+type ListEventsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ProjectID limits the result to the events of the project, in which
+	// the caller needs a role; empty lists the events of the org the caller
+	// may see
+	ProjectID string `protobuf:"bytes,1,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	// Type limits the result to one event type; Unknown returns every type
+	Type EventType_Enum `protobuf:"varint,2,opt,name=Type,proto3,enum=pb.EventType_Enum" json:"Type,omitempty"`
+	// After is the inclusive start of the CreatedAt range in RFC3339
+	// format; empty is unbounded
+	After string `protobuf:"bytes,3,opt,name=After,proto3" json:"After,omitempty"`
+	// Before is the exclusive end of the CreatedAt range in RFC3339 format,
+	// later than After; empty is unbounded
+	Before string `protobuf:"bytes,4,opt,name=Before,proto3" json:"Before,omitempty"`
+	// Limit specifies maximum number of records to return
+	Limit uint32 `protobuf:"varint,5,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
+	Cursor        string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListEventsRequest) Reset() {
+	*x = ListEventsRequest{}
+	mi := &file_orgs_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListEventsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListEventsRequest) ProtoMessage() {}
+
+func (x *ListEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orgs_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListEventsRequest.ProtoReflect.Descriptor instead.
+func (*ListEventsRequest) Descriptor() ([]byte, []int) {
+	return file_orgs_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *ListEventsRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+func (x *ListEventsRequest) GetType() EventType_Enum {
+	if x != nil {
+		return x.Type
+	}
+	return EventType_Unknown
+}
+
+func (x *ListEventsRequest) GetAfter() string {
+	if x != nil {
+		return x.After
+	}
+	return ""
+}
+
+func (x *ListEventsRequest) GetBefore() string {
+	if x != nil {
+		return x.Before
+	}
+	return ""
+}
+
+func (x *ListEventsRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListEventsRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+// EventsResponse returns a page of events, newest first
 type EventsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Events is the list of events
@@ -1806,7 +1904,7 @@ type EventsResponse struct {
 
 func (x *EventsResponse) Reset() {
 	*x = EventsResponse{}
-	mi := &file_orgs_proto_msgTypes[25]
+	mi := &file_orgs_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1818,7 +1916,7 @@ func (x *EventsResponse) String() string {
 func (*EventsResponse) ProtoMessage() {}
 
 func (x *EventsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orgs_proto_msgTypes[25]
+	mi := &file_orgs_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1831,7 +1929,7 @@ func (x *EventsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventsResponse.ProtoReflect.Descriptor instead.
 func (*EventsResponse) Descriptor() ([]byte, []int) {
-	return file_orgs_proto_rawDescGZIP(), []int{25}
+	return file_orgs_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *EventsResponse) GetEvents() []*Event {
@@ -1869,7 +1967,7 @@ type APIKey struct {
 
 func (x *APIKey) Reset() {
 	*x = APIKey{}
-	mi := &file_orgs_proto_msgTypes[26]
+	mi := &file_orgs_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1881,7 +1979,7 @@ func (x *APIKey) String() string {
 func (*APIKey) ProtoMessage() {}
 
 func (x *APIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_orgs_proto_msgTypes[26]
+	mi := &file_orgs_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1894,7 +1992,7 @@ func (x *APIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APIKey.ProtoReflect.Descriptor instead.
 func (*APIKey) Descriptor() ([]byte, []int) {
-	return file_orgs_proto_rawDescGZIP(), []int{26}
+	return file_orgs_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *APIKey) GetID() string {
@@ -2000,7 +2098,7 @@ type APIKeysResponse struct {
 
 func (x *APIKeysResponse) Reset() {
 	*x = APIKeysResponse{}
-	mi := &file_orgs_proto_msgTypes[27]
+	mi := &file_orgs_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2012,7 +2110,7 @@ func (x *APIKeysResponse) String() string {
 func (*APIKeysResponse) ProtoMessage() {}
 
 func (x *APIKeysResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orgs_proto_msgTypes[27]
+	mi := &file_orgs_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2025,7 +2123,7 @@ func (x *APIKeysResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APIKeysResponse.ProtoReflect.Descriptor instead.
 func (*APIKeysResponse) Descriptor() ([]byte, []int) {
-	return file_orgs_proto_rawDescGZIP(), []int{27}
+	return file_orgs_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *APIKeysResponse) GetAPIKeys() []*APIKey {
@@ -2056,7 +2154,7 @@ type CreateAPIKeyRequest struct {
 
 func (x *CreateAPIKeyRequest) Reset() {
 	*x = CreateAPIKeyRequest{}
-	mi := &file_orgs_proto_msgTypes[28]
+	mi := &file_orgs_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2068,7 +2166,7 @@ func (x *CreateAPIKeyRequest) String() string {
 func (*CreateAPIKeyRequest) ProtoMessage() {}
 
 func (x *CreateAPIKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orgs_proto_msgTypes[28]
+	mi := &file_orgs_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2081,7 +2179,7 @@ func (x *CreateAPIKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAPIKeyRequest.ProtoReflect.Descriptor instead.
 func (*CreateAPIKeyRequest) Descriptor() ([]byte, []int) {
-	return file_orgs_proto_rawDescGZIP(), []int{28}
+	return file_orgs_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *CreateAPIKeyRequest) GetProjectID() string {
@@ -2124,7 +2222,7 @@ type ListAPIKeysRequest struct {
 
 func (x *ListAPIKeysRequest) Reset() {
 	*x = ListAPIKeysRequest{}
-	mi := &file_orgs_proto_msgTypes[29]
+	mi := &file_orgs_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2136,7 +2234,7 @@ func (x *ListAPIKeysRequest) String() string {
 func (*ListAPIKeysRequest) ProtoMessage() {}
 
 func (x *ListAPIKeysRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orgs_proto_msgTypes[29]
+	mi := &file_orgs_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2149,7 +2247,7 @@ func (x *ListAPIKeysRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAPIKeysRequest.ProtoReflect.Descriptor instead.
 func (*ListAPIKeysRequest) Descriptor() ([]byte, []int) {
-	return file_orgs_proto_rawDescGZIP(), []int{29}
+	return file_orgs_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ListAPIKeysRequest) GetProjectID() string {
@@ -2178,7 +2276,7 @@ type APIKeyRequest struct {
 
 func (x *APIKeyRequest) Reset() {
 	*x = APIKeyRequest{}
-	mi := &file_orgs_proto_msgTypes[30]
+	mi := &file_orgs_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2190,7 +2288,7 @@ func (x *APIKeyRequest) String() string {
 func (*APIKeyRequest) ProtoMessage() {}
 
 func (x *APIKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orgs_proto_msgTypes[30]
+	mi := &file_orgs_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2203,7 +2301,7 @@ func (x *APIKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APIKeyRequest.ProtoReflect.Descriptor instead.
 func (*APIKeyRequest) Descriptor() ([]byte, []int) {
-	return file_orgs_proto_rawDescGZIP(), []int{30}
+	return file_orgs_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *APIKeyRequest) GetProjectID() string {
@@ -2359,7 +2457,14 @@ const file_orgs_proto_rawDesc = "" +
 	"\x06Offset\x18\x03 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x04 \x01(\tR\x06Cursor\":\n" +
 	"\x14DeleteProjectRequest\x12\"\n" +
-	"\tProjectID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\tProjectID\"]\n" +
+	"\tProjectID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\tProjectID\"\xb5\x01\n" +
+	"\x11ListEventsRequest\x12\x1c\n" +
+	"\tProjectID\x18\x01 \x01(\tR\tProjectID\x12&\n" +
+	"\x04Type\x18\x02 \x01(\x0e2\x12.pb.EventType.EnumR\x04Type\x12\x14\n" +
+	"\x05After\x18\x03 \x01(\tR\x05After\x12\x16\n" +
+	"\x06Before\x18\x04 \x01(\tR\x06Before\x12\x14\n" +
+	"\x05Limit\x18\x05 \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\"]\n" +
 	"\x0eEventsResponse\x12!\n" +
 	"\x06Events\x18\x01 \x03(\v2\t.pb.EventR\x06Events\x12(\n" +
 	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"\x80\x03\n" +
@@ -2393,7 +2498,7 @@ const file_orgs_proto_rawDesc = "" +
 	"\x06Status\x18\x02 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\"C\n" +
 	"\rAPIKeyRequest\x12\x1c\n" +
 	"\tProjectID\x18\x01 \x01(\tR\tProjectID\x12\x14\n" +
-	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID2\xa6\x11\n" +
+	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID2\xa7\x12\n" +
 	"\x04Orgs\x12^\n" +
 	"\vRegisterOrg\x12\x16.pb.RegisterOrgRequest\x1a\a.pb.Org\".\x82C\forg register\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/pb.Orgs/RegisterOrg\x12j\n" +
 	"\x06GetOrg\x12\x16.google.protobuf.Empty\x1a\a.pb.Org\"?\xfaB\rViewer,APIKey\x82C\aorg get\x92C\borg:read\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/pb.Orgs/GetOrg\x12^\n" +
@@ -2416,7 +2521,10 @@ const file_orgs_proto_rawDesc = "" +
 	"\n" +
 	"GetProject\x12\x15.pb.GetProjectRequest\x1a\v.pb.Project\"K\xfaB\rViewer,APIKey\x82C\vproject get\x92C\fproject:read\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/pb.Orgs/GetProject\x12\x89\x01\n" +
 	"\fListProjects\x12\x17.pb.ListProjectsRequest\x1a\x14.pb.ProjectsResponse\"J\xfaB\rViewer,APIKey\x82C\fproject list\x92C\borg:read\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/pb.Orgs/ListProjects\x12r\n" +
-	"\rDeleteProject\x12\x18.pb.DeleteProjectRequest\x1a\v.pb.Project\":\xfaB\x05Admin\x82C\x0eproject delete\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/pb.Orgs/DeleteProject\x12n\n" +
+	"\rDeleteProject\x12\x18.pb.DeleteProjectRequest\x1a\v.pb.Project\":\xfaB\x05Admin\x82C\x0eproject delete\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/pb.Orgs/DeleteProject\x12\x7f\n" +
+	"\n" +
+	"ListEvents\x12\x15.pb.ListEventsRequest\x1a\x12.pb.EventsResponse\"F\xfaB\rViewer,APIKey\x82C\n" +
+	"event list\x92C\borg:read\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/pb.Orgs/ListEvents\x12n\n" +
 	"\fCreateAPIKey\x12\x17.pb.CreateAPIKeyRequest\x1a\n" +
 	".pb.APIKey\"9\xfaB\x05Admin\x82C\x0eapi-key create\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/pb.Orgs/CreateAPIKey\x12r\n" +
 	"\vListAPIKeys\x12\x16.pb.ListAPIKeysRequest\x1a\x13.pb.APIKeysResponse\"6\xfaB\x05Admin\x82C\fapi-key list\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/pb.Orgs/ListAPIKeys\x12o\n" +
@@ -2435,7 +2543,7 @@ func file_orgs_proto_rawDescGZIP() []byte {
 }
 
 var file_orgs_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_orgs_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_orgs_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_orgs_proto_goTypes = []any{
 	(Role_Enum)(0),                  // 0: pb.Role.Enum
 	(RoleSource_Enum)(0),            // 1: pb.RoleSource.Enum
@@ -2464,36 +2572,38 @@ var file_orgs_proto_goTypes = []any{
 	(*GetProjectRequest)(nil),       // 24: pb.GetProjectRequest
 	(*ListProjectsRequest)(nil),     // 25: pb.ListProjectsRequest
 	(*DeleteProjectRequest)(nil),    // 26: pb.DeleteProjectRequest
-	(*EventsResponse)(nil),          // 27: pb.EventsResponse
-	(*APIKey)(nil),                  // 28: pb.APIKey
-	(*APIKeysResponse)(nil),         // 29: pb.APIKeysResponse
-	(*CreateAPIKeyRequest)(nil),     // 30: pb.CreateAPIKeyRequest
-	(*ListAPIKeysRequest)(nil),      // 31: pb.ListAPIKeysRequest
-	(*APIKeyRequest)(nil),           // 32: pb.APIKeyRequest
-	(ItemStatus_Enum)(0),            // 33: pb.ItemStatus.Enum
-	(*NextPage)(nil),                // 34: pb.NextPage
-	(Scope_Enum)(0),                 // 35: pb.Scope.Enum
-	(*Event)(nil),                   // 36: pb.Event
-	(*KVPair)(nil),                  // 37: pb.KVPair
-	(*emptypb.Empty)(nil),           // 38: google.protobuf.Empty
-	(*RecordsResult)(nil),           // 39: pb.RecordsResult
+	(*ListEventsRequest)(nil),       // 27: pb.ListEventsRequest
+	(*EventsResponse)(nil),          // 28: pb.EventsResponse
+	(*APIKey)(nil),                  // 29: pb.APIKey
+	(*APIKeysResponse)(nil),         // 30: pb.APIKeysResponse
+	(*CreateAPIKeyRequest)(nil),     // 31: pb.CreateAPIKeyRequest
+	(*ListAPIKeysRequest)(nil),      // 32: pb.ListAPIKeysRequest
+	(*APIKeyRequest)(nil),           // 33: pb.APIKeyRequest
+	(ItemStatus_Enum)(0),            // 34: pb.ItemStatus.Enum
+	(*NextPage)(nil),                // 35: pb.NextPage
+	(Scope_Enum)(0),                 // 36: pb.Scope.Enum
+	(EventType_Enum)(0),             // 37: pb.EventType.Enum
+	(*Event)(nil),                   // 38: pb.Event
+	(*KVPair)(nil),                  // 39: pb.KVPair
+	(*emptypb.Empty)(nil),           // 40: google.protobuf.Empty
+	(*RecordsResult)(nil),           // 41: pb.RecordsResult
 }
 var file_orgs_proto_depIdxs = []int32{
-	33, // 0: pb.Org.Status:type_name -> pb.ItemStatus.Enum
+	34, // 0: pb.Org.Status:type_name -> pb.ItemStatus.Enum
 	4,  // 1: pb.OrgsResponse.Orgs:type_name -> pb.Org
-	34, // 2: pb.OrgsResponse.NextPage:type_name -> pb.NextPage
-	33, // 3: pb.Project.Status:type_name -> pb.ItemStatus.Enum
+	35, // 2: pb.OrgsResponse.NextPage:type_name -> pb.NextPage
+	34, // 3: pb.Project.Status:type_name -> pb.ItemStatus.Enum
 	6,  // 4: pb.ProjectsResponse.Projects:type_name -> pb.Project
-	34, // 5: pb.ProjectsResponse.NextPage:type_name -> pb.NextPage
+	35, // 5: pb.ProjectsResponse.NextPage:type_name -> pb.NextPage
 	0,  // 6: pb.OrgAccess.Role:type_name -> pb.Role.Enum
 	1,  // 7: pb.OrgAccess.RoleSource:type_name -> pb.RoleSource.Enum
 	0,  // 8: pb.OrgAccess.ExplicitRole:type_name -> pb.Role.Enum
 	8,  // 9: pb.UserOrgsResponse.Orgs:type_name -> pb.OrgAccess
 	0,  // 10: pb.Membership.Role:type_name -> pb.Role.Enum
-	35, // 11: pb.Membership.Scope:type_name -> pb.Scope.Enum
+	36, // 11: pb.Membership.Scope:type_name -> pb.Scope.Enum
 	0,  // 12: pb.Invite.Role:type_name -> pb.Role.Enum
-	35, // 13: pb.Invite.Scope:type_name -> pb.Scope.Enum
-	35, // 14: pb.GetMembersRequest.Scope:type_name -> pb.Scope.Enum
+	36, // 13: pb.Invite.Scope:type_name -> pb.Scope.Enum
+	36, // 14: pb.GetMembersRequest.Scope:type_name -> pb.Scope.Enum
 	10, // 15: pb.MembersResponse.Memberships:type_name -> pb.Membership
 	11, // 16: pb.MembersResponse.Invites:type_name -> pb.Invite
 	8,  // 17: pb.UserMemberships.Org:type_name -> pb.OrgAccess
@@ -2502,57 +2612,60 @@ var file_orgs_proto_depIdxs = []int32{
 	11, // 20: pb.AddMemberResponse.Invite:type_name -> pb.Invite
 	10, // 21: pb.AddMemberResponse.Membership:type_name -> pb.Membership
 	0,  // 22: pb.ChangeMemberRoleRequest.Role:type_name -> pb.Role.Enum
-	33, // 23: pb.ListProjectsRequest.Status:type_name -> pb.ItemStatus.Enum
-	36, // 24: pb.EventsResponse.Events:type_name -> pb.Event
-	34, // 25: pb.EventsResponse.NextPage:type_name -> pb.NextPage
-	37, // 26: pb.APIKey.Metadata:type_name -> pb.KVPair
-	33, // 27: pb.APIKey.Status:type_name -> pb.ItemStatus.Enum
-	28, // 28: pb.APIKeysResponse.APIKeys:type_name -> pb.APIKey
-	34, // 29: pb.APIKeysResponse.NextPage:type_name -> pb.NextPage
-	33, // 30: pb.ListAPIKeysRequest.Status:type_name -> pb.ItemStatus.Enum
-	20, // 31: pb.Orgs.RegisterOrg:input_type -> pb.RegisterOrgRequest
-	38, // 32: pb.Orgs.GetOrg:input_type -> google.protobuf.Empty
-	21, // 33: pb.Orgs.UpdateOrg:input_type -> pb.UpdateOrgRequest
-	38, // 34: pb.Orgs.DeleteOrg:input_type -> google.protobuf.Empty
-	38, // 35: pb.Orgs.GetUserOrgs:input_type -> google.protobuf.Empty
-	38, // 36: pb.Orgs.GetUserMemberships:input_type -> google.protobuf.Empty
-	12, // 37: pb.Orgs.GetMembers:input_type -> pb.GetMembersRequest
-	15, // 38: pb.Orgs.AddMember:input_type -> pb.AddMemberRequest
-	17, // 39: pb.Orgs.ChangeMemberRole:input_type -> pb.ChangeMemberRoleRequest
-	18, // 40: pb.Orgs.DeleteMember:input_type -> pb.DeleteMemberRequest
-	19, // 41: pb.Orgs.DeleteInvite:input_type -> pb.DeleteInviteRequest
-	22, // 42: pb.Orgs.RegisterProject:input_type -> pb.RegisterProjectRequest
-	23, // 43: pb.Orgs.UpdateProject:input_type -> pb.UpdateProjectRequest
-	24, // 44: pb.Orgs.GetProject:input_type -> pb.GetProjectRequest
-	25, // 45: pb.Orgs.ListProjects:input_type -> pb.ListProjectsRequest
-	26, // 46: pb.Orgs.DeleteProject:input_type -> pb.DeleteProjectRequest
-	30, // 47: pb.Orgs.CreateAPIKey:input_type -> pb.CreateAPIKeyRequest
-	31, // 48: pb.Orgs.ListAPIKeys:input_type -> pb.ListAPIKeysRequest
-	32, // 49: pb.Orgs.DeleteAPIKey:input_type -> pb.APIKeyRequest
-	4,  // 50: pb.Orgs.RegisterOrg:output_type -> pb.Org
-	4,  // 51: pb.Orgs.GetOrg:output_type -> pb.Org
-	4,  // 52: pb.Orgs.UpdateOrg:output_type -> pb.Org
-	4,  // 53: pb.Orgs.DeleteOrg:output_type -> pb.Org
-	9,  // 54: pb.Orgs.GetUserOrgs:output_type -> pb.UserOrgsResponse
-	14, // 55: pb.Orgs.GetUserMemberships:output_type -> pb.UserMemberships
-	13, // 56: pb.Orgs.GetMembers:output_type -> pb.MembersResponse
-	16, // 57: pb.Orgs.AddMember:output_type -> pb.AddMemberResponse
-	10, // 58: pb.Orgs.ChangeMemberRole:output_type -> pb.Membership
-	38, // 59: pb.Orgs.DeleteMember:output_type -> google.protobuf.Empty
-	38, // 60: pb.Orgs.DeleteInvite:output_type -> google.protobuf.Empty
-	6,  // 61: pb.Orgs.RegisterProject:output_type -> pb.Project
-	6,  // 62: pb.Orgs.UpdateProject:output_type -> pb.Project
-	6,  // 63: pb.Orgs.GetProject:output_type -> pb.Project
-	7,  // 64: pb.Orgs.ListProjects:output_type -> pb.ProjectsResponse
-	6,  // 65: pb.Orgs.DeleteProject:output_type -> pb.Project
-	28, // 66: pb.Orgs.CreateAPIKey:output_type -> pb.APIKey
-	29, // 67: pb.Orgs.ListAPIKeys:output_type -> pb.APIKeysResponse
-	39, // 68: pb.Orgs.DeleteAPIKey:output_type -> pb.RecordsResult
-	50, // [50:69] is the sub-list for method output_type
-	31, // [31:50] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	34, // 23: pb.ListProjectsRequest.Status:type_name -> pb.ItemStatus.Enum
+	37, // 24: pb.ListEventsRequest.Type:type_name -> pb.EventType.Enum
+	38, // 25: pb.EventsResponse.Events:type_name -> pb.Event
+	35, // 26: pb.EventsResponse.NextPage:type_name -> pb.NextPage
+	39, // 27: pb.APIKey.Metadata:type_name -> pb.KVPair
+	34, // 28: pb.APIKey.Status:type_name -> pb.ItemStatus.Enum
+	29, // 29: pb.APIKeysResponse.APIKeys:type_name -> pb.APIKey
+	35, // 30: pb.APIKeysResponse.NextPage:type_name -> pb.NextPage
+	34, // 31: pb.ListAPIKeysRequest.Status:type_name -> pb.ItemStatus.Enum
+	20, // 32: pb.Orgs.RegisterOrg:input_type -> pb.RegisterOrgRequest
+	40, // 33: pb.Orgs.GetOrg:input_type -> google.protobuf.Empty
+	21, // 34: pb.Orgs.UpdateOrg:input_type -> pb.UpdateOrgRequest
+	40, // 35: pb.Orgs.DeleteOrg:input_type -> google.protobuf.Empty
+	40, // 36: pb.Orgs.GetUserOrgs:input_type -> google.protobuf.Empty
+	40, // 37: pb.Orgs.GetUserMemberships:input_type -> google.protobuf.Empty
+	12, // 38: pb.Orgs.GetMembers:input_type -> pb.GetMembersRequest
+	15, // 39: pb.Orgs.AddMember:input_type -> pb.AddMemberRequest
+	17, // 40: pb.Orgs.ChangeMemberRole:input_type -> pb.ChangeMemberRoleRequest
+	18, // 41: pb.Orgs.DeleteMember:input_type -> pb.DeleteMemberRequest
+	19, // 42: pb.Orgs.DeleteInvite:input_type -> pb.DeleteInviteRequest
+	22, // 43: pb.Orgs.RegisterProject:input_type -> pb.RegisterProjectRequest
+	23, // 44: pb.Orgs.UpdateProject:input_type -> pb.UpdateProjectRequest
+	24, // 45: pb.Orgs.GetProject:input_type -> pb.GetProjectRequest
+	25, // 46: pb.Orgs.ListProjects:input_type -> pb.ListProjectsRequest
+	26, // 47: pb.Orgs.DeleteProject:input_type -> pb.DeleteProjectRequest
+	27, // 48: pb.Orgs.ListEvents:input_type -> pb.ListEventsRequest
+	31, // 49: pb.Orgs.CreateAPIKey:input_type -> pb.CreateAPIKeyRequest
+	32, // 50: pb.Orgs.ListAPIKeys:input_type -> pb.ListAPIKeysRequest
+	33, // 51: pb.Orgs.DeleteAPIKey:input_type -> pb.APIKeyRequest
+	4,  // 52: pb.Orgs.RegisterOrg:output_type -> pb.Org
+	4,  // 53: pb.Orgs.GetOrg:output_type -> pb.Org
+	4,  // 54: pb.Orgs.UpdateOrg:output_type -> pb.Org
+	4,  // 55: pb.Orgs.DeleteOrg:output_type -> pb.Org
+	9,  // 56: pb.Orgs.GetUserOrgs:output_type -> pb.UserOrgsResponse
+	14, // 57: pb.Orgs.GetUserMemberships:output_type -> pb.UserMemberships
+	13, // 58: pb.Orgs.GetMembers:output_type -> pb.MembersResponse
+	16, // 59: pb.Orgs.AddMember:output_type -> pb.AddMemberResponse
+	10, // 60: pb.Orgs.ChangeMemberRole:output_type -> pb.Membership
+	40, // 61: pb.Orgs.DeleteMember:output_type -> google.protobuf.Empty
+	40, // 62: pb.Orgs.DeleteInvite:output_type -> google.protobuf.Empty
+	6,  // 63: pb.Orgs.RegisterProject:output_type -> pb.Project
+	6,  // 64: pb.Orgs.UpdateProject:output_type -> pb.Project
+	6,  // 65: pb.Orgs.GetProject:output_type -> pb.Project
+	7,  // 66: pb.Orgs.ListProjects:output_type -> pb.ProjectsResponse
+	6,  // 67: pb.Orgs.DeleteProject:output_type -> pb.Project
+	28, // 68: pb.Orgs.ListEvents:output_type -> pb.EventsResponse
+	29, // 69: pb.Orgs.CreateAPIKey:output_type -> pb.APIKey
+	30, // 70: pb.Orgs.ListAPIKeys:output_type -> pb.APIKeysResponse
+	41, // 71: pb.Orgs.DeleteAPIKey:output_type -> pb.RecordsResult
+	52, // [52:72] is the sub-list for method output_type
+	32, // [32:52] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_orgs_proto_init() }
@@ -2567,7 +2680,7 @@ func file_orgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orgs_proto_rawDesc), len(file_orgs_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   31,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
