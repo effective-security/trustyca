@@ -253,3 +253,16 @@ func (m *MockCAServer) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.O
 	}
 	return m.next().(*pb.OCSPResponse), nil
 }
+
+// GetSummary returns the counts of the tenant's dashboard: the issuers
+// by status, the certificates by status and by expiry, and the issuers
+// that publish CRLs by the state of their CRL, for the org or for one
+// project. Without a project, a member with project grants only gets
+// the org-wide rows and those of its projects, as the lists do.
+
+func (m *MockCAServer) GetSummary(ctx context.Context, req *pb.GetSummaryRequest) (*pb.SummaryResponse, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	return m.next().(*pb.SummaryResponse), nil
+}

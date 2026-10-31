@@ -44,6 +44,8 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 - [func PublicKeysEqual\(a, b crypto.PublicKey\) bool](<#PublicKeysEqual>)
 - [func SubjectKeyID\(pub crypto.PublicKey\) \(string, error\)](<#SubjectKeyID>)
 - [type BootstrapResult](<#BootstrapResult>)
+- [type CrlCounts](<#CrlCounts>)
+  - [func CountCrls\(states \[\]\*model.CrlState, now time.Time\) \(\*CrlCounts, error\)](<#CountCrls>)
 - [type CrlPublisher](<#CrlPublisher>)
   - [func NewCrlPublisher\(caDb db.CaDb, registry \*Registry\) \*CrlPublisher](<#NewCrlPublisher>)
   - [func \(p \*CrlPublisher\) PublishCrl\(ctx context.Context, row \*model.Issuer, force bool\) \(\*model.Crl, bool, error\)](<#CrlPublisher.PublishCrl>)
@@ -170,6 +172,15 @@ var (
 )
 ```
 
+<a name="CrlStatuses"></a>CrlStatuses are the lifecycle statuses of the issuers that publish CRLs: an Archived issuer signs no certificate but keeps answering for the ones it issued \(DESIGN.md section 4.2\)
+
+```go
+var CrlStatuses = []pb.IssuerStatus_Enum{
+    pb.IssuerStatus_Active,
+    pb.IssuerStatus_Archived,
+}
+```
+
 <a name="AuthorityProfile"></a>
 ## func [AuthorityProfile](<https://github.com/effective-security/trustyca/blob/main/internal/ca/registry.go#L469>)
 
@@ -180,7 +191,7 @@ func AuthorityProfile(p *model.CertificateProfile) (*authority.CertProfile, erro
 AuthorityProfile converts a profile row to the profile the authority signs with. It reads the row only: a row the registry returned is shared with other requests, and its IDs must not be formatted \(model.Definition\).
 
 <a name="CrlDue"></a>
-## func [CrlDue](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L395>)
+## func [CrlDue](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L461>)
 
 ```go
 func CrlDue(current *model.Crl, renewal time.Duration, now time.Time) bool
@@ -272,6 +283,37 @@ type BootstrapResult struct {
 }
 ```
 
+<a name="CrlCounts"></a>
+## type [CrlCounts](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L167-L180>)
+
+CrlCounts reports the issuers that publish CRLs, the Active and Archived issuers whose certificate is valid, by the state of their current CRL at a time: Issuers is Current, Due, Overdue and Missing together
+
+```go
+type CrlCounts struct {
+    // Issuers is the number of issuers that publish CRLs
+    Issuers int
+    // Current is the number of CRLs whose next update is later than the
+    // renewal period of their issuer
+    Current int
+    // Due is the number of CRLs whose next update is within the renewal
+    // period of their issuer
+    Due int
+    // Overdue is the number of CRLs whose next update has passed
+    Overdue int
+    // Missing is the number of issuers that have published no CRL
+    Missing int
+}
+```
+
+<a name="CountCrls"></a>
+### func [CountCrls](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L192>)
+
+```go
+func CountCrls(states []*model.CrlState, now time.Time) (*CrlCounts, error)
+```
+
+CountCrls classifies the CRL states of the issuers that publish CRLs \(db.CaReadonlyDb.ListCrlStates for CrlStatuses, read with the other counts of the summary at one snapshot\) at the time: an issuer without a CRL is Missing, a CRL whose next update is not after the time is Overdue, one within the renewal period of its issuer \(as CrlDue judges it\) is Due, any other is Current. An issuer whose certificate has expired publishes no CRL and is not counted. The renewal period comes from the settings of the issuer, so an issuer whose config does not parse fails the count, as the lists fail on it; a Missing or Overdue CRL needs no settings.
+
 <a name="CrlPublisher"></a>
 ## type [CrlPublisher](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L56-L59>)
 
@@ -295,7 +337,7 @@ func NewCrlPublisher(caDb db.CaDb, registry *Registry) *CrlPublisher
 NewCrlPublisher returns a publisher over the CA tables and the registry that loads the issuers
 
 <a name="CrlPublisher.PublishCrl"></a>
-### func \(\*CrlPublisher\) [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L202>)
+### func \(\*CrlPublisher\) [PublishCrl](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L261>)
 
 ```go
 func (p *CrlPublisher) PublishCrl(ctx context.Context, row *model.Issuer, force bool) (*model.Crl, bool, error)

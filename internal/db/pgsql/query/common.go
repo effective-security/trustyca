@@ -10,6 +10,7 @@ const (
 	exprNow         = "Now()"
 	exprEmptyString = "''"
 	exprNull        = "NULL"
+	exprCount       = "COUNT(*)"
 )
 
 // BuildQueryFunc returns SQL query and name

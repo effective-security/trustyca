@@ -165,6 +165,20 @@ service CA {
         option (es.api.allowed_roles) = "Admin,Security";
         option (es.api.scopes)        = "ca:write";
     }
+
+    //
+    // Summary
+    //
+
+    // GetSummary returns the counts of the tenant's dashboard: the issuers
+    // by status, the certificates by status and by expiry, and the issuers
+    // that publish CRLs by the state of their CRL, for the org or for one
+    // project. Without a project, a member with project grants only gets
+    // the org-wide rows and those of its projects, as the lists do.
+    rpc GetSummary(GetSummaryRequest) returns (SummaryResponse) {
+        option (es.api.allowed_roles) = "Viewer,APIKey";
+        option (es.api.scopes)        = "ca:read";
+    }
 }
 
 //
@@ -625,4 +639,86 @@ message OCSPRequest {
 message OCSPResponse {
     // Der provides DER encoded response
     bytes Der = 1 [json_name = "Der"];
+}
+
+//
+// Summary
+//
+
+// GetSummaryRequest specifies the scope of the summary
+message GetSummaryRequest {
+    reserved 1;
+    reserved "OrgID";
+    // ProjectID limits the summary to the project; empty summarizes the
+    // org-wide rows and the projects the caller may read. An API key
+    // restricted to a project gets its project.
+    string ProjectID = 2 [json_name = "ProjectID"];
+}
+
+// SummaryResponse returns the counts of the rows of the scope at the time
+// of the request. The counts are exact: a count of the certificates of a
+// scope reads their index entries, so it grows with the tenant.
+message SummaryResponse {
+    // At is the time of the counts, RFC3339
+    string At = 1 [json_name = "At"];
+    // Issuers counts the issuers by lifecycle status; every status is
+    // reported, with a zero count when the scope has none
+    repeated IssuerStatusCount Issuers = 2 [json_name = "Issuers"];
+    // Certificates counts the certificates by status; every status is
+    // reported, with a zero count when the scope has none
+    repeated CertificateStatusCount Certificates = 3
+        [json_name = "Certificates"];
+    // Expiring counts the Active certificates whose validity ends within
+    // the days after At. The buckets are cumulative: 7, 30 and 90 days. A
+    // certificate past its NotAfter is expired, not expiring, whatever its
+    // status.
+    repeated ExpiryBucket Expiring = 4 [json_name = "Expiring"];
+    // Crls counts the issuers that publish CRLs by the state of their CRL
+    CrlCounts Crls = 5 [json_name = "Crls"];
+}
+
+// IssuerStatusCount is the number of issuers of a lifecycle status
+message IssuerStatusCount {
+    // Status of the issuers
+    IssuerStatus.Enum Status = 1 [json_name = "Status"];
+    // Count of the issuers of the status
+    uint32 Count = 2 [json_name = "Count"];
+}
+
+// CertificateStatusCount is the number of certificates of a status
+message CertificateStatusCount {
+    // Status of the certificates
+    CertificateStatus.Enum Status = 1 [json_name = "Status"];
+    // Count of the certificates of the status
+    uint32 Count = 2 [json_name = "Count"];
+}
+
+// ExpiryBucket is the number of Active certificates whose validity ends
+// within a number of days after the time of the summary
+message ExpiryBucket {
+    // Days after the time of the summary
+    uint32 Days = 1 [json_name = "Days"];
+    // Count of the Active certificates that expire within the days
+    uint32 Count = 2 [json_name = "Count"];
+}
+
+// CrlCounts counts the issuers that publish CRLs, the Active and Archived
+// issuers whose certificate is valid, by the state of their current CRL at
+// the time of the summary: Issuers is Current, Due, Overdue and Missing
+// together.
+message CrlCounts {
+    // Issuers is the number of issuers that publish CRLs
+    uint32 Issuers = 1 [json_name = "Issuers"];
+    // Current is the number of CRLs whose next update is later than the
+    // renewal period of their issuer
+    uint32 Current = 2 [json_name = "Current"];
+    // Due is the number of CRLs whose next update is within the renewal
+    // period of their issuer; the renewal task publishes them on its next
+    // run
+    uint32 Due = 3 [json_name = "Due"];
+    // Overdue is the number of CRLs whose next update has passed: relying
+    // parties see a stale CRL until it is published
+    uint32 Overdue = 4 [json_name = "Overdue"];
+    // Missing is the number of issuers that have published no CRL yet
+    uint32 Missing = 5 [json_name = "Missing"];
 }

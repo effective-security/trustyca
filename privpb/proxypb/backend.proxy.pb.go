@@ -798,3 +798,39 @@ func (s *postproxyBackendClient) SignOCSP(ctx context.Context, req *pb.OCSPReque
 	}
 	return &res, nil
 }
+
+// GetSummary returns the counts of the issuers, certificates and CRLs
+// of the org, or of one of its projects (CA.GetSummary)
+func (s *proxyBackendServer) GetSummary(ctx context.Context, req *privpb.GetSummaryRequest, opts ...grpc.CallOption) (*pb.SummaryResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.srv.GetSummary(ctx, req)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetSummary returns the counts of the issuers, certificates and CRLs
+// of the org, or of one of its projects (CA.GetSummary)
+func (s *proxyBackendClient) GetSummary(ctx context.Context, req *privpb.GetSummaryRequest) (*pb.SummaryResponse, error) {
+	// add correlation ID to outgoing RPC calls
+	ctx = correlation.WithMetaFromContext(ctx)
+	res, err := s.remote.GetSummary(ctx, req, s.callOpts...)
+	if err != nil {
+		return nil, httperror.NewFromPb(err)
+	}
+	return res, nil
+}
+
+// GetSummary returns the counts of the issuers, certificates and CRLs
+// of the org, or of one of its projects (CA.GetSummary)
+func (s *postproxyBackendClient) GetSummary(ctx context.Context, req *privpb.GetSummaryRequest) (*pb.SummaryResponse, error) {
+	var res pb.SummaryResponse
+	path := privpb.Backend_GetSummary_FullMethodName
+	_, _, err := s.client.Post(ctx, path, req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}

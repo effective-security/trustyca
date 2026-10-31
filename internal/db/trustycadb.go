@@ -159,6 +159,10 @@ type CaReadonlyDb interface {
 	GetIssuerBySKID(ctx context.Context, skid string) (*model.Issuer, error)
 	// ListIssuers lists issuers, newest first
 	ListIssuers(ctx context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error)
+	// CountIssuers counts the issuers of an org by lifecycle status, for the
+	// org, one of its projects or the visible projects of the request; a
+	// status without issuers has no entry
+	CountIssuers(ctx context.Context, req *query.CountIssuersRequest) (model.IssuerCounts, error)
 
 	// GetRoot returns a trust anchor by ID
 	GetRoot(ctx context.Context, id uint64) (*model.RootCertificate, error)
@@ -183,6 +187,11 @@ type CaReadonlyDb interface {
 	GetCertificateByIssuerSerial(ctx context.Context, ikid, serial string) (*model.Certificate, error)
 	// ListCertificates lists certificates, newest first
 	ListCertificates(ctx context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error)
+	// CountCertificates counts the certificates of an org by status, and the
+	// Active ones whose validity ends within the periods of the request,
+	// for the org, one of its projects or the visible projects of the
+	// request
+	CountCertificates(ctx context.Context, req *query.CountCertificatesRequest) (*model.CertificateCounts, error)
 
 	// GetRevoked returns the revocation of a certificate by its ID, or by the
 	// key identifier of its issuer and its serial number
@@ -202,6 +211,17 @@ type CaReadonlyDb interface {
 	GetCrls(ctx context.Context, ikids []string) ([]*model.Crl, error)
 	// ListCrls lists the current CRLs, newest first
 	ListCrls(ctx context.Context, req *query.ListCrlsRequest) (*model.CrlResult, error)
+	// ListCrlStates lists the issuers of an org with the lifecycle statuses
+	// of the request, newest first, with the state of their current CRL:
+	// the key identifier, the end of the validity, the settings and the
+	// next update of the CRL, never a PEM (the tenant summary)
+	ListCrlStates(ctx context.Context, req *query.ListCrlStatesRequest) (*model.CrlStateResult, error)
+
+	// GetSummaryCounts reads the counts of the tenant summary at one
+	// snapshot: a read-only REPEATABLE READ transaction runs the issuer
+	// counts, the certificate counts and the pages of the CRL states, so
+	// they agree with each other
+	GetSummaryCounts(ctx context.Context, req *query.SummaryRequest) (*model.SummaryCounts, error)
 }
 
 // CaDb defines an interface for CRUD operations on the CA tables.

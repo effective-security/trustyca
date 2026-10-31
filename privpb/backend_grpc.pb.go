@@ -43,6 +43,7 @@ const (
 	Backend_GetCRL_FullMethodName                  = "/privpb.Backend/GetCRL"
 	Backend_PublishCrls_FullMethodName             = "/privpb.Backend/PublishCrls"
 	Backend_SignOCSP_FullMethodName                = "/privpb.Backend/SignOCSP"
+	Backend_GetSummary_FullMethodName              = "/privpb.Backend/GetSummary"
 )
 
 // BackendClient is the client API for Backend service.
@@ -121,6 +122,9 @@ type BackendClient interface {
 	// SignOCSP signs the OCSP response of a DER request; the request
 	// names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
 	SignOCSP(ctx context.Context, in *pb.OCSPRequest, opts ...grpc.CallOption) (*pb.OCSPResponse, error)
+	// GetSummary returns the counts of the issuers, certificates and CRLs
+	// of the org, or of one of its projects (CA.GetSummary)
+	GetSummary(ctx context.Context, in *GetSummaryRequest, opts ...grpc.CallOption) (*pb.SummaryResponse, error)
 }
 
 type backendClient struct {
@@ -341,6 +345,16 @@ func (c *backendClient) SignOCSP(ctx context.Context, in *pb.OCSPRequest, opts .
 	return out, nil
 }
 
+func (c *backendClient) GetSummary(ctx context.Context, in *GetSummaryRequest, opts ...grpc.CallOption) (*pb.SummaryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(pb.SummaryResponse)
+	err := c.cc.Invoke(ctx, Backend_GetSummary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BackendServer is the server API for Backend service.
 // All implementations should embed UnimplementedBackendServer
 // for forward compatibility.
@@ -417,6 +431,9 @@ type BackendServer interface {
 	// SignOCSP signs the OCSP response of a DER request; the request
 	// names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
 	SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error)
+	// GetSummary returns the counts of the issuers, certificates and CRLs
+	// of the org, or of one of its projects (CA.GetSummary)
+	GetSummary(context.Context, *GetSummaryRequest) (*pb.SummaryResponse, error)
 }
 
 // UnimplementedBackendServer should be embedded to have
@@ -488,6 +505,9 @@ func (UnimplementedBackendServer) PublishCrls(context.Context, *PublishCrlsReque
 }
 func (UnimplementedBackendServer) SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignOCSP not implemented")
+}
+func (UnimplementedBackendServer) GetSummary(context.Context, *GetSummaryRequest) (*pb.SummaryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSummary not implemented")
 }
 func (UnimplementedBackendServer) testEmbeddedByValue() {}
 
@@ -887,6 +907,24 @@ func _Backend_SignOCSP_Handler(srv any, ctx context.Context, dec func(any) error
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Backend_GetSummary_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(GetSummaryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServer).GetSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Backend_GetSummary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(BackendServer).GetSummary(ctx, req.(*GetSummaryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Backend_ServiceDesc is the grpc.ServiceDesc for Backend service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -977,6 +1015,10 @@ var Backend_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignOCSP",
 			Handler:    _Backend_SignOCSP_Handler,
+		},
+		{
+			MethodName: "GetSummary",
+			Handler:    _Backend_GetSummary_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

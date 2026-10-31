@@ -85,6 +85,9 @@ service Backend {
     // SignOCSP signs the OCSP response of a DER request; the request
     // names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
     rpc SignOCSP(pb.OCSPRequest) returns (pb.OCSPResponse);
+    // GetSummary returns the counts of the issuers, certificates and CRLs
+    // of the org, or of one of its projects (CA.GetSummary)
+    rpc GetSummary(GetSummaryRequest) returns (pb.SummaryResponse);
 }
 
 // RegisterIssuerRequest specifies a request to create a new issuer
@@ -496,4 +499,15 @@ message PublishCrlsRequest {
     string IKID = 3 [json_name = "IKID"];
     // Force specifies to publish even if the current CRL is not due for renewal
     bool Force = 4 [json_name = "Force"];
+}
+
+// GetSummaryRequest specifies the scope of the summary
+// with the org named explicitly: the request of Backend.GetSummary
+message GetSummaryRequest {
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    string OrgID = 1 [json_name = "OrgID", (es.api.required) = true];
+    // ProjectID limits the summary to the project; empty summarizes the
+    // org-wide rows and the projects the caller may read
+    string ProjectID = 2 [json_name = "ProjectID"];
 }

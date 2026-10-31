@@ -2240,6 +2240,398 @@ func (x *OCSPResponse) GetDer() []byte {
 	return nil
 }
 
+// GetSummaryRequest specifies the scope of the summary
+type GetSummaryRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ProjectID limits the summary to the project; empty summarizes the
+	// org-wide rows and the projects the caller may read. An API key
+	// restricted to a project gets its project.
+	ProjectID     string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSummaryRequest) Reset() {
+	*x = GetSummaryRequest{}
+	mi := &file_ca_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSummaryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSummaryRequest) ProtoMessage() {}
+
+func (x *GetSummaryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ca_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSummaryRequest.ProtoReflect.Descriptor instead.
+func (*GetSummaryRequest) Descriptor() ([]byte, []int) {
+	return file_ca_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *GetSummaryRequest) GetProjectID() string {
+	if x != nil {
+		return x.ProjectID
+	}
+	return ""
+}
+
+// SummaryResponse returns the counts of the rows of the scope at the time
+// of the request. The counts are exact: a count of the certificates of a
+// scope reads their index entries, so it grows with the tenant.
+type SummaryResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// At is the time of the counts, RFC3339
+	At string `protobuf:"bytes,1,opt,name=At,proto3" json:"At,omitempty"`
+	// Issuers counts the issuers by lifecycle status; every status is
+	// reported, with a zero count when the scope has none
+	Issuers []*IssuerStatusCount `protobuf:"bytes,2,rep,name=Issuers,proto3" json:"Issuers,omitempty"`
+	// Certificates counts the certificates by status; every status is
+	// reported, with a zero count when the scope has none
+	Certificates []*CertificateStatusCount `protobuf:"bytes,3,rep,name=Certificates,proto3" json:"Certificates,omitempty"`
+	// Expiring counts the Active certificates whose validity ends within
+	// the days after At. The buckets are cumulative: 7, 30 and 90 days. A
+	// certificate past its NotAfter is expired, not expiring, whatever its
+	// status.
+	Expiring []*ExpiryBucket `protobuf:"bytes,4,rep,name=Expiring,proto3" json:"Expiring,omitempty"`
+	// Crls counts the issuers that publish CRLs by the state of their CRL
+	Crls          *CrlCounts `protobuf:"bytes,5,opt,name=Crls,proto3" json:"Crls,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SummaryResponse) Reset() {
+	*x = SummaryResponse{}
+	mi := &file_ca_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SummaryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SummaryResponse) ProtoMessage() {}
+
+func (x *SummaryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ca_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SummaryResponse.ProtoReflect.Descriptor instead.
+func (*SummaryResponse) Descriptor() ([]byte, []int) {
+	return file_ca_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *SummaryResponse) GetAt() string {
+	if x != nil {
+		return x.At
+	}
+	return ""
+}
+
+func (x *SummaryResponse) GetIssuers() []*IssuerStatusCount {
+	if x != nil {
+		return x.Issuers
+	}
+	return nil
+}
+
+func (x *SummaryResponse) GetCertificates() []*CertificateStatusCount {
+	if x != nil {
+		return x.Certificates
+	}
+	return nil
+}
+
+func (x *SummaryResponse) GetExpiring() []*ExpiryBucket {
+	if x != nil {
+		return x.Expiring
+	}
+	return nil
+}
+
+func (x *SummaryResponse) GetCrls() *CrlCounts {
+	if x != nil {
+		return x.Crls
+	}
+	return nil
+}
+
+// IssuerStatusCount is the number of issuers of a lifecycle status
+type IssuerStatusCount struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Status of the issuers
+	Status IssuerStatus_Enum `protobuf:"varint,1,opt,name=Status,proto3,enum=pb.IssuerStatus_Enum" json:"Status,omitempty"`
+	// Count of the issuers of the status
+	Count         uint32 `protobuf:"varint,2,opt,name=Count,proto3" json:"Count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IssuerStatusCount) Reset() {
+	*x = IssuerStatusCount{}
+	mi := &file_ca_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssuerStatusCount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssuerStatusCount) ProtoMessage() {}
+
+func (x *IssuerStatusCount) ProtoReflect() protoreflect.Message {
+	mi := &file_ca_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssuerStatusCount.ProtoReflect.Descriptor instead.
+func (*IssuerStatusCount) Descriptor() ([]byte, []int) {
+	return file_ca_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *IssuerStatusCount) GetStatus() IssuerStatus_Enum {
+	if x != nil {
+		return x.Status
+	}
+	return IssuerStatus_Unknown
+}
+
+func (x *IssuerStatusCount) GetCount() uint32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+// CertificateStatusCount is the number of certificates of a status
+type CertificateStatusCount struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Status of the certificates
+	Status CertificateStatus_Enum `protobuf:"varint,1,opt,name=Status,proto3,enum=pb.CertificateStatus_Enum" json:"Status,omitempty"`
+	// Count of the certificates of the status
+	Count         uint32 `protobuf:"varint,2,opt,name=Count,proto3" json:"Count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CertificateStatusCount) Reset() {
+	*x = CertificateStatusCount{}
+	mi := &file_ca_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CertificateStatusCount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CertificateStatusCount) ProtoMessage() {}
+
+func (x *CertificateStatusCount) ProtoReflect() protoreflect.Message {
+	mi := &file_ca_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CertificateStatusCount.ProtoReflect.Descriptor instead.
+func (*CertificateStatusCount) Descriptor() ([]byte, []int) {
+	return file_ca_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *CertificateStatusCount) GetStatus() CertificateStatus_Enum {
+	if x != nil {
+		return x.Status
+	}
+	return CertificateStatus_Unknown
+}
+
+func (x *CertificateStatusCount) GetCount() uint32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+// ExpiryBucket is the number of Active certificates whose validity ends
+// within a number of days after the time of the summary
+type ExpiryBucket struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Days after the time of the summary
+	Days uint32 `protobuf:"varint,1,opt,name=Days,proto3" json:"Days,omitempty"`
+	// Count of the Active certificates that expire within the days
+	Count         uint32 `protobuf:"varint,2,opt,name=Count,proto3" json:"Count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExpiryBucket) Reset() {
+	*x = ExpiryBucket{}
+	mi := &file_ca_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExpiryBucket) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpiryBucket) ProtoMessage() {}
+
+func (x *ExpiryBucket) ProtoReflect() protoreflect.Message {
+	mi := &file_ca_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpiryBucket.ProtoReflect.Descriptor instead.
+func (*ExpiryBucket) Descriptor() ([]byte, []int) {
+	return file_ca_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *ExpiryBucket) GetDays() uint32 {
+	if x != nil {
+		return x.Days
+	}
+	return 0
+}
+
+func (x *ExpiryBucket) GetCount() uint32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+// CrlCounts counts the issuers that publish CRLs, the Active and Archived
+// issuers whose certificate is valid, by the state of their current CRL at
+// the time of the summary: Issuers is Current, Due, Overdue and Missing
+// together.
+type CrlCounts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Issuers is the number of issuers that publish CRLs
+	Issuers uint32 `protobuf:"varint,1,opt,name=Issuers,proto3" json:"Issuers,omitempty"`
+	// Current is the number of CRLs whose next update is later than the
+	// renewal period of their issuer
+	Current uint32 `protobuf:"varint,2,opt,name=Current,proto3" json:"Current,omitempty"`
+	// Due is the number of CRLs whose next update is within the renewal
+	// period of their issuer; the renewal task publishes them on its next
+	// run
+	Due uint32 `protobuf:"varint,3,opt,name=Due,proto3" json:"Due,omitempty"`
+	// Overdue is the number of CRLs whose next update has passed: relying
+	// parties see a stale CRL until it is published
+	Overdue uint32 `protobuf:"varint,4,opt,name=Overdue,proto3" json:"Overdue,omitempty"`
+	// Missing is the number of issuers that have published no CRL yet
+	Missing       uint32 `protobuf:"varint,5,opt,name=Missing,proto3" json:"Missing,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CrlCounts) Reset() {
+	*x = CrlCounts{}
+	mi := &file_ca_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CrlCounts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CrlCounts) ProtoMessage() {}
+
+func (x *CrlCounts) ProtoReflect() protoreflect.Message {
+	mi := &file_ca_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CrlCounts.ProtoReflect.Descriptor instead.
+func (*CrlCounts) Descriptor() ([]byte, []int) {
+	return file_ca_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *CrlCounts) GetIssuers() uint32 {
+	if x != nil {
+		return x.Issuers
+	}
+	return 0
+}
+
+func (x *CrlCounts) GetCurrent() uint32 {
+	if x != nil {
+		return x.Current
+	}
+	return 0
+}
+
+func (x *CrlCounts) GetDue() uint32 {
+	if x != nil {
+		return x.Due
+	}
+	return 0
+}
+
+func (x *CrlCounts) GetOverdue() uint32 {
+	if x != nil {
+		return x.Overdue
+	}
+	return 0
+}
+
+func (x *CrlCounts) GetMissing() uint32 {
+	if x != nil {
+		return x.Missing
+	}
+	return 0
+}
+
 var File_ca_proto protoreflect.FileDescriptor
 
 const file_ca_proto_rawDesc = "" +
@@ -2410,7 +2802,30 @@ const file_ca_proto_rawDesc = "" +
 	"\vOCSPRequest\x12\x16\n" +
 	"\x03Der\x18\x01 \x01(\fB\x04\xe8\xf3\x18\x01R\x03Der\" \n" +
 	"\fOCSPResponse\x12\x10\n" +
-	"\x03Der\x18\x01 \x01(\fR\x03Der2\xf1\x0e\n" +
+	"\x03Der\x18\x01 \x01(\fR\x03Der\">\n" +
+	"\x11GetSummaryRequest\x12\x1c\n" +
+	"\tProjectID\x18\x02 \x01(\tR\tProjectIDJ\x04\b\x01\x10\x02R\x05OrgID\"\xe3\x01\n" +
+	"\x0fSummaryResponse\x12\x0e\n" +
+	"\x02At\x18\x01 \x01(\tR\x02At\x12/\n" +
+	"\aIssuers\x18\x02 \x03(\v2\x15.pb.IssuerStatusCountR\aIssuers\x12>\n" +
+	"\fCertificates\x18\x03 \x03(\v2\x1a.pb.CertificateStatusCountR\fCertificates\x12,\n" +
+	"\bExpiring\x18\x04 \x03(\v2\x10.pb.ExpiryBucketR\bExpiring\x12!\n" +
+	"\x04Crls\x18\x05 \x01(\v2\r.pb.CrlCountsR\x04Crls\"X\n" +
+	"\x11IssuerStatusCount\x12-\n" +
+	"\x06Status\x18\x01 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\x12\x14\n" +
+	"\x05Count\x18\x02 \x01(\rR\x05Count\"b\n" +
+	"\x16CertificateStatusCount\x122\n" +
+	"\x06Status\x18\x01 \x01(\x0e2\x1a.pb.CertificateStatus.EnumR\x06Status\x12\x14\n" +
+	"\x05Count\x18\x02 \x01(\rR\x05Count\"8\n" +
+	"\fExpiryBucket\x12\x12\n" +
+	"\x04Days\x18\x01 \x01(\rR\x04Days\x12\x14\n" +
+	"\x05Count\x18\x02 \x01(\rR\x05Count\"\x85\x01\n" +
+	"\tCrlCounts\x12\x18\n" +
+	"\aIssuers\x18\x01 \x01(\rR\aIssuers\x12\x18\n" +
+	"\aCurrent\x18\x02 \x01(\rR\aCurrent\x12\x10\n" +
+	"\x03Due\x18\x03 \x01(\rR\x03Due\x12\x18\n" +
+	"\aOverdue\x18\x04 \x01(\rR\aOverdue\x12\x18\n" +
+	"\aMissing\x18\x05 \x01(\rR\aMissing2\xc7\x0f\n" +
 	"\x02CA\x12L\n" +
 	"\x0eRegisterIssuer\x12\x19.pb.RegisterIssuerRequest\x1a\n" +
 	".pb.Issuer\"\x13\xfaB\x05Admin\x92C\bca:write\x12H\n" +
@@ -2442,7 +2857,9 @@ const file_ca_proto_rawDesc = "" +
 	"\x06GetCRL\x12\x11.pb.GetCrlRequest\x1a\x0f.pb.CrlResponse\"\x1d\xfaB\rViewer,APIKey\x92C\n" +
 	"certs:read\x12\\\n" +
 	"\vPublishCrls\x12\x16.pb.PublishCrlsRequest\x1a\x10.pb.CrlsResponse\"#\xfaB\x15Admin,Security,APIKey\x92C\bca:write\x12K\n" +
-	"\bSignOCSP\x12\x0f.pb.OCSPRequest\x1a\x10.pb.OCSPResponse\"\x1c\xfaB\x0eAdmin,Security\x92C\bca:writeB/Z-github.com/effective-security/trustyca/api/pbb\x06proto3"
+	"\bSignOCSP\x12\x0f.pb.OCSPRequest\x1a\x10.pb.OCSPResponse\"\x1c\xfaB\x0eAdmin,Security\x92C\bca:write\x12T\n" +
+	"\n" +
+	"GetSummary\x12\x15.pb.GetSummaryRequest\x1a\x13.pb.SummaryResponse\"\x1a\xfaB\rViewer,APIKey\x92C\aca:readB/Z-github.com/effective-security/trustyca/api/pbb\x06proto3"
 
 var (
 	file_ca_proto_rawDescOnce sync.Once
@@ -2456,7 +2873,7 @@ func file_ca_proto_rawDescGZIP() []byte {
 	return file_ca_proto_rawDescData
 }
 
-var file_ca_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_ca_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_ca_proto_goTypes = []any{
 	(*RegisterIssuerRequest)(nil),          // 0: pb.RegisterIssuerRequest
 	(*ImportIssuerRequest)(nil),            // 1: pb.ImportIssuerRequest
@@ -2489,112 +2906,126 @@ var file_ca_proto_goTypes = []any{
 	(*CrlResponse)(nil),                    // 28: pb.CrlResponse
 	(*OCSPRequest)(nil),                    // 29: pb.OCSPRequest
 	(*OCSPResponse)(nil),                   // 30: pb.OCSPResponse
-	nil,                                    // 31: pb.SignCertificateRequest.MetadataEntry
-	nil,                                    // 32: pb.UpdateCertificateLabelRequest.MetadataEntry
-	(AuthorityType_Enum)(0),                // 33: pb.AuthorityType.Enum
-	(*X509Subject)(nil),                    // 34: pb.X509Subject
-	(*KeySpec)(nil),                        // 35: pb.KeySpec
-	(*IssuerConfig)(nil),                   // 36: pb.IssuerConfig
-	(*X509Extension)(nil),                  // 37: pb.X509Extension
-	(IssuerStatus_Enum)(0),                 // 38: pb.IssuerStatus.Enum
-	(*Issuer)(nil),                         // 39: pb.Issuer
-	(*NextPage)(nil),                       // 40: pb.NextPage
-	(Trust_Enum)(0),                        // 41: pb.Trust.Enum
-	(*RootCertificate)(nil),                // 42: pb.RootCertificate
-	(*CertProfile)(nil),                    // 43: pb.CertProfile
-	(EncodingFormat_Enum)(0),               // 44: pb.EncodingFormat.Enum
-	(*IssuerSerial)(nil),                   // 45: pb.IssuerSerial
-	(CertificateStatus_Enum)(0),            // 46: pb.CertificateStatus.Enum
-	(ReasonCode_Enum)(0),                   // 47: pb.ReasonCode.Enum
-	(*Certificate)(nil),                    // 48: pb.Certificate
-	(*RevokedCertificate)(nil),             // 49: pb.RevokedCertificate
-	(*Crl)(nil),                            // 50: pb.Crl
-	(*emptypb.Empty)(nil),                  // 51: google.protobuf.Empty
+	(*GetSummaryRequest)(nil),              // 31: pb.GetSummaryRequest
+	(*SummaryResponse)(nil),                // 32: pb.SummaryResponse
+	(*IssuerStatusCount)(nil),              // 33: pb.IssuerStatusCount
+	(*CertificateStatusCount)(nil),         // 34: pb.CertificateStatusCount
+	(*ExpiryBucket)(nil),                   // 35: pb.ExpiryBucket
+	(*CrlCounts)(nil),                      // 36: pb.CrlCounts
+	nil,                                    // 37: pb.SignCertificateRequest.MetadataEntry
+	nil,                                    // 38: pb.UpdateCertificateLabelRequest.MetadataEntry
+	(AuthorityType_Enum)(0),                // 39: pb.AuthorityType.Enum
+	(*X509Subject)(nil),                    // 40: pb.X509Subject
+	(*KeySpec)(nil),                        // 41: pb.KeySpec
+	(*IssuerConfig)(nil),                   // 42: pb.IssuerConfig
+	(*X509Extension)(nil),                  // 43: pb.X509Extension
+	(IssuerStatus_Enum)(0),                 // 44: pb.IssuerStatus.Enum
+	(*Issuer)(nil),                         // 45: pb.Issuer
+	(*NextPage)(nil),                       // 46: pb.NextPage
+	(Trust_Enum)(0),                        // 47: pb.Trust.Enum
+	(*RootCertificate)(nil),                // 48: pb.RootCertificate
+	(*CertProfile)(nil),                    // 49: pb.CertProfile
+	(EncodingFormat_Enum)(0),               // 50: pb.EncodingFormat.Enum
+	(*IssuerSerial)(nil),                   // 51: pb.IssuerSerial
+	(CertificateStatus_Enum)(0),            // 52: pb.CertificateStatus.Enum
+	(ReasonCode_Enum)(0),                   // 53: pb.ReasonCode.Enum
+	(*Certificate)(nil),                    // 54: pb.Certificate
+	(*RevokedCertificate)(nil),             // 55: pb.RevokedCertificate
+	(*Crl)(nil),                            // 56: pb.Crl
+	(*emptypb.Empty)(nil),                  // 57: google.protobuf.Empty
 }
 var file_ca_proto_depIdxs = []int32{
-	33, // 0: pb.RegisterIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
-	34, // 1: pb.RegisterIssuerRequest.Subject:type_name -> pb.X509Subject
-	35, // 2: pb.RegisterIssuerRequest.KeySpec:type_name -> pb.KeySpec
-	36, // 3: pb.RegisterIssuerRequest.Config:type_name -> pb.IssuerConfig
-	37, // 4: pb.RegisterIssuerRequest.Extensions:type_name -> pb.X509Extension
-	33, // 5: pb.ImportIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
-	36, // 6: pb.ImportIssuerRequest.Config:type_name -> pb.IssuerConfig
-	38, // 7: pb.ListIssuersRequest.Status:type_name -> pb.IssuerStatus.Enum
-	33, // 8: pb.ListIssuersRequest.Type:type_name -> pb.AuthorityType.Enum
-	39, // 9: pb.IssuersResponse.Issuers:type_name -> pb.Issuer
-	40, // 10: pb.IssuersResponse.NextPage:type_name -> pb.NextPage
-	36, // 11: pb.UpdateIssuerRequest.Config:type_name -> pb.IssuerConfig
-	38, // 12: pb.UpdateIssuerRequest.Status:type_name -> pb.IssuerStatus.Enum
-	41, // 13: pb.RegisterRootRequest.Trust:type_name -> pb.Trust.Enum
-	42, // 14: pb.RootsResponse.Roots:type_name -> pb.RootCertificate
-	40, // 15: pb.RootsResponse.NextPage:type_name -> pb.NextPage
-	43, // 16: pb.RegisterProfileRequest.Profile:type_name -> pb.CertProfile
-	43, // 17: pb.ProfilesResponse.Profiles:type_name -> pb.CertProfile
-	40, // 18: pb.ProfilesResponse.NextPage:type_name -> pb.NextPage
-	44, // 19: pb.SignCertificateRequest.RequestFormat:type_name -> pb.EncodingFormat.Enum
-	34, // 20: pb.SignCertificateRequest.Subject:type_name -> pb.X509Subject
-	37, // 21: pb.SignCertificateRequest.Extensions:type_name -> pb.X509Extension
-	31, // 22: pb.SignCertificateRequest.Metadata:type_name -> pb.SignCertificateRequest.MetadataEntry
-	32, // 23: pb.UpdateCertificateLabelRequest.Metadata:type_name -> pb.UpdateCertificateLabelRequest.MetadataEntry
-	45, // 24: pb.GetCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
-	46, // 25: pb.ListCertificatesRequest.Status:type_name -> pb.CertificateStatus.Enum
-	45, // 26: pb.RevokeCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
-	47, // 27: pb.RevokeCertificateRequest.Reason:type_name -> pb.ReasonCode.Enum
-	48, // 28: pb.CertificateResponse.Certificate:type_name -> pb.Certificate
-	48, // 29: pb.CertificatesResponse.Certificates:type_name -> pb.Certificate
-	40, // 30: pb.CertificatesResponse.NextPage:type_name -> pb.NextPage
-	49, // 31: pb.RevokedCertificateResponse.Revoked:type_name -> pb.RevokedCertificate
-	49, // 32: pb.RevokedCertificatesResponse.RevokedCertificates:type_name -> pb.RevokedCertificate
-	40, // 33: pb.RevokedCertificatesResponse.NextPage:type_name -> pb.NextPage
-	50, // 34: pb.CrlsResponse.Crls:type_name -> pb.Crl
-	50, // 35: pb.CrlResponse.Crl:type_name -> pb.Crl
-	0,  // 36: pb.CA.RegisterIssuer:input_type -> pb.RegisterIssuerRequest
-	6,  // 37: pb.CA.UpdateIssuer:input_type -> pb.UpdateIssuerRequest
-	1,  // 38: pb.CA.ImportIssuer:input_type -> pb.ImportIssuerRequest
-	2,  // 39: pb.CA.ActivateIssuer:input_type -> pb.ActivateIssuerRequest
-	3,  // 40: pb.CA.GetIssuer:input_type -> pb.GetIssuerRequest
-	4,  // 41: pb.CA.ListIssuers:input_type -> pb.ListIssuersRequest
-	7,  // 42: pb.CA.RegisterRoot:input_type -> pb.RegisterRootRequest
-	8,  // 43: pb.CA.ListRoots:input_type -> pb.ListRootsRequest
-	10, // 44: pb.CA.RegisterProfile:input_type -> pb.RegisterProfileRequest
-	11, // 45: pb.CA.GetProfile:input_type -> pb.GetProfileRequest
-	12, // 46: pb.CA.ListProfiles:input_type -> pb.ListProfilesRequest
-	14, // 47: pb.CA.DeleteProfile:input_type -> pb.DeleteProfileRequest
-	15, // 48: pb.CA.SignCertificate:input_type -> pb.SignCertificateRequest
-	17, // 49: pb.CA.GetCertificate:input_type -> pb.GetCertificateRequest
-	18, // 50: pb.CA.ListCertificates:input_type -> pb.ListCertificatesRequest
-	16, // 51: pb.CA.UpdateCertificateLabel:input_type -> pb.UpdateCertificateLabelRequest
-	20, // 52: pb.CA.RevokeCertificate:input_type -> pb.RevokeCertificateRequest
-	19, // 53: pb.CA.ListRevokedCertificates:input_type -> pb.ListRevokedCertificatesRequest
-	25, // 54: pb.CA.GetCRL:input_type -> pb.GetCrlRequest
-	26, // 55: pb.CA.PublishCrls:input_type -> pb.PublishCrlsRequest
-	29, // 56: pb.CA.SignOCSP:input_type -> pb.OCSPRequest
-	39, // 57: pb.CA.RegisterIssuer:output_type -> pb.Issuer
-	39, // 58: pb.CA.UpdateIssuer:output_type -> pb.Issuer
-	39, // 59: pb.CA.ImportIssuer:output_type -> pb.Issuer
-	39, // 60: pb.CA.ActivateIssuer:output_type -> pb.Issuer
-	39, // 61: pb.CA.GetIssuer:output_type -> pb.Issuer
-	5,  // 62: pb.CA.ListIssuers:output_type -> pb.IssuersResponse
-	42, // 63: pb.CA.RegisterRoot:output_type -> pb.RootCertificate
-	9,  // 64: pb.CA.ListRoots:output_type -> pb.RootsResponse
-	43, // 65: pb.CA.RegisterProfile:output_type -> pb.CertProfile
-	43, // 66: pb.CA.GetProfile:output_type -> pb.CertProfile
-	13, // 67: pb.CA.ListProfiles:output_type -> pb.ProfilesResponse
-	51, // 68: pb.CA.DeleteProfile:output_type -> google.protobuf.Empty
-	21, // 69: pb.CA.SignCertificate:output_type -> pb.CertificateResponse
-	21, // 70: pb.CA.GetCertificate:output_type -> pb.CertificateResponse
-	22, // 71: pb.CA.ListCertificates:output_type -> pb.CertificatesResponse
-	21, // 72: pb.CA.UpdateCertificateLabel:output_type -> pb.CertificateResponse
-	23, // 73: pb.CA.RevokeCertificate:output_type -> pb.RevokedCertificateResponse
-	24, // 74: pb.CA.ListRevokedCertificates:output_type -> pb.RevokedCertificatesResponse
-	28, // 75: pb.CA.GetCRL:output_type -> pb.CrlResponse
-	27, // 76: pb.CA.PublishCrls:output_type -> pb.CrlsResponse
-	30, // 77: pb.CA.SignOCSP:output_type -> pb.OCSPResponse
-	57, // [57:78] is the sub-list for method output_type
-	36, // [36:57] is the sub-list for method input_type
-	36, // [36:36] is the sub-list for extension type_name
-	36, // [36:36] is the sub-list for extension extendee
-	0,  // [0:36] is the sub-list for field type_name
+	39, // 0: pb.RegisterIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
+	40, // 1: pb.RegisterIssuerRequest.Subject:type_name -> pb.X509Subject
+	41, // 2: pb.RegisterIssuerRequest.KeySpec:type_name -> pb.KeySpec
+	42, // 3: pb.RegisterIssuerRequest.Config:type_name -> pb.IssuerConfig
+	43, // 4: pb.RegisterIssuerRequest.Extensions:type_name -> pb.X509Extension
+	39, // 5: pb.ImportIssuerRequest.Type:type_name -> pb.AuthorityType.Enum
+	42, // 6: pb.ImportIssuerRequest.Config:type_name -> pb.IssuerConfig
+	44, // 7: pb.ListIssuersRequest.Status:type_name -> pb.IssuerStatus.Enum
+	39, // 8: pb.ListIssuersRequest.Type:type_name -> pb.AuthorityType.Enum
+	45, // 9: pb.IssuersResponse.Issuers:type_name -> pb.Issuer
+	46, // 10: pb.IssuersResponse.NextPage:type_name -> pb.NextPage
+	42, // 11: pb.UpdateIssuerRequest.Config:type_name -> pb.IssuerConfig
+	44, // 12: pb.UpdateIssuerRequest.Status:type_name -> pb.IssuerStatus.Enum
+	47, // 13: pb.RegisterRootRequest.Trust:type_name -> pb.Trust.Enum
+	48, // 14: pb.RootsResponse.Roots:type_name -> pb.RootCertificate
+	46, // 15: pb.RootsResponse.NextPage:type_name -> pb.NextPage
+	49, // 16: pb.RegisterProfileRequest.Profile:type_name -> pb.CertProfile
+	49, // 17: pb.ProfilesResponse.Profiles:type_name -> pb.CertProfile
+	46, // 18: pb.ProfilesResponse.NextPage:type_name -> pb.NextPage
+	50, // 19: pb.SignCertificateRequest.RequestFormat:type_name -> pb.EncodingFormat.Enum
+	40, // 20: pb.SignCertificateRequest.Subject:type_name -> pb.X509Subject
+	43, // 21: pb.SignCertificateRequest.Extensions:type_name -> pb.X509Extension
+	37, // 22: pb.SignCertificateRequest.Metadata:type_name -> pb.SignCertificateRequest.MetadataEntry
+	38, // 23: pb.UpdateCertificateLabelRequest.Metadata:type_name -> pb.UpdateCertificateLabelRequest.MetadataEntry
+	51, // 24: pb.GetCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
+	52, // 25: pb.ListCertificatesRequest.Status:type_name -> pb.CertificateStatus.Enum
+	51, // 26: pb.RevokeCertificateRequest.IssuerSerial:type_name -> pb.IssuerSerial
+	53, // 27: pb.RevokeCertificateRequest.Reason:type_name -> pb.ReasonCode.Enum
+	54, // 28: pb.CertificateResponse.Certificate:type_name -> pb.Certificate
+	54, // 29: pb.CertificatesResponse.Certificates:type_name -> pb.Certificate
+	46, // 30: pb.CertificatesResponse.NextPage:type_name -> pb.NextPage
+	55, // 31: pb.RevokedCertificateResponse.Revoked:type_name -> pb.RevokedCertificate
+	55, // 32: pb.RevokedCertificatesResponse.RevokedCertificates:type_name -> pb.RevokedCertificate
+	46, // 33: pb.RevokedCertificatesResponse.NextPage:type_name -> pb.NextPage
+	56, // 34: pb.CrlsResponse.Crls:type_name -> pb.Crl
+	56, // 35: pb.CrlResponse.Crl:type_name -> pb.Crl
+	33, // 36: pb.SummaryResponse.Issuers:type_name -> pb.IssuerStatusCount
+	34, // 37: pb.SummaryResponse.Certificates:type_name -> pb.CertificateStatusCount
+	35, // 38: pb.SummaryResponse.Expiring:type_name -> pb.ExpiryBucket
+	36, // 39: pb.SummaryResponse.Crls:type_name -> pb.CrlCounts
+	44, // 40: pb.IssuerStatusCount.Status:type_name -> pb.IssuerStatus.Enum
+	52, // 41: pb.CertificateStatusCount.Status:type_name -> pb.CertificateStatus.Enum
+	0,  // 42: pb.CA.RegisterIssuer:input_type -> pb.RegisterIssuerRequest
+	6,  // 43: pb.CA.UpdateIssuer:input_type -> pb.UpdateIssuerRequest
+	1,  // 44: pb.CA.ImportIssuer:input_type -> pb.ImportIssuerRequest
+	2,  // 45: pb.CA.ActivateIssuer:input_type -> pb.ActivateIssuerRequest
+	3,  // 46: pb.CA.GetIssuer:input_type -> pb.GetIssuerRequest
+	4,  // 47: pb.CA.ListIssuers:input_type -> pb.ListIssuersRequest
+	7,  // 48: pb.CA.RegisterRoot:input_type -> pb.RegisterRootRequest
+	8,  // 49: pb.CA.ListRoots:input_type -> pb.ListRootsRequest
+	10, // 50: pb.CA.RegisterProfile:input_type -> pb.RegisterProfileRequest
+	11, // 51: pb.CA.GetProfile:input_type -> pb.GetProfileRequest
+	12, // 52: pb.CA.ListProfiles:input_type -> pb.ListProfilesRequest
+	14, // 53: pb.CA.DeleteProfile:input_type -> pb.DeleteProfileRequest
+	15, // 54: pb.CA.SignCertificate:input_type -> pb.SignCertificateRequest
+	17, // 55: pb.CA.GetCertificate:input_type -> pb.GetCertificateRequest
+	18, // 56: pb.CA.ListCertificates:input_type -> pb.ListCertificatesRequest
+	16, // 57: pb.CA.UpdateCertificateLabel:input_type -> pb.UpdateCertificateLabelRequest
+	20, // 58: pb.CA.RevokeCertificate:input_type -> pb.RevokeCertificateRequest
+	19, // 59: pb.CA.ListRevokedCertificates:input_type -> pb.ListRevokedCertificatesRequest
+	25, // 60: pb.CA.GetCRL:input_type -> pb.GetCrlRequest
+	26, // 61: pb.CA.PublishCrls:input_type -> pb.PublishCrlsRequest
+	29, // 62: pb.CA.SignOCSP:input_type -> pb.OCSPRequest
+	31, // 63: pb.CA.GetSummary:input_type -> pb.GetSummaryRequest
+	45, // 64: pb.CA.RegisterIssuer:output_type -> pb.Issuer
+	45, // 65: pb.CA.UpdateIssuer:output_type -> pb.Issuer
+	45, // 66: pb.CA.ImportIssuer:output_type -> pb.Issuer
+	45, // 67: pb.CA.ActivateIssuer:output_type -> pb.Issuer
+	45, // 68: pb.CA.GetIssuer:output_type -> pb.Issuer
+	5,  // 69: pb.CA.ListIssuers:output_type -> pb.IssuersResponse
+	48, // 70: pb.CA.RegisterRoot:output_type -> pb.RootCertificate
+	9,  // 71: pb.CA.ListRoots:output_type -> pb.RootsResponse
+	49, // 72: pb.CA.RegisterProfile:output_type -> pb.CertProfile
+	49, // 73: pb.CA.GetProfile:output_type -> pb.CertProfile
+	13, // 74: pb.CA.ListProfiles:output_type -> pb.ProfilesResponse
+	57, // 75: pb.CA.DeleteProfile:output_type -> google.protobuf.Empty
+	21, // 76: pb.CA.SignCertificate:output_type -> pb.CertificateResponse
+	21, // 77: pb.CA.GetCertificate:output_type -> pb.CertificateResponse
+	22, // 78: pb.CA.ListCertificates:output_type -> pb.CertificatesResponse
+	21, // 79: pb.CA.UpdateCertificateLabel:output_type -> pb.CertificateResponse
+	23, // 80: pb.CA.RevokeCertificate:output_type -> pb.RevokedCertificateResponse
+	24, // 81: pb.CA.ListRevokedCertificates:output_type -> pb.RevokedCertificatesResponse
+	28, // 82: pb.CA.GetCRL:output_type -> pb.CrlResponse
+	27, // 83: pb.CA.PublishCrls:output_type -> pb.CrlsResponse
+	30, // 84: pb.CA.SignOCSP:output_type -> pb.OCSPResponse
+	32, // 85: pb.CA.GetSummary:output_type -> pb.SummaryResponse
+	64, // [64:86] is the sub-list for method output_type
+	42, // [42:64] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_ca_proto_init() }
@@ -2610,7 +3041,7 @@ func file_ca_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ca_proto_rawDesc), len(file_ca_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

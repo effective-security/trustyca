@@ -106,6 +106,38 @@ background in batches; the default stays. With about half the rows expired
 at once, the full pass is 5,000 batches, about eight minutes, in the hourly
 task.
 
+### Summary counts (`CountCertificates`, 2026-10-31)
+
+The counts of `CA.GetSummary` on the same 10M-row load: one `GROUP BY
+status` statement and one range count per expiry period (7, 30 and 90
+days), all on the added index `(org_id, project_id, status, not_after)`.
+`provider` is the wall time of the four statements of a scope; the plan
+times are of the status statement and of the 90-day range.
+
+| Scope                                   | provider | by status                                   | Active, expiring within 90 days              |
+| --------------------------------------- | -------- | ------------------------------------------- | -------------------------------------------- |
+| big org (2M rows)                       | 531 ms   | 234 ms, parallel index-only scan, 2M entries | 112 ms, index-only range, 498k entries       |
+| big org, project (328k rows)            | 65 ms    | 62 ms, index-only, the project's entries    | 15 ms, 80k entries                           |
+| big org, visible projects (1.06M rows)  | 371 ms   | 193 ms, index-only scan of the org with the project filter in the index | 106 ms                   |
+| small org (40k rows)                    | 13 ms    | 8.8 ms                                      | 2.6 ms                                       |
+| tiny org (10 rows)                      | 0.6 ms   | 0.02 ms                                     | 0.01 ms                                      |
+
+A count is bounded by the index entries of its scope: a project reads its
+own entries, an org every entry of the org once per statement. The plans
+hold only with a current visibility map. The first pass ran right after
+the load, when autovacuum had marked three quarters of the pages all
+visible: the index-only scans fetched the heap for the rest (480k heap
+fetches, 1.1 s for the big org) and the planner answered the
+visible-projects predicate (`project_id IS NULL OR project_id = ANY(?)`)
+with a bitmap OR over `(org_id, project_id, not_after)` and a lossy bitmap
+heap scan that read 6.4 GB (0.9 s). After `VACUUM` the planner takes the
+index-only scan for every scope, so the load tool now vacuums the tables
+it loads (without parallel workers: the shared memory of the dev container
+cannot hold theirs), and a bulk import in production needs the same before
+the dashboard is cheap. The lists of the first section are unchanged by
+the index: the planner still walks the primary key backwards for the
+status and expiry lists, which stop at 100 rows.
+
 ### Insert (`RegisterCertificate` with its event, one connection)
 
 | inserts | total   | rate  | p50    | p95     | p99     | max     |
@@ -126,6 +158,7 @@ on one connection; the ECDSA signature in front of it is about 0.2 ms
 | idx_certificate_org_project_id_desc    | 692 MB  |
 | idx_certificate_org_ikid_id_desc       | 825 MB  |
 | idx_certificate_org_project_notafter   | 506 MB  |
+| idx_certificate_org_project_status_notafter | 619 MB (the summary counts, added 2026-10-31) |
 | idx_certificate_notafter               | 275 MB  |
 | idx_certificate_skid                   | 400 MB  |
 | unique_certificate_ikid_serial         | 1313 MB |
@@ -140,6 +173,13 @@ on one connection; the ECDSA signature in front of it is about 0.2 ms
   `idx_certificate_ikid_id_desc (ikid, id DESC)`. The dev database is
   recreated (`make drop-sql start-sql`) to pick them up; the generated
   schema and model carry them.
+- A third index for the counts of the tenant summary (2026-10-31):
+  `idx_certificate_org_project_status_notafter (org_id, project_id,
+  status, not_after)`, 619 MB at 10M rows; the insert stayed at 0.77 ms
+  p50 with it. Exact counts cost a scan of the index entries of the scope;
+  a counter table maintained by the writers is the next step if a tenant
+  with millions of certificates needs the dashboard below a few hundred
+  milliseconds.
 - The support list by issuer without an org resolves the org of the issuer
   before the query.
 - No partitioning: every tenant path is bounded by the rows of the tenant,

@@ -68,7 +68,7 @@ var (
 ```
 
 <a name="IsUniqueViolation"></a>
-## func [IsUniqueViolation](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L289>)
+## func [IsUniqueViolation](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L309>)
 
 ```go
 func IsUniqueViolation(err error, prefix string) bool
@@ -77,7 +77,7 @@ func IsUniqueViolation(err error, prefix string) bool
 IsUniqueViolation reports whether the error is a unique constraint violation of a constraint whose name starts with the prefix \(empty for any\), so that a caller maps a conflict without parsing the message
 
 <a name="CaDb"></a>
-## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L213-L275>)
+## type [CaDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L233-L295>)
 
 CaDb defines an interface for CRUD operations on the CA tables. Every mutation of an existing row names the exact org scope of the row \(a zero orgID is the platform\), so a row of another org is not found or not deleted. State changes that must agree are one transaction: a certificate and its issue event, a root issuer and its trust anchor, a revocation and the certificate status, a CRL and the issuer's CRL number.
 
@@ -148,7 +148,7 @@ type CaDb interface {
 ```
 
 <a name="CaReadonlyDb"></a>
-## type [CaReadonlyDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L149-L205>)
+## type [CaReadonlyDb](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L149-L225>)
 
 CaReadonlyDb defines an interface for Read operations on the CA tables: issuers, trust anchors, profiles, certificates, revocations and CRLs. Rows with a zero OrgID are the platform's \(org\_id IS NULL\). A Get by ID returns the row of any scope and the caller verifies its org and project; a List names its org scope \(OrgID, Platform or AllOrgs\) or fails with ErrOrgScopeRequired.
 
@@ -166,6 +166,10 @@ type CaReadonlyDb interface {
     GetIssuerBySKID(ctx context.Context, skid string) (*model.Issuer, error)
     // ListIssuers lists issuers, newest first
     ListIssuers(ctx context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error)
+    // CountIssuers counts the issuers of an org by lifecycle status, for the
+    // org, one of its projects or the visible projects of the request; a
+    // status without issuers has no entry
+    CountIssuers(ctx context.Context, req *query.CountIssuersRequest) (model.IssuerCounts, error)
 
     // GetRoot returns a trust anchor by ID
     GetRoot(ctx context.Context, id uint64) (*model.RootCertificate, error)
@@ -190,6 +194,11 @@ type CaReadonlyDb interface {
     GetCertificateByIssuerSerial(ctx context.Context, ikid, serial string) (*model.Certificate, error)
     // ListCertificates lists certificates, newest first
     ListCertificates(ctx context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error)
+    // CountCertificates counts the certificates of an org by status, and the
+    // Active ones whose validity ends within the periods of the request,
+    // for the org, one of its projects or the visible projects of the
+    // request
+    CountCertificates(ctx context.Context, req *query.CountCertificatesRequest) (*model.CertificateCounts, error)
 
     // GetRevoked returns the revocation of a certificate by its ID, or by the
     // key identifier of its issuer and its serial number
@@ -209,6 +218,17 @@ type CaReadonlyDb interface {
     GetCrls(ctx context.Context, ikids []string) ([]*model.Crl, error)
     // ListCrls lists the current CRLs, newest first
     ListCrls(ctx context.Context, req *query.ListCrlsRequest) (*model.CrlResult, error)
+    // ListCrlStates lists the issuers of an org with the lifecycle statuses
+    // of the request, newest first, with the state of their current CRL:
+    // the key identifier, the end of the validity, the settings and the
+    // next update of the CRL, never a PEM (the tenant summary)
+    ListCrlStates(ctx context.Context, req *query.ListCrlStatesRequest) (*model.CrlStateResult, error)
+
+    // GetSummaryCounts reads the counts of the tenant summary at one
+    // snapshot: a read-only REPEATABLE READ transaction runs the issuer
+    // counts, the certificate counts and the pages of the CRL states, so
+    // they agree with each other
+    GetSummaryCounts(ctx context.Context, req *query.SummaryRequest) (*model.SummaryCounts, error)
 }
 ```
 
@@ -345,7 +365,7 @@ type OrgsReadonlyDb interface {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L310-L315>)
+## type [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L330-L335>)
 
 Provider provides complete DB access
 
@@ -359,7 +379,7 @@ type Provider interface {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L318>)
+### func [New](<https://github.com/effective-security/trustyca/blob/main/internal/db/trustycadb.go#L338>)
 
 ```go
 func New(dataSourceName, migrationsDir string, forceVersion, migrateVersion int, idGen flake.IDGenerator) (Provider, error)

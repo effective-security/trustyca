@@ -52,24 +52,25 @@ Table: certificate
 │ 15  │ metadata      │ jsonb                    │ jsonb       │      │     │       │     │
 │ 16  │ pem           │ text                     │ text        │      │     │       │     │
 │ 17  │ issuers_pem   │ text                     │ text        │      │     │       │     │
-│ 18  │ status        │ integer                  │ int4        │      │     │       │     │
+│ 18  │ status        │ integer                  │ int4        │      │     │ YES   │     │
 │ 19  │ created_at    │ timestamp with time zone │ timestamptz │      │     │       │     │
 └─────┴───────────────┴──────────────────────────┴─────────────┴──────┴─────┴───────┴─────┘
 
 Indexes:
-┌──────────────────────────────────────┬─────────┬────────┬───────────────────────────────┐
-│                 NAME                 │ PRIMARY │ UNIQUE │            COLUMNS            │
-├──────────────────────────────────────┼─────────┼────────┼───────────────────────────────┤
-│ certificate_pkey                     │ YES     │ YES    │ id                            │
-│ idx_certificate_notafter             │         │        │ not_after                     │
-│ idx_certificate_org_id_desc          │         │        │ id, org_id                    │
-│ idx_certificate_org_ikid_id_desc     │         │        │ ikid, id, org_id              │
-│ idx_certificate_org_project_id_desc  │         │        │ org_id, project_id, id        │
-│ idx_certificate_org_project_notafter │         │        │ project_id, org_id, not_after │
-│ idx_certificate_skid                 │         │        │ skid                          │
-│ unique_certificate_ikid_serial       │         │ YES    │ ikid, serial_number           │
-│ unique_certificate_sha256            │         │ YES    │ sha256                        │
-└──────────────────────────────────────┴─────────┴────────┴───────────────────────────────┘
+┌─────────────────────────────────────────────┬─────────┬────────┬───────────────────────────────────────┐
+│                    NAME                     │ PRIMARY │ UNIQUE │                COLUMNS                │
+├─────────────────────────────────────────────┼─────────┼────────┼───────────────────────────────────────┤
+│ certificate_pkey                            │ YES     │ YES    │ id                                    │
+│ idx_certificate_notafter                    │         │        │ not_after                             │
+│ idx_certificate_org_id_desc                 │         │        │ id, org_id                            │
+│ idx_certificate_org_ikid_id_desc            │         │        │ id, org_id, ikid                      │
+│ idx_certificate_org_project_id_desc         │         │        │ org_id, project_id, id                │
+│ idx_certificate_org_project_notafter        │         │        │ project_id, org_id, not_after         │
+│ idx_certificate_org_project_status_notafter │         │        │ status, org_id, project_id, not_after │
+│ idx_certificate_skid                        │         │        │ skid                                  │
+│ unique_certificate_ikid_serial              │         │ YES    │ serial_number, ikid                   │
+│ unique_certificate_sha256                   │         │ YES    │ sha256                                │
+└─────────────────────────────────────────────┴─────────┴────────┴───────────────────────────────────────┘
 
 Schema: trustyca
 Table: certificate_profile

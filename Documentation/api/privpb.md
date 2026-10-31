@@ -105,6 +105,17 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(x \*GetProfileRequest\) String\(\) string](<#GetProfileRequest.String>)
   - [func \(msg \*GetProfileRequest\) UnmarshalJSON\(b \[\]byte\) error](<#GetProfileRequest.UnmarshalJSON>)
   - [func \(m \*GetProfileRequest\) Validate\(ctx context.Context\) error](<#GetProfileRequest.Validate>)
+- [type GetSummaryRequest](<#GetSummaryRequest>)
+  - [func \(\*GetSummaryRequest\) Descriptor\(\) \(\[\]byte, \[\]int\)](<#GetSummaryRequest.Descriptor>)
+  - [func \(x \*GetSummaryRequest\) GetOrgID\(\) string](<#GetSummaryRequest.GetOrgID>)
+  - [func \(x \*GetSummaryRequest\) GetProjectID\(\) string](<#GetSummaryRequest.GetProjectID>)
+  - [func \(msg \*GetSummaryRequest\) MarshalJSON\(\) \(\[\]byte, error\)](<#GetSummaryRequest.MarshalJSON>)
+  - [func \(\*GetSummaryRequest\) ProtoMessage\(\)](<#GetSummaryRequest.ProtoMessage>)
+  - [func \(x \*GetSummaryRequest\) ProtoReflect\(\) protoreflect.Message](<#GetSummaryRequest.ProtoReflect>)
+  - [func \(x \*GetSummaryRequest\) Reset\(\)](<#GetSummaryRequest.Reset>)
+  - [func \(x \*GetSummaryRequest\) String\(\) string](<#GetSummaryRequest.String>)
+  - [func \(msg \*GetSummaryRequest\) UnmarshalJSON\(b \[\]byte\) error](<#GetSummaryRequest.UnmarshalJSON>)
+  - [func \(m \*GetSummaryRequest\) Validate\(ctx context.Context\) error](<#GetSummaryRequest.Validate>)
 - [type ImportIssuerRequest](<#ImportIssuerRequest>)
   - [func \(\*ImportIssuerRequest\) Descriptor\(\) \(\[\]byte, \[\]int\)](<#ImportIssuerRequest.Descriptor>)
   - [func \(x \*ImportIssuerRequest\) GetCertificate\(\) string](<#ImportIssuerRequest.GetCertificate>)
@@ -378,6 +389,7 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(UnimplementedBackendServer\) GetCertificate\(context.Context, \*GetCertificateRequest\) \(\*pb.CertificateResponse, error\)](<#UnimplementedBackendServer.GetCertificate>)
   - [func \(UnimplementedBackendServer\) GetIssuer\(context.Context, \*GetIssuerRequest\) \(\*pb.Issuer, error\)](<#UnimplementedBackendServer.GetIssuer>)
   - [func \(UnimplementedBackendServer\) GetProfile\(context.Context, \*GetProfileRequest\) \(\*pb.CertProfile, error\)](<#UnimplementedBackendServer.GetProfile>)
+  - [func \(UnimplementedBackendServer\) GetSummary\(context.Context, \*GetSummaryRequest\) \(\*pb.SummaryResponse, error\)](<#UnimplementedBackendServer.GetSummary>)
   - [func \(UnimplementedBackendServer\) ImportIssuer\(context.Context, \*ImportIssuerRequest\) \(\*pb.Issuer, error\)](<#UnimplementedBackendServer.ImportIssuer>)
   - [func \(UnimplementedBackendServer\) ListCertificates\(context.Context, \*ListCertificatesRequest\) \(\*pb.CertificatesResponse, error\)](<#UnimplementedBackendServer.ListCertificates>)
   - [func \(UnimplementedBackendServer\) ListIssuers\(context.Context, \*ListIssuersRequest\) \(\*pb.IssuersResponse, error\)](<#UnimplementedBackendServer.ListIssuers>)
@@ -463,6 +475,7 @@ const (
     Backend_GetCRL_FullMethodName                  = "/privpb.Backend/GetCRL"
     Backend_PublishCrls_FullMethodName             = "/privpb.Backend/PublishCrls"
     Backend_SignOCSP_FullMethodName                = "/privpb.Backend/SignOCSP"
+    Backend_GetSummary_FullMethodName              = "/privpb.Backend/GetSummary"
 )
 ```
 
@@ -658,6 +671,10 @@ var Backend_ServiceDesc = grpc.ServiceDesc{
         {
             MethodName: "SignOCSP",
             Handler:    _Backend_SignOCSP_Handler,
+        },
+        {
+            MethodName: "GetSummary",
+            Handler:    _Backend_GetSummary_Handler,
         },
     },
     Streams:  []grpc.StreamDesc{},
@@ -1064,6 +1081,36 @@ var CertificateResponse_MessageDescription = &api.MessageDescription{
 }
 ```
 
+<a name="CertificateStatusCount_MessageDescription"></a>
+
+```go
+var CertificateStatusCount_MessageDescription = &api.MessageDescription{
+    Name:          "CertificateStatusCount",
+    Display:       "Certificate Status Count",
+    FullName:      "pb.CertificateStatusCount",
+    Documentation: `CertificateStatusCount is the number of certificates of a status`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:            "Status",
+            FullName:        "pb.CertificateStatusCount.Status",
+            Type:            "int32",
+            SearchType:      "integer",
+            SearchOptions:   api.SearchOption_Sortable,
+            EnumDescription: pb.CertificateStatus_Enum_EnumDescription,
+            Documentation:   `Status of the certificates`,
+        },
+        {
+            Name:          "Count",
+            FullName:      "pb.CertificateStatusCount.Count",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Count of the certificates of the status`,
+        },
+    },
+}
+```
+
 <a name="Certificate_MessageDescription"></a>
 
 ```go
@@ -1295,6 +1342,66 @@ fetch. If there are no more pages to fetch, NextPage will be empty.`,
 }
 ```
 
+<a name="CrlCounts_MessageDescription"></a>
+
+```go
+var CrlCounts_MessageDescription = &api.MessageDescription{
+    Name:     "CrlCounts",
+    Display:  "Crl Counts",
+    FullName: "pb.CrlCounts",
+    Documentation: `CrlCounts counts the issuers that publish CRLs, the Active and Archived
+issuers whose certificate is valid, by the state of their current CRL at
+the time of the summary: Issuers is Current, Due, Overdue and Missing
+together.`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "Issuers",
+            FullName:      "pb.CrlCounts.Issuers",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Issuers is the number of issuers that publish CRLs`,
+        },
+        {
+            Name:          "Current",
+            FullName:      "pb.CrlCounts.Current",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Current is the number of CRLs whose next update is later than the
+renewal period of their issuer`,
+        },
+        {
+            Name:          "Due",
+            FullName:      "pb.CrlCounts.Due",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Due is the number of CRLs whose next update is within the renewal
+period of their issuer; the renewal task publishes them on its next
+run`,
+        },
+        {
+            Name:          "Overdue",
+            FullName:      "pb.CrlCounts.Overdue",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Overdue is the number of CRLs whose next update has passed: relying
+parties see a stale CRL until it is published`,
+        },
+        {
+            Name:          "Missing",
+            FullName:      "pb.CrlCounts.Missing",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Missing is the number of issuers that have published no CRL yet`,
+        },
+    },
+}
+```
+
 <a name="CrlResponse_MessageDescription"></a>
 
 ```go
@@ -1496,6 +1603,36 @@ rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
 
 ```go
 var EnumNameTypes = map[string]reflect.Type{}
+```
+
+<a name="ExpiryBucket_MessageDescription"></a>
+
+```go
+var ExpiryBucket_MessageDescription = &api.MessageDescription{
+    Name:     "ExpiryBucket",
+    Display:  "Expiry Bucket",
+    FullName: "pb.ExpiryBucket",
+    Documentation: `ExpiryBucket is the number of Active certificates whose validity ends
+within a number of days after the time of the summary`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "Days",
+            FullName:      "pb.ExpiryBucket.Days",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Days after the time of the summary`,
+        },
+        {
+            Name:          "Count",
+            FullName:      "pb.ExpiryBucket.Count",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Count of the Active certificates that expire within the days`,
+        },
+    },
+}
 ```
 
 <a name="File_admin_proto"></a>
@@ -1715,6 +1852,41 @@ service forwards, or the org a service identity names`,
             SearchOptions: api.SearchOption_Sortable,
             RequiredOr:    []string{"ID"},
             Documentation: `Label of the profile, resolved as (Org, Project) then (Org)`,
+        },
+    },
+}
+```
+
+<a name="GetSummaryRequest_MessageDescription"></a>
+
+```go
+var GetSummaryRequest_MessageDescription = &api.MessageDescription{
+    Name:     "GetSummaryRequest",
+    Display:  "Get Summary Request",
+    FullName: "privpb.GetSummaryRequest",
+    Documentation: `GetSummaryRequest specifies the scope of the summary
+with the org named explicitly: the request of Backend.GetSummary`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "OrgID",
+            FullName:      "privpb.GetSummaryRequest.OrgID",
+            Display:       "Org ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Required:      true,
+            Documentation: `OrgID of the owning org: the org of the token of the caller the CA
+service forwards, or the org a service identity names`,
+        },
+        {
+            Name:          "ProjectID",
+            FullName:      "privpb.GetSummaryRequest.ProjectID",
+            Display:       "Project ID",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `ProjectID limits the summary to the project; empty summarizes the
+org-wide rows and the projects the caller may read`,
         },
     },
 }
@@ -1956,6 +2128,36 @@ var IssuerSerial_MessageDescription = &api.MessageDescription{
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
             Documentation: `SerialNumber provides certificate's serial number`,
+        },
+    },
+}
+```
+
+<a name="IssuerStatusCount_MessageDescription"></a>
+
+```go
+var IssuerStatusCount_MessageDescription = &api.MessageDescription{
+    Name:          "IssuerStatusCount",
+    Display:       "Issuer Status Count",
+    FullName:      "pb.IssuerStatusCount",
+    Documentation: `IssuerStatusCount is the number of issuers of a lifecycle status`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:            "Status",
+            FullName:        "pb.IssuerStatusCount.Status",
+            Type:            "int32",
+            SearchType:      "integer",
+            SearchOptions:   api.SearchOption_Sortable,
+            EnumDescription: pb.IssuerStatus_Enum_EnumDescription,
+            Documentation:   `Status of the issuers`,
+        },
+        {
+            Name:          "Count",
+            FullName:      "pb.IssuerStatusCount.Count",
+            Type:          "uint32",
+            SearchType:    "integer",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `Count of the issuers of the status`,
         },
     },
 }
@@ -3971,6 +4173,66 @@ var SignCertificateRequest_MetadataEntry_MessageDescription = &api.MessageDescri
 }
 ```
 
+<a name="SummaryResponse_MessageDescription"></a>
+
+```go
+var SummaryResponse_MessageDescription = &api.MessageDescription{
+    Name:     "SummaryResponse",
+    Display:  "Summary Response",
+    FullName: "pb.SummaryResponse",
+    Documentation: `SummaryResponse returns the counts of the rows of the scope at the time
+of the request. The counts are exact: a count of the certificates of a
+scope reads their index entries, so it grows with the tenant.`,
+    Fields: []*api.FieldMeta{
+        {
+            Name:          "At",
+            FullName:      "pb.SummaryResponse.At",
+            Type:          "string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `At is the time of the counts, RFC3339`,
+        },
+        {
+            Name:       "Issuers",
+            FullName:   "pb.SummaryResponse.Issuers",
+            Type:       "[]struct",
+            StructName: "pb.IssuerStatusCount",
+            SearchType: "flat_object",
+            Documentation: `Issuers counts the issuers by lifecycle status; every status is
+reported, with a zero count when the scope has none`,
+        },
+        {
+            Name:       "Certificates",
+            FullName:   "pb.SummaryResponse.Certificates",
+            Type:       "[]struct",
+            StructName: "pb.CertificateStatusCount",
+            SearchType: "flat_object",
+            Documentation: `Certificates counts the certificates by status; every status is
+reported, with a zero count when the scope has none`,
+        },
+        {
+            Name:       "Expiring",
+            FullName:   "pb.SummaryResponse.Expiring",
+            Type:       "[]struct",
+            StructName: "pb.ExpiryBucket",
+            SearchType: "flat_object",
+            Documentation: `Expiring counts the Active certificates whose validity ends within
+the days after At. The buckets are cumulative: 7, 30 and 90 days. A
+certificate past its NotAfter is expired, not expiring, whatever its
+status.`,
+        },
+        {
+            Name:          "Crls",
+            FullName:      "pb.SummaryResponse.Crls",
+            Type:          "struct",
+            StructName:    "pb.CrlCounts",
+            SearchType:    "flat_object",
+            Documentation: `Crls counts the issuers that publish CRLs by the state of their CRL`,
+        },
+    },
+}
+```
+
 <a name="UpdateCertificateLabelRequest_MessageDescription"></a>
 
 ```go
@@ -4254,7 +4516,7 @@ var X509Subject_MessageDescription = &api.MessageDescription{
 ```
 
 <a name="CreateMessage"></a>
-## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3617>)
+## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3853>)
 
 ```go
 func CreateMessage(fullname string) any
@@ -4272,7 +4534,7 @@ func GetAdminMethodsInfo() map[string]*MethodInfo
 GetAdminMethodsInfo returns the methods info for the admin service. It filters out the methods that are not prefixed with "/privpb.Admin/".
 
 <a name="GetMessageDescription"></a>
-## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3625>)
+## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3861>)
 
 ```go
 func GetMessageDescription(fullname string) *api.MessageDescription
@@ -4281,7 +4543,7 @@ func GetMessageDescription(fullname string) *api.MessageDescription
 
 
 <a name="GetMessageDescriptions"></a>
-## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3601>)
+## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3837>)
 
 ```go
 func GetMessageDescriptions() map[string]*api.MessageDescription
@@ -4326,7 +4588,7 @@ func RegisterAdminServer(s grpc.ServiceRegistrar, srv AdminServer)
 
 
 <a name="RegisterBackendServer"></a>
-## func [RegisterBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L501>)
+## func [RegisterBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L521>)
 
 ```go
 func RegisterBackendServer(s grpc.ServiceRegistrar, srv BackendServer)
@@ -4479,7 +4741,7 @@ func (msg *ActivateIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ActivateIssuerRequest.Validate"></a>
-### func \(\*ActivateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3528>)
+### func \(\*ActivateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3761>)
 
 ```go
 func (m *ActivateIssuerRequest) Validate(ctx context.Context) error
@@ -4613,7 +4875,7 @@ type AdminServer interface {
 ```
 
 <a name="BackendClient"></a>
-## type [BackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L64-L124>)
+## type [BackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L65-L128>)
 
 BackendClient is the client API for Backend service.
 
@@ -4682,11 +4944,14 @@ type BackendClient interface {
     // SignOCSP signs the OCSP response of a DER request; the request
     // names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
     SignOCSP(ctx context.Context, in *pb.OCSPRequest, opts ...grpc.CallOption) (*pb.OCSPResponse, error)
+    // GetSummary returns the counts of the issuers, certificates and CRLs
+    // of the org, or of one of its projects (CA.GetSummary)
+    GetSummary(ctx context.Context, in *GetSummaryRequest, opts ...grpc.CallOption) (*pb.SummaryResponse, error)
 }
 ```
 
 <a name="NewBackendClient"></a>
-### func [NewBackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L130>)
+### func [NewBackendClient](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L134>)
 
 ```go
 func NewBackendClient(cc grpc.ClientConnInterface) BackendClient
@@ -4695,7 +4960,7 @@ func NewBackendClient(cc grpc.ClientConnInterface) BackendClient
 
 
 <a name="BackendServer"></a>
-## type [BackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L360-L420>)
+## type [BackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L374-L437>)
 
 BackendServer is the server API for Backend service. All implementations should embed UnimplementedBackendServer for forward compatibility.
 
@@ -4762,6 +5027,9 @@ type BackendServer interface {
     // SignOCSP signs the OCSP response of a DER request; the request
     // names the issuer by its key hash, so it carries no tenant (CA.SignOCSP)
     SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error)
+    // GetSummary returns the counts of the issuers, certificates and CRLs
+    // of the org, or of one of its projects (CA.GetSummary)
+    GetSummary(context.Context, *GetSummaryRequest) (*pb.SummaryResponse, error)
 }
 ```
 
@@ -4886,7 +5154,7 @@ func (msg *DeleteProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="DeleteProfileRequest.Validate"></a>
-### func \(\*DeleteProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3531>)
+### func \(\*DeleteProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3764>)
 
 ```go
 func (m *DeleteProfileRequest) Validate(ctx context.Context) error
@@ -5026,7 +5294,7 @@ func (msg *GetCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCertificateRequest.Validate"></a>
-### func \(\*GetCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3534>)
+### func \(\*GetCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3767>)
 
 ```go
 func (m *GetCertificateRequest) Validate(ctx context.Context) error
@@ -5133,7 +5401,7 @@ func (msg *GetCrlRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCrlRequest.Validate"></a>
-### func \(\*GetCrlRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3537>)
+### func \(\*GetCrlRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3770>)
 
 ```go
 func (m *GetCrlRequest) Validate(ctx context.Context) error
@@ -5273,7 +5541,7 @@ func (msg *GetIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetIssuerRequest.Validate"></a>
-### func \(\*GetIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3540>)
+### func \(\*GetIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3773>)
 
 ```go
 func (m *GetIssuerRequest) Validate(ctx context.Context) error
@@ -5402,10 +5670,118 @@ func (msg *GetProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetProfileRequest.Validate"></a>
-### func \(\*GetProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3543>)
+### func \(\*GetProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3776>)
 
 ```go
 func (m *GetProfileRequest) Validate(ctx context.Context) error
+```
+
+
+
+<a name="GetSummaryRequest"></a>
+## type [GetSummaryRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1919-L1929>)
+
+GetSummaryRequest specifies the scope of the summary with the org named explicitly: the request of Backend.GetSummary
+
+```go
+type GetSummaryRequest struct {
+
+    // OrgID of the owning org: the org of the token of the caller the CA
+    // service forwards, or the org a service identity names
+    OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
+    // ProjectID limits the summary to the project; empty summarizes the
+    // org-wide rows and the projects the caller may read
+    ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+    // contains filtered or unexported fields
+}
+```
+
+<a name="GetSummaryRequest.Descriptor"></a>
+### func \(\*GetSummaryRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1957>)
+
+```go
+func (*GetSummaryRequest) Descriptor() ([]byte, []int)
+```
+
+Deprecated: Use GetSummaryRequest.ProtoReflect.Descriptor instead.
+
+<a name="GetSummaryRequest.GetOrgID"></a>
+### func \(\*GetSummaryRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1961>)
+
+```go
+func (x *GetSummaryRequest) GetOrgID() string
+```
+
+
+
+<a name="GetSummaryRequest.GetProjectID"></a>
+### func \(\*GetSummaryRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1968>)
+
+```go
+func (x *GetSummaryRequest) GetProjectID() string
+```
+
+
+
+<a name="GetSummaryRequest.MarshalJSON"></a>
+### func \(\*GetSummaryRequest\) [MarshalJSON](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.json.pb.go#L207>)
+
+```go
+func (msg *GetSummaryRequest) MarshalJSON() ([]byte, error)
+```
+
+MarshalJSON implements json.Marshaler
+
+<a name="GetSummaryRequest.ProtoMessage"></a>
+### func \(\*GetSummaryRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1942>)
+
+```go
+func (*GetSummaryRequest) ProtoMessage()
+```
+
+
+
+<a name="GetSummaryRequest.ProtoReflect"></a>
+### func \(\*GetSummaryRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1944>)
+
+```go
+func (x *GetSummaryRequest) ProtoReflect() protoreflect.Message
+```
+
+
+
+<a name="GetSummaryRequest.Reset"></a>
+### func \(\*GetSummaryRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1931>)
+
+```go
+func (x *GetSummaryRequest) Reset()
+```
+
+
+
+<a name="GetSummaryRequest.String"></a>
+### func \(\*GetSummaryRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1938>)
+
+```go
+func (x *GetSummaryRequest) String() string
+```
+
+
+
+<a name="GetSummaryRequest.UnmarshalJSON"></a>
+### func \(\*GetSummaryRequest\) [UnmarshalJSON](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.json.pb.go#L212>)
+
+```go
+func (msg *GetSummaryRequest) UnmarshalJSON(b []byte) error
+```
+
+UnmarshalJSON implements json.Unmarshaler
+
+<a name="GetSummaryRequest.Validate"></a>
+### func \(\*GetSummaryRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3779>)
+
+```go
+func (m *GetSummaryRequest) Validate(ctx context.Context) error
 ```
 
 
@@ -5599,7 +5975,7 @@ func (msg *ImportIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ImportIssuerRequest.Validate"></a>
-### func \(\*ImportIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3546>)
+### func \(\*ImportIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3782>)
 
 ```go
 func (m *ImportIssuerRequest) Validate(ctx context.Context) error
@@ -5798,7 +6174,7 @@ func (msg *ListAllCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListAllCertificatesRequest.Validate"></a>
-### func \(\*ListAllCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3549>)
+### func \(\*ListAllCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3785>)
 
 ```go
 func (m *ListAllCertificatesRequest) Validate(ctx context.Context) error
@@ -5986,7 +6362,7 @@ func (msg *ListAllIssuersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListAllIssuersRequest.Validate"></a>
-### func \(\*ListAllIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3552>)
+### func \(\*ListAllIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3788>)
 
 ```go
 func (m *ListAllIssuersRequest) Validate(ctx context.Context) error
@@ -6174,7 +6550,7 @@ func (msg *ListCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListCertificatesRequest.Validate"></a>
-### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3555>)
+### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3791>)
 
 ```go
 func (m *ListCertificatesRequest) Validate(ctx context.Context) error
@@ -6339,7 +6715,7 @@ func (msg *ListIssuersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3558>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3794>)
 
 ```go
 func (m *ListIssuersRequest) Validate(ctx context.Context) error
@@ -6473,7 +6849,7 @@ func (msg *ListOrgsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListOrgsRequest.Validate"></a>
-### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3561>)
+### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3797>)
 
 ```go
 func (m *ListOrgsRequest) Validate(ctx context.Context) error
@@ -6625,7 +7001,7 @@ func (msg *ListProfilesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProfilesRequest.Validate"></a>
-### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3564>)
+### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3800>)
 
 ```go
 func (m *ListProfilesRequest) Validate(ctx context.Context) error
@@ -6770,7 +7146,7 @@ func (msg *ListProjectsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProjectsRequest.Validate"></a>
-### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3567>)
+### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3803>)
 
 ```go
 func (m *ListProjectsRequest) Validate(ctx context.Context) error
@@ -6921,7 +7297,7 @@ func (msg *ListRevokedCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListRevokedCertificatesRequest.Validate"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3570>)
+### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3806>)
 
 ```go
 func (m *ListRevokedCertificatesRequest) Validate(ctx context.Context) error
@@ -7050,7 +7426,7 @@ func (msg *ListRootsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListRootsRequest.Validate"></a>
-### func \(\*ListRootsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3573>)
+### func \(\*ListRootsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3809>)
 
 ```go
 func (m *ListRootsRequest) Validate(ctx context.Context) error
@@ -7059,7 +7435,7 @@ func (m *ListRootsRequest) Validate(ctx context.Context) error
 
 
 <a name="MessageAllocator"></a>
-## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3397>)
+## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3618>)
 
 MessageAllocator defines constructor to allocate Protobuf message
 
@@ -7225,7 +7601,7 @@ func (msg *PublishCrlsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="PublishCrlsRequest.Validate"></a>
-### func \(\*PublishCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3576>)
+### func \(\*PublishCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3812>)
 
 ```go
 func (m *PublishCrlsRequest) Validate(ctx context.Context) error
@@ -7445,7 +7821,7 @@ func (msg *RegisterIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterIssuerRequest.Validate"></a>
-### func \(\*RegisterIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3579>)
+### func \(\*RegisterIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3815>)
 
 ```go
 func (m *RegisterIssuerRequest) Validate(ctx context.Context) error
@@ -7564,7 +7940,7 @@ func (msg *RegisterProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterProfileRequest.Validate"></a>
-### func \(\*RegisterProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3582>)
+### func \(\*RegisterProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3818>)
 
 ```go
 func (m *RegisterProfileRequest) Validate(ctx context.Context) error
@@ -7682,7 +8058,7 @@ func (msg *RegisterRootRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterRootRequest.Validate"></a>
-### func \(\*RegisterRootRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3585>)
+### func \(\*RegisterRootRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3821>)
 
 ```go
 func (m *RegisterRootRequest) Validate(ctx context.Context) error
@@ -7856,7 +8232,7 @@ func (msg *RevokeCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RevokeCertificateRequest.Validate"></a>
-### func \(\*RevokeCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3588>)
+### func \(\*RevokeCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3824>)
 
 ```go
 func (m *RevokeCertificateRequest) Validate(ctx context.Context) error
@@ -8089,7 +8465,7 @@ func (msg *SignCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="SignCertificateRequest.Validate"></a>
-### func \(\*SignCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3591>)
+### func \(\*SignCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3827>)
 
 ```go
 func (m *SignCertificateRequest) Validate(ctx context.Context) error
@@ -8145,7 +8521,7 @@ func (UnimplementedAdminServer) ListProjects(context.Context, *ListProjectsReque
 
 
 <a name="UnimplementedBackendServer"></a>
-## type [UnimplementedBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L427>)
+## type [UnimplementedBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L444>)
 
 UnimplementedBackendServer should be embedded to have forward compatible implementations.
 
@@ -8156,7 +8532,7 @@ type UnimplementedBackendServer struct{}
 ```
 
 <a name="UnimplementedBackendServer.ActivateIssuer"></a>
-### func \(UnimplementedBackendServer\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L435>)
+### func \(UnimplementedBackendServer\) [ActivateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L452>)
 
 ```go
 func (UnimplementedBackendServer) ActivateIssuer(context.Context, *ActivateIssuerRequest) (*pb.Issuer, error)
@@ -8165,7 +8541,7 @@ func (UnimplementedBackendServer) ActivateIssuer(context.Context, *ActivateIssue
 
 
 <a name="UnimplementedBackendServer.DeleteProfile"></a>
-### func \(UnimplementedBackendServer\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L462>)
+### func \(UnimplementedBackendServer\) [DeleteProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L479>)
 
 ```go
 func (UnimplementedBackendServer) DeleteProfile(context.Context, *DeleteProfileRequest) (*emptypb.Empty, error)
@@ -8174,7 +8550,7 @@ func (UnimplementedBackendServer) DeleteProfile(context.Context, *DeleteProfileR
 
 
 <a name="UnimplementedBackendServer.GetCRL"></a>
-### func \(UnimplementedBackendServer\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L483>)
+### func \(UnimplementedBackendServer\) [GetCRL](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L500>)
 
 ```go
 func (UnimplementedBackendServer) GetCRL(context.Context, *GetCrlRequest) (*pb.CrlResponse, error)
@@ -8183,7 +8559,7 @@ func (UnimplementedBackendServer) GetCRL(context.Context, *GetCrlRequest) (*pb.C
 
 
 <a name="UnimplementedBackendServer.GetCertificate"></a>
-### func \(UnimplementedBackendServer\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L468>)
+### func \(UnimplementedBackendServer\) [GetCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L485>)
 
 ```go
 func (UnimplementedBackendServer) GetCertificate(context.Context, *GetCertificateRequest) (*pb.CertificateResponse, error)
@@ -8192,7 +8568,7 @@ func (UnimplementedBackendServer) GetCertificate(context.Context, *GetCertificat
 
 
 <a name="UnimplementedBackendServer.GetIssuer"></a>
-### func \(UnimplementedBackendServer\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L441>)
+### func \(UnimplementedBackendServer\) [GetIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L458>)
 
 ```go
 func (UnimplementedBackendServer) GetIssuer(context.Context, *GetIssuerRequest) (*pb.Issuer, error)
@@ -8201,7 +8577,7 @@ func (UnimplementedBackendServer) GetIssuer(context.Context, *GetIssuerRequest) 
 
 
 <a name="UnimplementedBackendServer.GetProfile"></a>
-### func \(UnimplementedBackendServer\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L456>)
+### func \(UnimplementedBackendServer\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L473>)
 
 ```go
 func (UnimplementedBackendServer) GetProfile(context.Context, *GetProfileRequest) (*pb.CertProfile, error)
@@ -8209,8 +8585,17 @@ func (UnimplementedBackendServer) GetProfile(context.Context, *GetProfileRequest
 
 
 
+<a name="UnimplementedBackendServer.GetSummary"></a>
+### func \(UnimplementedBackendServer\) [GetSummary](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L509>)
+
+```go
+func (UnimplementedBackendServer) GetSummary(context.Context, *GetSummaryRequest) (*pb.SummaryResponse, error)
+```
+
+
+
 <a name="UnimplementedBackendServer.ImportIssuer"></a>
-### func \(UnimplementedBackendServer\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L432>)
+### func \(UnimplementedBackendServer\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L449>)
 
 ```go
 func (UnimplementedBackendServer) ImportIssuer(context.Context, *ImportIssuerRequest) (*pb.Issuer, error)
@@ -8219,7 +8604,7 @@ func (UnimplementedBackendServer) ImportIssuer(context.Context, *ImportIssuerReq
 
 
 <a name="UnimplementedBackendServer.ListCertificates"></a>
-### func \(UnimplementedBackendServer\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L471>)
+### func \(UnimplementedBackendServer\) [ListCertificates](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L488>)
 
 ```go
 func (UnimplementedBackendServer) ListCertificates(context.Context, *ListCertificatesRequest) (*pb.CertificatesResponse, error)
@@ -8228,7 +8613,7 @@ func (UnimplementedBackendServer) ListCertificates(context.Context, *ListCertifi
 
 
 <a name="UnimplementedBackendServer.ListIssuers"></a>
-### func \(UnimplementedBackendServer\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L444>)
+### func \(UnimplementedBackendServer\) [ListIssuers](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L461>)
 
 ```go
 func (UnimplementedBackendServer) ListIssuers(context.Context, *ListIssuersRequest) (*pb.IssuersResponse, error)
@@ -8237,7 +8622,7 @@ func (UnimplementedBackendServer) ListIssuers(context.Context, *ListIssuersReque
 
 
 <a name="UnimplementedBackendServer.ListProfiles"></a>
-### func \(UnimplementedBackendServer\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L459>)
+### func \(UnimplementedBackendServer\) [ListProfiles](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L476>)
 
 ```go
 func (UnimplementedBackendServer) ListProfiles(context.Context, *ListProfilesRequest) (*pb.ProfilesResponse, error)
@@ -8246,7 +8631,7 @@ func (UnimplementedBackendServer) ListProfiles(context.Context, *ListProfilesReq
 
 
 <a name="UnimplementedBackendServer.ListRevokedCertificates"></a>
-### func \(UnimplementedBackendServer\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L480>)
+### func \(UnimplementedBackendServer\) [ListRevokedCertificates](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L497>)
 
 ```go
 func (UnimplementedBackendServer) ListRevokedCertificates(context.Context, *ListRevokedCertificatesRequest) (*pb.RevokedCertificatesResponse, error)
@@ -8255,7 +8640,7 @@ func (UnimplementedBackendServer) ListRevokedCertificates(context.Context, *List
 
 
 <a name="UnimplementedBackendServer.ListRoots"></a>
-### func \(UnimplementedBackendServer\) [ListRoots](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L450>)
+### func \(UnimplementedBackendServer\) [ListRoots](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L467>)
 
 ```go
 func (UnimplementedBackendServer) ListRoots(context.Context, *ListRootsRequest) (*pb.RootsResponse, error)
@@ -8264,7 +8649,7 @@ func (UnimplementedBackendServer) ListRoots(context.Context, *ListRootsRequest) 
 
 
 <a name="UnimplementedBackendServer.PublishCrls"></a>
-### func \(UnimplementedBackendServer\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L486>)
+### func \(UnimplementedBackendServer\) [PublishCrls](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L503>)
 
 ```go
 func (UnimplementedBackendServer) PublishCrls(context.Context, *PublishCrlsRequest) (*pb.CrlsResponse, error)
@@ -8273,7 +8658,7 @@ func (UnimplementedBackendServer) PublishCrls(context.Context, *PublishCrlsReque
 
 
 <a name="UnimplementedBackendServer.RegisterIssuer"></a>
-### func \(UnimplementedBackendServer\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L429>)
+### func \(UnimplementedBackendServer\) [RegisterIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L446>)
 
 ```go
 func (UnimplementedBackendServer) RegisterIssuer(context.Context, *RegisterIssuerRequest) (*pb.Issuer, error)
@@ -8282,7 +8667,7 @@ func (UnimplementedBackendServer) RegisterIssuer(context.Context, *RegisterIssue
 
 
 <a name="UnimplementedBackendServer.RegisterProfile"></a>
-### func \(UnimplementedBackendServer\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L453>)
+### func \(UnimplementedBackendServer\) [RegisterProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L470>)
 
 ```go
 func (UnimplementedBackendServer) RegisterProfile(context.Context, *RegisterProfileRequest) (*pb.CertProfile, error)
@@ -8291,7 +8676,7 @@ func (UnimplementedBackendServer) RegisterProfile(context.Context, *RegisterProf
 
 
 <a name="UnimplementedBackendServer.RegisterRoot"></a>
-### func \(UnimplementedBackendServer\) [RegisterRoot](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L447>)
+### func \(UnimplementedBackendServer\) [RegisterRoot](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L464>)
 
 ```go
 func (UnimplementedBackendServer) RegisterRoot(context.Context, *RegisterRootRequest) (*pb.RootCertificate, error)
@@ -8300,7 +8685,7 @@ func (UnimplementedBackendServer) RegisterRoot(context.Context, *RegisterRootReq
 
 
 <a name="UnimplementedBackendServer.RevokeCertificate"></a>
-### func \(UnimplementedBackendServer\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L477>)
+### func \(UnimplementedBackendServer\) [RevokeCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L494>)
 
 ```go
 func (UnimplementedBackendServer) RevokeCertificate(context.Context, *RevokeCertificateRequest) (*pb.RevokedCertificateResponse, error)
@@ -8309,7 +8694,7 @@ func (UnimplementedBackendServer) RevokeCertificate(context.Context, *RevokeCert
 
 
 <a name="UnimplementedBackendServer.SignCertificate"></a>
-### func \(UnimplementedBackendServer\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L465>)
+### func \(UnimplementedBackendServer\) [SignCertificate](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L482>)
 
 ```go
 func (UnimplementedBackendServer) SignCertificate(context.Context, *SignCertificateRequest) (*pb.CertificateResponse, error)
@@ -8318,7 +8703,7 @@ func (UnimplementedBackendServer) SignCertificate(context.Context, *SignCertific
 
 
 <a name="UnimplementedBackendServer.SignOCSP"></a>
-### func \(UnimplementedBackendServer\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L489>)
+### func \(UnimplementedBackendServer\) [SignOCSP](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L506>)
 
 ```go
 func (UnimplementedBackendServer) SignOCSP(context.Context, *pb.OCSPRequest) (*pb.OCSPResponse, error)
@@ -8327,7 +8712,7 @@ func (UnimplementedBackendServer) SignOCSP(context.Context, *pb.OCSPRequest) (*p
 
 
 <a name="UnimplementedBackendServer.UpdateCertificateLabel"></a>
-### func \(UnimplementedBackendServer\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L474>)
+### func \(UnimplementedBackendServer\) [UpdateCertificateLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L491>)
 
 ```go
 func (UnimplementedBackendServer) UpdateCertificateLabel(context.Context, *UpdateCertificateLabelRequest) (*pb.CertificateResponse, error)
@@ -8336,7 +8721,7 @@ func (UnimplementedBackendServer) UpdateCertificateLabel(context.Context, *Updat
 
 
 <a name="UnimplementedBackendServer.UpdateIssuer"></a>
-### func \(UnimplementedBackendServer\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L438>)
+### func \(UnimplementedBackendServer\) [UpdateIssuer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L455>)
 
 ```go
 func (UnimplementedBackendServer) UpdateIssuer(context.Context, *UpdateIssuerRequest) (*pb.Issuer, error)
@@ -8356,7 +8741,7 @@ type UnsafeAdminServer interface {
 ```
 
 <a name="UnsafeBackendServer"></a>
-## type [UnsafeBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L497-L499>)
+## type [UnsafeBackendServer](<https://github.com/effective-security/trustyca/blob/main/privpb/backend_grpc.pb.go#L517-L519>)
 
 UnsafeBackendServer may be embedded to opt out of forward compatibility for this service. Use of this interface is not recommended, as added methods to BackendServer will result in compilation errors.
 
@@ -8500,7 +8885,7 @@ func (msg *UpdateCertificateLabelRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateCertificateLabelRequest.Validate"></a>
-### func \(\*UpdateCertificateLabelRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3594>)
+### func \(\*UpdateCertificateLabelRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3830>)
 
 ```go
 func (m *UpdateCertificateLabelRequest) Validate(ctx context.Context) error
@@ -8642,7 +9027,7 @@ func (msg *UpdateIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateIssuerRequest.Validate"></a>
-### func \(\*UpdateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3597>)
+### func \(\*UpdateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3833>)
 
 ```go
 func (m *UpdateIssuerRequest) Validate(ctx context.Context) error

@@ -51,6 +51,34 @@ func ctlIssuer() *pb.Issuer {
 	}
 }
 
+func ctlSummary() *pb.SummaryResponse {
+	return &pb.SummaryResponse{
+		At: "2026-03-01T00:00:00Z",
+		Issuers: []*pb.IssuerStatusCount{
+			{Status: pb.IssuerStatus_Pending, Count: 1},
+			{Status: pb.IssuerStatus_Active, Count: 3},
+			{Status: pb.IssuerStatus_Archived},
+			{Status: pb.IssuerStatus_Destroyed},
+		},
+		Certificates: []*pb.CertificateStatusCount{
+			{Status: pb.CertificateStatus_Active, Count: 120},
+			{Status: pb.CertificateStatus_Expired, Count: 40},
+			{Status: pb.CertificateStatus_Revoked, Count: 2},
+		},
+		Expiring: []*pb.ExpiryBucket{
+			{Days: 7, Count: 1},
+			{Days: 30, Count: 5},
+			{Days: 90, Count: 17},
+		},
+		Crls: &pb.CrlCounts{
+			Issuers: 3,
+			Current: 1,
+			Due:     1,
+			Overdue: 1,
+		},
+	}
+}
+
 func ctlPlatformIssuer() *pb.Issuer {
 	return &pb.Issuer{
 		ID:       "1",
@@ -360,6 +388,12 @@ func (s *testSuiteGrpc) Test_CrlCmds() {
 	s.MockBackend.SetResponse(&pb.CrlsResponse{Crls: []*pb.Crl{ctlCrl()}})
 	publish := &admin.CrlPublishCmd{Org: "5", IKID: "0a1b2c", Force: true}
 	s.runPrinted(func() error { return publish.Run(s.Ctl) }, &s.MockBackend.Err)
+}
+
+func (s *testSuiteGrpc) Test_SummaryCmd() {
+	s.MockBackend.SetResponse(ctlSummary())
+	cmd := &admin.SummaryCmd{OrgScope: admin.OrgScope{Org: "5", Project: "201"}}
+	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
 }
 
 func (s *testSuiteGrpc) Test_OrgBootstrapCmd() {

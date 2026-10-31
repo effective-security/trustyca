@@ -139,6 +139,11 @@ func (s *Service) SignOCSP(ctx context.Context, req *pb.OCSPRequest) (*pb.OCSPRe
 	return res, nil
 }
 
+// GetSummary returns the counts of the org's dashboard (Backend.GetSummary)
+func (s *Service) GetSummary(ctx context.Context, req *pb.GetSummaryRequest) (*pb.SummaryResponse, error) {
+	return forward(ctx, s, req, privpb.BackendServer.GetSummary)
+}
+
 // forward calls the method of the backend with the privpb counterpart of
 // the public request and the context of the caller: the backend runs the
 // method as that caller. The counterpart has the fields of the public

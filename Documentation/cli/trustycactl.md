@@ -56,6 +56,8 @@ Commands:
                          issuers in scope
   ca org bootstrap       onboard an org: register its first issuing CA under a
                          platform issuer and copy the template profiles
+  ca summary             the counts of the issuers, certificates and CRLs of an
+                         org
 
 Run "trustycactl <command> --help" for more information on a command.
 ```

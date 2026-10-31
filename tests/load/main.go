@@ -425,10 +425,14 @@ func load(ctx context.Context, sqlDB *sql.DB, o *options, r *report) error {
 			r.printf("  %d rows in %s (%.0f rows/s)\n", to, elapsed.Round(time.Second), float64(to)/elapsed.Seconds())
 		}
 	}
+	// a vacuum sets the visibility map of the loaded pages, which the
+	// index-only scans of the counts rely on (autovacuum covers part of the
+	// table during the load); without parallel workers, since the shared
+	// memory of the dev container cannot hold theirs
 	for _, table := range []string{"certificate", "revoked"} {
-		_, err := sqlDB.ExecContext(ctx, "ANALYZE "+schemaName+"."+table)
+		_, err := sqlDB.ExecContext(ctx, "VACUUM (ANALYZE, PARALLEL 0) "+schemaName+"."+table)
 		if err != nil {
-			return errors.WithMessagef(err, "unable to analyze %s", table)
+			return errors.WithMessagef(err, "unable to vacuum %s", table)
 		}
 	}
 	r.printf("loaded in %s\n", time.Since(start).Round(time.Second))
@@ -600,6 +604,46 @@ func explain(ctx context.Context, sqlDB *sql.DB, provider db.Provider, o *option
 			return errors.WithMessagef(err, "%s", c.name)
 		}
 		err = r.plan(ctx, sqlDB, c.name, elapsed, q, qp.Args())
+		if err != nil {
+			return err
+		}
+	}
+
+	// the counts of the tenant summary: every status of a scope in one
+	// statement, and the Active certificates expiring within each of the
+	// three periods, served by (org_id, project_id, status, not_after)
+	r.section("Summary counts (CountCertificates)")
+	summaryPeriods := []time.Duration{7 * 24 * time.Hour, 30 * 24 * time.Hour, 90 * 24 * time.Hour}
+	summaries := []struct {
+		name string
+		req  *query.CountCertificatesRequest
+	}{
+		{"big org", &query.CountCertificatesRequest{OrgID: bigOrg}},
+		{"big org, project", &query.CountCertificatesRequest{OrgID: bigOrg, ProjectID: bigProject}},
+		{"big org, visible projects", &query.CountCertificatesRequest{OrgID: bigOrg, ProjectIDs: []uint64{bigProject, bigProject + 1}}},
+		{"small org", &query.CountCertificatesRequest{OrgID: uint64(smallOrg)}},
+		{"tiny org (10 rows)", &query.CountCertificatesRequest{OrgID: uint64(tinyOrg)}},
+	}
+	for _, c := range summaries {
+		full := *c.req
+		full.Now = s.now
+		full.Expiring = summaryPeriods
+		elapsed, err := timeIt(3, func() error {
+			_, err := provider.CountCertificates(ctx, &full)
+			return err
+		})
+		if err != nil {
+			return errors.WithMessagef(err, "%s", c.name)
+		}
+		qp := c.req.QueryParams()
+		q, _ := query.CountCertificates(qp)
+		err = r.plan(ctx, sqlDB, c.name+", by status (provider: the statuses and the three periods)", elapsed, q, qp.Args())
+		if err != nil {
+			return err
+		}
+		qp = full.ExpiringParams(summaryPeriods[len(summaryPeriods)-1])
+		q, _ = query.CountExpiringCertificates(qp)
+		err = r.plan(ctx, sqlDB, c.name+", Active expiring within 90 days", 0, q, qp.Args())
 		if err != nil {
 			return err
 		}

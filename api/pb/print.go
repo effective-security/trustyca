@@ -725,6 +725,29 @@ func (r *CrlsResponse) Print(w io.Writer) {
 	fmt.Fprintln(w)
 }
 
+func (r *SummaryResponse) Print(w io.Writer) {
+	table := createTableSimple(w)
+	_ = table.Append([]string{"At", format.Time(r.At)})
+	for _, c := range r.Issuers {
+		_ = table.Append([]string{"Issuers " + c.Status.DisplayName(), strconv.FormatUint(uint64(c.Count), 10)})
+	}
+	for _, c := range r.Certificates {
+		_ = table.Append([]string{"Certificates " + c.Status.DisplayName(), strconv.FormatUint(uint64(c.Count), 10)})
+	}
+	for _, b := range r.Expiring {
+		_ = table.Append([]string{fmt.Sprintf("Expiring within %d days", b.Days), strconv.FormatUint(uint64(b.Count), 10)})
+	}
+	if r.Crls != nil {
+		_ = table.Append([]string{"CRL issuers", strconv.FormatUint(uint64(r.Crls.Issuers), 10)})
+		_ = table.Append([]string{"CRLs current", strconv.FormatUint(uint64(r.Crls.Current), 10)})
+		_ = table.Append([]string{"CRLs due", strconv.FormatUint(uint64(r.Crls.Due), 10)})
+		_ = table.Append([]string{"CRLs overdue", strconv.FormatUint(uint64(r.Crls.Overdue), 10)})
+		_ = table.Append([]string{"CRLs missing", strconv.FormatUint(uint64(r.Crls.Missing), 10)})
+	}
+	_ = table.Render()
+	fmt.Fprintln(w)
+}
+
 func (r *IssuerInfo) Print(w io.Writer) {
 	table := createTableSimple(w)
 	_ = table.Append([]string{"Label", r.Label})

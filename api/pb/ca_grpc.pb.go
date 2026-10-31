@@ -42,6 +42,7 @@ const (
 	CA_GetCRL_FullMethodName                  = "/pb.CA/GetCRL"
 	CA_PublishCrls_FullMethodName             = "/pb.CA/PublishCrls"
 	CA_SignOCSP_FullMethodName                = "/pb.CA/SignOCSP"
+	CA_GetSummary_FullMethodName              = "/pb.CA/GetSummary"
 )
 
 // CAClient is the client API for CA service.
@@ -114,6 +115,12 @@ type CAClient interface {
 	// SignOCSP signs an OCSP response; the AIA OCSP responder calls
 	// Backend.SignOCSP.
 	SignOCSP(ctx context.Context, in *OCSPRequest, opts ...grpc.CallOption) (*OCSPResponse, error)
+	// GetSummary returns the counts of the tenant's dashboard: the issuers
+	// by status, the certificates by status and by expiry, and the issuers
+	// that publish CRLs by the state of their CRL, for the org or for one
+	// project. Without a project, a member with project grants only gets
+	// the org-wide rows and those of its projects, as the lists do.
+	GetSummary(ctx context.Context, in *GetSummaryRequest, opts ...grpc.CallOption) (*SummaryResponse, error)
 }
 
 type cAClient struct {
@@ -334,6 +341,16 @@ func (c *cAClient) SignOCSP(ctx context.Context, in *OCSPRequest, opts ...grpc.C
 	return out, nil
 }
 
+func (c *cAClient) GetSummary(ctx context.Context, in *GetSummaryRequest, opts ...grpc.CallOption) (*SummaryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SummaryResponse)
+	err := c.cc.Invoke(ctx, CA_GetSummary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CAServer is the server API for CA service.
 // All implementations should embed UnimplementedCAServer
 // for forward compatibility.
@@ -404,6 +421,12 @@ type CAServer interface {
 	// SignOCSP signs an OCSP response; the AIA OCSP responder calls
 	// Backend.SignOCSP.
 	SignOCSP(context.Context, *OCSPRequest) (*OCSPResponse, error)
+	// GetSummary returns the counts of the tenant's dashboard: the issuers
+	// by status, the certificates by status and by expiry, and the issuers
+	// that publish CRLs by the state of their CRL, for the org or for one
+	// project. Without a project, a member with project grants only gets
+	// the org-wide rows and those of its projects, as the lists do.
+	GetSummary(context.Context, *GetSummaryRequest) (*SummaryResponse, error)
 }
 
 // UnimplementedCAServer should be embedded to have
@@ -475,6 +498,9 @@ func (UnimplementedCAServer) PublishCrls(context.Context, *PublishCrlsRequest) (
 }
 func (UnimplementedCAServer) SignOCSP(context.Context, *OCSPRequest) (*OCSPResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignOCSP not implemented")
+}
+func (UnimplementedCAServer) GetSummary(context.Context, *GetSummaryRequest) (*SummaryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSummary not implemented")
 }
 func (UnimplementedCAServer) testEmbeddedByValue() {}
 
@@ -874,6 +900,24 @@ func _CA_SignOCSP_Handler(srv any, ctx context.Context, dec func(any) error, int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CA_GetSummary_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+	in := new(GetSummaryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CAServer).GetSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CA_GetSummary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req any) (any, error) {
+		return srv.(CAServer).GetSummary(ctx, req.(*GetSummaryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CA_ServiceDesc is the grpc.ServiceDesc for CA service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -964,6 +1008,10 @@ var CA_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignOCSP",
 			Handler:    _CA_SignOCSP_Handler,
+		},
+		{
+			MethodName: "GetSummary",
+			Handler:    _CA_GetSummary_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
