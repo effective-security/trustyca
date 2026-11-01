@@ -1,0 +1,57 @@
+# Hanzo Stack / TrustyCA Integration compose.yml
+# Use: docker compose up -d (or "hanzo up")
+name: trustyca
+
+networks:
+  hanzo:
+    name: hanzo-network
+    external: true
+  default:
+    driver: bridge
+
+services:
+  sql:
+    image: postgres:16-alpine
+    container_name: trustyca-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=trustyca
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - sql-data:/var/lib/postgresql/data
+      - ./sql/migrations:/docker-entrypoint-initdb.d:ro
+
+  redis:
+    image: redis:7-alpine
+    container_name: trustyca-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:56379:6379"
+
+  trustyca:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trustyca-service
+    restart: unless-stopped
+    depends_on:
+      - sql
+      - redis
+    ports:
+      - "127.0.0.1:8080:8080" # REST / HTTP / OpenAPI
+      - "127.0.0.1:9653:9653" # ZAP Native RPC
+    environment:
+      - ENVIRONMENT=dev
+      - DB_HOST=sql
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=trustyca
+      - REDIS_ADDR=redis:6379
+
+volumes:
+  sql-data:
