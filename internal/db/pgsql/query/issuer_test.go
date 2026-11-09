@@ -122,7 +122,7 @@ LIMIT $2
 OFFSET $3`,
 		},
 		{
-			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, ProjectID: 2, ParentID: 3, Type: pb.AuthorityType_Issuing, Limit: 10, Offset: 20}},
+			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, ProjectID: 2, ParentID: 3, Type: pb.AuthorityType_Issuing, Limit: 10}},
 			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 
 FROM trustyca.issuer 
 WHERE org_id = $1 AND project_id = $2 AND parent_id = $3 AND type = $4 
@@ -181,7 +181,7 @@ OFFSET $4`,
 		},
 		{
 			// the first cursor page has no cursor predicate
-			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, Scope: pb.Scope_Org, Limit: 10, Cursor: query.NewCursor(0)}},
+			query.ListIssuers, []any{&query.ListIssuersRequest{OrgID: 1, Scope: pb.Scope_Org, Limit: 10}},
 			`SELECT ` + schema.IssuerTableInfo.AllColumns() + ` 
 FROM trustyca.issuer 
 WHERE org_id = $1 AND project_id IS NULL 

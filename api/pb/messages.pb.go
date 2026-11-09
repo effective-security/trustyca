@@ -2068,15 +2068,8 @@ and any authenticated caller reads those of any org.`,
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Limit specifies maximum number of records to return`,
-		},
-		{
-			Name:          "Offset",
-			FullName:      "pb.GetRootsRequest.Offset",
-			Type:          "uint32",
-			SearchType:    "integer",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Offset specifies offset for the offset-based pagination`,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
 		},
 		{
 			Name:          "Cursor",
@@ -2084,7 +2077,8 @@ and any authenticated caller reads those of any org.`,
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 	},
 }
@@ -2578,8 +2572,10 @@ variable, and the bootstrap refuses such a file.`,
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `DelegatedOcspProfile specifies the profile to issue a delegated OCSP
-responder certificate; empty to sign OCSP with the issuer key`,
+			Documentation: `DelegatedOcspProfile specifies the profile to issue the delegated OCSP
+responder certificate that signs the OCSP responses of the issuer. It is
+required with an OcspURL: the key of an issuer signs no OCSP response,
+and an issuer without a responder answers no OCSP request.`,
 		},
 		{
 			Name:          "AllowedProfiles",
@@ -2872,8 +2868,7 @@ The default is ECDSA P-256.`,
 			SearchOptions: api.SearchOption_Sortable,
 			Documentation: `Algo specifies the key algorithm: RSA|ECDSA|ML-DSA (case-insensitive;
 MLDSA is accepted). ML-DSA is the post-quantum signature scheme of
-FIPS 204; an ML-DSA issuer with an OcspURL needs a DelegatedOcspProfile,
-since ML-DSA keys do not sign OCSP responses.`,
+FIPS 204.`,
 		},
 		{
 			Name:          "Size",
@@ -2909,6 +2904,24 @@ If not provided, will use Org scope for the current token.`,
 			SearchType:      "integer",
 			SearchOptions:   api.SearchOption_Sortable,
 			EnumDescription: ItemStatus_Enum_EnumDescription,
+		},
+		{
+			Name:          "Limit",
+			FullName:      "pb.ListAPIKeysRequest.Limit",
+			Type:          "uint32",
+			SearchType:    "integer",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
+		},
+		{
+			Name:          "Cursor",
+			FullName:      "pb.ListAPIKeysRequest.Cursor",
+			Type:          "string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 	},
 }
@@ -2971,15 +2984,8 @@ in RFC3339 format`,
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Limit specifies maximum number of records to return`,
-		},
-		{
-			Name:          "Offset",
-			FullName:      "pb.ListCertificatesRequest.Offset",
-			Type:          "uint32",
-			SearchType:    "integer",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Offset specifies offset for the offset-based pagination`,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
 		},
 		{
 			Name:          "Cursor",
@@ -2987,9 +2993,8 @@ in RFC3339 format`,
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Cursor specifies cursor for the cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-the previous request.`,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 	},
 }
@@ -2999,8 +3004,7 @@ var ListEventsRequest_MessageDescription = &api.MessageDescription{
 	Display:  "List Events Request",
 	FullName: "pb.ListEventsRequest",
 	Documentation: `ListEventsRequest specifies a page of the audit events of the org
-selected in the token, newest first (Orgs.ListEvents); the list pages by
-cursor only`,
+selected in the token, newest first (Orgs.ListEvents)`,
 	Fields: []*api.FieldMeta{
 		{
 			Name:          "ProjectID",
@@ -3046,7 +3050,8 @@ later than After; empty is unbounded`,
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Limit specifies maximum number of records to return`,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
 		},
 		{
 			Name:          "Cursor",
@@ -3100,15 +3105,8 @@ issuers`,
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Limit specifies maximum number of records to return`,
-		},
-		{
-			Name:          "Offset",
-			FullName:      "pb.ListIssuersRequest.Offset",
-			Type:          "uint32",
-			SearchType:    "integer",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Offset specifies offset for the offset-based pagination`,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
 		},
 		{
 			Name:          "Cursor",
@@ -3116,9 +3114,8 @@ issuers`,
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Cursor specifies cursor for the cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-the previous request.`,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 		{
 			Name:          "IDs",
@@ -3175,15 +3172,8 @@ profiles`,
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Limit specifies maximum number of records to return`,
-		},
-		{
-			Name:          "Offset",
-			FullName:      "pb.ListProfilesRequest.Offset",
-			Type:          "uint32",
-			SearchType:    "integer",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Offset specifies offset for the offset-based pagination`,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
 		},
 		{
 			Name:          "Cursor",
@@ -3191,7 +3181,8 @@ profiles`,
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 		{
 			Name:          "IDs",
@@ -3236,15 +3227,8 @@ var ListProjectsRequest_MessageDescription = &api.MessageDescription{
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Limit specifies maximum number of records to return`,
-		},
-		{
-			Name:          "Offset",
-			FullName:      "pb.ListProjectsRequest.Offset",
-			Type:          "uint32",
-			SearchType:    "integer",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Offset specifies offset for the offset-based pagination`,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
 		},
 		{
 			Name:          "Cursor",
@@ -3252,7 +3236,8 @@ var ListProjectsRequest_MessageDescription = &api.MessageDescription{
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 	},
 }
@@ -3287,15 +3272,8 @@ certificates, sorted by revocation ID descending`,
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Limit specifies maximum number of records to return`,
-		},
-		{
-			Name:          "Offset",
-			FullName:      "pb.ListRevokedCertificatesRequest.Offset",
-			Type:          "uint32",
-			SearchType:    "integer",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Offset specifies offset for the offset-based pagination`,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
 		},
 		{
 			Name:          "Cursor",
@@ -3303,7 +3281,8 @@ certificates, sorted by revocation ID descending`,
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 	},
 }
@@ -3320,15 +3299,8 @@ var ListRootsRequest_MessageDescription = &api.MessageDescription{
 			Type:          "uint32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Limit specifies maximum number of records to return`,
-		},
-		{
-			Name:          "Offset",
-			FullName:      "pb.ListRootsRequest.Offset",
-			Type:          "uint32",
-			SearchType:    "integer",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Offset specifies offset for the offset-based pagination`,
+			Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
 		},
 		{
 			Name:          "Cursor",
@@ -3336,7 +3308,8 @@ var ListRootsRequest_MessageDescription = &api.MessageDescription{
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+			Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
 		},
 	},
 }
@@ -3529,25 +3502,15 @@ var NextPage_MessageDescription = &api.MessageDescription{
 	Documentation: `NextPage specifies pagination information, if there are more pages to fetch.`,
 	Fields: []*api.FieldMeta{
 		{
-			Name:          "Offset",
-			FullName:      "pb.NextPage.Offset",
-			Type:          "uint32",
-			SearchType:    "integer",
-			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Offset is the offset of the next page for offset-based pagination.
-Offset is limited to 10000.
-To paginate for large number of records, use cursor-based pagination
-instead.`,
-		},
-		{
 			Name:          "Cursor",
 			FullName:      "pb.NextPage.Cursor",
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Cursor is the cursor of the next page for cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-this response.`,
+			Documentation: `Cursor is the opaque token of the next page: pass it as the Cursor of
+the same list. It is transient: do not store it, or build it. A page
+costs the same at any depth and neither skips nor repeats a row when
+rows are inserted meanwhile.`,
 		},
 	},
 }

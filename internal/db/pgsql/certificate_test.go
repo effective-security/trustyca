@@ -123,7 +123,7 @@ func Test_Certificate(t *testing.T) {
 	assert.Equal(t, []uint64{c2.ID.UInt64()}, ids(&query.ListCertificatesRequest{OrgID: orgID, ProjectIDs: []uint64{}}), "the org-wide rows only")
 
 	// cursor pagination
-	list, err = provider.ListCertificates(ctx, &query.ListCertificatesRequest{OrgID: orgID, Limit: 2, Cursor: query.NewCursor(0)})
+	list, err = provider.ListCertificates(ctx, &query.ListCertificatesRequest{OrgID: orgID, Limit: 2})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 2)
 	assert.Equal(t, c3.ID.UInt64(), list.Rows[0].ID.UInt64())
@@ -289,7 +289,7 @@ func Test_Certificate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, rcs.Rows, 2, "the org-wide rows and those of the visible projects")
 
-	rcs, err = provider.ListRevokedCertificates(ctx, &query.ListRevokedCertificatesRequest{OrgID: orgID, Limit: 1, Cursor: query.NewCursor(0)})
+	rcs, err = provider.ListRevokedCertificates(ctx, &query.ListRevokedCertificatesRequest{OrgID: orgID, Limit: 1})
 	require.NoError(t, err)
 	require.Len(t, rcs.Rows, 1)
 	assert.Equal(t, rc2.ID.UInt64(), rcs.Rows[0].ID.UInt64())

@@ -31,11 +31,11 @@ type GetRootsRequest struct {
 	// anchors. It is a lookup, not a tenant scope: the anchors are public
 	// and any authenticated caller reads those of any org.
 	OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,2,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,3,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor        string `protobuf:"bytes,4,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -81,13 +81,6 @@ func (x *GetRootsRequest) GetOrgID() string {
 func (x *GetRootsRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
-	}
-	return 0
-}
-
-func (x *GetRootsRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
 	}
 	return 0
 }
@@ -469,12 +462,11 @@ var File_cis_proto protoreflect.FileDescriptor
 const file_cis_proto_rawDesc = "" +
 	"\n" +
 	"\tcis.proto\x12\x02pb\x1a\x1cgoogle/api/annotations.proto\x1a\x18es/api/annotations.proto\x1a\n" +
-	"pkix.proto\x1a\bca.proto\"m\n" +
+	"pkix.proto\x1a\bca.proto\"c\n" +
 	"\x0fGetRootsRequest\x12\x14\n" +
 	"\x05OrgID\x18\x01 \x01(\tR\x05OrgID\x12\x14\n" +
 	"\x05Limit\x18\x02 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x03 \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\x04 \x01(\tR\x06Cursor\"0\n" +
+	"\x06Cursor\x18\x04 \x01(\tR\x06CursorJ\x04\b\x03\x10\x04R\x06Offset\"0\n" +
 	"\x14GetIssuerInfoRequest\x12\x18\n" +
 	"\x04IKID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\x04IKID\"\x8b\x03\n" +
 	"\n" +

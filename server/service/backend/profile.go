@@ -145,7 +145,6 @@ func (s *Service) ListProfiles(ctx context.Context, req *privpb.ListProfilesRequ
 		IDs:         ids,
 		Labels:      labels,
 		Limit:       query.Limit(req.Limit),
-		Offset:      req.Offset,
 		Cursor:      cursor,
 	}
 	if projectID.IsZero() {

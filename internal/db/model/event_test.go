@@ -29,14 +29,12 @@ func TestEventResult_Pb(t *testing.T) {
 	result := &model.EventResult{
 		Rows:        events,
 		HasNextPage: true,
-		NextOffset:  10,
 		Cursor:      "123",
 	}
 
 	resPb := result.Pb()
 	assert.Equal(t, len(events), len(resPb.Events))
 	assert.Equal(t, &pb.NextPage{
-		Offset: 10,
 		Cursor: "123",
 	}, resPb.NextPage)
 }

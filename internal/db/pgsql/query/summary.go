@@ -41,7 +41,7 @@ func (r *SummaryRequest) Validate() error {
 	if err != nil {
 		return err
 	}
-	return r.CrlStates(NewCursor(0)).Validate()
+	return r.CrlStates(Cursor{}).Validate()
 }
 
 // Issuers returns the request of the issuer counts of the scope
@@ -65,7 +65,7 @@ func (r *SummaryRequest) Certificates() *CountCertificatesRequest {
 }
 
 // CrlStates returns the request of a page of the CRL states of the scope:
-// the first page with NewCursor(0), the next with the cursor of the
+// the first page with the zero Cursor, the next with the cursor of the
 // previous page, the default page size
 func (r *SummaryRequest) CrlStates(cursor Cursor) *ListCrlStatesRequest {
 	return &ListCrlStatesRequest{

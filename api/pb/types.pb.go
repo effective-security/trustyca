@@ -449,14 +449,10 @@ func (x *KVSet) GetValues() []string {
 // NextPage specifies pagination information, if there are more pages to fetch.
 type NextPage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Offset is the offset of the next page for offset-based pagination.
-	// Offset is limited to 10000.
-	// To paginate for large number of records, use cursor-based pagination
-	// instead.
-	Offset uint32 `protobuf:"varint,1,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor is the cursor of the next page for cursor-based pagination.
-	// Use "initial" to start the pagination or pass the cursor returned from
-	// this response.
+	// Cursor is the opaque token of the next page: pass it as the Cursor of
+	// the same list. It is transient: do not store it, or build it. A page
+	// costs the same at any depth and neither skips nor repeats a row when
+	// rows are inserted meanwhile.
 	Cursor        string `protobuf:"bytes,2,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -490,13 +486,6 @@ func (x *NextPage) ProtoReflect() protoreflect.Message {
 // Deprecated: Use NextPage.ProtoReflect.Descriptor instead.
 func (*NextPage) Descriptor() ([]byte, []int) {
 	return file_types_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *NextPage) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
-	}
-	return 0
 }
 
 func (x *NextPage) GetCursor() string {
@@ -820,10 +809,9 @@ const file_types_proto_rawDesc = "" +
 	"\x05Value\x18\x02 \x01(\tB\x1a\xca\xf3\x18\x12keyword,store,hide\xe8\xf3\x18\x01R\x05Value:\x04\xc8\xf0\x19\x01\"t\n" +
 	"\x05KVSet\x12-\n" +
 	"\x03Key\x18\x01 \x01(\tB\x1b\xca\xf3\x18\x13keyword,facet,store\xe8\xf3\x18\x01R\x03Key\x126\n" +
-	"\x06Values\x18\x02 \x03(\tB\x1e\xca\xf3\x18\x12keyword,store,hide\xe8\xf3\x18\x01\x88\xf4\x18\x01R\x06Values:\x04\xc8\xf0\x19\x01\":\n" +
+	"\x06Values\x18\x02 \x03(\tB\x1e\xca\xf3\x18\x12keyword,store,hide\xe8\xf3\x18\x01\x88\xf4\x18\x01R\x06Values:\x04\xc8\xf0\x19\x01\"0\n" +
 	"\bNextPage\x12\x16\n" +
-	"\x06Offset\x18\x01 \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\x02 \x01(\tR\x06Cursor\"]\n" +
+	"\x06Cursor\x18\x02 \x01(\tR\x06CursorJ\x04\b\x01\x10\x02R\x06Offset\"]\n" +
 	"\rRecordsResult\x12\x18\n" +
 	"\aCreated\x18\x01 \x01(\x03R\aCreated\x12\x18\n" +
 	"\aUpdated\x18\x02 \x01(\x03R\aUpdated\x12\x18\n" +

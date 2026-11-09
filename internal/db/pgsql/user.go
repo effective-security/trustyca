@@ -187,17 +187,3 @@ func (p *Provider) GetLoginsByEmail(ctx context.Context, email string) (model.Lo
 	}
 	return rs.Rows, nil
 }
-
-// ListLogins returns Logins
-func (p *Provider) ListLogins(ctx context.Context, limit, offset uint32) (model.LoginSlice, uint32, error) {
-	limit = values.NumbersCoalesce(limit, xdb.DefaultPageSize)
-	q, name := query.ListAllColumns(&schema.LoginTableInfo)
-	defer DbMeasureQuerySince(name, time.Now())
-
-	var rs model.LoginResult
-	err := xdb.ExecuteQueryWithPagination(ctx, p.DB(), &rs, q, limit, offset)
-	if err != nil {
-		return nil, 0, err
-	}
-	return rs.Rows, rs.NextOffset, nil
-}

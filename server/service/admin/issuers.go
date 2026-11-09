@@ -40,8 +40,7 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListAllIssuersReq
 		Type:      req.Type,
 		IDs:       ids,
 		IKIDs:     req.IKIDs,
-		Limit:     req.Limit,
-		Offset:    req.Offset,
+		Limit:     query.Limit(req.Limit),
 		Cursor:    cursor,
 	})
 	if err != nil {

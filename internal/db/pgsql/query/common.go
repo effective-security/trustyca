@@ -58,21 +58,3 @@ func DeleteRowByOrgAndID(args ...any) (string, string) {
 		return ti.DeleteFrom().Where(orgIDColumn + " IS NOT DISTINCT FROM $1").Where("id = $2")
 	})
 }
-
-// ListAllColumns returns SQL query to list all columns
-func ListAllColumns(args ...any) (string, string) {
-	ti := args[0].(*tschema.TableInfo)
-	key := "ListAllColumns_" + ti.Name
-	order := ti.PrimaryKey
-	if order != "" {
-		key += "_" + order
-		order += " ASC"
-	}
-	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
-		b := ti.Select().Limit(0).Offset(0)
-		if order != "" {
-			b.OrderBy(order)
-		}
-		return b
-	})
-}

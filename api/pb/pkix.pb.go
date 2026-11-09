@@ -1962,8 +1962,7 @@ type KeySpec struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Algo specifies the key algorithm: RSA|ECDSA|ML-DSA (case-insensitive;
 	// MLDSA is accepted). ML-DSA is the post-quantum signature scheme of
-	// FIPS 204; an ML-DSA issuer with an OcspURL needs a DelegatedOcspProfile,
-	// since ML-DSA keys do not sign OCSP responses.
+	// FIPS 204.
 	Algo string `protobuf:"bytes,1,opt,name=Algo,proto3" json:"Algo,omitempty"`
 	// Size specifies the RSA key size in bits: 2048|3072|4096, the ECDSA
 	// curve size: 256|384, or the ML-DSA parameter set: 44|65|87
@@ -2036,8 +2035,10 @@ type IssuerConfig struct {
 	CrlRenewal string `protobuf:"bytes,5,opt,name=CrlRenewal,proto3" json:"CrlRenewal,omitempty"`
 	// OcspExpiry specifies the duration of OCSP response validity
 	OcspExpiry string `protobuf:"bytes,6,opt,name=OcspExpiry,proto3" json:"OcspExpiry,omitempty"`
-	// DelegatedOcspProfile specifies the profile to issue a delegated OCSP
-	// responder certificate; empty to sign OCSP with the issuer key
+	// DelegatedOcspProfile specifies the profile to issue the delegated OCSP
+	// responder certificate that signs the OCSP responses of the issuer. It is
+	// required with an OcspURL: the key of an issuer signs no OCSP response,
+	// and an issuer without a responder answers no OCSP request.
 	DelegatedOcspProfile string `protobuf:"bytes,7,opt,name=DelegatedOcspProfile,proto3" json:"DelegatedOcspProfile,omitempty"`
 	// AllowedProfiles restricts the profiles the issuer may sign.
 	// Required for profiles with IssuerLabel "*".

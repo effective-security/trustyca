@@ -24,7 +24,7 @@ func fullProfile() *pb.CertProfile {
 		Label:       "server",
 		IssuerLabel: "L2",
 		Description: "server profile",
-		Usages:      []string{"signing", "key encipherment", "server auth"},
+		Usages:      []string{"signing", "server auth"},
 		CAConstraint: &pb.CAConstraint{
 			IsCA:       false,
 			MaxPathLen: 0,
@@ -65,7 +65,7 @@ func TestProfileFromPb(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "L2", p.IssuerLabel)
 	assert.Equal(t, "server profile", p.Description)
-	assert.Equal(t, []string{"signing", "key encipherment", "server auth"}, p.Usage)
+	assert.Equal(t, []string{"signing", "server auth"}, p.Usage)
 	assert.False(t, p.CAConstraint.IsCA)
 	assert.True(t, p.OCSPNoCheck)
 	assert.Equal(t, csr.Duration(168*time.Hour), p.Expiry)

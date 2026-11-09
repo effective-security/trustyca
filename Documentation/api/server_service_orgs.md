@@ -104,7 +104,7 @@ func (s *Service) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest)
 CreateAPIKey creates a new API key in the org selected in the token, optionally restricted to a project. The public key is encoded as sk\_\<OrgID\>\_\<protectedKeyID\>, where the key ID is protected with the dataprotection key \(TODO: per org key\); the secret is stored protected and returned to the caller only once.
 
 <a name="Service.DeleteAPIKey"></a>
-### func \(\*Service\) [DeleteAPIKey](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/apikey.go#L141>)
+### func \(\*Service\) [DeleteAPIKey](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/apikey.go#L146>)
 
 ```go
 func (s *Service) DeleteAPIKey(ctx context.Context, req *pb.APIKeyRequest) (*pb.RecordsResult, error)
@@ -140,7 +140,7 @@ func (s *Service) DeleteOrg(ctx context.Context, _ *emptypb.Empty) (*pb.Org, err
 DeleteOrg deactivates the org selected in the token
 
 <a name="Service.DeleteProject"></a>
-### func \(\*Service\) [DeleteProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L226>)
+### func \(\*Service\) [DeleteProject](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/projects.go#L225>)
 
 ```go
 func (s *Service) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.Project, error)
@@ -209,10 +209,10 @@ IsReady indicates that the service is ready to serve its end\-points
 func (s *Service) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*pb.APIKeysResponse, error)
 ```
 
-ListAPIKeys lists the API keys of the org selected in the token, or of a project when ProjectID is set
+ListAPIKeys lists a page of the API keys of the org selected in the token, or of a project when ProjectID is set, newest first
 
 <a name="Service.ListEvents"></a>
-### func \(\*Service\) [ListEvents](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/events.go#L22>)
+### func \(\*Service\) [ListEvents](<https://github.com/effective-security/trustyca/blob/main/server/service/orgs/events.go#L21>)
 
 ```go
 func (s *Service) ListEvents(ctx context.Context, req *pb.ListEventsRequest) (*pb.EventsResponse, error)

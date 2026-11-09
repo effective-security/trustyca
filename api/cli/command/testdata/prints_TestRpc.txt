@@ -68,7 +68,10 @@
 			],
 			"UsedCount": 2
 		}
-	]
+	],
+	"NextPage": {
+		"Cursor": "WyIyMDI2LTEwLTMwVDExOjAwOjAwWiIsIjU1NSJd"
+	}
 }
 
 - TestRpc/Test_APIKeyListCmd/txt:
@@ -77,6 +80,8 @@
 ├─────┼────────┼────────────┼───────┼─────────┼────────────┼─────────┼────────────┼─────────┤
 │ 555 │ 100    │            │ ci    │ Unknown │            │         │ 2          │         │
 └─────┴────────┴────────────┴───────┴─────────┴────────────┴─────────┴────────────┴─────────┘
+
+Next page: --cursor WyIyMDI2LTEwLTMwVDExOjAwOjAwWiIsIjU1NSJd
 
 
 - TestRpc/Test_CertGetCmd/json:

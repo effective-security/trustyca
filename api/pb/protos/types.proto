@@ -45,14 +45,12 @@ message KVSet {
 
 // NextPage specifies pagination information, if there are more pages to fetch.
 message NextPage {
-    // Offset is the offset of the next page for offset-based pagination.
-    // Offset is limited to 10000.
-    // To paginate for large number of records, use cursor-based pagination
-    // instead.
-    uint32 Offset = 1 [json_name = "Offset"];
-    // Cursor is the cursor of the next page for cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // this response.
+    reserved 1;
+    reserved "Offset";
+    // Cursor is the opaque token of the next page: pass it as the Cursor of
+    // the same list. It is transient: do not store it, or build it. A page
+    // costs the same at any depth and neither skips nor repeats a row when
+    // rows are inserted meanwhile.
     string Cursor = 2 [json_name = "Cursor"];
 }
 

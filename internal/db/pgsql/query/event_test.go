@@ -30,8 +30,8 @@ ORDER BY created_at DESC, id DESC
 LIMIT $5`,
 		},
 		{
-			// the first page of cursor pagination is offset 0
-			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, Limit: 10, Cursor: query.NewCursor(0)}},
+			// the first page has no key, and xdb binds OFFSET 0
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, Limit: 10}},
 			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
 FROM trustyca.event 
 WHERE org_id = $1 
@@ -66,7 +66,7 @@ LIMIT $3
 OFFSET $4`,
 		},
 		{
-			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, Type: pb.EventType_OrgCreated, Source: "cli", Limit: 10, Offset: 20}},
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, Type: pb.EventType_OrgCreated, Source: "cli", Limit: 10}},
 			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
 FROM trustyca.event 
 WHERE org_id = $1 AND type = $2 AND source = $3 
@@ -85,7 +85,7 @@ LIMIT $6`,
 		},
 		{
 			// the org-wide events only, for a caller without a project
-			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, ProjectIDs: []uint64{}, Limit: 10, Cursor: query.NewCursor(0)}},
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, ProjectIDs: []uint64{}, Limit: 10}},
 			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
 FROM trustyca.event 
 WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) 
@@ -95,7 +95,7 @@ OFFSET $4`,
 		},
 		{
 			// an exact project takes precedence over the visible projects
-			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, ProjectID: 2, ProjectIDs: []uint64{2, 3}, Limit: 10, Cursor: query.NewCursor(0)}},
+			query.ListEvents, []any{&query.ListEventsRequest{OrgID: 1, ProjectID: 2, ProjectIDs: []uint64{2, 3}, Limit: 10}},
 			`SELECT ` + schema.EventTableInfo.AllColumns() + ` 
 FROM trustyca.event 
 WHERE org_id = $1 AND project_id = $2 

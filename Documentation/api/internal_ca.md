@@ -35,10 +35,9 @@ Keys generates the key of a new issuer in a crypto provider, or wraps a software
 - [Constants](<#constants>)
 - [Variables](<#variables>)
 - [func AuthorityProfile\(p \*model.CertificateProfile\) \(\*authority.CertProfile, error\)](<#AuthorityProfile>)
-- [func CheckOCSPSigner\(postQuantum bool, cfg \*pb.IssuerConfig\) error](<#CheckOCSPSigner>)
+- [func CheckOCSPSigner\(cfg \*pb.IssuerConfig\) error](<#CheckOCSPSigner>)
 - [func CrlDue\(current \*model.Crl, renewal time.Duration, now time.Time\) bool](<#CrlDue>)
 - [func IsKeyURI\(key string\) bool](<#IsKeyURI>)
-- [func IsPostQuantumIssuer\(m \*model.Issuer\) \(bool, error\)](<#IsPostQuantumIssuer>)
 - [func IsSelfSigned\(crt \*x509.Certificate\) bool](<#IsSelfSigned>)
 - [func KeyLabel\(orgID, projectID xdb.ID, label string\) string](<#KeyLabel>)
 - [func KeySpec\(spec \*pb.KeySpec\) \(string, int, error\)](<#KeySpec>)
@@ -178,11 +177,10 @@ var (
     // import or of a bootstrap key file) is refused: the configuration
     // allows keys of the crypto providers only (ca.allow_software_keys)
     ErrSoftwareKeysDisabled = errors.New("software keys are not allowed: use a key of a crypto provider")
-    // ErrOCSPSignerRequired is returned by Keys when an issuer with an
-    // ML-DSA key sets an OcspURL without a DelegatedOcspProfile: an ML-DSA
-    // key cannot sign OCSP responses, so the responses need a delegated
-    // responder with a classical key (CheckOCSPSigner)
-    ErrOCSPSignerRequired = errors.New("an ML-DSA key cannot sign OCSP responses: set DelegatedOcspProfile or remove OcspURL")
+    // ErrOCSPSignerRequired is returned by Keys when an issuer sets an OcspURL
+    // without a DelegatedOcspProfile: the key of an issuer signs no OCSP
+    // response (CheckOCSPSigner)
+    ErrOCSPSignerRequired = errors.New("an issuer with an OCSP URL needs a delegated responder: set DelegatedOcspProfile or remove OcspURL")
 )
 ```
 
@@ -205,13 +203,13 @@ func AuthorityProfile(p *model.CertificateProfile) (*authority.CertProfile, erro
 AuthorityProfile converts a profile row to the profile the authority signs with. It reads the row only: a row the registry returned is shared with other requests, and its IDs must not be formatted \(model.Definition\).
 
 <a name="CheckOCSPSigner"></a>
-## func [CheckOCSPSigner](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L103>)
+## func [CheckOCSPSigner](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L102>)
 
 ```go
-func CheckOCSPSigner(postQuantum bool, cfg *pb.IssuerConfig) error
+func CheckOCSPSigner(cfg *pb.IssuerConfig) error
 ```
 
-CheckOCSPSigner refuses the settings of an issuer whose key cannot sign OCSP responses: an ML\-DSA key with an OcspURL needs a DelegatedOcspProfile, since the OCSP responder \(golang.org/x/crypto/ocsp\) signs with RSA and ECDSA keys only and the authority refuses to load such an issuer. It is checked when the issuer is registered, imported or activated, before a key is generated, so that the operator learns of it from the request and not from the first load of the row.
+CheckOCSPSigner refuses the settings of an issuer with an OcspURL and no DelegatedOcspProfile: the key of an issuer signs no OCSP response, whatever its algorithm, so that a CA certificate needs no digital signature usage \(RFC 5280 section 4.2.1.3\) and the CA key stays off the public OCSP path. It is checked when the issuer is registered, imported, activated or its settings change, before a key is generated, so that the operator learns of it from the request and not from the first OCSP request.
 
 <a name="CrlDue"></a>
 ## func [CrlDue](<https://github.com/effective-security/trustyca/blob/main/internal/ca/crl.go#L461>)
@@ -223,7 +221,7 @@ func CrlDue(current *model.Crl, renewal time.Duration, now time.Time) bool
 CrlDue reports whether a CRL must be published at the time: the issuer has none, or the next update of the current one is within the renewal period
 
 <a name="IsKeyURI"></a>
-## func [IsKeyURI](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L118>)
+## func [IsKeyURI](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L117>)
 
 ```go
 func IsKeyURI(key string) bool
@@ -231,17 +229,8 @@ func IsKeyURI(key string) bool
 
 IsKeyURI returns true when the key is a reference to a key in a crypto provider rather than key material
 
-<a name="IsPostQuantumIssuer"></a>
-## func [IsPostQuantumIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L409>)
-
-```go
-func IsPostQuantumIssuer(m *model.Issuer) (bool, error)
-```
-
-IsPostQuantumIssuer reports whether the key of an issuer row is an ML\-DSA key, from its certificate, or from its request while it is Pending; the signature of the certificate, by the parent, does not count
-
 <a name="IsSelfSigned"></a>
-## func [IsSelfSigned](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L430>)
+## func [IsSelfSigned](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L420>)
 
 ```go
 func IsSelfSigned(crt *x509.Certificate) bool
@@ -250,7 +239,7 @@ func IsSelfSigned(crt *x509.Certificate) bool
 IsSelfSigned reports whether the certificate is its own issuer
 
 <a name="KeyLabel"></a>
-## func [KeyLabel](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L112>)
+## func [KeyLabel](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L111>)
 
 ```go
 func KeyLabel(orgID, projectID xdb.ID, label string) string
@@ -259,7 +248,7 @@ func KeyLabel(orgID, projectID xdb.ID, label string) string
 KeyLabel returns the label of the key of an issuer in its crypto provider: trustyca/\{org\}/\{project\}/\{label\}, with 0 for the platform and the org scope
 
 <a name="KeySpec"></a>
-## func [KeySpec](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L72>)
+## func [KeySpec](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L71>)
 
 ```go
 func KeySpec(spec *pb.KeySpec) (string, int, error)
@@ -277,7 +266,7 @@ func LoadBootstrapConfig(path string) (*authority.Config, error)
 LoadBootstrapConfig loads the ca\-config of the platform bootstrap with authority.LoadConfig, which expands \`$VAR\` and \`$\{VAR\}\` as environment variables in every value: a \`$\{ISSUER\_ID\}\` in the AIA, CRL or OCSP URL template of an issuer would become an empty string, and every certificate the issuer signs would name the URL without the issuer. A file whose templates name the issuer that way is refused before it is loaded; file issuers use pbconv.IssuerIDPlaceholder \(\`:ISSUER\_ID\`\).
 
 <a name="PublicKeysEqual"></a>
-## func [PublicKeysEqual](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L431>)
+## func [PublicKeysEqual](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L397>)
 
 ```go
 func PublicKeysEqual(a, b crypto.PublicKey) bool
@@ -286,7 +275,7 @@ func PublicKeysEqual(a, b crypto.PublicKey) bool
 PublicKeysEqual reports whether the two public keys are the same key
 
 <a name="SubjectKeyID"></a>
-## func [SubjectKeyID](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L457>)
+## func [SubjectKeyID](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L423>)
 
 ```go
 func SubjectKeyID(pub crypto.PublicKey) (string, error)
@@ -387,7 +376,7 @@ func (p *CrlPublisher) PublishCrls(ctx context.Context, req *PublishCrlsRequest)
 PublishCrls publishes the due CRLs of the Active and Archived issuers of the scope, every CRL when forced. The current CRLs of a page of issuers are read in one query \(db.GetCrls\), and an issuer whose CRL is not due is skipped from the settings of its row, before its signer is loaded. An issuer that fails does not stop the run: the failure is logged and counted. The error is a failure to list the issuers or to read their CRLs; the CRLs published before it are in the result.
 
 <a name="ImportRequest"></a>
-## type [ImportRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L319-L340>)
+## type [ImportRequest](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L309-L330>)
 
 ImportRequest describes an issuer imported with an existing certificate and key: bring your own CA
 
@@ -447,7 +436,7 @@ type IssuerRequest struct {
 ```
 
 <a name="KeyRef"></a>
-## type [KeyRef](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L124-L134>)
+## type [KeyRef](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L123-L133>)
 
 KeyRef locates the private key of an issuer; it is stored in the key columns of the issuer row and never carries plain key material
 
@@ -466,7 +455,7 @@ type KeyRef struct {
 ```
 
 <a name="KeyRef.Apply"></a>
-### func \(\*KeyRef\) [Apply](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L137>)
+### func \(\*KeyRef\) [Apply](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L136>)
 
 ```go
 func (r *KeyRef) Apply(m *model.Issuer)
@@ -475,7 +464,7 @@ func (r *KeyRef) Apply(m *model.Issuer)
 Apply sets the key columns of the issuer row
 
 <a name="Keys"></a>
-## type [Keys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L147-L153>)
+## type [Keys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L146-L152>)
 
 Keys generates, loads and protects the private keys of the issuers. A key generated in a KMS or HSM provider is referenced by its URI and never leaves the provider; a software key is wrapped by the data protection provider before it is stored.
 
@@ -486,7 +475,7 @@ type Keys struct {
 ```
 
 <a name="NewKeys"></a>
-### func [NewKeys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L159>)
+### func [NewKeys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L158>)
 
 ```go
 func NewKeys(crypto *cryptoprov.Crypto, dp dataprotection.Provider) *Keys
@@ -495,7 +484,7 @@ func NewKeys(crypto *cryptoprov.Crypto, dp dataprotection.Provider) *Keys
 NewKeys returns the key management over the crypto providers and the data protection provider; either may be nil when the deployment has none, and the operations that need it fail. Software keys are allowed until DisableSoftwareKeys.
 
 <a name="Keys.ActivatedIssuer"></a>
-### func \(\*Keys\) [ActivatedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L395>)
+### func \(\*Keys\) [ActivatedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L385>)
 
 ```go
 func (k *Keys) ActivatedIssuer(ctx context.Context, row *model.Issuer, certPEM, intermediates, rootPEM string) (*model.Issuer, error)
@@ -504,7 +493,7 @@ func (k *Keys) ActivatedIssuer(ctx context.Context, row *model.Issuer, certPEM, 
 ActivatedIssuer returns the copy of a Pending row with the certificate signed outside the CA, after verifying that the certificate is for the key of the issuer and that its chain verifies; the DB activates the row
 
 <a name="Keys.Crypto"></a>
-### func \(\*Keys\) [Crypto](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L178>)
+### func \(\*Keys\) [Crypto](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L177>)
 
 ```go
 func (k *Keys) Crypto() *cryptoprov.Crypto
@@ -513,7 +502,7 @@ func (k *Keys) Crypto() *cryptoprov.Crypto
 Crypto returns the crypto providers
 
 <a name="Keys.Destroy"></a>
-### func \(\*Keys\) [Destroy](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L371>)
+### func \(\*Keys\) [Destroy](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L370>)
 
 ```go
 func (k *Keys) Destroy(_ context.Context, m *model.Issuer) error
@@ -522,7 +511,7 @@ func (k *Keys) Destroy(_ context.Context, m *model.Issuer) error
 Destroy removes the key of an issuer from its crypto provider, when the provider manages keys. A software key has no provider copy: it is destroyed when the row clears key\_protected.
 
 <a name="Keys.DisableSoftwareKeys"></a>
-### func \(\*Keys\) [DisableSoftwareKeys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L173>)
+### func \(\*Keys\) [DisableSoftwareKeys](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L172>)
 
 ```go
 func (k *Keys) DisableSoftwareKeys()
@@ -531,7 +520,7 @@ func (k *Keys) DisableSoftwareKeys()
 DisableSoftwareKeys refuses, with ErrSoftwareKeysDisabled, every key that no crypto provider holds: a key the inmem provider generates, the PEM key of an import and the key file of a bootstrap issuer, which would be stored wrapped in key\_protected. A production configuration disables them \(ca.allow\_software\_keys\), so that every issuer key lives in a KMS or an HSM; the wrapped keys of existing rows still load.
 
 <a name="Keys.Generate"></a>
-### func \(\*Keys\) [Generate](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L209>)
+### func \(\*Keys\) [Generate](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L208>)
 
 ```go
 func (k *Keys) Generate(ctx context.Context, prov cryptoprov.Provider, keyLabel string, spec *pb.KeySpec, req *csr.CertificateRequest) ([]byte, crypto.Signer, *KeyRef, error)
@@ -540,7 +529,7 @@ func (k *Keys) Generate(ctx context.Context, prov cryptoprov.Provider, keyLabel 
 Generate generates the key of an issuer in the provider, with the label and specification, and signs the certificate request with it. It returns the PEM encoded CSR, the signer and the reference to store on the row.
 
 <a name="Keys.ImportIssuer"></a>
-### func \(\*Keys\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L345>)
+### func \(\*Keys\) [ImportIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L335>)
 
 ```go
 func (k *Keys) ImportIssuer(ctx context.Context, req *ImportRequest) (*model.Issuer, error)
@@ -549,7 +538,7 @@ func (k *Keys) ImportIssuer(ctx context.Context, req *ImportRequest) (*model.Iss
 ImportIssuer verifies the certificate chain and the key of an imported issuer and returns its Active row; the chain and root columns hold the verified chain
 
 <a name="Keys.ImportKey"></a>
-### func \(\*Keys\) [ImportKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L317>)
+### func \(\*Keys\) [ImportKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L316>)
 
 ```go
 func (k *Keys) ImportKey(ctx context.Context, keyURI string, keyPEM []byte, keyLabel string, pub crypto.PublicKey) (crypto.Signer, *KeyRef, error)
@@ -558,7 +547,7 @@ func (k *Keys) ImportKey(ctx context.Context, keyURI string, keyPEM []byte, keyL
 ImportKey returns the signer and the reference of an existing key: by its URI in a crypto provider, or as PEM, which is wrapped. The key must be the private key of the public key.
 
 <a name="Keys.KeyRefFromExport"></a>
-### func \(\*Keys\) [KeyRefFromExport](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L242>)
+### func \(\*Keys\) [KeyRefFromExport](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L241>)
 
 ```go
 func (k *Keys) KeyRefFromExport(ctx context.Context, prov cryptoprov.Provider, keyLabel string, exported []byte) (*KeyRef, error)
@@ -567,7 +556,7 @@ func (k *Keys) KeyRefFromExport(ctx context.Context, prov cryptoprov.Provider, k
 KeyRefFromExport returns the reference of a key its provider exported \(cryptoprov.KeyGenerator.ExportKey, or the key authority.NewRoot returns\): a key URI references the key in the provider, key material is wrapped and the reference carries the key label
 
 <a name="Keys.NewPendingIssuer"></a>
-### func \(\*Keys\) [NewPendingIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L286>)
+### func \(\*Keys\) [NewPendingIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L276>)
 
 ```go
 func (k *Keys) NewPendingIssuer(ctx context.Context, req *IssuerRequest) (*model.Issuer, error)
@@ -576,7 +565,7 @@ func (k *Keys) NewPendingIssuer(ctx context.Context, req *IssuerRequest) (*model
 NewPendingIssuer generates the key of an issuer in the provider and its certificate request. The row is Pending with the CSR until ActivatedIssuer sets the certificate signed outside the CA.
 
 <a name="Keys.NewRootIssuer"></a>
-### func \(\*Keys\) [NewRootIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L118>)
+### func \(\*Keys\) [NewRootIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L108>)
 
 ```go
 func (k *Keys) NewRootIssuer(ctx context.Context, req *IssuerRequest, profileName string, profile *authority.CertProfile) (*model.Issuer, error)
@@ -585,7 +574,7 @@ func (k *Keys) NewRootIssuer(ctx context.Context, req *IssuerRequest, profileNam
 NewRootIssuer generates the key of a self\-signed root in the provider and signs its certificate with the CA profile, registered under profileName. The row is Active and its own trust anchor; the caller registers the root certificate.
 
 <a name="Keys.NewSignedIssuer"></a>
-### func \(\*Keys\) [NewSignedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L176>)
+### func \(\*Keys\) [NewSignedIssuer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/issuer.go#L166>)
 
 ```go
 func (k *Keys) NewSignedIssuer(ctx context.Context, req *IssuerRequest, parent *Resolution) (*model.Issuer, error)
@@ -594,7 +583,7 @@ func (k *Keys) NewSignedIssuer(ctx context.Context, req *IssuerRequest, parent *
 NewSignedIssuer generates the key of an issuer in the provider and has the parent sign its certificate with the CA profile the parent resolved. The row is Active, with the parent as its parent, the parent and its chain as its chain and the parent's root as its root. A Root is refused: it is self\-signed by NewRootIssuer. The chain of the parent must allow a subordinate CA with the path length of the profile \(checkPathLength\), or the certificates the subordinate issues would never verify.
 
 <a name="Keys.ProtectKey"></a>
-### func \(\*Keys\) [ProtectKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L269>)
+### func \(\*Keys\) [ProtectKey](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L268>)
 
 ```go
 func (k *Keys) ProtectKey(ctx context.Context, keyPEM []byte) (string, error)
@@ -603,7 +592,7 @@ func (k *Keys) ProtectKey(ctx context.Context, keyPEM []byte) (string, error)
 ProtectKey wraps the PEM of a software key with the data protection provider; the result is what key\_protected stores
 
 <a name="Keys.Provider"></a>
-### func \(\*Keys\) [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L184>)
+### func \(\*Keys\) [Provider](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L183>)
 
 ```go
 func (k *Keys) Provider(name string) (cryptoprov.Provider, error)
@@ -612,7 +601,7 @@ func (k *Keys) Provider(name string) (cryptoprov.Provider, error)
 Provider returns the crypto provider with the name, \`manufacturer\` or \`manufacturer/model\`; an empty name is the default provider
 
 <a name="Keys.Signer"></a>
-### func \(\*Keys\) [Signer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L282>)
+### func \(\*Keys\) [Signer](<https://github.com/effective-security/trustyca/blob/main/internal/ca/keys.go#L281>)
 
 ```go
 func (k *Keys) Signer(ctx context.Context, m *model.Issuer) (crypto.Signer, error)

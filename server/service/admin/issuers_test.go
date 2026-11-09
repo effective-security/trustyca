@@ -44,7 +44,7 @@ func TestService_ListIssuers(t *testing.T) {
 			},
 		},
 		HasNextPage: true,
-		NextOffset:  2,
+		Cursor:      "next",
 	}
 
 	// every org and the platform
@@ -59,7 +59,7 @@ func TestService_ListIssuers(t *testing.T) {
 	assert.Empty(t, res.Issuers[1].OrgID, "a platform issuer has no org")
 	assert.Equal(t, []string{"tenant_ca"}, res.Issuers[1].Config.AllowedProfiles)
 	require.NotNil(t, res.NextPage)
-	assert.Equal(t, 2, int(res.NextPage.Offset))
+	assert.Equal(t, "next", res.NextPage.Cursor)
 
 	// the platform only, by label
 	caDb.EXPECT().ListIssuers(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListIssuersRequest) (*model.IssuerResult, error) {
@@ -79,7 +79,6 @@ func TestService_ListIssuers(t *testing.T) {
 		assert.False(t, req.Platform)
 		assert.False(t, req.AllOrgs, "the platform flag is ignored with an org")
 		assert.Equal(t, pb.AuthorityType_Issuing, req.Type)
-		assert.True(t, req.Cursor.IsSet())
 		assert.Equal(t, uint64(2), req.Cursor.LastID())
 		return &model.IssuerResult{Rows: rows.Rows[:1]}, nil
 	})

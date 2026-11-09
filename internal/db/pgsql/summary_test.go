@@ -70,7 +70,7 @@ func Test_SummaryCounts(t *testing.T) {
 
 	// the issuers that publish CRLs, newest first, with the next update of
 	// their CRL and without PEMs; the destroyed issuer is not one of them
-	res := list(&query.ListCrlStatesRequest{Limit: 10, Cursor: query.NewCursor(0)})
+	res := list(&query.ListCrlStatesRequest{Limit: 10})
 	assert.Equal(t, []string{"SUM_PRJ", "SUM_ORG"}, labels(res))
 	assert.False(t, res.HasNextPage)
 	assert.Equal(t, projectIssuer.ID.UInt64(), res.Rows[0].ID.UInt64())
@@ -84,13 +84,13 @@ func Test_SummaryCounts(t *testing.T) {
 	assert.NotNil(t, cfg)
 
 	// a project, the org-wide rows only, one status, a page at a time
-	assert.Equal(t, []string{"SUM_PRJ"}, labels(list(&query.ListCrlStatesRequest{ProjectID: project.ID.UInt64(), Limit: 10, Cursor: query.NewCursor(0)})))
-	assert.Equal(t, []string{"SUM_ORG"}, labels(list(&query.ListCrlStatesRequest{ProjectIDs: []uint64{}, Limit: 10, Cursor: query.NewCursor(0)})))
-	assert.Equal(t, []string{"SUM_PRJ", "SUM_ORG"}, labels(list(&query.ListCrlStatesRequest{ProjectIDs: []uint64{project.ID.UInt64()}, Limit: 10, Cursor: query.NewCursor(0)})))
-	active, err := provider.ListCrlStates(ctx, &query.ListCrlStatesRequest{OrgID: orgID, Statuses: []pb.IssuerStatus_Enum{pb.IssuerStatus_Active}, Limit: 10, Cursor: query.NewCursor(0)})
+	assert.Equal(t, []string{"SUM_PRJ"}, labels(list(&query.ListCrlStatesRequest{ProjectID: project.ID.UInt64(), Limit: 10})))
+	assert.Equal(t, []string{"SUM_ORG"}, labels(list(&query.ListCrlStatesRequest{ProjectIDs: []uint64{}, Limit: 10})))
+	assert.Equal(t, []string{"SUM_PRJ", "SUM_ORG"}, labels(list(&query.ListCrlStatesRequest{ProjectIDs: []uint64{project.ID.UInt64()}, Limit: 10})))
+	active, err := provider.ListCrlStates(ctx, &query.ListCrlStatesRequest{OrgID: orgID, Statuses: []pb.IssuerStatus_Enum{pb.IssuerStatus_Active}, Limit: 10})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"SUM_ORG"}, labels(active))
-	first := list(&query.ListCrlStatesRequest{Limit: 1, Cursor: query.NewCursor(0)})
+	first := list(&query.ListCrlStatesRequest{Limit: 1})
 	assert.Equal(t, []string{"SUM_PRJ"}, labels(first))
 	require.True(t, first.HasNextPage)
 	cursor, err := query.ParseCursor(first.Cursor)

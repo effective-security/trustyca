@@ -72,42 +72,24 @@ func Test_Event(t *testing.T) {
 
 	t.Run("pagination", func(t *testing.T) {
 		const pageSize = uint32(10)
-		first, err := provider.ListEvents(ctx, &query.ListEventsRequest{
-			OrgID: org.ID.UInt64(),
-			Limit: pageSize,
-		})
-		require.NoError(t, err)
-		require.Len(t, first.Rows, int(pageSize))
-		assert.True(t, first.HasNextPage)
-		assert.Equal(t, pageSize, first.NextOffset)
-		assert.Equal(t, eventIDs(newestFirst[:pageSize]), eventIDs(first.Rows))
-		requireNewestFirst(t, first.Rows)
-
-		second, err := provider.ListEvents(ctx, &query.ListEventsRequest{
-			OrgID:  org.ID.UInt64(),
-			Limit:  pageSize,
-			Offset: first.NextOffset,
-		})
-		require.NoError(t, err)
-		require.Len(t, second.Rows, int(pageSize))
-		assert.True(t, second.HasNextPage)
-		assert.Equal(t, uint32(20), second.NextOffset)
-		assert.Equal(t, eventIDs(newestFirst[10:20]), eventIDs(second.Rows))
-		requireNewestFirst(t, second.Rows)
-
 		var loaded model.EventSlice
 		req := &query.ListEventsRequest{
 			OrgID: org.ID.UInt64(),
 			Limit: pageSize,
 		}
-		for pages := 0; pages < 10; pages++ {
+		// the zero cursor is the first page, and each page names the next
+		for page := 0; page < 10; page++ {
 			rs, err := provider.ListEvents(ctx, req)
 			require.NoError(t, err)
 			loaded = append(loaded, rs.Rows...)
 			if !rs.HasNextPage {
+				assert.Empty(t, rs.Cursor)
 				break
 			}
-			req.Offset = rs.NextOffset
+			require.Len(t, rs.Rows, int(pageSize))
+			assert.NotEmpty(t, rs.Cursor)
+			req.Cursor, err = query.ParseTimeCursor(rs.Cursor)
+			require.NoError(t, err)
 		}
 		assert.Equal(t, eventIDs(newestFirst), eventIDs(loaded))
 		requireNewestFirst(t, loaded)
@@ -119,14 +101,12 @@ func Test_Event(t *testing.T) {
 		const pageSize = uint32(7)
 		var loaded model.EventSlice
 		req := &query.ListEventsRequest{
-			OrgID:  org.ID.UInt64(),
-			Limit:  pageSize,
-			Cursor: query.NewCursor(0),
+			OrgID: org.ID.UInt64(),
+			Limit: pageSize,
 		}
 		for pages := 0; pages < 10; pages++ {
 			rs, err := provider.ListEvents(ctx, req)
 			require.NoError(t, err)
-			assert.Zero(t, rs.NextOffset)
 			loaded = append(loaded, rs.Rows...)
 			if !rs.HasNextPage {
 				assert.Empty(t, rs.Cursor)
@@ -147,11 +127,6 @@ func Test_Event(t *testing.T) {
 		assert.Equal(t, eventIDs(newestFirst), eventIDs(loaded), "the pages cover every event once")
 		requireNewestFirst(t, loaded)
 
-		// the cursor of a list by id is refused before the query
-		idCursor, err := query.ParseCursor(query.EncodeCursor(created[0].ID))
-		require.NoError(t, err)
-		_, err = provider.ListEvents(ctx, &query.ListEventsRequest{OrgID: org.ID.UInt64(), Limit: pageSize, Cursor: idCursor})
-		assert.EqualError(t, err, "invalid cursor: the cursor of another list")
 	})
 
 	t.Run("filter_type", func(t *testing.T) {
@@ -272,7 +247,6 @@ func Test_Event_VisibleProjects(t *testing.T) {
 	list := func(req *query.ListEventsRequest) []uint64 {
 		req.OrgID = org.ID.UInt64()
 		req.Limit = 10
-		req.Cursor = query.NewCursor(0)
 		res, err := provider.ListEvents(ctx, req)
 		require.NoError(t, err)
 		assert.False(t, res.HasNextPage)

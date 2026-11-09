@@ -1,12 +1,13 @@
 ---
 # Delegated OCSP responder certificate. The profile binds to any issuer of
 # the org that lists it in its allowed profiles (`--ocsp-profile ocsp`).
-# An ML-DSA issuer with an OCSP URL needs it: the responder key is P-256,
+# An issuer with an OCSP URL needs it: the responder key is P-256,
 # so the profile must not set allowed_key_algorithms to ml-dsa alone.
 description: Delegated OCSP responder certificate
 issuer_label: "*"
 expiry: 168h
 backdate: 30m
 usages:
+  - digital signature
   - ocsp signing
 ocsp_no_check: true

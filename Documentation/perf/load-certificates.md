@@ -42,7 +42,7 @@ building.
 | ------------------------------------------- | ------------------------------------------------- | ----------------------------------------- |
 | big org (2M rows), first page               | 0.04 ms, pkey backward scan, 24 pages             | same                                      |
 | big org, cursor page                        | 0.04 ms                                           | same                                      |
-| big org, offset 10,000                      | 11 ms, 7,226 pages (offset pagination is linear)  | same                                      |
+| big org, offset 10,000 (removed since)      | 11 ms, 7,226 pages (offset pagination is linear)  | same                                      |
 | big org, project                            | 0.05 ms, `(org_id, project_id, id)`               | same                                      |
 | big org, visible projects / profile / scope | 0.03 to 0.05 ms                                   | same                                      |
 | big org, status Revoked (1% of rows)        | 14 ms, 9,213 pages (status is not indexed)        | same                                      |
@@ -187,4 +187,5 @@ on one connection; the ECDSA signature in front of it is about 0.2 ms
   `PARTITION BY HASH (org_id)` stays an open item for a tenant beyond
   roughly 100M rows (DESIGN.md section 4.5).
 - The fillfactor of `certificate` stays at the default.
-- Offset pagination costs the offset; clients page by cursor.
+- Offset pagination cost the offset, one reason it was removed: every list
+  pages by cursor, and `tests/load` no longer measures an offset page.

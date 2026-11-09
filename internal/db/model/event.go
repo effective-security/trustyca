@@ -7,13 +7,7 @@ import (
 
 // NextPage returns the next page of the result
 func (v *EventResult) NextPage() *pb.NextPage {
-	if v.HasNextPage {
-		return &pb.NextPage{
-			Offset: v.NextOffset,
-			Cursor: v.Cursor,
-		}
-	}
-	return nil
+	return nextPage(v.HasNextPage, v.Cursor)
 }
 
 // Pb returns pb.Events

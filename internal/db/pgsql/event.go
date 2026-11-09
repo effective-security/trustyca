@@ -62,16 +62,12 @@ func (p *Provider) CreateEvent(ctx context.Context, m *model.Event) (*model.Even
 
 // ListEvents lists events, newest first
 func (p *Provider) ListEvents(ctx context.Context, r *query.ListEventsRequest) (*model.EventResult, error) {
-	err := xdb.Validate(r)
-	if err != nil {
-		return nil, err
-	}
 	qp := r.QueryParams()
 	q, name := query.ListEvents(qp)
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.EventResult
-	err = listRows(ctx, p, r.Cursor, eventCursor, &rs, q, qp)
+	err := xdb.ExecuteQueryWithCursor(ctx, p, eventCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

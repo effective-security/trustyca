@@ -141,7 +141,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(x \*ListAllCertificatesRequest\) GetExpiringBefore\(\) string](<#ListAllCertificatesRequest.GetExpiringBefore>)
   - [func \(x \*ListAllCertificatesRequest\) GetIKID\(\) string](<#ListAllCertificatesRequest.GetIKID>)
   - [func \(x \*ListAllCertificatesRequest\) GetLimit\(\) uint32](<#ListAllCertificatesRequest.GetLimit>)
-  - [func \(x \*ListAllCertificatesRequest\) GetOffset\(\) uint32](<#ListAllCertificatesRequest.GetOffset>)
   - [func \(x \*ListAllCertificatesRequest\) GetOrgID\(\) string](<#ListAllCertificatesRequest.GetOrgID>)
   - [func \(x \*ListAllCertificatesRequest\) GetPlatform\(\) bool](<#ListAllCertificatesRequest.GetPlatform>)
   - [func \(x \*ListAllCertificatesRequest\) GetProfile\(\) string](<#ListAllCertificatesRequest.GetProfile>)
@@ -161,7 +160,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(x \*ListAllIssuersRequest\) GetIKIDs\(\) \[\]string](<#ListAllIssuersRequest.GetIKIDs>)
   - [func \(x \*ListAllIssuersRequest\) GetLabel\(\) string](<#ListAllIssuersRequest.GetLabel>)
   - [func \(x \*ListAllIssuersRequest\) GetLimit\(\) uint32](<#ListAllIssuersRequest.GetLimit>)
-  - [func \(x \*ListAllIssuersRequest\) GetOffset\(\) uint32](<#ListAllIssuersRequest.GetOffset>)
   - [func \(x \*ListAllIssuersRequest\) GetOrgID\(\) string](<#ListAllIssuersRequest.GetOrgID>)
   - [func \(x \*ListAllIssuersRequest\) GetPlatform\(\) bool](<#ListAllIssuersRequest.GetPlatform>)
   - [func \(x \*ListAllIssuersRequest\) GetProjectID\(\) string](<#ListAllIssuersRequest.GetProjectID>)
@@ -180,7 +178,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(x \*ListCertificatesRequest\) GetExpiringBefore\(\) string](<#ListCertificatesRequest.GetExpiringBefore>)
   - [func \(x \*ListCertificatesRequest\) GetIKID\(\) string](<#ListCertificatesRequest.GetIKID>)
   - [func \(x \*ListCertificatesRequest\) GetLimit\(\) uint32](<#ListCertificatesRequest.GetLimit>)
-  - [func \(x \*ListCertificatesRequest\) GetOffset\(\) uint32](<#ListCertificatesRequest.GetOffset>)
   - [func \(x \*ListCertificatesRequest\) GetOrgID\(\) string](<#ListCertificatesRequest.GetOrgID>)
   - [func \(x \*ListCertificatesRequest\) GetProfile\(\) string](<#ListCertificatesRequest.GetProfile>)
   - [func \(x \*ListCertificatesRequest\) GetProjectID\(\) string](<#ListCertificatesRequest.GetProjectID>)
@@ -198,7 +195,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(x \*ListIssuersRequest\) GetIDs\(\) \[\]string](<#ListIssuersRequest.GetIDs>)
   - [func \(x \*ListIssuersRequest\) GetIKIDs\(\) \[\]string](<#ListIssuersRequest.GetIKIDs>)
   - [func \(x \*ListIssuersRequest\) GetLimit\(\) uint32](<#ListIssuersRequest.GetLimit>)
-  - [func \(x \*ListIssuersRequest\) GetOffset\(\) uint32](<#ListIssuersRequest.GetOffset>)
   - [func \(x \*ListIssuersRequest\) GetOrgID\(\) string](<#ListIssuersRequest.GetOrgID>)
   - [func \(x \*ListIssuersRequest\) GetProjectID\(\) string](<#ListIssuersRequest.GetProjectID>)
   - [func \(x \*ListIssuersRequest\) GetStatus\(\) pb.IssuerStatus\_Enum](<#ListIssuersRequest.GetStatus>)
@@ -214,7 +210,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(\*ListOrgsRequest\) Descriptor\(\) \(\[\]byte, \[\]int\)](<#ListOrgsRequest.Descriptor>)
   - [func \(x \*ListOrgsRequest\) GetCursor\(\) string](<#ListOrgsRequest.GetCursor>)
   - [func \(x \*ListOrgsRequest\) GetLimit\(\) uint32](<#ListOrgsRequest.GetLimit>)
-  - [func \(x \*ListOrgsRequest\) GetOffset\(\) uint32](<#ListOrgsRequest.GetOffset>)
   - [func \(x \*ListOrgsRequest\) GetStatus\(\) pb.ItemStatus\_Enum](<#ListOrgsRequest.GetStatus>)
   - [func \(msg \*ListOrgsRequest\) MarshalJSON\(\) \(\[\]byte, error\)](<#ListOrgsRequest.MarshalJSON>)
   - [func \(\*ListOrgsRequest\) ProtoMessage\(\)](<#ListOrgsRequest.ProtoMessage>)
@@ -230,7 +225,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(x \*ListProfilesRequest\) GetIssuerLabel\(\) string](<#ListProfilesRequest.GetIssuerLabel>)
   - [func \(x \*ListProfilesRequest\) GetLabels\(\) \[\]string](<#ListProfilesRequest.GetLabels>)
   - [func \(x \*ListProfilesRequest\) GetLimit\(\) uint32](<#ListProfilesRequest.GetLimit>)
-  - [func \(x \*ListProfilesRequest\) GetOffset\(\) uint32](<#ListProfilesRequest.GetOffset>)
   - [func \(x \*ListProfilesRequest\) GetOrgID\(\) string](<#ListProfilesRequest.GetOrgID>)
   - [func \(x \*ListProfilesRequest\) GetProjectID\(\) string](<#ListProfilesRequest.GetProjectID>)
   - [func \(msg \*ListProfilesRequest\) MarshalJSON\(\) \(\[\]byte, error\)](<#ListProfilesRequest.MarshalJSON>)
@@ -244,7 +238,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(\*ListProjectsRequest\) Descriptor\(\) \(\[\]byte, \[\]int\)](<#ListProjectsRequest.Descriptor>)
   - [func \(x \*ListProjectsRequest\) GetCursor\(\) string](<#ListProjectsRequest.GetCursor>)
   - [func \(x \*ListProjectsRequest\) GetLimit\(\) uint32](<#ListProjectsRequest.GetLimit>)
-  - [func \(x \*ListProjectsRequest\) GetOffset\(\) uint32](<#ListProjectsRequest.GetOffset>)
   - [func \(x \*ListProjectsRequest\) GetOrgID\(\) string](<#ListProjectsRequest.GetOrgID>)
   - [func \(x \*ListProjectsRequest\) GetStatus\(\) pb.ItemStatus\_Enum](<#ListProjectsRequest.GetStatus>)
   - [func \(msg \*ListProjectsRequest\) MarshalJSON\(\) \(\[\]byte, error\)](<#ListProjectsRequest.MarshalJSON>)
@@ -259,7 +252,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(x \*ListRevokedCertificatesRequest\) GetCursor\(\) string](<#ListRevokedCertificatesRequest.GetCursor>)
   - [func \(x \*ListRevokedCertificatesRequest\) GetIKID\(\) string](<#ListRevokedCertificatesRequest.GetIKID>)
   - [func \(x \*ListRevokedCertificatesRequest\) GetLimit\(\) uint32](<#ListRevokedCertificatesRequest.GetLimit>)
-  - [func \(x \*ListRevokedCertificatesRequest\) GetOffset\(\) uint32](<#ListRevokedCertificatesRequest.GetOffset>)
   - [func \(x \*ListRevokedCertificatesRequest\) GetOrgID\(\) string](<#ListRevokedCertificatesRequest.GetOrgID>)
   - [func \(x \*ListRevokedCertificatesRequest\) GetProjectID\(\) string](<#ListRevokedCertificatesRequest.GetProjectID>)
   - [func \(msg \*ListRevokedCertificatesRequest\) MarshalJSON\(\) \(\[\]byte, error\)](<#ListRevokedCertificatesRequest.MarshalJSON>)
@@ -273,7 +265,6 @@ import "github.com/effective-security/trustyca/privpb"
   - [func \(\*ListRootsRequest\) Descriptor\(\) \(\[\]byte, \[\]int\)](<#ListRootsRequest.Descriptor>)
   - [func \(x \*ListRootsRequest\) GetCursor\(\) string](<#ListRootsRequest.GetCursor>)
   - [func \(x \*ListRootsRequest\) GetLimit\(\) uint32](<#ListRootsRequest.GetLimit>)
-  - [func \(x \*ListRootsRequest\) GetOffset\(\) uint32](<#ListRootsRequest.GetOffset>)
   - [func \(x \*ListRootsRequest\) GetOrgID\(\) string](<#ListRootsRequest.GetOrgID>)
   - [func \(msg \*ListRootsRequest\) MarshalJSON\(\) \(\[\]byte, error\)](<#ListRootsRequest.MarshalJSON>)
   - [func \(\*ListRootsRequest\) ProtoMessage\(\)](<#ListRootsRequest.ProtoMessage>)
@@ -2094,8 +2085,10 @@ variable, and the bootstrap refuses such a file.`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `DelegatedOcspProfile specifies the profile to issue a delegated OCSP
-responder certificate; empty to sign OCSP with the issuer key`,
+            Documentation: `DelegatedOcspProfile specifies the profile to issue the delegated OCSP
+responder certificate that signs the OCSP responses of the issuer. It is
+required with an OcspURL: the key of an issuer signs no OCSP response,
+and an issuer without a responder answers no OCSP request.`,
         },
         {
             Name:          "AllowedProfiles",
@@ -2476,8 +2469,7 @@ The default is ECDSA P-256.`,
             SearchOptions: api.SearchOption_Sortable,
             Documentation: `Algo specifies the key algorithm: RSA|ECDSA|ML-DSA (case-insensitive;
 MLDSA is accepted). ML-DSA is the post-quantum signature scheme of
-FIPS 204; an ML-DSA issuer with an OcspURL needs a DelegatedOcspProfile,
-since ML-DSA keys do not sign OCSP responses.`,
+FIPS 204.`,
         },
         {
             Name:          "Size",
@@ -2508,15 +2500,8 @@ orgs, newest first`,
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListAllCertificatesRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -2524,9 +2509,8 @@ orgs, newest first`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-the previous request.`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
         {
             Name:          "OrgID",
@@ -2610,15 +2594,8 @@ var ListAllIssuersRequest_MessageDescription = &api.MessageDescription{
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListAllIssuersRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -2626,9 +2603,8 @@ var ListAllIssuersRequest_MessageDescription = &api.MessageDescription{
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-the previous request.`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
         {
             Name:          "OrgID",
@@ -2780,15 +2756,8 @@ in RFC3339 format`,
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListCertificatesRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -2796,9 +2765,8 @@ in RFC3339 format`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-the previous request.`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
     },
 }
@@ -2859,15 +2827,8 @@ issuers`,
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListIssuersRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -2875,9 +2836,8 @@ issuers`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-the previous request.`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
         {
             Name:          "IDs",
@@ -2916,18 +2876,8 @@ var ListOrgsRequest_MessageDescription = &api.MessageDescription{
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListOrgsRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination.
-Which is limited to 10000.
-To paginate for large number of records, use cursor-based pagination
-instead.`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -2935,9 +2885,8 @@ instead.`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-the previous request.`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
         {
             Name:            "Status",
@@ -2999,15 +2948,8 @@ profiles`,
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListProfilesRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -3015,7 +2957,8 @@ profiles`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
         {
             Name:          "IDs",
@@ -3053,18 +2996,8 @@ var ListProjectsRequest_MessageDescription = &api.MessageDescription{
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListProjectsRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination.
-Which is limited to 10000.
-To paginate for large number of records, use cursor-based pagination
-instead.`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -3072,9 +3005,8 @@ instead.`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-the previous request.`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
         {
             Name:            "Status",
@@ -3144,15 +3076,8 @@ service forwards, or the org a service identity names`,
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListRevokedCertificatesRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -3160,7 +3085,8 @@ service forwards, or the org a service identity names`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
     },
 }
@@ -3192,15 +3118,8 @@ identity only`,
             Type:          "uint32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Limit specifies maximum number of records to return`,
-        },
-        {
-            Name:          "Offset",
-            FullName:      "privpb.ListRootsRequest.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset specifies offset for the offset-based pagination`,
+            Documentation: `Limit specifies maximum number of records to return: 500 by default
+and at most`,
         },
         {
             Name:          "Cursor",
@@ -3208,7 +3127,8 @@ identity only`,
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor specifies cursor for the cursor-based pagination`,
+            Documentation: `Cursor continues the listing: empty or "initial" returns the first
+page, the Cursor of the previous NextPage the page after it`,
         },
     },
 }
@@ -3224,25 +3144,15 @@ var NextPage_MessageDescription = &api.MessageDescription{
     Documentation: `NextPage specifies pagination information, if there are more pages to fetch.`,
     Fields: []*api.FieldMeta{
         {
-            Name:          "Offset",
-            FullName:      "pb.NextPage.Offset",
-            Type:          "uint32",
-            SearchType:    "integer",
-            SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Offset is the offset of the next page for offset-based pagination.
-Offset is limited to 10000.
-To paginate for large number of records, use cursor-based pagination
-instead.`,
-        },
-        {
             Name:          "Cursor",
             FullName:      "pb.NextPage.Cursor",
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Cursor is the cursor of the next page for cursor-based pagination.
-Use "initial" to start the pagination or pass the cursor returned from
-this response.`,
+            Documentation: `Cursor is the opaque token of the next page: pass it as the Cursor of
+the same list. It is transient: do not store it, or build it. A page
+costs the same at any depth and neither skips nor repeats a row when
+rows are inserted meanwhile.`,
         },
     },
 }
@@ -4592,7 +4502,7 @@ var X509Subject_MessageDescription = &api.MessageDescription{
 ```
 
 <a name="CreateMessage"></a>
-## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3923>)
+## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3842>)
 
 ```go
 func CreateMessage(fullname string) any
@@ -4610,7 +4520,7 @@ func GetAdminMethodsInfo() map[string]*MethodInfo
 GetAdminMethodsInfo returns the methods info for the admin service. It filters out the methods that are not prefixed with "/privpb.Admin/".
 
 <a name="GetMessageDescription"></a>
-## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3931>)
+## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3850>)
 
 ```go
 func GetMessageDescription(fullname string) *api.MessageDescription
@@ -4619,7 +4529,7 @@ func GetMessageDescription(fullname string) *api.MessageDescription
 
 
 <a name="GetMessageDescriptions"></a>
-## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3907>)
+## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3826>)
 
 ```go
 func GetMessageDescriptions() map[string]*api.MessageDescription
@@ -4817,7 +4727,7 @@ func (msg *ActivateIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ActivateIssuerRequest.Validate"></a>
-### func \(\*ActivateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3831>)
+### func \(\*ActivateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3750>)
 
 ```go
 func (m *ActivateIssuerRequest) Validate(ctx context.Context) error
@@ -5119,7 +5029,7 @@ type CheckAccessFunc func(ctx context.Context, req any, action string) error
 ```
 
 <a name="DeleteProfileRequest"></a>
-## type [DeleteProfileRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1098-L1111>)
+## type [DeleteProfileRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1075-L1088>)
 
 DeleteProfileRequest deletes a profile with the org named explicitly: the request of Backend.DeleteProfile
 
@@ -5140,7 +5050,7 @@ type DeleteProfileRequest struct {
 ```
 
 <a name="DeleteProfileRequest.Descriptor"></a>
-### func \(\*DeleteProfileRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1139>)
+### func \(\*DeleteProfileRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1116>)
 
 ```go
 func (*DeleteProfileRequest) Descriptor() ([]byte, []int)
@@ -5149,7 +5059,7 @@ func (*DeleteProfileRequest) Descriptor() ([]byte, []int)
 Deprecated: Use DeleteProfileRequest.ProtoReflect.Descriptor instead.
 
 <a name="DeleteProfileRequest.GetID"></a>
-### func \(\*DeleteProfileRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1150>)
+### func \(\*DeleteProfileRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1127>)
 
 ```go
 func (x *DeleteProfileRequest) GetID() string
@@ -5158,7 +5068,7 @@ func (x *DeleteProfileRequest) GetID() string
 
 
 <a name="DeleteProfileRequest.GetOrgID"></a>
-### func \(\*DeleteProfileRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1143>)
+### func \(\*DeleteProfileRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1120>)
 
 ```go
 func (x *DeleteProfileRequest) GetOrgID() string
@@ -5167,7 +5077,7 @@ func (x *DeleteProfileRequest) GetOrgID() string
 
 
 <a name="DeleteProfileRequest.GetProjectID"></a>
-### func \(\*DeleteProfileRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1157>)
+### func \(\*DeleteProfileRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1134>)
 
 ```go
 func (x *DeleteProfileRequest) GetProjectID() string
@@ -5185,7 +5095,7 @@ func (msg *DeleteProfileRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="DeleteProfileRequest.ProtoMessage"></a>
-### func \(\*DeleteProfileRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1124>)
+### func \(\*DeleteProfileRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1101>)
 
 ```go
 func (*DeleteProfileRequest) ProtoMessage()
@@ -5194,7 +5104,7 @@ func (*DeleteProfileRequest) ProtoMessage()
 
 
 <a name="DeleteProfileRequest.ProtoReflect"></a>
-### func \(\*DeleteProfileRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1126>)
+### func \(\*DeleteProfileRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1103>)
 
 ```go
 func (x *DeleteProfileRequest) ProtoReflect() protoreflect.Message
@@ -5203,7 +5113,7 @@ func (x *DeleteProfileRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="DeleteProfileRequest.Reset"></a>
-### func \(\*DeleteProfileRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1113>)
+### func \(\*DeleteProfileRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1090>)
 
 ```go
 func (x *DeleteProfileRequest) Reset()
@@ -5212,7 +5122,7 @@ func (x *DeleteProfileRequest) Reset()
 
 
 <a name="DeleteProfileRequest.String"></a>
-### func \(\*DeleteProfileRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1120>)
+### func \(\*DeleteProfileRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1097>)
 
 ```go
 func (x *DeleteProfileRequest) String() string
@@ -5230,7 +5140,7 @@ func (msg *DeleteProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="DeleteProfileRequest.Validate"></a>
-### func \(\*DeleteProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3834>)
+### func \(\*DeleteProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3753>)
 
 ```go
 func (m *DeleteProfileRequest) Validate(ctx context.Context) error
@@ -5239,7 +5149,7 @@ func (m *DeleteProfileRequest) Validate(ctx context.Context) error
 
 
 <a name="GetCertificateRequest"></a>
-## type [GetCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1414-L1429>)
+## type [GetCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1391-L1406>)
 
 GetCertificateRequest specifies certificate by ID, SKID, Sha256 or issuer and serial number with the org named explicitly: the request of Backend.GetCertificate
 
@@ -5262,7 +5172,7 @@ type GetCertificateRequest struct {
 ```
 
 <a name="GetCertificateRequest.Descriptor"></a>
-### func \(\*GetCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1457>)
+### func \(\*GetCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1434>)
 
 ```go
 func (*GetCertificateRequest) Descriptor() ([]byte, []int)
@@ -5271,7 +5181,7 @@ func (*GetCertificateRequest) Descriptor() ([]byte, []int)
 Deprecated: Use GetCertificateRequest.ProtoReflect.Descriptor instead.
 
 <a name="GetCertificateRequest.GetID"></a>
-### func \(\*GetCertificateRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1468>)
+### func \(\*GetCertificateRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1445>)
 
 ```go
 func (x *GetCertificateRequest) GetID() string
@@ -5280,7 +5190,7 @@ func (x *GetCertificateRequest) GetID() string
 
 
 <a name="GetCertificateRequest.GetIssuerSerial"></a>
-### func \(\*GetCertificateRequest\) [GetIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1489>)
+### func \(\*GetCertificateRequest\) [GetIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1466>)
 
 ```go
 func (x *GetCertificateRequest) GetIssuerSerial() *pb.IssuerSerial
@@ -5289,7 +5199,7 @@ func (x *GetCertificateRequest) GetIssuerSerial() *pb.IssuerSerial
 
 
 <a name="GetCertificateRequest.GetOrgID"></a>
-### func \(\*GetCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1461>)
+### func \(\*GetCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1438>)
 
 ```go
 func (x *GetCertificateRequest) GetOrgID() string
@@ -5298,7 +5208,7 @@ func (x *GetCertificateRequest) GetOrgID() string
 
 
 <a name="GetCertificateRequest.GetSKID"></a>
-### func \(\*GetCertificateRequest\) [GetSKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1475>)
+### func \(\*GetCertificateRequest\) [GetSKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1452>)
 
 ```go
 func (x *GetCertificateRequest) GetSKID() string
@@ -5307,7 +5217,7 @@ func (x *GetCertificateRequest) GetSKID() string
 
 
 <a name="GetCertificateRequest.GetSha256"></a>
-### func \(\*GetCertificateRequest\) [GetSha256](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1482>)
+### func \(\*GetCertificateRequest\) [GetSha256](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1459>)
 
 ```go
 func (x *GetCertificateRequest) GetSha256() string
@@ -5325,7 +5235,7 @@ func (msg *GetCertificateRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="GetCertificateRequest.ProtoMessage"></a>
-### func \(\*GetCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1442>)
+### func \(\*GetCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1419>)
 
 ```go
 func (*GetCertificateRequest) ProtoMessage()
@@ -5334,7 +5244,7 @@ func (*GetCertificateRequest) ProtoMessage()
 
 
 <a name="GetCertificateRequest.ProtoReflect"></a>
-### func \(\*GetCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1444>)
+### func \(\*GetCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1421>)
 
 ```go
 func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message
@@ -5343,7 +5253,7 @@ func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="GetCertificateRequest.Reset"></a>
-### func \(\*GetCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1431>)
+### func \(\*GetCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1408>)
 
 ```go
 func (x *GetCertificateRequest) Reset()
@@ -5352,7 +5262,7 @@ func (x *GetCertificateRequest) Reset()
 
 
 <a name="GetCertificateRequest.String"></a>
-### func \(\*GetCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1438>)
+### func \(\*GetCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1415>)
 
 ```go
 func (x *GetCertificateRequest) String() string
@@ -5370,7 +5280,7 @@ func (msg *GetCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCertificateRequest.Validate"></a>
-### func \(\*GetCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3837>)
+### func \(\*GetCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3756>)
 
 ```go
 func (m *GetCertificateRequest) Validate(ctx context.Context) error
@@ -5379,7 +5289,7 @@ func (m *GetCertificateRequest) Validate(ctx context.Context) error
 
 
 <a name="GetCrlRequest"></a>
-## type [GetCrlRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1822-L1831>)
+## type [GetCrlRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1783-L1792>)
 
 GetCrlRequest specifies CRL request by IKID with the org named explicitly: the request of Backend.GetCRL
 
@@ -5396,7 +5306,7 @@ type GetCrlRequest struct {
 ```
 
 <a name="GetCrlRequest.Descriptor"></a>
-### func \(\*GetCrlRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1859>)
+### func \(\*GetCrlRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1820>)
 
 ```go
 func (*GetCrlRequest) Descriptor() ([]byte, []int)
@@ -5405,7 +5315,7 @@ func (*GetCrlRequest) Descriptor() ([]byte, []int)
 Deprecated: Use GetCrlRequest.ProtoReflect.Descriptor instead.
 
 <a name="GetCrlRequest.GetIKID"></a>
-### func \(\*GetCrlRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1870>)
+### func \(\*GetCrlRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1831>)
 
 ```go
 func (x *GetCrlRequest) GetIKID() string
@@ -5414,7 +5324,7 @@ func (x *GetCrlRequest) GetIKID() string
 
 
 <a name="GetCrlRequest.GetOrgID"></a>
-### func \(\*GetCrlRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1863>)
+### func \(\*GetCrlRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1824>)
 
 ```go
 func (x *GetCrlRequest) GetOrgID() string
@@ -5432,7 +5342,7 @@ func (msg *GetCrlRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="GetCrlRequest.ProtoMessage"></a>
-### func \(\*GetCrlRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1844>)
+### func \(\*GetCrlRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1805>)
 
 ```go
 func (*GetCrlRequest) ProtoMessage()
@@ -5441,7 +5351,7 @@ func (*GetCrlRequest) ProtoMessage()
 
 
 <a name="GetCrlRequest.ProtoReflect"></a>
-### func \(\*GetCrlRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1846>)
+### func \(\*GetCrlRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1807>)
 
 ```go
 func (x *GetCrlRequest) ProtoReflect() protoreflect.Message
@@ -5450,7 +5360,7 @@ func (x *GetCrlRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="GetCrlRequest.Reset"></a>
-### func \(\*GetCrlRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1833>)
+### func \(\*GetCrlRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1794>)
 
 ```go
 func (x *GetCrlRequest) Reset()
@@ -5459,7 +5369,7 @@ func (x *GetCrlRequest) Reset()
 
 
 <a name="GetCrlRequest.String"></a>
-### func \(\*GetCrlRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1840>)
+### func \(\*GetCrlRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1801>)
 
 ```go
 func (x *GetCrlRequest) String() string
@@ -5477,7 +5387,7 @@ func (msg *GetCrlRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCrlRequest.Validate"></a>
-### func \(\*GetCrlRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3840>)
+### func \(\*GetCrlRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3759>)
 
 ```go
 func (m *GetCrlRequest) Validate(ctx context.Context) error
@@ -5617,7 +5527,7 @@ func (msg *GetIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetIssuerRequest.Validate"></a>
-### func \(\*GetIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3843>)
+### func \(\*GetIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3762>)
 
 ```go
 func (m *GetIssuerRequest) Validate(ctx context.Context) error
@@ -5626,7 +5536,7 @@ func (m *GetIssuerRequest) Validate(ctx context.Context) error
 
 
 <a name="GetProfileRequest"></a>
-## type [GetProfileRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L910-L923>)
+## type [GetProfileRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L894-L907>)
 
 GetProfileRequest specifies a profile by ID or label with the org named explicitly: the request of Backend.GetProfile
 
@@ -5647,7 +5557,7 @@ type GetProfileRequest struct {
 ```
 
 <a name="GetProfileRequest.Descriptor"></a>
-### func \(\*GetProfileRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L951>)
+### func \(\*GetProfileRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L935>)
 
 ```go
 func (*GetProfileRequest) Descriptor() ([]byte, []int)
@@ -5656,7 +5566,7 @@ func (*GetProfileRequest) Descriptor() ([]byte, []int)
 Deprecated: Use GetProfileRequest.ProtoReflect.Descriptor instead.
 
 <a name="GetProfileRequest.GetID"></a>
-### func \(\*GetProfileRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L969>)
+### func \(\*GetProfileRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L953>)
 
 ```go
 func (x *GetProfileRequest) GetID() string
@@ -5665,7 +5575,7 @@ func (x *GetProfileRequest) GetID() string
 
 
 <a name="GetProfileRequest.GetLabel"></a>
-### func \(\*GetProfileRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L976>)
+### func \(\*GetProfileRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L960>)
 
 ```go
 func (x *GetProfileRequest) GetLabel() string
@@ -5674,7 +5584,7 @@ func (x *GetProfileRequest) GetLabel() string
 
 
 <a name="GetProfileRequest.GetOrgID"></a>
-### func \(\*GetProfileRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L955>)
+### func \(\*GetProfileRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L939>)
 
 ```go
 func (x *GetProfileRequest) GetOrgID() string
@@ -5683,7 +5593,7 @@ func (x *GetProfileRequest) GetOrgID() string
 
 
 <a name="GetProfileRequest.GetProjectID"></a>
-### func \(\*GetProfileRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L962>)
+### func \(\*GetProfileRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L946>)
 
 ```go
 func (x *GetProfileRequest) GetProjectID() string
@@ -5701,7 +5611,7 @@ func (msg *GetProfileRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="GetProfileRequest.ProtoMessage"></a>
-### func \(\*GetProfileRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L936>)
+### func \(\*GetProfileRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L920>)
 
 ```go
 func (*GetProfileRequest) ProtoMessage()
@@ -5710,7 +5620,7 @@ func (*GetProfileRequest) ProtoMessage()
 
 
 <a name="GetProfileRequest.ProtoReflect"></a>
-### func \(\*GetProfileRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L938>)
+### func \(\*GetProfileRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L922>)
 
 ```go
 func (x *GetProfileRequest) ProtoReflect() protoreflect.Message
@@ -5719,7 +5629,7 @@ func (x *GetProfileRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="GetProfileRequest.Reset"></a>
-### func \(\*GetProfileRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L925>)
+### func \(\*GetProfileRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L909>)
 
 ```go
 func (x *GetProfileRequest) Reset()
@@ -5728,7 +5638,7 @@ func (x *GetProfileRequest) Reset()
 
 
 <a name="GetProfileRequest.String"></a>
-### func \(\*GetProfileRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L932>)
+### func \(\*GetProfileRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L916>)
 
 ```go
 func (x *GetProfileRequest) String() string
@@ -5746,7 +5656,7 @@ func (msg *GetProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetProfileRequest.Validate"></a>
-### func \(\*GetProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3846>)
+### func \(\*GetProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3765>)
 
 ```go
 func (m *GetProfileRequest) Validate(ctx context.Context) error
@@ -5755,7 +5665,7 @@ func (m *GetProfileRequest) Validate(ctx context.Context) error
 
 
 <a name="GetSummaryRequest"></a>
-## type [GetSummaryRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1958-L1968>)
+## type [GetSummaryRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1919-L1929>)
 
 GetSummaryRequest specifies the scope of the summary with the org named explicitly: the request of Backend.GetSummary
 
@@ -5773,7 +5683,7 @@ type GetSummaryRequest struct {
 ```
 
 <a name="GetSummaryRequest.Descriptor"></a>
-### func \(\*GetSummaryRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1996>)
+### func \(\*GetSummaryRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1957>)
 
 ```go
 func (*GetSummaryRequest) Descriptor() ([]byte, []int)
@@ -5782,7 +5692,7 @@ func (*GetSummaryRequest) Descriptor() ([]byte, []int)
 Deprecated: Use GetSummaryRequest.ProtoReflect.Descriptor instead.
 
 <a name="GetSummaryRequest.GetOrgID"></a>
-### func \(\*GetSummaryRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L2000>)
+### func \(\*GetSummaryRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1961>)
 
 ```go
 func (x *GetSummaryRequest) GetOrgID() string
@@ -5791,7 +5701,7 @@ func (x *GetSummaryRequest) GetOrgID() string
 
 
 <a name="GetSummaryRequest.GetProjectID"></a>
-### func \(\*GetSummaryRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L2007>)
+### func \(\*GetSummaryRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1968>)
 
 ```go
 func (x *GetSummaryRequest) GetProjectID() string
@@ -5809,7 +5719,7 @@ func (msg *GetSummaryRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="GetSummaryRequest.ProtoMessage"></a>
-### func \(\*GetSummaryRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1981>)
+### func \(\*GetSummaryRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1942>)
 
 ```go
 func (*GetSummaryRequest) ProtoMessage()
@@ -5818,7 +5728,7 @@ func (*GetSummaryRequest) ProtoMessage()
 
 
 <a name="GetSummaryRequest.ProtoReflect"></a>
-### func \(\*GetSummaryRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1983>)
+### func \(\*GetSummaryRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1944>)
 
 ```go
 func (x *GetSummaryRequest) ProtoReflect() protoreflect.Message
@@ -5827,7 +5737,7 @@ func (x *GetSummaryRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="GetSummaryRequest.Reset"></a>
-### func \(\*GetSummaryRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1970>)
+### func \(\*GetSummaryRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1931>)
 
 ```go
 func (x *GetSummaryRequest) Reset()
@@ -5836,7 +5746,7 @@ func (x *GetSummaryRequest) Reset()
 
 
 <a name="GetSummaryRequest.String"></a>
-### func \(\*GetSummaryRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1977>)
+### func \(\*GetSummaryRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1938>)
 
 ```go
 func (x *GetSummaryRequest) String() string
@@ -5854,7 +5764,7 @@ func (msg *GetSummaryRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetSummaryRequest.Validate"></a>
-### func \(\*GetSummaryRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3849>)
+### func \(\*GetSummaryRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3768>)
 
 ```go
 func (m *GetSummaryRequest) Validate(ctx context.Context) error
@@ -6051,7 +5961,7 @@ func (msg *ImportIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ImportIssuerRequest.Validate"></a>
-### func \(\*ImportIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3852>)
+### func \(\*ImportIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3771>)
 
 ```go
 func (m *ImportIssuerRequest) Validate(ctx context.Context) error
@@ -6060,20 +5970,18 @@ func (m *ImportIssuerRequest) Validate(ctx context.Context) error
 
 
 <a name="ListAllCertificatesRequest"></a>
-## type [ListAllCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L341-L370>)
+## type [ListAllCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L308-L335>)
 
 ListAllCertificatesRequest specifies a paginated list of certificates across orgs, newest first
 
 ```go
 type ListAllCertificatesRequest struct {
 
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination
-    Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // OrgID limits the result to the org. Empty lists the certificates of
     // every org and of the platform, or of the platform only with Platform.
@@ -6097,7 +6005,7 @@ type ListAllCertificatesRequest struct {
 ```
 
 <a name="ListAllCertificatesRequest.Descriptor"></a>
-### func \(\*ListAllCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L398>)
+### func \(\*ListAllCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L363>)
 
 ```go
 func (*ListAllCertificatesRequest) Descriptor() ([]byte, []int)
@@ -6106,7 +6014,7 @@ func (*ListAllCertificatesRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListAllCertificatesRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListAllCertificatesRequest.GetCursor"></a>
-### func \(\*ListAllCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L416>)
+### func \(\*ListAllCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L374>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetCursor() string
@@ -6115,7 +6023,7 @@ func (x *ListAllCertificatesRequest) GetCursor() string
 
 
 <a name="ListAllCertificatesRequest.GetExpiringBefore"></a>
-### func \(\*ListAllCertificatesRequest\) [GetExpiringBefore](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L465>)
+### func \(\*ListAllCertificatesRequest\) [GetExpiringBefore](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L423>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetExpiringBefore() string
@@ -6124,7 +6032,7 @@ func (x *ListAllCertificatesRequest) GetExpiringBefore() string
 
 
 <a name="ListAllCertificatesRequest.GetIKID"></a>
-### func \(\*ListAllCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L444>)
+### func \(\*ListAllCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L402>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetIKID() string
@@ -6133,7 +6041,7 @@ func (x *ListAllCertificatesRequest) GetIKID() string
 
 
 <a name="ListAllCertificatesRequest.GetLimit"></a>
-### func \(\*ListAllCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L402>)
+### func \(\*ListAllCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L367>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetLimit() uint32
@@ -6141,17 +6049,8 @@ func (x *ListAllCertificatesRequest) GetLimit() uint32
 
 
 
-<a name="ListAllCertificatesRequest.GetOffset"></a>
-### func \(\*ListAllCertificatesRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L409>)
-
-```go
-func (x *ListAllCertificatesRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListAllCertificatesRequest.GetOrgID"></a>
-### func \(\*ListAllCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L423>)
+### func \(\*ListAllCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L381>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetOrgID() string
@@ -6160,7 +6059,7 @@ func (x *ListAllCertificatesRequest) GetOrgID() string
 
 
 <a name="ListAllCertificatesRequest.GetPlatform"></a>
-### func \(\*ListAllCertificatesRequest\) [GetPlatform](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L430>)
+### func \(\*ListAllCertificatesRequest\) [GetPlatform](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L388>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetPlatform() bool
@@ -6169,7 +6068,7 @@ func (x *ListAllCertificatesRequest) GetPlatform() bool
 
 
 <a name="ListAllCertificatesRequest.GetProfile"></a>
-### func \(\*ListAllCertificatesRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L451>)
+### func \(\*ListAllCertificatesRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L409>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetProfile() string
@@ -6178,7 +6077,7 @@ func (x *ListAllCertificatesRequest) GetProfile() string
 
 
 <a name="ListAllCertificatesRequest.GetProjectID"></a>
-### func \(\*ListAllCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L437>)
+### func \(\*ListAllCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L395>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetProjectID() string
@@ -6187,7 +6086,7 @@ func (x *ListAllCertificatesRequest) GetProjectID() string
 
 
 <a name="ListAllCertificatesRequest.GetStatus"></a>
-### func \(\*ListAllCertificatesRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L458>)
+### func \(\*ListAllCertificatesRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L416>)
 
 ```go
 func (x *ListAllCertificatesRequest) GetStatus() pb.CertificateStatus_Enum
@@ -6205,7 +6104,7 @@ func (msg *ListAllCertificatesRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListAllCertificatesRequest.ProtoMessage"></a>
-### func \(\*ListAllCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L383>)
+### func \(\*ListAllCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L348>)
 
 ```go
 func (*ListAllCertificatesRequest) ProtoMessage()
@@ -6214,7 +6113,7 @@ func (*ListAllCertificatesRequest) ProtoMessage()
 
 
 <a name="ListAllCertificatesRequest.ProtoReflect"></a>
-### func \(\*ListAllCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L385>)
+### func \(\*ListAllCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L350>)
 
 ```go
 func (x *ListAllCertificatesRequest) ProtoReflect() protoreflect.Message
@@ -6223,7 +6122,7 @@ func (x *ListAllCertificatesRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListAllCertificatesRequest.Reset"></a>
-### func \(\*ListAllCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L372>)
+### func \(\*ListAllCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L337>)
 
 ```go
 func (x *ListAllCertificatesRequest) Reset()
@@ -6232,7 +6131,7 @@ func (x *ListAllCertificatesRequest) Reset()
 
 
 <a name="ListAllCertificatesRequest.String"></a>
-### func \(\*ListAllCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L379>)
+### func \(\*ListAllCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L344>)
 
 ```go
 func (x *ListAllCertificatesRequest) String() string
@@ -6250,7 +6149,7 @@ func (msg *ListAllCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListAllCertificatesRequest.Validate"></a>
-### func \(\*ListAllCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3855>)
+### func \(\*ListAllCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3774>)
 
 ```go
 func (m *ListAllCertificatesRequest) Validate(ctx context.Context) error
@@ -6259,20 +6158,18 @@ func (m *ListAllCertificatesRequest) Validate(ctx context.Context) error
 
 
 <a name="ListAllIssuersRequest"></a>
-## type [ListAllIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L197-L230>)
+## type [ListAllIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L173-L204>)
 
 ListAllIssuersRequest specifies a paginated list of issuers across orgs
 
 ```go
 type ListAllIssuersRequest struct {
 
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination
-    Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // OrgID limits the result to the org. Empty lists the issuers of every
     // org and of the platform, or of the platform only with Platform.
@@ -6300,7 +6197,7 @@ type ListAllIssuersRequest struct {
 ```
 
 <a name="ListAllIssuersRequest.Descriptor"></a>
-### func \(\*ListAllIssuersRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L258>)
+### func \(\*ListAllIssuersRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L232>)
 
 ```go
 func (*ListAllIssuersRequest) Descriptor() ([]byte, []int)
@@ -6309,7 +6206,7 @@ func (*ListAllIssuersRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListAllIssuersRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListAllIssuersRequest.GetCursor"></a>
-### func \(\*ListAllIssuersRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L276>)
+### func \(\*ListAllIssuersRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L243>)
 
 ```go
 func (x *ListAllIssuersRequest) GetCursor() string
@@ -6318,7 +6215,7 @@ func (x *ListAllIssuersRequest) GetCursor() string
 
 
 <a name="ListAllIssuersRequest.GetIDs"></a>
-### func \(\*ListAllIssuersRequest\) [GetIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L325>)
+### func \(\*ListAllIssuersRequest\) [GetIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L292>)
 
 ```go
 func (x *ListAllIssuersRequest) GetIDs() []string
@@ -6327,7 +6224,7 @@ func (x *ListAllIssuersRequest) GetIDs() []string
 
 
 <a name="ListAllIssuersRequest.GetIKIDs"></a>
-### func \(\*ListAllIssuersRequest\) [GetIKIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L332>)
+### func \(\*ListAllIssuersRequest\) [GetIKIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L299>)
 
 ```go
 func (x *ListAllIssuersRequest) GetIKIDs() []string
@@ -6336,7 +6233,7 @@ func (x *ListAllIssuersRequest) GetIKIDs() []string
 
 
 <a name="ListAllIssuersRequest.GetLabel"></a>
-### func \(\*ListAllIssuersRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L304>)
+### func \(\*ListAllIssuersRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L271>)
 
 ```go
 func (x *ListAllIssuersRequest) GetLabel() string
@@ -6345,7 +6242,7 @@ func (x *ListAllIssuersRequest) GetLabel() string
 
 
 <a name="ListAllIssuersRequest.GetLimit"></a>
-### func \(\*ListAllIssuersRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L262>)
+### func \(\*ListAllIssuersRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L236>)
 
 ```go
 func (x *ListAllIssuersRequest) GetLimit() uint32
@@ -6353,17 +6250,8 @@ func (x *ListAllIssuersRequest) GetLimit() uint32
 
 
 
-<a name="ListAllIssuersRequest.GetOffset"></a>
-### func \(\*ListAllIssuersRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L269>)
-
-```go
-func (x *ListAllIssuersRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListAllIssuersRequest.GetOrgID"></a>
-### func \(\*ListAllIssuersRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L283>)
+### func \(\*ListAllIssuersRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L250>)
 
 ```go
 func (x *ListAllIssuersRequest) GetOrgID() string
@@ -6372,7 +6260,7 @@ func (x *ListAllIssuersRequest) GetOrgID() string
 
 
 <a name="ListAllIssuersRequest.GetPlatform"></a>
-### func \(\*ListAllIssuersRequest\) [GetPlatform](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L290>)
+### func \(\*ListAllIssuersRequest\) [GetPlatform](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L257>)
 
 ```go
 func (x *ListAllIssuersRequest) GetPlatform() bool
@@ -6381,7 +6269,7 @@ func (x *ListAllIssuersRequest) GetPlatform() bool
 
 
 <a name="ListAllIssuersRequest.GetProjectID"></a>
-### func \(\*ListAllIssuersRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L297>)
+### func \(\*ListAllIssuersRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L264>)
 
 ```go
 func (x *ListAllIssuersRequest) GetProjectID() string
@@ -6390,7 +6278,7 @@ func (x *ListAllIssuersRequest) GetProjectID() string
 
 
 <a name="ListAllIssuersRequest.GetStatus"></a>
-### func \(\*ListAllIssuersRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L311>)
+### func \(\*ListAllIssuersRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L278>)
 
 ```go
 func (x *ListAllIssuersRequest) GetStatus() pb.IssuerStatus_Enum
@@ -6399,7 +6287,7 @@ func (x *ListAllIssuersRequest) GetStatus() pb.IssuerStatus_Enum
 
 
 <a name="ListAllIssuersRequest.GetType"></a>
-### func \(\*ListAllIssuersRequest\) [GetType](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L318>)
+### func \(\*ListAllIssuersRequest\) [GetType](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L285>)
 
 ```go
 func (x *ListAllIssuersRequest) GetType() pb.AuthorityType_Enum
@@ -6417,7 +6305,7 @@ func (msg *ListAllIssuersRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListAllIssuersRequest.ProtoMessage"></a>
-### func \(\*ListAllIssuersRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L243>)
+### func \(\*ListAllIssuersRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L217>)
 
 ```go
 func (*ListAllIssuersRequest) ProtoMessage()
@@ -6426,7 +6314,7 @@ func (*ListAllIssuersRequest) ProtoMessage()
 
 
 <a name="ListAllIssuersRequest.ProtoReflect"></a>
-### func \(\*ListAllIssuersRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L245>)
+### func \(\*ListAllIssuersRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L219>)
 
 ```go
 func (x *ListAllIssuersRequest) ProtoReflect() protoreflect.Message
@@ -6435,7 +6323,7 @@ func (x *ListAllIssuersRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListAllIssuersRequest.Reset"></a>
-### func \(\*ListAllIssuersRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L232>)
+### func \(\*ListAllIssuersRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L206>)
 
 ```go
 func (x *ListAllIssuersRequest) Reset()
@@ -6444,7 +6332,7 @@ func (x *ListAllIssuersRequest) Reset()
 
 
 <a name="ListAllIssuersRequest.String"></a>
-### func \(\*ListAllIssuersRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L239>)
+### func \(\*ListAllIssuersRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L213>)
 
 ```go
 func (x *ListAllIssuersRequest) String() string
@@ -6462,7 +6350,7 @@ func (msg *ListAllIssuersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListAllIssuersRequest.Validate"></a>
-### func \(\*ListAllIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3858>)
+### func \(\*ListAllIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3777>)
 
 ```go
 func (m *ListAllIssuersRequest) Validate(ctx context.Context) error
@@ -6471,7 +6359,7 @@ func (m *ListAllIssuersRequest) Validate(ctx context.Context) error
 
 
 <a name="ListCertificatesRequest"></a>
-## type [ListCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1499-L1526>)
+## type [ListCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1476-L1501>)
 
 ListCertificatesRequest specifies a paginated list of certificates, sorted by ID descending \(newest first\) with the org named explicitly: the request of Backend.ListCertificates
 
@@ -6493,20 +6381,18 @@ type ListCertificatesRequest struct {
     // ExpiringBefore filters certificates with NotAfter before the time,
     // in RFC3339 format
     ExpiringBefore string `protobuf:"bytes,6,opt,name=ExpiringBefore,proto3" json:"ExpiringBefore,omitempty"`
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,7,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination
-    Offset uint32 `protobuf:"varint,8,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,9,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // contains filtered or unexported fields
 }
 ```
 
 <a name="ListCertificatesRequest.Descriptor"></a>
-### func \(\*ListCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1554>)
+### func \(\*ListCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1529>)
 
 ```go
 func (*ListCertificatesRequest) Descriptor() ([]byte, []int)
@@ -6515,7 +6401,7 @@ func (*ListCertificatesRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListCertificatesRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListCertificatesRequest.GetCursor"></a>
-### func \(\*ListCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1614>)
+### func \(\*ListCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1582>)
 
 ```go
 func (x *ListCertificatesRequest) GetCursor() string
@@ -6524,7 +6410,7 @@ func (x *ListCertificatesRequest) GetCursor() string
 
 
 <a name="ListCertificatesRequest.GetExpiringBefore"></a>
-### func \(\*ListCertificatesRequest\) [GetExpiringBefore](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1593>)
+### func \(\*ListCertificatesRequest\) [GetExpiringBefore](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1568>)
 
 ```go
 func (x *ListCertificatesRequest) GetExpiringBefore() string
@@ -6533,7 +6419,7 @@ func (x *ListCertificatesRequest) GetExpiringBefore() string
 
 
 <a name="ListCertificatesRequest.GetIKID"></a>
-### func \(\*ListCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1572>)
+### func \(\*ListCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1547>)
 
 ```go
 func (x *ListCertificatesRequest) GetIKID() string
@@ -6542,7 +6428,7 @@ func (x *ListCertificatesRequest) GetIKID() string
 
 
 <a name="ListCertificatesRequest.GetLimit"></a>
-### func \(\*ListCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1600>)
+### func \(\*ListCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1575>)
 
 ```go
 func (x *ListCertificatesRequest) GetLimit() uint32
@@ -6550,17 +6436,8 @@ func (x *ListCertificatesRequest) GetLimit() uint32
 
 
 
-<a name="ListCertificatesRequest.GetOffset"></a>
-### func \(\*ListCertificatesRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1607>)
-
-```go
-func (x *ListCertificatesRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListCertificatesRequest.GetOrgID"></a>
-### func \(\*ListCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1558>)
+### func \(\*ListCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1533>)
 
 ```go
 func (x *ListCertificatesRequest) GetOrgID() string
@@ -6569,7 +6446,7 @@ func (x *ListCertificatesRequest) GetOrgID() string
 
 
 <a name="ListCertificatesRequest.GetProfile"></a>
-### func \(\*ListCertificatesRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1579>)
+### func \(\*ListCertificatesRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1554>)
 
 ```go
 func (x *ListCertificatesRequest) GetProfile() string
@@ -6578,7 +6455,7 @@ func (x *ListCertificatesRequest) GetProfile() string
 
 
 <a name="ListCertificatesRequest.GetProjectID"></a>
-### func \(\*ListCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1565>)
+### func \(\*ListCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1540>)
 
 ```go
 func (x *ListCertificatesRequest) GetProjectID() string
@@ -6587,7 +6464,7 @@ func (x *ListCertificatesRequest) GetProjectID() string
 
 
 <a name="ListCertificatesRequest.GetStatus"></a>
-### func \(\*ListCertificatesRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1586>)
+### func \(\*ListCertificatesRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1561>)
 
 ```go
 func (x *ListCertificatesRequest) GetStatus() pb.CertificateStatus_Enum
@@ -6605,7 +6482,7 @@ func (msg *ListCertificatesRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListCertificatesRequest.ProtoMessage"></a>
-### func \(\*ListCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1539>)
+### func \(\*ListCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1514>)
 
 ```go
 func (*ListCertificatesRequest) ProtoMessage()
@@ -6614,7 +6491,7 @@ func (*ListCertificatesRequest) ProtoMessage()
 
 
 <a name="ListCertificatesRequest.ProtoReflect"></a>
-### func \(\*ListCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1541>)
+### func \(\*ListCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1516>)
 
 ```go
 func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message
@@ -6623,7 +6500,7 @@ func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListCertificatesRequest.Reset"></a>
-### func \(\*ListCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1528>)
+### func \(\*ListCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1503>)
 
 ```go
 func (x *ListCertificatesRequest) Reset()
@@ -6632,7 +6509,7 @@ func (x *ListCertificatesRequest) Reset()
 
 
 <a name="ListCertificatesRequest.String"></a>
-### func \(\*ListCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1535>)
+### func \(\*ListCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1510>)
 
 ```go
 func (x *ListCertificatesRequest) String() string
@@ -6650,7 +6527,7 @@ func (msg *ListCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListCertificatesRequest.Validate"></a>
-### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3861>)
+### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3780>)
 
 ```go
 func (m *ListCertificatesRequest) Validate(ctx context.Context) error
@@ -6659,7 +6536,7 @@ func (m *ListCertificatesRequest) Validate(ctx context.Context) error
 
 
 <a name="ListIssuersRequest"></a>
-## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L491-L519>)
+## type [ListIssuersRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L491-L517>)
 
 ListIssuersRequest specifies a paginated list of issuers with the org named explicitly: the request of Backend.ListIssuers
 
@@ -6676,13 +6553,11 @@ type ListIssuersRequest struct {
     Status pb.IssuerStatus_Enum `protobuf:"varint,3,opt,name=Status,proto3,enum=pb.IssuerStatus_Enum" json:"Status,omitempty"`
     // Type filters by authority type; Unknown returns all
     Type pb.AuthorityType_Enum `protobuf:"varint,4,opt,name=Type,proto3,enum=pb.AuthorityType_Enum" json:"Type,omitempty"`
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,5,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination
-    Offset uint32 `protobuf:"varint,6,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,7,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // IDs limits the result to the issuers with the IDs, at most 500
     IDs []string `protobuf:"bytes,8,rep,name=IDs,proto3" json:"IDs,omitempty"`
@@ -6695,7 +6570,7 @@ type ListIssuersRequest struct {
 ```
 
 <a name="ListIssuersRequest.Descriptor"></a>
-### func \(\*ListIssuersRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L547>)
+### func \(\*ListIssuersRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L545>)
 
 ```go
 func (*ListIssuersRequest) Descriptor() ([]byte, []int)
@@ -6704,7 +6579,7 @@ func (*ListIssuersRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListIssuersRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListIssuersRequest.GetCursor"></a>
-### func \(\*ListIssuersRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L593>)
+### func \(\*ListIssuersRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L584>)
 
 ```go
 func (x *ListIssuersRequest) GetCursor() string
@@ -6713,7 +6588,7 @@ func (x *ListIssuersRequest) GetCursor() string
 
 
 <a name="ListIssuersRequest.GetIDs"></a>
-### func \(\*ListIssuersRequest\) [GetIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L600>)
+### func \(\*ListIssuersRequest\) [GetIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L591>)
 
 ```go
 func (x *ListIssuersRequest) GetIDs() []string
@@ -6722,7 +6597,7 @@ func (x *ListIssuersRequest) GetIDs() []string
 
 
 <a name="ListIssuersRequest.GetIKIDs"></a>
-### func \(\*ListIssuersRequest\) [GetIKIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L607>)
+### func \(\*ListIssuersRequest\) [GetIKIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L598>)
 
 ```go
 func (x *ListIssuersRequest) GetIKIDs() []string
@@ -6731,7 +6606,7 @@ func (x *ListIssuersRequest) GetIKIDs() []string
 
 
 <a name="ListIssuersRequest.GetLimit"></a>
-### func \(\*ListIssuersRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L579>)
+### func \(\*ListIssuersRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L577>)
 
 ```go
 func (x *ListIssuersRequest) GetLimit() uint32
@@ -6739,17 +6614,8 @@ func (x *ListIssuersRequest) GetLimit() uint32
 
 
 
-<a name="ListIssuersRequest.GetOffset"></a>
-### func \(\*ListIssuersRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L586>)
-
-```go
-func (x *ListIssuersRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListIssuersRequest.GetOrgID"></a>
-### func \(\*ListIssuersRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L551>)
+### func \(\*ListIssuersRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L549>)
 
 ```go
 func (x *ListIssuersRequest) GetOrgID() string
@@ -6758,7 +6624,7 @@ func (x *ListIssuersRequest) GetOrgID() string
 
 
 <a name="ListIssuersRequest.GetProjectID"></a>
-### func \(\*ListIssuersRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L558>)
+### func \(\*ListIssuersRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L556>)
 
 ```go
 func (x *ListIssuersRequest) GetProjectID() string
@@ -6767,7 +6633,7 @@ func (x *ListIssuersRequest) GetProjectID() string
 
 
 <a name="ListIssuersRequest.GetStatus"></a>
-### func \(\*ListIssuersRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L565>)
+### func \(\*ListIssuersRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L563>)
 
 ```go
 func (x *ListIssuersRequest) GetStatus() pb.IssuerStatus_Enum
@@ -6776,7 +6642,7 @@ func (x *ListIssuersRequest) GetStatus() pb.IssuerStatus_Enum
 
 
 <a name="ListIssuersRequest.GetType"></a>
-### func \(\*ListIssuersRequest\) [GetType](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L572>)
+### func \(\*ListIssuersRequest\) [GetType](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L570>)
 
 ```go
 func (x *ListIssuersRequest) GetType() pb.AuthorityType_Enum
@@ -6794,7 +6660,7 @@ func (msg *ListIssuersRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListIssuersRequest.ProtoMessage"></a>
-### func \(\*ListIssuersRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L532>)
+### func \(\*ListIssuersRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L530>)
 
 ```go
 func (*ListIssuersRequest) ProtoMessage()
@@ -6803,7 +6669,7 @@ func (*ListIssuersRequest) ProtoMessage()
 
 
 <a name="ListIssuersRequest.ProtoReflect"></a>
-### func \(\*ListIssuersRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L534>)
+### func \(\*ListIssuersRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L532>)
 
 ```go
 func (x *ListIssuersRequest) ProtoReflect() protoreflect.Message
@@ -6812,7 +6678,7 @@ func (x *ListIssuersRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListIssuersRequest.Reset"></a>
-### func \(\*ListIssuersRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L521>)
+### func \(\*ListIssuersRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L519>)
 
 ```go
 func (x *ListIssuersRequest) Reset()
@@ -6821,7 +6687,7 @@ func (x *ListIssuersRequest) Reset()
 
 
 <a name="ListIssuersRequest.String"></a>
-### func \(\*ListIssuersRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L528>)
+### func \(\*ListIssuersRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L526>)
 
 ```go
 func (x *ListIssuersRequest) String() string
@@ -6839,7 +6705,7 @@ func (msg *ListIssuersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3864>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3783>)
 
 ```go
 func (m *ListIssuersRequest) Validate(ctx context.Context) error
@@ -6848,23 +6714,18 @@ func (m *ListIssuersRequest) Validate(ctx context.Context) error
 
 
 <a name="ListOrgsRequest"></a>
-## type [ListOrgsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L30-L48>)
+## type [ListOrgsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L30-L43>)
 
 ListOrgsRequest specifies list orgs request
 
 ```go
 type ListOrgsRequest struct {
 
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination.
-    // Which is limited to 10000.
-    // To paginate for large number of records, use cursor-based pagination
-    // instead.
-    Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // Status specifies on optional status of the item to filter by.
     // If not specified, all items will be listed.
@@ -6874,7 +6735,7 @@ type ListOrgsRequest struct {
 ```
 
 <a name="ListOrgsRequest.Descriptor"></a>
-### func \(\*ListOrgsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L76>)
+### func \(\*ListOrgsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L71>)
 
 ```go
 func (*ListOrgsRequest) Descriptor() ([]byte, []int)
@@ -6883,7 +6744,7 @@ func (*ListOrgsRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListOrgsRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListOrgsRequest.GetCursor"></a>
-### func \(\*ListOrgsRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L94>)
+### func \(\*ListOrgsRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L82>)
 
 ```go
 func (x *ListOrgsRequest) GetCursor() string
@@ -6892,7 +6753,7 @@ func (x *ListOrgsRequest) GetCursor() string
 
 
 <a name="ListOrgsRequest.GetLimit"></a>
-### func \(\*ListOrgsRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L80>)
+### func \(\*ListOrgsRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L75>)
 
 ```go
 func (x *ListOrgsRequest) GetLimit() uint32
@@ -6900,17 +6761,8 @@ func (x *ListOrgsRequest) GetLimit() uint32
 
 
 
-<a name="ListOrgsRequest.GetOffset"></a>
-### func \(\*ListOrgsRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L87>)
-
-```go
-func (x *ListOrgsRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListOrgsRequest.GetStatus"></a>
-### func \(\*ListOrgsRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L101>)
+### func \(\*ListOrgsRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L89>)
 
 ```go
 func (x *ListOrgsRequest) GetStatus() pb.ItemStatus_Enum
@@ -6928,7 +6780,7 @@ func (msg *ListOrgsRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListOrgsRequest.ProtoMessage"></a>
-### func \(\*ListOrgsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L61>)
+### func \(\*ListOrgsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L56>)
 
 ```go
 func (*ListOrgsRequest) ProtoMessage()
@@ -6937,7 +6789,7 @@ func (*ListOrgsRequest) ProtoMessage()
 
 
 <a name="ListOrgsRequest.ProtoReflect"></a>
-### func \(\*ListOrgsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L63>)
+### func \(\*ListOrgsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L58>)
 
 ```go
 func (x *ListOrgsRequest) ProtoReflect() protoreflect.Message
@@ -6946,7 +6798,7 @@ func (x *ListOrgsRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListOrgsRequest.Reset"></a>
-### func \(\*ListOrgsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L50>)
+### func \(\*ListOrgsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L45>)
 
 ```go
 func (x *ListOrgsRequest) Reset()
@@ -6955,7 +6807,7 @@ func (x *ListOrgsRequest) Reset()
 
 
 <a name="ListOrgsRequest.String"></a>
-### func \(\*ListOrgsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L57>)
+### func \(\*ListOrgsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L52>)
 
 ```go
 func (x *ListOrgsRequest) String() string
@@ -6973,7 +6825,7 @@ func (msg *ListOrgsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListOrgsRequest.Validate"></a>
-### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3867>)
+### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3786>)
 
 ```go
 func (m *ListOrgsRequest) Validate(ctx context.Context) error
@@ -6982,7 +6834,7 @@ func (m *ListOrgsRequest) Validate(ctx context.Context) error
 
 
 <a name="ListProfilesRequest"></a>
-## type [ListProfilesRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L985-L1008>)
+## type [ListProfilesRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L969-L992>)
 
 ListProfilesRequest specifies a paginated list of profiles with the org named explicitly: the request of Backend.ListProfiles
 
@@ -6997,11 +6849,11 @@ type ListProfilesRequest struct {
     ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
     // IssuerLabel filters by issuer label
     IssuerLabel string `protobuf:"bytes,3,opt,name=IssuerLabel,proto3" json:"IssuerLabel,omitempty"`
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,4,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination
-    Offset uint32 `protobuf:"varint,5,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // IDs limits the result to the profiles with the IDs, at most 500
     IDs []string `protobuf:"bytes,7,rep,name=IDs,proto3" json:"IDs,omitempty"`
@@ -7013,7 +6865,7 @@ type ListProfilesRequest struct {
 ```
 
 <a name="ListProfilesRequest.Descriptor"></a>
-### func \(\*ListProfilesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1036>)
+### func \(\*ListProfilesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1020>)
 
 ```go
 func (*ListProfilesRequest) Descriptor() ([]byte, []int)
@@ -7022,7 +6874,7 @@ func (*ListProfilesRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListProfilesRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListProfilesRequest.GetCursor"></a>
-### func \(\*ListProfilesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1075>)
+### func \(\*ListProfilesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1052>)
 
 ```go
 func (x *ListProfilesRequest) GetCursor() string
@@ -7031,7 +6883,7 @@ func (x *ListProfilesRequest) GetCursor() string
 
 
 <a name="ListProfilesRequest.GetIDs"></a>
-### func \(\*ListProfilesRequest\) [GetIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1082>)
+### func \(\*ListProfilesRequest\) [GetIDs](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1059>)
 
 ```go
 func (x *ListProfilesRequest) GetIDs() []string
@@ -7040,7 +6892,7 @@ func (x *ListProfilesRequest) GetIDs() []string
 
 
 <a name="ListProfilesRequest.GetIssuerLabel"></a>
-### func \(\*ListProfilesRequest\) [GetIssuerLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1054>)
+### func \(\*ListProfilesRequest\) [GetIssuerLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1038>)
 
 ```go
 func (x *ListProfilesRequest) GetIssuerLabel() string
@@ -7049,7 +6901,7 @@ func (x *ListProfilesRequest) GetIssuerLabel() string
 
 
 <a name="ListProfilesRequest.GetLabels"></a>
-### func \(\*ListProfilesRequest\) [GetLabels](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1089>)
+### func \(\*ListProfilesRequest\) [GetLabels](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1066>)
 
 ```go
 func (x *ListProfilesRequest) GetLabels() []string
@@ -7058,7 +6910,7 @@ func (x *ListProfilesRequest) GetLabels() []string
 
 
 <a name="ListProfilesRequest.GetLimit"></a>
-### func \(\*ListProfilesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1061>)
+### func \(\*ListProfilesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1045>)
 
 ```go
 func (x *ListProfilesRequest) GetLimit() uint32
@@ -7066,17 +6918,8 @@ func (x *ListProfilesRequest) GetLimit() uint32
 
 
 
-<a name="ListProfilesRequest.GetOffset"></a>
-### func \(\*ListProfilesRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1068>)
-
-```go
-func (x *ListProfilesRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListProfilesRequest.GetOrgID"></a>
-### func \(\*ListProfilesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1040>)
+### func \(\*ListProfilesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1024>)
 
 ```go
 func (x *ListProfilesRequest) GetOrgID() string
@@ -7085,7 +6928,7 @@ func (x *ListProfilesRequest) GetOrgID() string
 
 
 <a name="ListProfilesRequest.GetProjectID"></a>
-### func \(\*ListProfilesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1047>)
+### func \(\*ListProfilesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1031>)
 
 ```go
 func (x *ListProfilesRequest) GetProjectID() string
@@ -7103,7 +6946,7 @@ func (msg *ListProfilesRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListProfilesRequest.ProtoMessage"></a>
-### func \(\*ListProfilesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1021>)
+### func \(\*ListProfilesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1005>)
 
 ```go
 func (*ListProfilesRequest) ProtoMessage()
@@ -7112,7 +6955,7 @@ func (*ListProfilesRequest) ProtoMessage()
 
 
 <a name="ListProfilesRequest.ProtoReflect"></a>
-### func \(\*ListProfilesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1023>)
+### func \(\*ListProfilesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1007>)
 
 ```go
 func (x *ListProfilesRequest) ProtoReflect() protoreflect.Message
@@ -7121,7 +6964,7 @@ func (x *ListProfilesRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListProfilesRequest.Reset"></a>
-### func \(\*ListProfilesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1010>)
+### func \(\*ListProfilesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L994>)
 
 ```go
 func (x *ListProfilesRequest) Reset()
@@ -7130,7 +6973,7 @@ func (x *ListProfilesRequest) Reset()
 
 
 <a name="ListProfilesRequest.String"></a>
-### func \(\*ListProfilesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1017>)
+### func \(\*ListProfilesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1001>)
 
 ```go
 func (x *ListProfilesRequest) String() string
@@ -7148,7 +6991,7 @@ func (msg *ListProfilesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProfilesRequest.Validate"></a>
-### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3870>)
+### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3789>)
 
 ```go
 func (m *ListProfilesRequest) Validate(ctx context.Context) error
@@ -7157,23 +7000,18 @@ func (m *ListProfilesRequest) Validate(ctx context.Context) error
 
 
 <a name="ListProjectsRequest"></a>
-## type [ListProjectsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L109-L129>)
+## type [ListProjectsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L97-L112>)
 
 ListProjectsRequest specifies list projects request
 
 ```go
 type ListProjectsRequest struct {
 
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination.
-    // Which is limited to 10000.
-    // To paginate for large number of records, use cursor-based pagination
-    // instead.
-    Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // Status specifies on optional status of the item to filter by.
     // If not specified, all items will be listed.
@@ -7185,7 +7023,7 @@ type ListProjectsRequest struct {
 ```
 
 <a name="ListProjectsRequest.Descriptor"></a>
-### func \(\*ListProjectsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L157>)
+### func \(\*ListProjectsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L140>)
 
 ```go
 func (*ListProjectsRequest) Descriptor() ([]byte, []int)
@@ -7194,7 +7032,7 @@ func (*ListProjectsRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListProjectsRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListProjectsRequest.GetCursor"></a>
-### func \(\*ListProjectsRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L175>)
+### func \(\*ListProjectsRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L151>)
 
 ```go
 func (x *ListProjectsRequest) GetCursor() string
@@ -7203,7 +7041,7 @@ func (x *ListProjectsRequest) GetCursor() string
 
 
 <a name="ListProjectsRequest.GetLimit"></a>
-### func \(\*ListProjectsRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L161>)
+### func \(\*ListProjectsRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L144>)
 
 ```go
 func (x *ListProjectsRequest) GetLimit() uint32
@@ -7211,17 +7049,8 @@ func (x *ListProjectsRequest) GetLimit() uint32
 
 
 
-<a name="ListProjectsRequest.GetOffset"></a>
-### func \(\*ListProjectsRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L168>)
-
-```go
-func (x *ListProjectsRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListProjectsRequest.GetOrgID"></a>
-### func \(\*ListProjectsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L189>)
+### func \(\*ListProjectsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L165>)
 
 ```go
 func (x *ListProjectsRequest) GetOrgID() string
@@ -7230,7 +7059,7 @@ func (x *ListProjectsRequest) GetOrgID() string
 
 
 <a name="ListProjectsRequest.GetStatus"></a>
-### func \(\*ListProjectsRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L182>)
+### func \(\*ListProjectsRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L158>)
 
 ```go
 func (x *ListProjectsRequest) GetStatus() pb.ItemStatus_Enum
@@ -7248,7 +7077,7 @@ func (msg *ListProjectsRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListProjectsRequest.ProtoMessage"></a>
-### func \(\*ListProjectsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L142>)
+### func \(\*ListProjectsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L125>)
 
 ```go
 func (*ListProjectsRequest) ProtoMessage()
@@ -7257,7 +7086,7 @@ func (*ListProjectsRequest) ProtoMessage()
 
 
 <a name="ListProjectsRequest.ProtoReflect"></a>
-### func \(\*ListProjectsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L144>)
+### func \(\*ListProjectsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L127>)
 
 ```go
 func (x *ListProjectsRequest) ProtoReflect() protoreflect.Message
@@ -7266,7 +7095,7 @@ func (x *ListProjectsRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListProjectsRequest.Reset"></a>
-### func \(\*ListProjectsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L131>)
+### func \(\*ListProjectsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L114>)
 
 ```go
 func (x *ListProjectsRequest) Reset()
@@ -7275,7 +7104,7 @@ func (x *ListProjectsRequest) Reset()
 
 
 <a name="ListProjectsRequest.String"></a>
-### func \(\*ListProjectsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L138>)
+### func \(\*ListProjectsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/admin.pb.go#L121>)
 
 ```go
 func (x *ListProjectsRequest) String() string
@@ -7293,7 +7122,7 @@ func (msg *ListProjectsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProjectsRequest.Validate"></a>
-### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3873>)
+### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3792>)
 
 ```go
 func (m *ListProjectsRequest) Validate(ctx context.Context) error
@@ -7302,7 +7131,7 @@ func (m *ListProjectsRequest) Validate(ctx context.Context) error
 
 
 <a name="ListRevokedCertificatesRequest"></a>
-## type [ListRevokedCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1624-L1641>)
+## type [ListRevokedCertificatesRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1592-L1609>)
 
 ListRevokedCertificatesRequest specifies a paginated list of revoked certificates, sorted by revocation ID descending with the org named explicitly: the request of Backend.ListRevokedCertificates
 
@@ -7316,18 +7145,18 @@ type ListRevokedCertificatesRequest struct {
     ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
     // IKID filters by issuer
     IKID string `protobuf:"bytes,3,opt,name=IKID,proto3" json:"IKID,omitempty"`
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,4,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination
-    Offset uint32 `protobuf:"varint,5,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // contains filtered or unexported fields
 }
 ```
 
 <a name="ListRevokedCertificatesRequest.Descriptor"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1669>)
+### func \(\*ListRevokedCertificatesRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1637>)
 
 ```go
 func (*ListRevokedCertificatesRequest) Descriptor() ([]byte, []int)
@@ -7336,7 +7165,7 @@ func (*ListRevokedCertificatesRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListRevokedCertificatesRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListRevokedCertificatesRequest.GetCursor"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1708>)
+### func \(\*ListRevokedCertificatesRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1669>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetCursor() string
@@ -7345,7 +7174,7 @@ func (x *ListRevokedCertificatesRequest) GetCursor() string
 
 
 <a name="ListRevokedCertificatesRequest.GetIKID"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1687>)
+### func \(\*ListRevokedCertificatesRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1655>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetIKID() string
@@ -7354,7 +7183,7 @@ func (x *ListRevokedCertificatesRequest) GetIKID() string
 
 
 <a name="ListRevokedCertificatesRequest.GetLimit"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1694>)
+### func \(\*ListRevokedCertificatesRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1662>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetLimit() uint32
@@ -7362,17 +7191,8 @@ func (x *ListRevokedCertificatesRequest) GetLimit() uint32
 
 
 
-<a name="ListRevokedCertificatesRequest.GetOffset"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1701>)
-
-```go
-func (x *ListRevokedCertificatesRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListRevokedCertificatesRequest.GetOrgID"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1673>)
+### func \(\*ListRevokedCertificatesRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1641>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetOrgID() string
@@ -7381,7 +7201,7 @@ func (x *ListRevokedCertificatesRequest) GetOrgID() string
 
 
 <a name="ListRevokedCertificatesRequest.GetProjectID"></a>
-### func \(\*ListRevokedCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1680>)
+### func \(\*ListRevokedCertificatesRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1648>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) GetProjectID() string
@@ -7399,7 +7219,7 @@ func (msg *ListRevokedCertificatesRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListRevokedCertificatesRequest.ProtoMessage"></a>
-### func \(\*ListRevokedCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1654>)
+### func \(\*ListRevokedCertificatesRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1622>)
 
 ```go
 func (*ListRevokedCertificatesRequest) ProtoMessage()
@@ -7408,7 +7228,7 @@ func (*ListRevokedCertificatesRequest) ProtoMessage()
 
 
 <a name="ListRevokedCertificatesRequest.ProtoReflect"></a>
-### func \(\*ListRevokedCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1656>)
+### func \(\*ListRevokedCertificatesRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1624>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) ProtoReflect() protoreflect.Message
@@ -7417,7 +7237,7 @@ func (x *ListRevokedCertificatesRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListRevokedCertificatesRequest.Reset"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1643>)
+### func \(\*ListRevokedCertificatesRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1611>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) Reset()
@@ -7426,7 +7246,7 @@ func (x *ListRevokedCertificatesRequest) Reset()
 
 
 <a name="ListRevokedCertificatesRequest.String"></a>
-### func \(\*ListRevokedCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1650>)
+### func \(\*ListRevokedCertificatesRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1618>)
 
 ```go
 func (x *ListRevokedCertificatesRequest) String() string
@@ -7444,7 +7264,7 @@ func (msg *ListRevokedCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListRevokedCertificatesRequest.Validate"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3876>)
+### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3795>)
 
 ```go
 func (m *ListRevokedCertificatesRequest) Validate(ctx context.Context) error
@@ -7453,7 +7273,7 @@ func (m *ListRevokedCertificatesRequest) Validate(ctx context.Context) error
 
 
 <a name="ListRootsRequest"></a>
-## type [ListRootsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L768-L781>)
+## type [ListRootsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L759-L772>)
 
 ListRootsRequest specifies a list of trust anchors with the org named explicitly: the request of Backend.ListRoots
 
@@ -7463,18 +7283,18 @@ type ListRootsRequest struct {
     // OrgID of the org; empty lists the platform anchors, for a service
     // identity only
     OrgID string `protobuf:"bytes,1,opt,name=OrgID,proto3" json:"OrgID,omitempty"`
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     Limit uint32 `protobuf:"varint,2,opt,name=Limit,proto3" json:"Limit,omitempty"`
-    // Offset specifies offset for the offset-based pagination
-    Offset uint32 `protobuf:"varint,3,opt,name=Offset,proto3" json:"Offset,omitempty"`
-    // Cursor specifies cursor for the cursor-based pagination
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     Cursor string `protobuf:"bytes,4,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
     // contains filtered or unexported fields
 }
 ```
 
 <a name="ListRootsRequest.Descriptor"></a>
-### func \(\*ListRootsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L809>)
+### func \(\*ListRootsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L800>)
 
 ```go
 func (*ListRootsRequest) Descriptor() ([]byte, []int)
@@ -7483,7 +7303,7 @@ func (*ListRootsRequest) Descriptor() ([]byte, []int)
 Deprecated: Use ListRootsRequest.ProtoReflect.Descriptor instead.
 
 <a name="ListRootsRequest.GetCursor"></a>
-### func \(\*ListRootsRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L834>)
+### func \(\*ListRootsRequest\) [GetCursor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L818>)
 
 ```go
 func (x *ListRootsRequest) GetCursor() string
@@ -7492,7 +7312,7 @@ func (x *ListRootsRequest) GetCursor() string
 
 
 <a name="ListRootsRequest.GetLimit"></a>
-### func \(\*ListRootsRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L820>)
+### func \(\*ListRootsRequest\) [GetLimit](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L811>)
 
 ```go
 func (x *ListRootsRequest) GetLimit() uint32
@@ -7500,17 +7320,8 @@ func (x *ListRootsRequest) GetLimit() uint32
 
 
 
-<a name="ListRootsRequest.GetOffset"></a>
-### func \(\*ListRootsRequest\) [GetOffset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L827>)
-
-```go
-func (x *ListRootsRequest) GetOffset() uint32
-```
-
-
-
 <a name="ListRootsRequest.GetOrgID"></a>
-### func \(\*ListRootsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L813>)
+### func \(\*ListRootsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L804>)
 
 ```go
 func (x *ListRootsRequest) GetOrgID() string
@@ -7528,7 +7339,7 @@ func (msg *ListRootsRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="ListRootsRequest.ProtoMessage"></a>
-### func \(\*ListRootsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L794>)
+### func \(\*ListRootsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L785>)
 
 ```go
 func (*ListRootsRequest) ProtoMessage()
@@ -7537,7 +7348,7 @@ func (*ListRootsRequest) ProtoMessage()
 
 
 <a name="ListRootsRequest.ProtoReflect"></a>
-### func \(\*ListRootsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L796>)
+### func \(\*ListRootsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L787>)
 
 ```go
 func (x *ListRootsRequest) ProtoReflect() protoreflect.Message
@@ -7546,7 +7357,7 @@ func (x *ListRootsRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="ListRootsRequest.Reset"></a>
-### func \(\*ListRootsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L783>)
+### func \(\*ListRootsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L774>)
 
 ```go
 func (x *ListRootsRequest) Reset()
@@ -7555,7 +7366,7 @@ func (x *ListRootsRequest) Reset()
 
 
 <a name="ListRootsRequest.String"></a>
-### func \(\*ListRootsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L790>)
+### func \(\*ListRootsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L781>)
 
 ```go
 func (x *ListRootsRequest) String() string
@@ -7573,7 +7384,7 @@ func (msg *ListRootsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListRootsRequest.Validate"></a>
-### func \(\*ListRootsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3879>)
+### func \(\*ListRootsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3798>)
 
 ```go
 func (m *ListRootsRequest) Validate(ctx context.Context) error
@@ -7582,7 +7393,7 @@ func (m *ListRootsRequest) Validate(ctx context.Context) error
 
 
 <a name="MessageAllocator"></a>
-## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3688>)
+## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3607>)
 
 MessageAllocator defines constructor to allocate Protobuf message
 
@@ -7624,7 +7435,7 @@ func UnmarshalRequest(w http.ResponseWriter, r *http.Request) (any, *MethodInfo,
 UnmarshalRequest unmarshals JSON body of HTTP request to protobuf request
 
 <a name="PublishCrlsRequest"></a>
-## type [PublishCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1879-L1896>)
+## type [PublishCrlsRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1840-L1857>)
 
 PublishCrlsRequest allows to publish CRLs on demand with the org named explicitly: the request of Backend.PublishCrls
 
@@ -7649,7 +7460,7 @@ type PublishCrlsRequest struct {
 ```
 
 <a name="PublishCrlsRequest.Descriptor"></a>
-### func \(\*PublishCrlsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1924>)
+### func \(\*PublishCrlsRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1885>)
 
 ```go
 func (*PublishCrlsRequest) Descriptor() ([]byte, []int)
@@ -7658,7 +7469,7 @@ func (*PublishCrlsRequest) Descriptor() ([]byte, []int)
 Deprecated: Use PublishCrlsRequest.ProtoReflect.Descriptor instead.
 
 <a name="PublishCrlsRequest.GetForce"></a>
-### func \(\*PublishCrlsRequest\) [GetForce](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1949>)
+### func \(\*PublishCrlsRequest\) [GetForce](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1910>)
 
 ```go
 func (x *PublishCrlsRequest) GetForce() bool
@@ -7667,7 +7478,7 @@ func (x *PublishCrlsRequest) GetForce() bool
 
 
 <a name="PublishCrlsRequest.GetIKID"></a>
-### func \(\*PublishCrlsRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1942>)
+### func \(\*PublishCrlsRequest\) [GetIKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1903>)
 
 ```go
 func (x *PublishCrlsRequest) GetIKID() string
@@ -7676,7 +7487,7 @@ func (x *PublishCrlsRequest) GetIKID() string
 
 
 <a name="PublishCrlsRequest.GetOrgID"></a>
-### func \(\*PublishCrlsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1928>)
+### func \(\*PublishCrlsRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1889>)
 
 ```go
 func (x *PublishCrlsRequest) GetOrgID() string
@@ -7685,7 +7496,7 @@ func (x *PublishCrlsRequest) GetOrgID() string
 
 
 <a name="PublishCrlsRequest.GetProjectID"></a>
-### func \(\*PublishCrlsRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1935>)
+### func \(\*PublishCrlsRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1896>)
 
 ```go
 func (x *PublishCrlsRequest) GetProjectID() string
@@ -7703,7 +7514,7 @@ func (msg *PublishCrlsRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="PublishCrlsRequest.ProtoMessage"></a>
-### func \(\*PublishCrlsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1909>)
+### func \(\*PublishCrlsRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1870>)
 
 ```go
 func (*PublishCrlsRequest) ProtoMessage()
@@ -7712,7 +7523,7 @@ func (*PublishCrlsRequest) ProtoMessage()
 
 
 <a name="PublishCrlsRequest.ProtoReflect"></a>
-### func \(\*PublishCrlsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1911>)
+### func \(\*PublishCrlsRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1872>)
 
 ```go
 func (x *PublishCrlsRequest) ProtoReflect() protoreflect.Message
@@ -7721,7 +7532,7 @@ func (x *PublishCrlsRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="PublishCrlsRequest.Reset"></a>
-### func \(\*PublishCrlsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1898>)
+### func \(\*PublishCrlsRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1859>)
 
 ```go
 func (x *PublishCrlsRequest) Reset()
@@ -7730,7 +7541,7 @@ func (x *PublishCrlsRequest) Reset()
 
 
 <a name="PublishCrlsRequest.String"></a>
-### func \(\*PublishCrlsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1905>)
+### func \(\*PublishCrlsRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1866>)
 
 ```go
 func (x *PublishCrlsRequest) String() string
@@ -7748,7 +7559,7 @@ func (msg *PublishCrlsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="PublishCrlsRequest.Validate"></a>
-### func \(\*PublishCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3882>)
+### func \(\*PublishCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3801>)
 
 ```go
 func (m *PublishCrlsRequest) Validate(ctx context.Context) error
@@ -7968,7 +7779,7 @@ func (msg *RegisterIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterIssuerRequest.Validate"></a>
-### func \(\*RegisterIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3885>)
+### func \(\*RegisterIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3804>)
 
 ```go
 func (m *RegisterIssuerRequest) Validate(ctx context.Context) error
@@ -7977,7 +7788,7 @@ func (m *RegisterIssuerRequest) Validate(ctx context.Context) error
 
 
 <a name="RegisterProfileRequest"></a>
-## type [RegisterProfileRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L843-L855>)
+## type [RegisterProfileRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L827-L839>)
 
 RegisterProfileRequest creates or replaces a profile with the org named explicitly: the request of Backend.RegisterProfile
 
@@ -7997,7 +7808,7 @@ type RegisterProfileRequest struct {
 ```
 
 <a name="RegisterProfileRequest.Descriptor"></a>
-### func \(\*RegisterProfileRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L883>)
+### func \(\*RegisterProfileRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L867>)
 
 ```go
 func (*RegisterProfileRequest) Descriptor() ([]byte, []int)
@@ -8006,7 +7817,7 @@ func (*RegisterProfileRequest) Descriptor() ([]byte, []int)
 Deprecated: Use RegisterProfileRequest.ProtoReflect.Descriptor instead.
 
 <a name="RegisterProfileRequest.GetOrgID"></a>
-### func \(\*RegisterProfileRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L887>)
+### func \(\*RegisterProfileRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L871>)
 
 ```go
 func (x *RegisterProfileRequest) GetOrgID() string
@@ -8015,7 +7826,7 @@ func (x *RegisterProfileRequest) GetOrgID() string
 
 
 <a name="RegisterProfileRequest.GetProfile"></a>
-### func \(\*RegisterProfileRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L901>)
+### func \(\*RegisterProfileRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L885>)
 
 ```go
 func (x *RegisterProfileRequest) GetProfile() *pb.CertProfile
@@ -8024,7 +7835,7 @@ func (x *RegisterProfileRequest) GetProfile() *pb.CertProfile
 
 
 <a name="RegisterProfileRequest.GetProjectID"></a>
-### func \(\*RegisterProfileRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L894>)
+### func \(\*RegisterProfileRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L878>)
 
 ```go
 func (x *RegisterProfileRequest) GetProjectID() string
@@ -8042,7 +7853,7 @@ func (msg *RegisterProfileRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RegisterProfileRequest.ProtoMessage"></a>
-### func \(\*RegisterProfileRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L868>)
+### func \(\*RegisterProfileRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L852>)
 
 ```go
 func (*RegisterProfileRequest) ProtoMessage()
@@ -8051,7 +7862,7 @@ func (*RegisterProfileRequest) ProtoMessage()
 
 
 <a name="RegisterProfileRequest.ProtoReflect"></a>
-### func \(\*RegisterProfileRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L870>)
+### func \(\*RegisterProfileRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L854>)
 
 ```go
 func (x *RegisterProfileRequest) ProtoReflect() protoreflect.Message
@@ -8060,7 +7871,7 @@ func (x *RegisterProfileRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="RegisterProfileRequest.Reset"></a>
-### func \(\*RegisterProfileRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L857>)
+### func \(\*RegisterProfileRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L841>)
 
 ```go
 func (x *RegisterProfileRequest) Reset()
@@ -8069,7 +7880,7 @@ func (x *RegisterProfileRequest) Reset()
 
 
 <a name="RegisterProfileRequest.String"></a>
-### func \(\*RegisterProfileRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L864>)
+### func \(\*RegisterProfileRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L848>)
 
 ```go
 func (x *RegisterProfileRequest) String() string
@@ -8087,7 +7898,7 @@ func (msg *RegisterProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterProfileRequest.Validate"></a>
-### func \(\*RegisterProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3888>)
+### func \(\*RegisterProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3807>)
 
 ```go
 func (m *RegisterProfileRequest) Validate(ctx context.Context) error
@@ -8096,7 +7907,7 @@ func (m *RegisterProfileRequest) Validate(ctx context.Context) error
 
 
 <a name="RegisterRootRequest"></a>
-## type [RegisterRootRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L702-L713>)
+## type [RegisterRootRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L693-L704>)
 
 RegisterRootRequest registers an external trust anchor with the org named explicitly: the request of Backend.RegisterRoot
 
@@ -8115,7 +7926,7 @@ type RegisterRootRequest struct {
 ```
 
 <a name="RegisterRootRequest.Descriptor"></a>
-### func \(\*RegisterRootRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L741>)
+### func \(\*RegisterRootRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L732>)
 
 ```go
 func (*RegisterRootRequest) Descriptor() ([]byte, []int)
@@ -8124,7 +7935,7 @@ func (*RegisterRootRequest) Descriptor() ([]byte, []int)
 Deprecated: Use RegisterRootRequest.ProtoReflect.Descriptor instead.
 
 <a name="RegisterRootRequest.GetOrgID"></a>
-### func \(\*RegisterRootRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L745>)
+### func \(\*RegisterRootRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L736>)
 
 ```go
 func (x *RegisterRootRequest) GetOrgID() string
@@ -8133,7 +7944,7 @@ func (x *RegisterRootRequest) GetOrgID() string
 
 
 <a name="RegisterRootRequest.GetPem"></a>
-### func \(\*RegisterRootRequest\) [GetPem](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L752>)
+### func \(\*RegisterRootRequest\) [GetPem](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L743>)
 
 ```go
 func (x *RegisterRootRequest) GetPem() string
@@ -8142,7 +7953,7 @@ func (x *RegisterRootRequest) GetPem() string
 
 
 <a name="RegisterRootRequest.GetTrust"></a>
-### func \(\*RegisterRootRequest\) [GetTrust](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L759>)
+### func \(\*RegisterRootRequest\) [GetTrust](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L750>)
 
 ```go
 func (x *RegisterRootRequest) GetTrust() pb.Trust_Enum
@@ -8160,7 +7971,7 @@ func (msg *RegisterRootRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RegisterRootRequest.ProtoMessage"></a>
-### func \(\*RegisterRootRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L726>)
+### func \(\*RegisterRootRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L717>)
 
 ```go
 func (*RegisterRootRequest) ProtoMessage()
@@ -8169,7 +7980,7 @@ func (*RegisterRootRequest) ProtoMessage()
 
 
 <a name="RegisterRootRequest.ProtoReflect"></a>
-### func \(\*RegisterRootRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L728>)
+### func \(\*RegisterRootRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L719>)
 
 ```go
 func (x *RegisterRootRequest) ProtoReflect() protoreflect.Message
@@ -8178,7 +7989,7 @@ func (x *RegisterRootRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="RegisterRootRequest.Reset"></a>
-### func \(\*RegisterRootRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L715>)
+### func \(\*RegisterRootRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L706>)
 
 ```go
 func (x *RegisterRootRequest) Reset()
@@ -8187,7 +7998,7 @@ func (x *RegisterRootRequest) Reset()
 
 
 <a name="RegisterRootRequest.String"></a>
-### func \(\*RegisterRootRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L722>)
+### func \(\*RegisterRootRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L713>)
 
 ```go
 func (x *RegisterRootRequest) String() string
@@ -8205,7 +8016,7 @@ func (msg *RegisterRootRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterRootRequest.Validate"></a>
-### func \(\*RegisterRootRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3891>)
+### func \(\*RegisterRootRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3810>)
 
 ```go
 func (m *RegisterRootRequest) Validate(ctx context.Context) error
@@ -8223,7 +8034,7 @@ type RequestAllocator func() any
 ```
 
 <a name="RevokeCertificateRequest"></a>
-## type [RevokeCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1717-L1739>)
+## type [RevokeCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1678-L1700>)
 
 RevokeCertificateRequest specifies revocation request with the org named explicitly: the request of Backend.RevokeCertificate
 
@@ -8253,7 +8064,7 @@ type RevokeCertificateRequest struct {
 ```
 
 <a name="RevokeCertificateRequest.Descriptor"></a>
-### func \(\*RevokeCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1767>)
+### func \(\*RevokeCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1728>)
 
 ```go
 func (*RevokeCertificateRequest) Descriptor() ([]byte, []int)
@@ -8262,7 +8073,7 @@ func (*RevokeCertificateRequest) Descriptor() ([]byte, []int)
 Deprecated: Use RevokeCertificateRequest.ProtoReflect.Descriptor instead.
 
 <a name="RevokeCertificateRequest.GetID"></a>
-### func \(\*RevokeCertificateRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1778>)
+### func \(\*RevokeCertificateRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1739>)
 
 ```go
 func (x *RevokeCertificateRequest) GetID() string
@@ -8271,7 +8082,7 @@ func (x *RevokeCertificateRequest) GetID() string
 
 
 <a name="RevokeCertificateRequest.GetIssuerSerial"></a>
-### func \(\*RevokeCertificateRequest\) [GetIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1792>)
+### func \(\*RevokeCertificateRequest\) [GetIssuerSerial](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1753>)
 
 ```go
 func (x *RevokeCertificateRequest) GetIssuerSerial() *pb.IssuerSerial
@@ -8280,7 +8091,7 @@ func (x *RevokeCertificateRequest) GetIssuerSerial() *pb.IssuerSerial
 
 
 <a name="RevokeCertificateRequest.GetOrgID"></a>
-### func \(\*RevokeCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1771>)
+### func \(\*RevokeCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1732>)
 
 ```go
 func (x *RevokeCertificateRequest) GetOrgID() string
@@ -8289,7 +8100,7 @@ func (x *RevokeCertificateRequest) GetOrgID() string
 
 
 <a name="RevokeCertificateRequest.GetProjectID"></a>
-### func \(\*RevokeCertificateRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1813>)
+### func \(\*RevokeCertificateRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1774>)
 
 ```go
 func (x *RevokeCertificateRequest) GetProjectID() string
@@ -8298,7 +8109,7 @@ func (x *RevokeCertificateRequest) GetProjectID() string
 
 
 <a name="RevokeCertificateRequest.GetReason"></a>
-### func \(\*RevokeCertificateRequest\) [GetReason](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1799>)
+### func \(\*RevokeCertificateRequest\) [GetReason](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1760>)
 
 ```go
 func (x *RevokeCertificateRequest) GetReason() pb.ReasonCode_Enum
@@ -8307,7 +8118,7 @@ func (x *RevokeCertificateRequest) GetReason() pb.ReasonCode_Enum
 
 
 <a name="RevokeCertificateRequest.GetReasonText"></a>
-### func \(\*RevokeCertificateRequest\) [GetReasonText](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1806>)
+### func \(\*RevokeCertificateRequest\) [GetReasonText](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1767>)
 
 ```go
 func (x *RevokeCertificateRequest) GetReasonText() string
@@ -8316,7 +8127,7 @@ func (x *RevokeCertificateRequest) GetReasonText() string
 
 
 <a name="RevokeCertificateRequest.GetSKID"></a>
-### func \(\*RevokeCertificateRequest\) [GetSKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1785>)
+### func \(\*RevokeCertificateRequest\) [GetSKID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1746>)
 
 ```go
 func (x *RevokeCertificateRequest) GetSKID() string
@@ -8334,7 +8145,7 @@ func (msg *RevokeCertificateRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="RevokeCertificateRequest.ProtoMessage"></a>
-### func \(\*RevokeCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1752>)
+### func \(\*RevokeCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1713>)
 
 ```go
 func (*RevokeCertificateRequest) ProtoMessage()
@@ -8343,7 +8154,7 @@ func (*RevokeCertificateRequest) ProtoMessage()
 
 
 <a name="RevokeCertificateRequest.ProtoReflect"></a>
-### func \(\*RevokeCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1754>)
+### func \(\*RevokeCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1715>)
 
 ```go
 func (x *RevokeCertificateRequest) ProtoReflect() protoreflect.Message
@@ -8352,7 +8163,7 @@ func (x *RevokeCertificateRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="RevokeCertificateRequest.Reset"></a>
-### func \(\*RevokeCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1741>)
+### func \(\*RevokeCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1702>)
 
 ```go
 func (x *RevokeCertificateRequest) Reset()
@@ -8361,7 +8172,7 @@ func (x *RevokeCertificateRequest) Reset()
 
 
 <a name="RevokeCertificateRequest.String"></a>
-### func \(\*RevokeCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1748>)
+### func \(\*RevokeCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1709>)
 
 ```go
 func (x *RevokeCertificateRequest) String() string
@@ -8379,7 +8190,7 @@ func (msg *RevokeCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RevokeCertificateRequest.Validate"></a>
-### func \(\*RevokeCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3894>)
+### func \(\*RevokeCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3813>)
 
 ```go
 func (m *RevokeCertificateRequest) Validate(ctx context.Context) error
@@ -8388,7 +8199,7 @@ func (m *RevokeCertificateRequest) Validate(ctx context.Context) error
 
 
 <a name="SignCertificateRequest"></a>
-## type [SignCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1166-L1202>)
+## type [SignCertificateRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1143-L1179>)
 
 SignCertificateRequest specifies certificate sign request with the org named explicitly: the request of Backend.SignCertificate
 
@@ -8432,7 +8243,7 @@ type SignCertificateRequest struct {
 ```
 
 <a name="SignCertificateRequest.Descriptor"></a>
-### func \(\*SignCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1230>)
+### func \(\*SignCertificateRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1207>)
 
 ```go
 func (*SignCertificateRequest) Descriptor() ([]byte, []int)
@@ -8441,7 +8252,7 @@ func (*SignCertificateRequest) Descriptor() ([]byte, []int)
 Deprecated: Use SignCertificateRequest.ProtoReflect.Descriptor instead.
 
 <a name="SignCertificateRequest.GetExtensions"></a>
-### func \(\*SignCertificateRequest\) [GetExtensions](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1304>)
+### func \(\*SignCertificateRequest\) [GetExtensions](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1281>)
 
 ```go
 func (x *SignCertificateRequest) GetExtensions() []*pb.X509Extension
@@ -8450,7 +8261,7 @@ func (x *SignCertificateRequest) GetExtensions() []*pb.X509Extension
 
 
 <a name="SignCertificateRequest.GetIssuerLabel"></a>
-### func \(\*SignCertificateRequest\) [GetIssuerLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1255>)
+### func \(\*SignCertificateRequest\) [GetIssuerLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1232>)
 
 ```go
 func (x *SignCertificateRequest) GetIssuerLabel() string
@@ -8459,7 +8270,7 @@ func (x *SignCertificateRequest) GetIssuerLabel() string
 
 
 <a name="SignCertificateRequest.GetLabel"></a>
-### func \(\*SignCertificateRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1311>)
+### func \(\*SignCertificateRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1288>)
 
 ```go
 func (x *SignCertificateRequest) GetLabel() string
@@ -8468,7 +8279,7 @@ func (x *SignCertificateRequest) GetLabel() string
 
 
 <a name="SignCertificateRequest.GetMetadata"></a>
-### func \(\*SignCertificateRequest\) [GetMetadata](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1318>)
+### func \(\*SignCertificateRequest\) [GetMetadata](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1295>)
 
 ```go
 func (x *SignCertificateRequest) GetMetadata() map[string]string
@@ -8477,7 +8288,7 @@ func (x *SignCertificateRequest) GetMetadata() map[string]string
 
 
 <a name="SignCertificateRequest.GetNotAfter"></a>
-### func \(\*SignCertificateRequest\) [GetNotAfter](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1297>)
+### func \(\*SignCertificateRequest\) [GetNotAfter](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1274>)
 
 ```go
 func (x *SignCertificateRequest) GetNotAfter() string
@@ -8486,7 +8297,7 @@ func (x *SignCertificateRequest) GetNotAfter() string
 
 
 <a name="SignCertificateRequest.GetNotBefore"></a>
-### func \(\*SignCertificateRequest\) [GetNotBefore](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1290>)
+### func \(\*SignCertificateRequest\) [GetNotBefore](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1267>)
 
 ```go
 func (x *SignCertificateRequest) GetNotBefore() string
@@ -8495,7 +8306,7 @@ func (x *SignCertificateRequest) GetNotBefore() string
 
 
 <a name="SignCertificateRequest.GetOrgID"></a>
-### func \(\*SignCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1234>)
+### func \(\*SignCertificateRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1211>)
 
 ```go
 func (x *SignCertificateRequest) GetOrgID() string
@@ -8504,7 +8315,7 @@ func (x *SignCertificateRequest) GetOrgID() string
 
 
 <a name="SignCertificateRequest.GetProfile"></a>
-### func \(\*SignCertificateRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1248>)
+### func \(\*SignCertificateRequest\) [GetProfile](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1225>)
 
 ```go
 func (x *SignCertificateRequest) GetProfile() string
@@ -8513,7 +8324,7 @@ func (x *SignCertificateRequest) GetProfile() string
 
 
 <a name="SignCertificateRequest.GetProjectID"></a>
-### func \(\*SignCertificateRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1241>)
+### func \(\*SignCertificateRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1218>)
 
 ```go
 func (x *SignCertificateRequest) GetProjectID() string
@@ -8522,7 +8333,7 @@ func (x *SignCertificateRequest) GetProjectID() string
 
 
 <a name="SignCertificateRequest.GetRequest"></a>
-### func \(\*SignCertificateRequest\) [GetRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1269>)
+### func \(\*SignCertificateRequest\) [GetRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1246>)
 
 ```go
 func (x *SignCertificateRequest) GetRequest() []byte
@@ -8531,7 +8342,7 @@ func (x *SignCertificateRequest) GetRequest() []byte
 
 
 <a name="SignCertificateRequest.GetRequestFormat"></a>
-### func \(\*SignCertificateRequest\) [GetRequestFormat](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1262>)
+### func \(\*SignCertificateRequest\) [GetRequestFormat](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1239>)
 
 ```go
 func (x *SignCertificateRequest) GetRequestFormat() pb.EncodingFormat_Enum
@@ -8540,7 +8351,7 @@ func (x *SignCertificateRequest) GetRequestFormat() pb.EncodingFormat_Enum
 
 
 <a name="SignCertificateRequest.GetSAN"></a>
-### func \(\*SignCertificateRequest\) [GetSAN](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1276>)
+### func \(\*SignCertificateRequest\) [GetSAN](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1253>)
 
 ```go
 func (x *SignCertificateRequest) GetSAN() []string
@@ -8549,7 +8360,7 @@ func (x *SignCertificateRequest) GetSAN() []string
 
 
 <a name="SignCertificateRequest.GetSubject"></a>
-### func \(\*SignCertificateRequest\) [GetSubject](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1283>)
+### func \(\*SignCertificateRequest\) [GetSubject](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1260>)
 
 ```go
 func (x *SignCertificateRequest) GetSubject() *pb.X509Subject
@@ -8567,7 +8378,7 @@ func (msg *SignCertificateRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="SignCertificateRequest.ProtoMessage"></a>
-### func \(\*SignCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1215>)
+### func \(\*SignCertificateRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1192>)
 
 ```go
 func (*SignCertificateRequest) ProtoMessage()
@@ -8576,7 +8387,7 @@ func (*SignCertificateRequest) ProtoMessage()
 
 
 <a name="SignCertificateRequest.ProtoReflect"></a>
-### func \(\*SignCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1217>)
+### func \(\*SignCertificateRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1194>)
 
 ```go
 func (x *SignCertificateRequest) ProtoReflect() protoreflect.Message
@@ -8585,7 +8396,7 @@ func (x *SignCertificateRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="SignCertificateRequest.Reset"></a>
-### func \(\*SignCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1204>)
+### func \(\*SignCertificateRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1181>)
 
 ```go
 func (x *SignCertificateRequest) Reset()
@@ -8594,7 +8405,7 @@ func (x *SignCertificateRequest) Reset()
 
 
 <a name="SignCertificateRequest.String"></a>
-### func \(\*SignCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1211>)
+### func \(\*SignCertificateRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1188>)
 
 ```go
 func (x *SignCertificateRequest) String() string
@@ -8612,7 +8423,7 @@ func (msg *SignCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="SignCertificateRequest.Validate"></a>
-### func \(\*SignCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3897>)
+### func \(\*SignCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3816>)
 
 ```go
 func (m *SignCertificateRequest) Validate(ctx context.Context) error
@@ -8899,7 +8710,7 @@ type UnsafeBackendServer interface {
 ```
 
 <a name="UpdateCertificateLabelRequest"></a>
-## type [UpdateCertificateLabelRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1327-L1344>)
+## type [UpdateCertificateLabelRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1304-L1321>)
 
 UpdateCertificateLabelRequest specifies certificate label update request with the org named explicitly: the request of Backend.UpdateCertificateLabel
 
@@ -8924,7 +8735,7 @@ type UpdateCertificateLabelRequest struct {
 ```
 
 <a name="UpdateCertificateLabelRequest.Descriptor"></a>
-### func \(\*UpdateCertificateLabelRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1372>)
+### func \(\*UpdateCertificateLabelRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1349>)
 
 ```go
 func (*UpdateCertificateLabelRequest) Descriptor() ([]byte, []int)
@@ -8933,7 +8744,7 @@ func (*UpdateCertificateLabelRequest) Descriptor() ([]byte, []int)
 Deprecated: Use UpdateCertificateLabelRequest.ProtoReflect.Descriptor instead.
 
 <a name="UpdateCertificateLabelRequest.GetID"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1383>)
+### func \(\*UpdateCertificateLabelRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1360>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetID() string
@@ -8942,7 +8753,7 @@ func (x *UpdateCertificateLabelRequest) GetID() string
 
 
 <a name="UpdateCertificateLabelRequest.GetLabel"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1390>)
+### func \(\*UpdateCertificateLabelRequest\) [GetLabel](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1367>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetLabel() string
@@ -8951,7 +8762,7 @@ func (x *UpdateCertificateLabelRequest) GetLabel() string
 
 
 <a name="UpdateCertificateLabelRequest.GetMetadata"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetMetadata](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1397>)
+### func \(\*UpdateCertificateLabelRequest\) [GetMetadata](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1374>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetMetadata() map[string]string
@@ -8960,7 +8771,7 @@ func (x *UpdateCertificateLabelRequest) GetMetadata() map[string]string
 
 
 <a name="UpdateCertificateLabelRequest.GetOrgID"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1376>)
+### func \(\*UpdateCertificateLabelRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1353>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetOrgID() string
@@ -8969,7 +8780,7 @@ func (x *UpdateCertificateLabelRequest) GetOrgID() string
 
 
 <a name="UpdateCertificateLabelRequest.GetProjectID"></a>
-### func \(\*UpdateCertificateLabelRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1404>)
+### func \(\*UpdateCertificateLabelRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1381>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) GetProjectID() string
@@ -8987,7 +8798,7 @@ func (msg *UpdateCertificateLabelRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="UpdateCertificateLabelRequest.ProtoMessage"></a>
-### func \(\*UpdateCertificateLabelRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1357>)
+### func \(\*UpdateCertificateLabelRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1334>)
 
 ```go
 func (*UpdateCertificateLabelRequest) ProtoMessage()
@@ -8996,7 +8807,7 @@ func (*UpdateCertificateLabelRequest) ProtoMessage()
 
 
 <a name="UpdateCertificateLabelRequest.ProtoReflect"></a>
-### func \(\*UpdateCertificateLabelRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1359>)
+### func \(\*UpdateCertificateLabelRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1336>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) ProtoReflect() protoreflect.Message
@@ -9005,7 +8816,7 @@ func (x *UpdateCertificateLabelRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="UpdateCertificateLabelRequest.Reset"></a>
-### func \(\*UpdateCertificateLabelRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1346>)
+### func \(\*UpdateCertificateLabelRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1323>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) Reset()
@@ -9014,7 +8825,7 @@ func (x *UpdateCertificateLabelRequest) Reset()
 
 
 <a name="UpdateCertificateLabelRequest.String"></a>
-### func \(\*UpdateCertificateLabelRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1353>)
+### func \(\*UpdateCertificateLabelRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L1330>)
 
 ```go
 func (x *UpdateCertificateLabelRequest) String() string
@@ -9032,7 +8843,7 @@ func (msg *UpdateCertificateLabelRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateCertificateLabelRequest.Validate"></a>
-### func \(\*UpdateCertificateLabelRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3900>)
+### func \(\*UpdateCertificateLabelRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3819>)
 
 ```go
 func (m *UpdateCertificateLabelRequest) Validate(ctx context.Context) error
@@ -9041,7 +8852,7 @@ func (m *UpdateCertificateLabelRequest) Validate(ctx context.Context) error
 
 
 <a name="UpdateIssuerRequest"></a>
-## type [UpdateIssuerRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L616-L633>)
+## type [UpdateIssuerRequest](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L607-L624>)
 
 UpdateIssuerRequest updates issuer config or status with the org named explicitly: the request of Backend.UpdateIssuer
 
@@ -9066,7 +8877,7 @@ type UpdateIssuerRequest struct {
 ```
 
 <a name="UpdateIssuerRequest.Descriptor"></a>
-### func \(\*UpdateIssuerRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L661>)
+### func \(\*UpdateIssuerRequest\) [Descriptor](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L652>)
 
 ```go
 func (*UpdateIssuerRequest) Descriptor() ([]byte, []int)
@@ -9075,7 +8886,7 @@ func (*UpdateIssuerRequest) Descriptor() ([]byte, []int)
 Deprecated: Use UpdateIssuerRequest.ProtoReflect.Descriptor instead.
 
 <a name="UpdateIssuerRequest.GetConfig"></a>
-### func \(\*UpdateIssuerRequest\) [GetConfig](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L679>)
+### func \(\*UpdateIssuerRequest\) [GetConfig](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L670>)
 
 ```go
 func (x *UpdateIssuerRequest) GetConfig() *pb.IssuerConfig
@@ -9084,7 +8895,7 @@ func (x *UpdateIssuerRequest) GetConfig() *pb.IssuerConfig
 
 
 <a name="UpdateIssuerRequest.GetID"></a>
-### func \(\*UpdateIssuerRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L672>)
+### func \(\*UpdateIssuerRequest\) [GetID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L663>)
 
 ```go
 func (x *UpdateIssuerRequest) GetID() string
@@ -9093,7 +8904,7 @@ func (x *UpdateIssuerRequest) GetID() string
 
 
 <a name="UpdateIssuerRequest.GetOrgID"></a>
-### func \(\*UpdateIssuerRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L665>)
+### func \(\*UpdateIssuerRequest\) [GetOrgID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L656>)
 
 ```go
 func (x *UpdateIssuerRequest) GetOrgID() string
@@ -9102,7 +8913,7 @@ func (x *UpdateIssuerRequest) GetOrgID() string
 
 
 <a name="UpdateIssuerRequest.GetProjectID"></a>
-### func \(\*UpdateIssuerRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L693>)
+### func \(\*UpdateIssuerRequest\) [GetProjectID](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L684>)
 
 ```go
 func (x *UpdateIssuerRequest) GetProjectID() string
@@ -9111,7 +8922,7 @@ func (x *UpdateIssuerRequest) GetProjectID() string
 
 
 <a name="UpdateIssuerRequest.GetStatus"></a>
-### func \(\*UpdateIssuerRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L686>)
+### func \(\*UpdateIssuerRequest\) [GetStatus](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L677>)
 
 ```go
 func (x *UpdateIssuerRequest) GetStatus() pb.IssuerStatus_Enum
@@ -9129,7 +8940,7 @@ func (msg *UpdateIssuerRequest) MarshalJSON() ([]byte, error)
 MarshalJSON implements json.Marshaler
 
 <a name="UpdateIssuerRequest.ProtoMessage"></a>
-### func \(\*UpdateIssuerRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L646>)
+### func \(\*UpdateIssuerRequest\) [ProtoMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L637>)
 
 ```go
 func (*UpdateIssuerRequest) ProtoMessage()
@@ -9138,7 +8949,7 @@ func (*UpdateIssuerRequest) ProtoMessage()
 
 
 <a name="UpdateIssuerRequest.ProtoReflect"></a>
-### func \(\*UpdateIssuerRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L648>)
+### func \(\*UpdateIssuerRequest\) [ProtoReflect](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L639>)
 
 ```go
 func (x *UpdateIssuerRequest) ProtoReflect() protoreflect.Message
@@ -9147,7 +8958,7 @@ func (x *UpdateIssuerRequest) ProtoReflect() protoreflect.Message
 
 
 <a name="UpdateIssuerRequest.Reset"></a>
-### func \(\*UpdateIssuerRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L635>)
+### func \(\*UpdateIssuerRequest\) [Reset](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L626>)
 
 ```go
 func (x *UpdateIssuerRequest) Reset()
@@ -9156,7 +8967,7 @@ func (x *UpdateIssuerRequest) Reset()
 
 
 <a name="UpdateIssuerRequest.String"></a>
-### func \(\*UpdateIssuerRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L642>)
+### func \(\*UpdateIssuerRequest\) [String](<https://github.com/effective-security/trustyca/blob/main/privpb/backend.pb.go#L633>)
 
 ```go
 func (x *UpdateIssuerRequest) String() string
@@ -9174,7 +8985,7 @@ func (msg *UpdateIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateIssuerRequest.Validate"></a>
-### func \(\*UpdateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3903>)
+### func \(\*UpdateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3822>)
 
 ```go
 func (m *UpdateIssuerRequest) Validate(ctx context.Context) error

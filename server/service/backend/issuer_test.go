@@ -108,7 +108,7 @@ func TestService_RegisterIssuer(t *testing.T) {
 	req.KeySpec = &pb.KeySpec{Algo: "ML-DSA", Size: 65}
 	req.Config = &pb.IssuerConfig{OcspURL: "http://cis.example.com/v1/ocsp/${ISSUER_ID}"}
 	_, err = svc.RegisterIssuer(ctx, req)
-	assert.EqualError(t, err, "bad_request: invalid config: an ML-DSA key cannot sign OCSP responses: set DelegatedOcspProfile or remove OcspURL")
+	assert.EqualError(t, err, "bad_request: invalid config: an issuer with an OCSP URL needs a delegated responder: set DelegatedOcspProfile or remove OcspURL")
 	req = valid()
 	req.Extensions = []*pb.X509Extension{{ID: "x"}}
 	_, err = svc.RegisterIssuer(ctx, req)
@@ -638,7 +638,7 @@ func TestService_UpdateIssuer(t *testing.T) {
 	assert.EqualError(t, err, `bad_request: invalid config: invalid CrlExpiry: "x" is not a duration`)
 	pqRoot := tca.newMLDSARoot(t, testOrgID(), xdb.ID(0), "PQ_ROOT")
 	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: pqRoot.ID.String(), Config: &pb.IssuerConfig{OcspURL: "http://cis.example.com/v1/ocsp/${ISSUER_ID}"}})
-	assert.EqualError(t, err, "bad_request: invalid config: an ML-DSA key cannot sign OCSP responses: set DelegatedOcspProfile or remove OcspURL", "an ML-DSA issuer cannot take an OCSP URL without a responder")
+	assert.EqualError(t, err, "bad_request: invalid config: an issuer with an OCSP URL needs a delegated responder: set DelegatedOcspProfile or remove OcspURL", "an ML-DSA issuer cannot take an OCSP URL without a responder")
 	before, err := tca.registry.Resolve(tca.ctx, &core.ResolveRequest{OrgID: testOrgID(), Profile: testProfile})
 	require.NoError(t, err)
 	assert.Equal(t, 8*time.Hour, before.Issuer.OcspExpiry())
@@ -962,7 +962,7 @@ func TestService_ListIssuers(t *testing.T) {
 	}).Return(&model.IssuerResult{
 		Rows:        []*model.Issuer{tca.issuer},
 		HasNextPage: true,
-		NextOffset:  100,
+		Cursor:      "next",
 	}, nil)
 	res, err := svc.ListIssuers(ctx, &privpb.ListIssuersRequest{
 		ProjectID: "201",
@@ -973,7 +973,7 @@ func TestService_ListIssuers(t *testing.T) {
 	require.Len(t, res.Issuers, 1)
 	assert.Equal(t, testIssuerLabel, res.Issuers[0].Label)
 	require.NotNil(t, res.NextPage)
-	assert.EqualValues(t, 100, res.NextPage.Offset)
+	assert.Equal(t, "next", res.NextPage.Cursor)
 
 	initial, err := query.ParseCursor(query.InitialCursor)
 	require.NoError(t, err)

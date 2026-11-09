@@ -93,7 +93,7 @@ func (p *Provider) ListProfiles(ctx context.Context, req *query.ListProfilesRequ
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.CertificateProfileResult
-	err = listRows(ctx, p, req.Cursor, profileCursor, &rs, q, qp)
+	err = xdb.ExecuteQueryWithCursor(ctx, p, profileCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

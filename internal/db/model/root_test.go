@@ -59,9 +59,9 @@ func Test_RootCertificate(t *testing.T) {
 		})
 	}
 
-	res := &model.RootCertificateResult{Rows: model.RootCertificateSlice{m}, HasNextPage: true, NextOffset: 1}
+	res := &model.RootCertificateResult{Rows: model.RootCertificateSlice{m}, HasNextPage: true, Cursor: "next"}
 	pres := res.Pb()
 	require.Len(t, pres.Roots, 1)
 	require.NotNil(t, pres.NextPage)
-	assert.EqualValues(t, 1, pres.NextPage.Offset)
+	assert.Equal(t, "next", pres.NextPage.Cursor)
 }

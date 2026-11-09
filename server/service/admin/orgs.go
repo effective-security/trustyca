@@ -9,7 +9,7 @@ import (
 	"github.com/effective-security/trustyca/privpb"
 )
 
-// ListOrgs lists the orgs by name, paged by offset or by cursor
+// ListOrgs lists the orgs by name, paged by cursor
 func (s *Service) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*pb.OrgsResponse, error) {
 	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseNameCursor)
 	if err != nil {
@@ -17,8 +17,7 @@ func (s *Service) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*p
 	}
 	qreq := &query.ListOrgsRequest{
 		Status: req.Status,
-		Limit:  req.Limit,
-		Offset: req.Offset,
+		Limit:  query.Limit(req.Limit),
 		Cursor: cursor,
 	}
 	orgs, err := s.db.ListOrgs(ctx, qreq)

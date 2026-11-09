@@ -386,8 +386,7 @@ message IssuerSerial {
 message KeySpec {
     // Algo specifies the key algorithm: RSA|ECDSA|ML-DSA (case-insensitive;
     // MLDSA is accepted). ML-DSA is the post-quantum signature scheme of
-    // FIPS 204; an ML-DSA issuer with an OcspURL needs a DelegatedOcspProfile,
-    // since ML-DSA keys do not sign OCSP responses.
+    // FIPS 204.
     string Algo = 1 [json_name = "Algo"];
     // Size specifies the RSA key size in bits: 2048|3072|4096, the ECDSA
     // curve size: 256|384, or the ML-DSA parameter set: 44|65|87
@@ -413,8 +412,10 @@ message IssuerConfig {
     string CrlRenewal = 5 [json_name = "CrlRenewal"];
     // OcspExpiry specifies the duration of OCSP response validity
     string OcspExpiry = 6 [json_name = "OcspExpiry"];
-    // DelegatedOcspProfile specifies the profile to issue a delegated OCSP
-    // responder certificate; empty to sign OCSP with the issuer key
+    // DelegatedOcspProfile specifies the profile to issue the delegated OCSP
+    // responder certificate that signs the OCSP responses of the issuer. It is
+    // required with an OcspURL: the key of an issuer signs no OCSP response,
+    // and an issuer without a responder answers no OCSP request.
     string DelegatedOcspProfile = 7 [json_name = "DelegatedOcspProfile"];
     // AllowedProfiles restricts the profiles the issuer may sign.
     // Required for profiles with IssuerLabel "*".

@@ -53,6 +53,7 @@ import (
 const (
 	e2eRootLabel   = "E2E_AIA_ROOT"
 	e2eRootProfile = "e2e_aia_root"
+	e2eOCSPProfile = "e2e_ocsp"
 	e2ePeerProfile = "e2e_aia_peer"
 	e2eRARole      = "trustyca-ra"
 	e2eAIARole     = "trustyca-aia"
@@ -154,6 +155,19 @@ func TestService_EndToEnd(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, rootProfile.ID)) })
+	ocspResponder, err := raClient.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
+		OrgID: orgID,
+		Profile: &pb.CertProfile{
+			Label:       e2eOCSPProfile,
+			IssuerLabel: model.AnyIssuerLabel,
+			Expiry:      "168h",
+			Backdate:    "30m",
+			Usages:      []string{"digital signature", "ocsp signing"},
+			OcspNoCheck: true,
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, ocspResponder.ID)) })
 	root, err := raClient.RegisterIssuer(ctx, &privpb.RegisterIssuerRequest{
 		OrgID:   orgID,
 		Label:   e2eRootLabel,
@@ -161,12 +175,14 @@ func TestService_EndToEnd(t *testing.T) {
 		Subject: &pb.X509Subject{CommonName: "E2E AIA Root"},
 		Profile: e2eRootProfile,
 		Config: &pb.IssuerConfig{
-			AiaURL:     aiaURL + "/v1/cert/${ISSUER_ID}",
-			CrlURL:     aiaURL + "/v1/crl/:ISSUER_ID",
-			OcspURL:    aiaURL + "/v1/ocspi/:ISSUER_ID",
-			CrlExpiry:  "48h",
-			CrlRenewal: "12h",
-			OcspExpiry: "1h",
+			AiaURL:               aiaURL + "/v1/cert/${ISSUER_ID}",
+			CrlURL:               aiaURL + "/v1/crl/:ISSUER_ID",
+			OcspURL:              aiaURL + "/v1/ocspi/:ISSUER_ID",
+			CrlExpiry:            "48h",
+			CrlRenewal:           "12h",
+			OcspExpiry:           "1h",
+			AllowedProfiles:      []string{e2eOCSPProfile},
+			DelegatedOcspProfile: e2eOCSPProfile,
 		},
 	})
 	require.NoError(t, err)
@@ -192,7 +208,7 @@ func TestService_EndToEnd(t *testing.T) {
 			IssuerLabel:       e2eRootLabel,
 			Expiry:            "168h",
 			Backdate:          "30m",
-			Usages:            []string{"signing", "key encipherment", "server auth"},
+			Usages:            []string{"signing", "server auth"},
 			AllowedExtensions: []string{"2.5.29.17"},
 		},
 	})

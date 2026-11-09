@@ -28,7 +28,6 @@ func (s *Service) GetRoots(ctx context.Context, req *pb.GetRootsRequest) (*pb.Ro
 	}
 	q := &query.ListRootsRequest{
 		Limit:  query.Limit(req.Limit),
-		Offset: req.Offset,
 		Cursor: cursor,
 	}
 	if req.OrgID == "" {

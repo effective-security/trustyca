@@ -45,7 +45,7 @@ func TestService_ListCertificates(t *testing.T) {
 			},
 		},
 		HasNextPage: true,
-		NextOffset:  2,
+		Cursor:      "next",
 	}
 
 	// every org and the platform
@@ -61,10 +61,13 @@ func TestService_ListCertificates(t *testing.T) {
 	assert.Equal(t, "edge-1", res.Certificates[0].Label, "the support view keeps the client fields")
 	assert.Empty(t, res.Certificates[1].OrgID, "a platform certificate has no org")
 	require.NotNil(t, res.NextPage)
-	assert.Equal(t, 2, int(res.NextPage.Offset))
+	assert.Equal(t, "next", res.NextPage.Cursor)
 
-	// an org, by issuer, profile, status and expiry
+	// an org, by issuer, profile, status and expiry, past a cursor
 	expiring := time.Date(2027, 1, 2, 3, 4, 5, 0, time.UTC)
+	next := query.EncodeCursor(xdb.NewID(10))
+	cursor, err := query.ParseCursor(next)
+	require.NoError(t, err)
 	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {
 		assert.Equal(t, &query.ListCertificatesRequest{
 			OrgID:          100,
@@ -73,7 +76,7 @@ func TestService_ListCertificates(t *testing.T) {
 			Status:         pb.CertificateStatus_Active,
 			ExpiringBefore: &expiring,
 			Limit:          5,
-			Offset:         10,
+			Cursor:         cursor,
 		}, req)
 		return &model.CertificateResult{Rows: rows.Rows[:1]}, nil
 	})
@@ -84,7 +87,7 @@ func TestService_ListCertificates(t *testing.T) {
 		Status:         pb.CertificateStatus_Active,
 		ExpiringBefore: "2027-01-02T04:04:05+01:00",
 		Limit:          5,
-		Offset:         10,
+		Cursor:         next,
 	})
 	require.NoError(t, err)
 	require.Len(t, res.Certificates, 1)
@@ -122,7 +125,7 @@ func TestService_ListCertificates(t *testing.T) {
 	// deleted issuer are listed across orgs
 	caDb.EXPECT().GetIssuerBySKID(ctx, "deleted").Return(nil, xdb.CheckNotFoundError(sql.ErrNoRows, "issuer", "deleted"))
 	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {
-		assert.Equal(t, &query.ListCertificatesRequest{AllOrgs: true, IKID: "deleted"}, req)
+		assert.Equal(t, &query.ListCertificatesRequest{AllOrgs: true, IKID: "deleted", Limit: xdb.DefaultPageSize}, req)
 		return &model.CertificateResult{Rows: rows.Rows[:1]}, nil
 	})
 	res, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{IKID: "deleted"})
@@ -133,7 +136,7 @@ func TestService_ListCertificates(t *testing.T) {
 	assert.EqualError(t, err, "unexpected: unable to find issuer")
 	// with an org the issuer is not resolved
 	caDb.EXPECT().ListCertificates(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, req *query.ListCertificatesRequest) (*model.CertificateResult, error) {
-		assert.Equal(t, &query.ListCertificatesRequest{OrgID: 100, IKID: "ikid-9"}, req)
+		assert.Equal(t, &query.ListCertificatesRequest{OrgID: 100, IKID: "ikid-9", Limit: xdb.DefaultPageSize}, req)
 		return &model.CertificateResult{}, nil
 	})
 	_, err = svc.ListCertificates(ctx, &privpb.ListAllCertificatesRequest{OrgID: "100", IKID: "ikid-9"})

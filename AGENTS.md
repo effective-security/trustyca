@@ -95,9 +95,10 @@ Package boundaries and direct internal imports are listed in
 
 - Prefer request structs with `QueryParams()` over functions that take many
   positional arguments, and follow the existing request/query patterns.
-- `List` DB methods should be paginated and return a result with a next offset
-  or equivalent pagination state. Do not advance an offset over a filtered set
-  the caller is shrinking (status updates, deletes): page by the last ID seen.
+- `List` DB methods should be paginated and return a result with the cursor of
+  the next page (`query.Cursor`, `setPage`, `pageBy`); there is no offset
+  pagination. For a filtered set the caller is shrinking (status updates,
+  deletes), page by the last ID seen.
 - If a method returns a single object or intentionally bounded unpaginated data,
   name it `Get...`, not `List...`.
 - Put read methods on the `...ReadonlyDb` interface and mutations on the
@@ -126,8 +127,9 @@ Package boundaries and direct internal imports are listed in
   Tenant requests carry no `OrgID`: the server takes the org from the token.
 - Use the enum wrapper style already used in this repo, such as
   `repeated xxxType.Enum`, instead of raw numeric or ad hoc enum fields.
-- `List...Request` and `List...Response` must include pagination fields. If the
-  API returns a single object or bounded unpaginated data, name it `Get...`.
+- `List...Request` must include `Limit` and `Cursor` (an empty `Cursor` is the
+  first page) and `List...Response` `NextPage`. If the API returns a single
+  object or bounded unpaginated data, name it `Get...`.
 - Keep JSON names clean and stable. Avoid temporary review terms and redundant
   prefixes/suffixes unless they are part of the product contract.
 - Keep CLI command annotations and public RPC naming aligned with existing CLI

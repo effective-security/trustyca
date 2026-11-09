@@ -90,6 +90,34 @@ func TestService_APIKeys(t *testing.T) {
 	require.Len(t, list.APIKeys, 1)
 	assert.Empty(t, list.APIKeys[0].Secret, "secrets are never listed")
 	assert.Equal(t, "sk_1_x", list.APIKeys[0].Key)
+	assert.Nil(t, list.NextPage)
+
+	// list: the limit and the cursor of the previous page continue the
+	// listing, and the response names the next page
+	at := xdb.Time(time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC))
+	next := query.EncodeTimeCursor(at, xdb.NewID(555))
+	cursor, err := query.ParseTimeCursor(next)
+	require.NoError(t, err)
+	db.EXPECT().ListAPIKeys(gomock.Any(), &query.ListAPIKeysRequest{OrgID: 1, Limit: 2, Cursor: cursor}).Return(&model.APIKeyResult{
+		Rows:        model.APIKeySlice{stored},
+		HasNextPage: true,
+		Cursor:      next,
+	}, nil)
+	list, err = svc.ListAPIKeys(ctx, &pb.ListAPIKeysRequest{Limit: 2, Cursor: next})
+	require.NoError(t, err)
+	require.NotNil(t, list.NextPage)
+	assert.Equal(t, next, list.NextPage.Cursor)
+
+	// list: initial is the first page, as an empty cursor; a limit is capped
+	db.EXPECT().ListAPIKeys(gomock.Any(), &query.ListAPIKeysRequest{OrgID: 1, Limit: xdb.DefaultPageSize}).Return(&model.APIKeyResult{}, nil)
+	list, err = svc.ListAPIKeys(ctx, &pb.ListAPIKeysRequest{Limit: xdb.DefaultPageSize + 1, Cursor: query.InitialCursor})
+	require.NoError(t, err)
+	assert.Nil(t, list.NextPage)
+
+	_, err = svc.ListAPIKeys(ctx, &pb.ListAPIKeysRequest{Cursor: "not a cursor"})
+	assert.EqualError(t, err, "bad_request: invalid cursor")
+	_, err = svc.ListAPIKeys(ctx, &pb.ListAPIKeysRequest{Cursor: query.EncodeCursor(xdb.NewID(555))})
+	assert.EqualError(t, err, "bad_request: invalid cursor", "the cursor of another list")
 
 	_, err = svc.ListAPIKeys(testCtx("42", ""), &pb.ListAPIKeysRequest{})
 	assert.EqualError(t, err, "forbidden: org not selected")

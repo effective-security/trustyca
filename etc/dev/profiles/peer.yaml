@@ -6,7 +6,6 @@ expiry: 2160h
 backdate: 30m
 usages:
   - signing
-  - key encipherment
   - server auth
   - client auth
 allowed_extensions:

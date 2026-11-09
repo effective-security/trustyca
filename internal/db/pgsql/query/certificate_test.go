@@ -104,7 +104,7 @@ LIMIT $9`,
 		},
 		{
 			// per issuer across orgs, as the CIS lists
-			query.ListCertificates, []any{&query.ListCertificatesRequest{AllOrgs: true, IKID: "i", Limit: 10, Offset: 10}},
+			query.ListCertificates, []any{&query.ListCertificatesRequest{AllOrgs: true, IKID: "i", Limit: 10}},
 			`SELECT ` + schema.CertificateTableInfo.AllColumns() + ` 
 FROM trustyca.certificate 
 WHERE ikid = $1 

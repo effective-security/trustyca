@@ -68,11 +68,13 @@ message GetRootsRequest {
     // anchors. It is a lookup, not a tenant scope: the anchors are public
     // and any authenticated caller reads those of any org.
     string OrgID = 1 [json_name = "OrgID"];
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     uint32 Limit = 2 [json_name = "Limit"];
-    // Offset specifies offset for the offset-based pagination
-    uint32 Offset = 3 [json_name = "Offset"];
-    // Cursor specifies cursor for the cursor-based pagination
+    reserved 3;
+    reserved "Offset";
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     string Cursor = 4 [json_name = "Cursor"];
 }
 

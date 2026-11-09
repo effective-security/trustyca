@@ -31,7 +31,9 @@ func RegisterAPIKey(args ...any) (string, string) {
 	})
 }
 
-// ListAPIKeysRequest defines request to list API keys of an org.
+// ListAPIKeysRequest defines request to list API keys of an org, newest
+// first: the keys are sorted by created_at DESC, id DESC and page by a cursor
+// on that key (ParseTimeCursor, EncodeTimeCursor).
 // Scopes limits the result to keys that hold all the listed scopes.
 type ListAPIKeysRequest struct {
 	OrgID     uint64
@@ -41,8 +43,9 @@ type ListAPIKeysRequest struct {
 	Status    pb.ItemStatus_Enum
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Offset specifies the offset for pagination
-	Offset uint32
+	// Cursor specifies the position of the page, zero for the first; decoded
+	// by ParseTimeCursor
+	Cursor Cursor
 }
 
 // QueryParams returns the query params builder
@@ -64,7 +67,7 @@ func (r *ListAPIKeysRequest) QueryParams() xdb.QueryParams {
 	if r.Status != pb.ItemStatus_Unknown {
 		b.Set(schema.APIKey.Status.Position, r.Status)
 	}
-	b.SetPage(r.Limit, r.Offset)
+	setPage(b, r.Limit, r.Cursor)
 
 	return b
 }
@@ -74,7 +77,7 @@ func ListAPIKeys(args ...any) (string, string) {
 	p := xdb.GetQueryParams(args...)
 	key := p.Name()
 	return xsql.Postgres.GetOrCreateQuery(key, func(name string) xsql.Builder {
-		q := schema.APIKeyTableInfo.Select().Limit(nil).Offset(nil)
+		q := schema.APIKeyTableInfo.Select()
 
 		if p.IsSet(schema.APIKey.OrgID.Position) {
 			q.Where("org_id = ?", nil)
@@ -92,7 +95,8 @@ func ListAPIKeys(args ...any) (string, string) {
 		if p.IsSet(schema.APIKey.Status.Position) {
 			q.Where("status = ?", nil)
 		}
-		return q.OrderBy("created_at DESC, id DESC")
+		pageBy(q, p, OrderDirectionDesc, schema.APIKey.CreatedAt.Name, schema.APIKey.ID.Name)
+		return q
 	})
 }
 

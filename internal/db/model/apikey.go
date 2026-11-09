@@ -64,13 +64,7 @@ func (m *APIKey) Pb() *pb.APIKey {
 
 // NextPage returns the next page of the result
 func (m *APIKeyResult) NextPage() *pb.NextPage {
-	if m.HasNextPage {
-		return &pb.NextPage{
-			Offset: m.NextOffset,
-			Cursor: m.Cursor,
-		}
-	}
-	return nil
+	return nextPage(m.HasNextPage, m.Cursor)
 }
 
 // Pb converts model to proto

@@ -77,7 +77,6 @@ A CA row with a zero OrgID is the platform's, and a project row needs an org \(v
   - [func \(m \*CrlState\) GetConfig\(\) \(\*pb.IssuerConfig, error\)](<#CrlState.GetConfig>)
   - [func \(m \*CrlState\) ScanRow\(rows xdb.Row\) error](<#CrlState.ScanRow>)
 - [type CrlStateResult](<#CrlStateResult>)
-  - [func \(p \*CrlStateResult\) SetResult\(rows \[\]\*CrlState, hasNextPage bool, nextOffset uint32\)](<#CrlStateResult.SetResult>)
   - [func \(p \*CrlStateResult\) SetResultWithCursor\(rows \[\]\*CrlState, hasNextPage bool, cursor func\(lastRow \*CrlState\) string\)](<#CrlStateResult.SetResultWithCursor>)
 - [type Event](<#Event>)
   - [func \(v \*Event\) Pb\(\) \*pb.Event](<#Event.Pb>)
@@ -399,7 +398,7 @@ func (m *APIKeyResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="APIKeyResult.Pb"></a>
-### func \(\*APIKeyResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/apikey.go#L77>)
+### func \(\*APIKeyResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/apikey.go#L71>)
 
 ```go
 func (m *APIKeyResult) Pb() *pb.APIKeysResponse
@@ -678,7 +677,7 @@ func (v *CertificateProfileResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="CertificateProfileResult.Pb"></a>
-### func \(\*CertificateProfileResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L126>)
+### func \(\*CertificateProfileResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/profile.go#L120>)
 
 ```go
 func (v *CertificateProfileResult) Pb() (*pb.ProfilesResponse, error)
@@ -746,7 +745,7 @@ func (v *CertificateResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="CertificateResult.Pb"></a>
-### func \(\*CertificateResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/certificate.go#L127>)
+### func \(\*CertificateResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/certificate.go#L121>)
 
 ```go
 func (v *CertificateResult) Pb() *pb.CertificatesResponse
@@ -881,7 +880,7 @@ func (v *CrlResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="CrlResult.Pb"></a>
-### func \(\*CrlResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/crl.go#L71>)
+### func \(\*CrlResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/crl.go#L65>)
 
 ```go
 func (v *CrlResult) Pb() *pb.CrlsResponse
@@ -951,36 +950,26 @@ func (m *CrlState) ScanRow(rows xdb.Row) error
 ScanRow scans the projection
 
 <a name="CrlStateResult"></a>
-## type [CrlStateResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/counts.go#L81-L86>)
+## type [CrlStateResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/counts.go#L81-L85>)
 
 CrlStateResult is a page of CRL states
 
 ```go
 type CrlStateResult struct {
     Rows        []*CrlState
-    NextOffset  uint32
     HasNextPage bool
     Cursor      string
 }
 ```
 
-<a name="CrlStateResult.SetResult"></a>
-### func \(\*CrlStateResult\) [SetResult](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/counts.go#L89>)
-
-```go
-func (p *CrlStateResult) SetResult(rows []*CrlState, hasNextPage bool, nextOffset uint32)
-```
-
-SetResult sets the page of an offset list
-
 <a name="CrlStateResult.SetResultWithCursor"></a>
-### func \(\*CrlStateResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/counts.go#L97>)
+### func \(\*CrlStateResult\) [SetResultWithCursor](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/counts.go#L89>)
 
 ```go
 func (p *CrlStateResult) SetResultWithCursor(rows []*CrlState, hasNextPage bool, cursor func(lastRow *CrlState) string)
 ```
 
-SetResultWithCursor sets the page of a cursor list and the cursor of the next page from its last row
+SetResultWithCursor sets the page and the cursor of the next page from its last row
 
 <a name="Event"></a>
 ## type [Event](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/model.gen.go#L381-L404>)
@@ -1025,7 +1014,7 @@ type Event struct {
 ```
 
 <a name="Event.Pb"></a>
-### func \(\*Event\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/event.go#L32>)
+### func \(\*Event\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/event.go#L26>)
 
 ```go
 func (v *Event) Pb() *pb.Event
@@ -1043,7 +1032,7 @@ func (m *Event) ScanRow(rows xdb.Row) error
 ScanRow scans one row for event.
 
 <a name="Event.Validate"></a>
-### func \(\*Event\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/event.go#L50>)
+### func \(\*Event\) [Validate](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/event.go#L44>)
 
 ```go
 func (m *Event) Validate() error
@@ -1084,7 +1073,7 @@ func (v *EventResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="EventResult.Pb"></a>
-### func \(\*EventResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/event.go#L20>)
+### func \(\*EventResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/event.go#L14>)
 
 ```go
 func (v *EventResult) Pb() *pb.EventsResponse
@@ -1432,7 +1421,7 @@ func (v *IssuerResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="IssuerResult.Pb"></a>
-### func \(\*IssuerResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/issuer.go#L161>)
+### func \(\*IssuerResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/issuer.go#L155>)
 
 ```go
 func (v *IssuerResult) Pb() (*pb.IssuersResponse, error)
@@ -2043,7 +2032,7 @@ func (v *OrgResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="OrgResult.Pb"></a>
-### func \(\*OrgResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/org.go#L45>)
+### func \(\*OrgResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/org.go#L39>)
 
 ```go
 func (v *OrgResult) Pb() *pb.OrgsResponse
@@ -2172,7 +2161,7 @@ func (v *ProjectResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="ProjectResult.Pb"></a>
-### func \(\*ProjectResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/project.go#L63>)
+### func \(\*ProjectResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/project.go#L57>)
 
 ```go
 func (v *ProjectResult) Pb() *pb.ProjectsResponse
@@ -2419,7 +2408,7 @@ func (v *RevokedCertificateResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="RevokedCertificateResult.Pb"></a>
-### func \(\*RevokedCertificateResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/revoked.go#L111>)
+### func \(\*RevokedCertificateResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/revoked.go#L105>)
 
 ```go
 func (v *RevokedCertificateResult) Pb() *pb.RevokedCertificatesResponse
@@ -2478,7 +2467,7 @@ func (p *RevokedResult) GetTableInfo() *xdbschema.TableInfo
 
 
 <a name="RevokedResult.NextPage"></a>
-### func \(\*RevokedResult\) [NextPage](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/revoked.go#L123>)
+### func \(\*RevokedResult\) [NextPage](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/revoked.go#L117>)
 
 ```go
 func (v *RevokedResult) NextPage() *pb.NextPage
@@ -2620,7 +2609,7 @@ func (v *RootCertificateResult) NextPage() *pb.NextPage
 NextPage returns the next page of the result
 
 <a name="RootCertificateResult.Pb"></a>
-### func \(\*RootCertificateResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/root.go#L75>)
+### func \(\*RootCertificateResult\) [Pb](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/root.go#L69>)
 
 ```go
 func (v *RootCertificateResult) Pb() *pb.RootsResponse
@@ -2754,7 +2743,7 @@ func (m *StatusCount) ScanRow(rows xdb.Row) error
 ScanRow scans the status and the count
 
 <a name="SummaryCounts"></a>
-## type [SummaryCounts](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/counts.go#L106-L115>)
+## type [SummaryCounts](<https://github.com/effective-security/trustyca/blob/main/internal/db/model/counts.go#L98-L107>)
 
 SummaryCounts are the counts of the tenant summary, read at one snapshot
 

@@ -29,8 +29,6 @@ type OrgsReadonlyDb interface {
 	GetLogin(ctx context.Context, id uint64) (*model.Login, error)
 	// GetLoginsByEmail returns Logins
 	GetLoginsByEmail(ctx context.Context, email string) (model.LoginSlice, error)
-	// ListLogins returns Logins
-	ListLogins(ctx context.Context, limit, offset uint32) (model.LoginSlice, uint32, error)
 
 	// GetOrg returns Org
 	GetOrg(ctx context.Context, id uint64) (*model.Org, error)

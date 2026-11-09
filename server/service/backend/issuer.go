@@ -20,7 +20,6 @@ import (
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/authority"
 	"github.com/effective-security/xpki/certutil"
-	"github.com/effective-security/xpki/csr"
 	"google.golang.org/grpc/codes"
 )
 
@@ -63,14 +62,13 @@ func (s *Service) RegisterIssuer(ctx context.Context, req *privpb.RegisterIssuer
 	if req.Subject == nil || (req.Subject.CommonName == "" && len(req.Subject.Names) == 0) {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing subject")
 	}
-	algo, _, err := core.KeySpec(req.KeySpec)
-	if err != nil {
+	if _, _, err := core.KeySpec(req.KeySpec); err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
 	if _, err := pbconv.IssuerConfigFromPb(label, req.Config); err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
 	}
-	if err := core.CheckOCSPSigner(csr.IsPostQuantumAlgo(algo), req.Config); err != nil {
+	if err := core.CheckOCSPSigner(req.Config); err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
 	}
 	extensions, err := pbconv.ExtensionsFromPb(req.Extensions)
@@ -336,11 +334,7 @@ func (s *Service) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequ
 		if err != nil {
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
 		}
-		postQuantum, err := core.IsPostQuantumIssuer(row)
-		if err != nil {
-			return nil, httperror.WrapWithCtx(ctx, err, "invalid issuer")
-		}
-		if err := core.CheckOCSPSigner(postQuantum, req.Config); err != nil {
+		if err := core.CheckOCSPSigner(req.Config); err != nil {
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
 		}
 		j, err := model.MarshalJSONValue(req.Config)
@@ -571,7 +565,6 @@ func (s *Service) ListIssuers(ctx context.Context, req *privpb.ListIssuersReques
 		IDs:       ids,
 		IKIDs:     ikids,
 		Limit:     query.Limit(req.Limit),
-		Offset:    req.Offset,
 		Cursor:    cursor,
 	}
 	if projectID.IsZero() {

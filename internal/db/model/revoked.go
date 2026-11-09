@@ -98,13 +98,7 @@ func (m *RevokedCertificate) Pb() *pb.RevokedCertificate {
 
 // NextPage returns the next page of the result
 func (v *RevokedCertificateResult) NextPage() *pb.NextPage {
-	if v.HasNextPage {
-		return &pb.NextPage{
-			Offset: v.NextOffset,
-			Cursor: v.Cursor,
-		}
-	}
-	return nil
+	return nextPage(v.HasNextPage, v.Cursor)
 }
 
 // Pb converts model to proto
@@ -121,11 +115,5 @@ func (v *RevokedCertificateResult) Pb() *pb.RevokedCertificatesResponse {
 
 // NextPage returns the next page of the result
 func (v *RevokedResult) NextPage() *pb.NextPage {
-	if v.HasNextPage {
-		return &pb.NextPage{
-			Offset: v.NextOffset,
-			Cursor: v.Cursor,
-		}
-	}
-	return nil
+	return nextPage(v.HasNextPage, v.Cursor)
 }

@@ -103,7 +103,7 @@ ListIssuers lists the issuers of the org the request names, of the platform, or 
 func (s *Service) ListOrgs(ctx context.Context, req *privpb.ListOrgsRequest) (*pb.OrgsResponse, error)
 ```
 
-ListOrgs lists the orgs by name, paged by offset or by cursor
+ListOrgs lists the orgs by name, paged by cursor
 
 <a name="Service.ListProjects"></a>
 ### func \(\*Service\) [ListProjects](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/projects.go#L15>)
@@ -112,7 +112,7 @@ ListOrgs lists the orgs by name, paged by offset or by cursor
 func (s *Service) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest) (*pb.ProjectsResponse, error)
 ```
 
-ListProjects lists the projects of an org, or of every org, by name, paged by offset or by cursor
+ListProjects lists the projects of an org, or of every org, by name, paged by cursor
 
 <a name="Service.Name"></a>
 ### func \(\*Service\) [Name](<https://github.com/effective-security/trustyca/blob/main/server/service/admin/admin_service.go#L47>)

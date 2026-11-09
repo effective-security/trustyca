@@ -3,6 +3,7 @@ package query
 import (
 	"cmp"
 	"context"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -14,8 +15,8 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// InitialCursor starts cursor pagination; the next pages pass the cursor of
-// the previous result
+// InitialCursor names the first page, as an empty cursor does; the next pages
+// pass the cursor of the previous result
 const InitialCursor = "initial"
 
 // cursorPosition is the parameter position setPage records a cursor key
@@ -26,58 +27,30 @@ const cursorPosition = 60
 // Cursor is the decoded position of a list request that pages by keyset:
 // the typed sort key of the last row of the previous page, in ORDER BY
 // order, which the query binds in a row comparison past that row. The zero
-// value selects offset pagination; NewCursor(0) is the first page of cursor
-// pagination. A list decodes its cursor with the parser of its sort key
-// (ParseCursor, ParseTimeCursor, ParseNameCursor) and encodes the cursor of
-// its next page with the matching encoder. A parser records the kind of
-// its key, and the Validate of a list request refuses the cursor of another
-// list (checkKey) before the query runs.
+// value is the first page of any list. A list decodes its cursor with the
+// parser of its sort key (ParseCursor, ParseTimeCursor, ParseNameCursor) and
+// encodes the cursor of its next page with the matching encoder.
 type Cursor struct {
-	set  bool
-	kind cursorKind
-	key  []any
+	key []any
 }
 
-// cursorKind is the sort key a cursor was decoded for
-type cursorKind int
+// cursorKind is the first value of a cursor token, the sort key it was encoded
+// for: a parser refuses the token of another list, even of a key with as many
+// values, which would otherwise decode into a wrong page
+type cursorKind string
 
 const (
-	// keyNone is a cursor without a key: the first page, or offset pagination
-	keyNone cursorKind = iota
 	// keyID is the key of the lists by id: the CA lists
-	keyID
-	// keyTime is the key of the lists by (created_at, id): the events
-	keyTime
+	keyID cursorKind = "id"
+	// keyTime is the key of the lists by (created_at, id): the events and the
+	// API keys
+	keyTime cursorKind = "time"
 	// keyName is the key of the lists by (name, id): the orgs and the projects
-	keyName
+	keyName cursorKind = "name"
 )
 
-// NewCursor returns the cursor of a list by id that continues after the row
-// with the ID; a zero ID is the first page of cursor pagination of any list
-func NewCursor(lastID uint64) Cursor {
-	if lastID == 0 {
-		return Cursor{set: true}
-	}
-	return Cursor{set: true, kind: keyID, key: []any{lastID}}
-}
-
-// IsSet returns true when the request uses cursor pagination
-func (c Cursor) IsSet() bool {
-	return c.set
-}
-
-// checkKey fails a cursor decoded for another list than one of the kind; a
-// cursor without a key continues any list
-func (c Cursor) checkKey(kind cursorKind) error {
-	if c.kind != keyNone && c.kind != kind {
-		return errors.New("invalid cursor: the cursor of another list")
-	}
-	return nil
-}
-
 // LastID returns the ID of the last row of the previous page, the last value
-// of the key, after which the listing continues; zero for the first page and
-// for offset pagination
+// of the key, after which the listing continues; zero for the first page
 func (c Cursor) LastID() uint64 {
 	if c.key == nil {
 		return 0
@@ -89,35 +62,34 @@ func (c Cursor) LastID() uint64 {
 // Key returns a copy of the sort key of the last row of the previous page,
 // after which the listing continues: the ID of a list by id, the time and
 // the ID of a list by (created_at, id), the name and the ID of a list by
-// (name, id); nil for the first page and for offset pagination
+// (name, id); nil for the first page
 func (c Cursor) Key() []any {
 	return slices.Clone(c.key)
 }
 
 // ParseCursor decodes the cursor of a list that pages by id, newest first
-// (the CA lists): empty selects offset pagination, InitialCursor the first
-// page of cursor pagination, otherwise the cursor returned with the previous
-// page, encoded by EncodeCursor
+// (the CA lists): empty and InitialCursor are the first page, otherwise the
+// cursor returned with the previous page, encoded by EncodeCursor
 func ParseCursor(cursor string) (Cursor, error) {
 	var id uint64
-	c, decoded, err := decodeCursor(cursor, &id)
+	decoded, err := decodeCursor(cursor, keyID, &id)
 	if err != nil || !decoded {
-		return c, err
+		return Cursor{}, err
 	}
-	return keyCursor(keyID, id, id)
+	return keyCursor(id, id)
 }
 
 // ParseTimeCursor decodes the cursor of a list that pages by
-// (created_at, id), newest first (the events), encoded by EncodeTimeCursor;
-// empty and InitialCursor are as in ParseCursor
+// (created_at, id), newest first (the events and the API keys), encoded by
+// EncodeTimeCursor; empty and InitialCursor are as in ParseCursor
 func ParseTimeCursor(cursor string) (Cursor, error) {
 	var at time.Time
 	var id uint64
-	c, decoded, err := decodeCursor(cursor, &at, &id)
+	decoded, err := decodeCursor(cursor, keyTime, &at, &id)
 	if err != nil || !decoded {
-		return c, err
+		return Cursor{}, err
 	}
-	return keyCursor(keyTime, id, at, id)
+	return keyCursor(id, at, id)
 }
 
 // ParseNameCursor decodes the cursor of a list that pages by (name, id),
@@ -126,83 +98,80 @@ func ParseTimeCursor(cursor string) (Cursor, error) {
 func ParseNameCursor(cursor string) (Cursor, error) {
 	var name string
 	var id uint64
-	c, decoded, err := decodeCursor(cursor, &name, &id)
+	decoded, err := decodeCursor(cursor, keyName, &name, &id)
 	if err != nil || !decoded {
-		return c, err
+		return Cursor{}, err
 	}
-	return keyCursor(keyName, id, name, id)
+	return keyCursor(id, name, id)
 }
 
-// decodeCursor decodes a cursor token into the sort key dest point to and
-// reports true. An empty cursor is the zero Cursor and InitialCursor the
-// first page, both without a key, reported as false; a token that does not
-// decode into dest is an error the caller reports as an invalid argument.
-func decodeCursor(cursor string, dest ...any) (Cursor, bool, error) {
-	switch cursor {
-	case "":
-		return Cursor{}, false, nil
-	case InitialCursor:
-		return NewCursor(0), false, nil
+// decodeCursor decodes a cursor token of the kind into the sort key dest point
+// to and reports true. An empty cursor and InitialCursor are the first page,
+// reported as false; a token that does not decode into dest, or of another
+// kind, is an error the caller reports as an invalid argument.
+func decodeCursor(cursor string, kind cursorKind, dest ...any) (bool, error) {
+	if cursor == "" || cursor == InitialCursor {
+		return false, nil
 	}
 	c, err := xdb.ParseCursor(cursor)
 	if err != nil {
-		return Cursor{}, false, err
+		return false, err
 	}
-	if err = c.Scan(dest...); err != nil {
-		return Cursor{}, false, err
+	var encoded string
+	if err = c.Scan(append([]any{&encoded}, dest...)...); err != nil {
+		return false, err
 	}
-	return Cursor{}, true, nil
+	if cursorKind(encoded) != kind {
+		return false, errors.New("invalid cursor: the cursor of another list")
+	}
+	return true, nil
 }
 
-// keyCursor returns the cursor of a decoded sort key of the kind, whose
-// last value is the row ID, which is never zero
-func keyCursor(kind cursorKind, id uint64, key ...any) (Cursor, error) {
+// keyCursor returns the cursor of a decoded sort key, whose last value is the
+// row ID: never zero and within the bigint of the column, so that a crafted
+// token is an invalid argument and not a failed statement
+func keyCursor(id uint64, key ...any) (Cursor, error) {
 	if id == 0 {
 		return Cursor{}, errors.New("invalid cursor: missing id")
 	}
-	return Cursor{set: true, kind: kind, key: key}, nil
+	if id > math.MaxInt64 {
+		return Cursor{}, errors.New("invalid cursor: id out of range")
+	}
+	return Cursor{key: key}, nil
 }
 
 // EncodeCursor returns the cursor of the page that follows the row with the
 // ID, for a list that pages by id
 func EncodeCursor(lastID xdb.ID) string {
-	return encodeCursor(lastID.UInt64())
+	return encodeCursor(keyID, lastID.UInt64())
 }
 
 // EncodeTimeCursor returns the cursor of the page that follows the row with
 // the creation time and the ID, for a list that pages by (created_at, id)
 func EncodeTimeCursor(lastAt xdb.Time, lastID xdb.ID) string {
-	return encodeCursor(lastAt, lastID.UInt64())
+	return encodeCursor(keyTime, lastAt, lastID.UInt64())
 }
 
 // EncodeNameCursor returns the cursor of the page that follows the row with
 // the name and the ID, for a list that pages by (name, id)
 func EncodeNameCursor(lastName string, lastID xdb.ID) string {
-	return encodeCursor(lastName, lastID.UInt64())
+	return encodeCursor(keyName, lastName, lastID.UInt64())
 }
 
-// encodeCursor returns the token of a sort key of times, strings and
-// integers, which xdb.NewCursor always encodes; its error is for other
+// encodeCursor returns the token of a sort key of the kind, of times, strings
+// and integers, which xdb.NewCursor always encodes; its error is for other
 // types, which the encoders above never pass
-func encodeCursor(key ...any) string {
-	c, _ := xdb.NewCursor(key...)
+func encodeCursor(kind cursorKind, key ...any) string {
+	c, _ := xdb.NewCursor(append([]any{string(kind)}, key...)...)
 	return c.String()
 }
 
-// setPage records the pagination of a list request after its filters: with
-// the key of a cursor, the key values are the last positional arguments
-// before the limit, recorded at cursorPosition; otherwise the limit and the
-// offset are the last two, and the first page of cursor pagination is
-// offset 0
-func setPage(b *xdb.QueryParamsBuilder, limit, offset uint32, cursor Cursor) {
-	switch {
-	case cursor.key != nil:
-		b.SetCursor(limit, cursorPosition, cursor.key...)
-	case cursor.set:
-		b.SetPage(limit, 0)
-	default:
-		b.SetPage(limit, offset)
-	}
+// setPage records the pagination of a list request after its filters: the
+// key values of the cursor are the last positional arguments before the
+// limit, recorded at cursorPosition. The first page has no key, and xdb binds
+// it as LIMIT and OFFSET 0.
+func setPage(b *xdb.QueryParamsBuilder, limit uint32, cursor Cursor) {
+	b.SetCursor(limit, cursorPosition, cursor.key...)
 }
 
 // pageByIDDesc orders the rows newest first by id and adds the pagination
@@ -227,11 +196,12 @@ const (
 )
 
 // pageBy orders the rows by the columns of the sort key, all descending or
-// all ascending, and adds the pagination recorded by setPage: a cursor page
-// filters past the key of the last row of the previous page, `id < ?` or a
-// row comparison such as `(created_at, id) < (?, ?)`, and has a LIMIT; an
-// offset page has LIMIT and OFFSET. It is the last clause of a list query,
-// since the key values follow the filters in the positional arguments.
+// all ascending, and adds the pagination recorded by setPage: a page after
+// the first filters past the key of the last row of the previous page,
+// `id < ?` or a row comparison such as `(created_at, id) < (?, ?)`, and has a
+// LIMIT; the first page has LIMIT and OFFSET, which is always 0. It is the
+// last clause of a list query, since the key values follow the filters in the
+// positional arguments.
 func pageBy(q xsql.Builder, p xdb.QueryParams, orderDirection OrderDirection, columns ...string) {
 	dir, op := " ASC", " > "
 	if orderDirection == OrderDirectionDesc {
@@ -257,7 +227,8 @@ func pageBy(q xsql.Builder, p xdb.QueryParams, orderDirection OrderDirection, co
 }
 
 // ListCursor parses the cursor of a list request with the parser of the
-// list's sort key (query.ParseNameCursor for the projects)
+// list's sort key (query.ParseNameCursor for the projects); an empty cursor
+// is the first page, and a token that does not decode an invalid argument
 func ListCursor(ctx context.Context, cursor string, parse func(string) (Cursor, error)) (Cursor, error) {
 	c, err := parse(cursor)
 	if err != nil {
@@ -266,7 +237,8 @@ func ListCursor(ctx context.Context, cursor string, parse func(string) (Cursor, 
 	return c, nil
 }
 
-// Limit returns the page size of a list request
+// Limit returns the page size of a list request: xdb.DefaultPageSize without a
+// limit and at most that, so a request never loads more rows into memory
 func Limit(limit uint32) uint32 {
-	return cmp.Or(limit, xdb.DefaultPageSize)
+	return min(cmp.Or(limit, xdb.DefaultPageSize), xdb.DefaultPageSize)
 }

@@ -34,7 +34,7 @@ LIMIT $4`,
 RETURNING ` + schema.OrgTableInfo.AllColumns(),
 		},
 		{
-			query.ListOrgs, []any{&query.ListOrgsRequest{Limit: 10, Offset: 0}},
+			query.ListOrgs, []any{&query.ListOrgsRequest{Limit: 10}},
 			`SELECT ` + schema.OrgTableInfo.AllColumns() + ` 
 FROM trustyca.org 
 ORDER BY name ASC, id ASC 
@@ -42,7 +42,7 @@ LIMIT $1
 OFFSET $2`,
 		},
 		{
-			query.ListOrgs, []any{&query.ListOrgsRequest{Limit: 10, Offset: 0, Status: pb.ItemStatus_Active}},
+			query.ListOrgs, []any{&query.ListOrgsRequest{Limit: 10, Status: pb.ItemStatus_Active}},
 			`SELECT ` + schema.OrgTableInfo.AllColumns() + ` 
 FROM trustyca.org 
 WHERE status = $1 

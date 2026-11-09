@@ -69,7 +69,7 @@ func bootstrapConfig(t *testing.T, dir string, root, l1, l2 *testutils.TestCA) *
 			"ocsp": {
 				IssuerLabel: model.AnyIssuerLabel,
 				Expiry:      csr.Duration(168 * time.Hour),
-				Usage:       []string{"ocsp signing"},
+				Usage:       []string{"digital signature", "ocsp signing"},
 				OCSPNoCheck: true,
 			},
 			"ROOT": {

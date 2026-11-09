@@ -153,7 +153,7 @@ func (p *Provider) ListRevoked(ctx context.Context, req *query.ListRevokedReques
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.RevokedResult
-	err = listRows(ctx, p, req.Cursor, revokedCursor, &rs, q, qp)
+	err = xdb.ExecuteQueryWithCursor(ctx, p, revokedCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (p *Provider) ListRevokedCertificates(ctx context.Context, req *query.ListR
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.RevokedCertificateResult
-	err = listRows(ctx, p, req.Cursor, revokedCertificateCursor, &rs, q, qp)
+	err = xdb.ExecuteQueryWithCursor(ctx, p, revokedCertificateCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

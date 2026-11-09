@@ -159,7 +159,7 @@ func (p *Provider) ListCrls(ctx context.Context, req *query.ListCrlsRequest) (*m
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.CrlResult
-	err = listRows(ctx, p, req.Cursor, crlCursor, &rs, q, qp)
+	err = xdb.ExecuteQueryWithCursor(ctx, p, crlCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (p *Provider) ListCrlStates(ctx context.Context, req *query.ListCrlStatesRe
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.CrlStateResult
-	err = listRows(ctx, p, req.Cursor, crlStateCursor, &rs, q, qp)
+	err = xdb.ExecuteQueryWithCursor(ctx, p, crlStateCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

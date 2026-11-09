@@ -79,7 +79,7 @@ func (p *Provider) ListRoots(ctx context.Context, req *query.ListRootsRequest) (
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.RootCertificateResult
-	err = listRows(ctx, p, req.Cursor, rootCursor, &rs, q, qp)
+	err = xdb.ExecuteQueryWithCursor(ctx, p, rootCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

@@ -233,6 +233,9 @@ login selected:
 A profile file has the shape of a `profiles` entry of a ca-config file, one
 profile per file named after its label (`etc/dev/profiles`); a template
 without `issuer_label` binds to the issuing CA the onboarding registers.
+Each template has one purpose: `server`, `client` and `peer` are TLS identities
+whose keys only sign, for any key type; `ocsp` is the delegated OCSP responder;
+`data_encryption` is the only one that enciphers, and takes RSA keys only.
 `trustycactl --help` lists the commands; the reference is
 [Documentation/cli/trustycactl.md](Documentation/cli/trustycactl.md).
 

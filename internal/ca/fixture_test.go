@@ -109,7 +109,7 @@ func peerProfileDef(label, issuerLabel, expiry string) *pb.CertProfile {
 		IssuerLabel: issuerLabel,
 		Expiry:      expiry,
 		Backdate:    "30m",
-		Usages:      []string{"signing", "key encipherment", "server auth", "client auth"},
+		Usages:      []string{"signing", "server auth", "client auth"},
 		AllowedExtensions: []string{
 			"2.5.29.17",
 		},
@@ -123,7 +123,7 @@ func ocspProfileDef(label string) *pb.CertProfile {
 		IssuerLabel: model.AnyIssuerLabel,
 		Expiry:      "168h",
 		Backdate:    "30m",
-		Usages:      []string{"ocsp signing"},
+		Usages:      []string{"digital signature", "ocsp signing"},
 		OcspNoCheck: true,
 	}
 }

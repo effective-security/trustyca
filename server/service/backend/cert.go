@@ -87,7 +87,6 @@ func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListCertific
 		Profile:   req.Profile,
 		Status:    req.Status,
 		Limit:     query.Limit(req.Limit),
-		Offset:    req.Offset,
 		Cursor:    cursor,
 	}
 	if !expiringBefore.IsZero() {
@@ -274,7 +273,6 @@ func (s *Service) ListRevokedCertificates(ctx context.Context, req *privpb.ListR
 		ProjectID: projectID.UInt64(),
 		IKID:      req.IKID,
 		Limit:     query.Limit(req.Limit),
-		Offset:    req.Offset,
 		Cursor:    cursor,
 	}
 	if projectID.IsZero() {

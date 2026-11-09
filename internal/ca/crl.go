@@ -107,7 +107,7 @@ type PublishCrlsResult struct {
 func (p *CrlPublisher) PublishCrls(ctx context.Context, req *PublishCrlsRequest) (*PublishCrlsResult, error) {
 	res := &PublishCrlsResult{}
 	for _, status := range CrlStatuses {
-		cursor := query.NewCursor(0)
+		var cursor query.Cursor
 		for {
 			page, err := p.db.ListIssuers(ctx, &query.ListIssuersRequest{
 				OrgID:      req.OrgID.UInt64(),
@@ -410,7 +410,7 @@ func (p *CrlPublisher) buildCrl(ctx context.Context, issuer *authority.Issuer, r
 // at the time, a page at a time, as CRL entries
 func (p *CrlPublisher) crlEntries(ctx context.Context, ikid string, now time.Time) ([]x509.RevocationListEntry, error) {
 	var entries []x509.RevocationListEntry
-	cursor := query.NewCursor(0)
+	var cursor query.Cursor
 	for {
 		page, err := p.db.ListRevoked(ctx, &query.ListRevokedRequest{
 			AllOrgs:    true,

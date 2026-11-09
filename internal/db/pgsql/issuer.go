@@ -287,7 +287,7 @@ func (p *Provider) ListIssuers(ctx context.Context, req *query.ListIssuersReques
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.IssuerResult
-	err = listRows(ctx, p, req.Cursor, issuerCursor, &rs, q, qp)
+	err = xdb.ExecuteQueryWithCursor(ctx, p, issuerCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

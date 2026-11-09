@@ -27,7 +27,6 @@ func (a *RootListCmd) Run(app App) error {
 	res, err := client.ListRoots(app.Context(), &privpb.ListRootsRequest{
 		OrgID:  a.Org,
 		Limit:  a.Limit,
-		Offset: a.Offset,
 		Cursor: a.Cursor,
 	})
 	if err != nil {

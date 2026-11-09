@@ -51,7 +51,7 @@ func (p *Provider) GetSummaryCounts(ctx context.Context, req *query.SummaryReque
 	if err != nil {
 		return nil, err
 	}
-	cursor := query.NewCursor(0)
+	var cursor query.Cursor
 	for {
 		page, err := txProvider.ListCrlStates(ctx, req.CrlStates(cursor))
 		if err != nil {

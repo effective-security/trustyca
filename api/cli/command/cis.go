@@ -151,8 +151,7 @@ type RootCmd struct {
 type RootListCmd struct {
 	Org    string `help:"the ID of the org; empty lists the platform anchors"`
 	Limit  uint32 `help:"the maximum number of records to return"`
-	Offset uint32 `help:"the offset for the offset-based pagination"`
-	Cursor string `help:"the cursor for the cursor-based pagination: initial, or the one of the previous page"`
+	Cursor string `help:"the cursor of the previous page; empty for the first page"`
 }
 
 // Run the command
@@ -164,7 +163,6 @@ func (a *RootListCmd) Run(app App) error {
 	res, err := client.GetRoots(app.Context(), &pb.GetRootsRequest{
 		OrgID:  a.Org,
 		Limit:  a.Limit,
-		Offset: a.Offset,
 		Cursor: a.Cursor,
 	})
 	if err != nil {

@@ -80,20 +80,12 @@ func (m *CrlState) GetConfig() (*pb.IssuerConfig, error) {
 // CrlStateResult is a page of CRL states
 type CrlStateResult struct {
 	Rows        []*CrlState
-	NextOffset  uint32
 	HasNextPage bool
 	Cursor      string
 }
 
-// SetResult sets the page of an offset list
-func (p *CrlStateResult) SetResult(rows []*CrlState, hasNextPage bool, nextOffset uint32) {
-	p.Rows = rows
-	p.NextOffset = nextOffset
-	p.HasNextPage = hasNextPage
-}
-
-// SetResultWithCursor sets the page of a cursor list and the cursor of the
-// next page from its last row
+// SetResultWithCursor sets the page and the cursor of the next page from its
+// last row
 func (p *CrlStateResult) SetResultWithCursor(rows []*CrlState, hasNextPage bool, cursor func(lastRow *CrlState) string) {
 	p.Rows = rows
 	p.HasNextPage = hasNextPage
