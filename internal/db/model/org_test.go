@@ -85,14 +85,12 @@ func TestProjectResult_Pb(t *testing.T) {
 	result := &model.OrgResult{
 		Rows:        orgs,
 		HasNextPage: true,
-		NextOffset:  10,
 		Cursor:      "123",
 	}
 
 	resPb := result.Pb()
 	assert.Equal(t, len(orgs), len(resPb.Orgs))
 	assert.Equal(t, &pb.NextPage{
-		Offset: 10,
 		Cursor: "123",
 	}, resPb.NextPage)
 }

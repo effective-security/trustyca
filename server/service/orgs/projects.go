@@ -204,7 +204,6 @@ func (s *Service) ListProjects(ctx context.Context, req *pb.ListProjectsRequest)
 		OrgID:  orgID.UInt64(),
 		Status: req.Status,
 		Limit:  query.Limit(req.Limit),
-		Offset: req.Offset,
 		Cursor: cursor,
 	}
 	if !grants.CanListAllProjects() {

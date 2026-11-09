@@ -327,15 +327,15 @@ components:
                          and any authenticated caller reads those of any org.
                 Limit:
                     type: integer
-                    description: Limit specifies maximum number of records to return
-                    format: uint32
-                Offset:
-                    type: integer
-                    description: Offset specifies offset for the offset-based pagination
+                    description: |-
+                        Limit specifies maximum number of records to return: 500 by default
+                         and at most
                     format: uint32
                 Cursor:
                     type: string
-                    description: Cursor specifies cursor for the cursor-based pagination
+                    description: |-
+                        Cursor continues the listing: empty or "initial" returns the first
+                         page, the Cursor of the previous NextPage the page after it
             description: GetRootsRequest specifies a list of the published trust anchors
         GoogleProtobufAny:
             type: object
@@ -403,20 +403,13 @@ components:
         NextPage:
             type: object
             properties:
-                Offset:
-                    type: integer
-                    description: |-
-                        Offset is the offset of the next page for offset-based pagination.
-                         Offset is limited to 10000.
-                         To paginate for large number of records, use cursor-based pagination
-                         instead.
-                    format: uint32
                 Cursor:
                     type: string
                     description: |-
-                        Cursor is the cursor of the next page for cursor-based pagination.
-                         Use "initial" to start the pagination or pass the cursor returned from
-                         this response.
+                        Cursor is the opaque token of the next page: pass it as the Cursor of
+                         the same list. It is transient: do not store it, or build it. A page
+                         costs the same at any depth and neither skips nor repeats a row when
+                         rows are inserted meanwhile.
             description: NextPage specifies pagination information, if there are more pages to fetch.
         RootCertificate:
             type: object

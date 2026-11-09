@@ -98,16 +98,12 @@ func (p *Provider) UpdateOrg(ctx context.Context, req *query.UpdateOrgRequest) (
 
 // ListOrgs lists orgs by name
 func (p *Provider) ListOrgs(ctx context.Context, req *query.ListOrgsRequest) (*model.OrgResult, error) {
-	err := xdb.Validate(req)
-	if err != nil {
-		return nil, err
-	}
 	qp := req.QueryParams()
 	q, name := query.ListOrgs(qp)
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.OrgResult
-	err = listRows(ctx, p, req.Cursor, orgCursor, &rs, q, qp)
+	err := xdb.ExecuteQueryWithCursor(ctx, p, orgCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

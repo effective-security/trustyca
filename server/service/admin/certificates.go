@@ -55,8 +55,7 @@ func (s *Service) ListCertificates(ctx context.Context, req *privpb.ListAllCerti
 		Profile:        req.Profile,
 		Status:         req.Status,
 		ExpiringBefore: expiringBefore,
-		Limit:          req.Limit,
-		Offset:         req.Offset,
+		Limit:          query.Limit(req.Limit),
 		Cursor:         cursor,
 	})
 	if err != nil {

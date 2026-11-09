@@ -171,7 +171,7 @@ func Test_Profile(t *testing.T) {
 	assert.ErrorIs(t, err, db.ErrOrgScopeRequired)
 
 	// cursor pagination
-	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), Limit: 1, Cursor: query.NewCursor(0)})
+	list, err = provider.ListProfiles(ctx, &query.ListProfilesRequest{OrgID: org.ID.UInt64(), Limit: 1})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 1)
 	assert.Equal(t, prjProfile.ID.UInt64(), list.Rows[0].ID.UInt64())

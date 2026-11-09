@@ -488,7 +488,7 @@ func peerProfileDef(label, issuerLabel, expiry string) *pb.CertProfile {
 		IssuerLabel: issuerLabel,
 		Expiry:      expiry,
 		Backdate:    "30m",
-		Usages:      []string{"signing", "key encipherment", "server auth", "client auth"},
+		Usages:      []string{"signing", "server auth", "client auth"},
 		AllowedExtensions: []string{
 			"2.5.29.17",
 		},
@@ -502,7 +502,7 @@ func ocspProfileDef(label string) *pb.CertProfile {
 		IssuerLabel: model.AnyIssuerLabel,
 		Expiry:      "168h",
 		Backdate:    "30m",
-		Usages:      []string{"ocsp signing"},
+		Usages:      []string{"digital signature", "ocsp signing"},
 		OcspNoCheck: true,
 	}
 }
@@ -542,10 +542,12 @@ func newTestCA(t testing.TB, ctrl *gomock.Controller) *testCA {
 	}
 
 	tca.addProfile(testOrgID(), xdb.ID(0), caProfileDef(testCAProfile, testRootLabel))
+	tca.addProfile(testOrgID(), xdb.ID(0), ocspProfileDef(testOCSPProfile))
 	tca.root = tca.newRoot(t, testOrgID(), xdb.ID(0), testRootLabel)
 	tca.issuer = tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), testIssuerLabel, pb.AuthorityType_Issuing, &pb.IssuerConfig{
-		AllowedProfiles: []string{testOCSPProfile},
-		OcspExpiry:      "8h",
+		AllowedProfiles:      []string{testOCSPProfile},
+		DelegatedOcspProfile: testOCSPProfile,
+		OcspExpiry:           "8h",
 	})
 	tca.issuerCert, err = certutil.ParseFromPEM([]byte(tca.issuer.Pem))
 	require.NoError(t, err)

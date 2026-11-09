@@ -1,7 +1,6 @@
 package orgs
 
 import (
-	"cmp"
 	"context"
 
 	"github.com/effective-security/porto/xhttp/httperror"
@@ -44,8 +43,7 @@ func (s *Service) ListEvents(ctx context.Context, req *pb.ListEventsRequest) (*p
 	if err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
-	// the list pages by cursor only: an empty cursor is the first page
-	cursor, err := query.ListCursor(ctx, cmp.Or(req.Cursor, query.InitialCursor), query.ParseTimeCursor)
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseTimeCursor)
 	if err != nil {
 		return nil, err
 	}

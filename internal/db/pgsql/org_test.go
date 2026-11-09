@@ -53,11 +53,10 @@ func Test_Org(t *testing.T) {
 	// the pages by (name, id) list every org once, whatever the other
 	// tests register meanwhile
 	seen := map[uint64]bool{}
-	req := &query.ListOrgsRequest{Limit: 2, Cursor: query.NewCursor(0)}
+	req := &query.ListOrgsRequest{Limit: 2}
 	for pages := 0; pages < 100; pages++ {
 		page, err := provider.ListOrgs(ctx, req)
 		require.NoError(t, err)
-		assert.Zero(t, page.NextOffset)
 		for _, row := range page.Rows {
 			assert.False(t, seen[row.ID.UInt64()], "org %s listed twice", row.ID)
 			seen[row.ID.UInt64()] = true

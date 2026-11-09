@@ -45,7 +45,6 @@ func (a *ProfileListCmd) Run(app App) error {
 		IDs:         a.IDs,
 		Labels:      a.Labels,
 		Limit:       a.Limit,
-		Offset:      a.Offset,
 		Cursor:      a.Cursor,
 	})
 	if err != nil {

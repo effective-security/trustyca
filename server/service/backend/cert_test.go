@@ -339,6 +339,9 @@ func TestService_ListCertificates(t *testing.T) {
 	assert.EqualError(t, err, "not_found: project not found")
 
 	// an org-wide role lists every project with the filters of the request
+	next := query.EncodeCursor(xdb.NewID(10))
+	cursor, err := query.ParseCursor(next)
+	require.NoError(t, err)
 	tca.cadb.EXPECT().ListCertificates(gomock.Any(), &query.ListCertificatesRequest{
 		OrgID:          1,
 		IKID:           tca.issuer.Skid,
@@ -346,21 +349,21 @@ func TestService_ListCertificates(t *testing.T) {
 		Status:         pb.CertificateStatus_Active,
 		ExpiringBefore: &expiring,
 		Limit:          5,
-		Offset:         10,
-	}).Return(&model.CertificateResult{Rows: []*model.Certificate{crt}, HasNextPage: true, NextOffset: 15}, nil)
+		Cursor:         cursor,
+	}).Return(&model.CertificateResult{Rows: []*model.Certificate{crt}, HasNextPage: true, Cursor: "next"}, nil)
 	res, err := svc.ListCertificates(admin, &privpb.ListCertificatesRequest{
 		IKID:           tca.issuer.Skid,
 		Profile:        testProfile,
 		Status:         pb.CertificateStatus_Active,
 		ExpiringBefore: expiring.Format(time.RFC3339),
 		Limit:          5,
-		Offset:         10,
+		Cursor:         next,
 	})
 	require.NoError(t, err)
 	require.Len(t, res.Certificates, 1)
 	assert.Equal(t, crt.ID.String(), res.Certificates[0].ID)
 	require.NotNil(t, res.NextPage)
-	assert.Equal(t, uint32(15), res.NextPage.Offset)
+	assert.Equal(t, "next", res.NextPage.Cursor)
 
 	// a member with project grants only lists the org-wide rows and its
 	// projects; a project of the request is listed alone

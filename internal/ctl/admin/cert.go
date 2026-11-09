@@ -45,7 +45,6 @@ func (a *CertListCmd) Run(app App) error {
 		Status:         status,
 		ExpiringBefore: a.ExpiringBefore,
 		Limit:          a.Limit,
-		Offset:         a.Offset,
 		Cursor:         a.Cursor,
 	})
 	if err != nil {

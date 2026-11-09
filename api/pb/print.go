@@ -399,6 +399,7 @@ func (r *APIKeysResponse) Print(w io.Writer) {
 	}
 	_ = table.Render()
 	fmt.Fprintln(w)
+	printNextPage(w, r.NextPage)
 }
 
 func (r *CallerScope) Print(w io.Writer) {
@@ -782,12 +783,7 @@ func (r *CertificateStatusResponse) Print(w io.Writer) {
 // printNextPage prints the cursor of the next page of a list, when there is
 // one
 func printNextPage(w io.Writer, next *NextPage) {
-	if next == nil {
-		return
-	}
-	if next.Cursor != "" {
+	if next.GetCursor() != "" {
 		fmt.Fprintf(w, "Next page: --cursor %s\n\n", next.Cursor)
-		return
 	}
-	fmt.Fprintf(w, "Next page: --offset %d\n\n", next.Offset)
 }

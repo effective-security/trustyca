@@ -92,16 +92,12 @@ func (p *Provider) FindProject(ctx context.Context, orgID uint64, alias string) 
 
 // ListProjects lists projects of an org by name
 func (p *Provider) ListProjects(ctx context.Context, req *query.ListProjectsRequest) (*model.ProjectResult, error) {
-	err := xdb.Validate(req)
-	if err != nil {
-		return nil, err
-	}
 	qp := req.QueryParams()
 	q, name := query.ListProjects(qp)
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.ProjectResult
-	err = listRows(ctx, p, req.Cursor, projectCursor, &rs, q, qp)
+	err := xdb.ExecuteQueryWithCursor(ctx, p, projectCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

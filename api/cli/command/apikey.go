@@ -42,6 +42,8 @@ func (a *APIKeyCreateCmd) Run(app App) error {
 type APIKeyListCmd struct {
 	Project string `help:"the ID of the project to list the keys of"`
 	Status  string `help:"the status to filter by"`
+	Limit   uint32 `help:"the maximum number of keys to return"`
+	Cursor  string `help:"the cursor of the previous page; empty for the first page"`
 }
 
 // Run the command
@@ -52,6 +54,8 @@ func (a *APIKeyListCmd) Run(app App) error {
 	}
 	req := &pb.ListAPIKeysRequest{
 		ProjectID: a.Project,
+		Limit:     a.Limit,
+		Cursor:    a.Cursor,
 	}
 	if a.Status != "" {
 		req.Status = pb.ItemStatus_Unknown.Parse(a.Status)

@@ -101,7 +101,7 @@ func ctlProfile(label, issuer string) *pb.CertProfile {
 		Label:             label,
 		IssuerLabel:       issuer,
 		Description:       "TLS server certificate",
-		Usages:            []string{"signing", "key encipherment", "server auth"},
+		Usages:            []string{"signing", "server auth"},
 		Expiry:            "2160h",
 		Backdate:          "30m",
 		AllowedExtensions: []string{"2.5.29.17"},
@@ -273,7 +273,7 @@ func (s *testSuiteGrpc) Test_IssuerArchiveDestroyCmd() {
 func (s *testSuiteGrpc) Test_ProfileListCmd() {
 	s.MockBackend.SetResponse(&pb.ProfilesResponse{
 		Profiles: []*pb.CertProfile{ctlProfile("server", "issuing"), ctlProfile("ocsp", "*")},
-		NextPage: &pb.NextPage{Offset: 2},
+		NextPage: &pb.NextPage{Cursor: "next-profile"},
 	})
 	cmd := &admin.ProfileListCmd{OrgScope: admin.OrgScope{Org: "5"}, Issuer: "issuing", IDs: []string{"20"}, Labels: []string{"peer"}}
 	s.runPrinted(func() error { return cmd.Run(s.Ctl) }, &s.MockBackend.Err)
@@ -402,6 +402,7 @@ func (s *testSuiteGrpc) Test_OrgBootstrapCmd() {
 	s.MockBackend.SetResponses([]proto.Message{
 		ctlIssuer(),
 		ctlProfile("client", "issuing"),
+		ctlProfile("data_encryption", "issuing"),
 		ctlProfile("ocsp", "*"),
 		ctlProfile("peer", "issuing"),
 		ctlProfile("server", "issuing"),
@@ -419,7 +420,7 @@ func (s *testSuiteGrpc) Test_OrgBootstrapCmd() {
 	}
 	s.Require().NoError(cmd.Run(s.Ctl))
 	s.CapturePrint()
-	s.Contains(s.Out.String(), "4 profiles registered")
+	s.Contains(s.Out.String(), "5 profiles registered")
 
 	// the parent by ID needs no support list
 	s.MockAdmin.Err = errors.New("not called")

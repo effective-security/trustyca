@@ -93,16 +93,13 @@ service Admin {
 
 // ListOrgsRequest specifies list orgs request
 message ListOrgsRequest {
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     uint32 Limit = 1 [json_name = "Limit"];
-    // Offset specifies offset for the offset-based pagination.
-    // Which is limited to 10000.
-    // To paginate for large number of records, use cursor-based pagination
-    // instead.
-    uint32 Offset = 2 [json_name = "Offset"];
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    reserved 2;
+    reserved "Offset";
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     string Cursor = 3 [json_name = "Cursor"];
     // Status specifies on optional status of the item to filter by.
     // If not specified, all items will be listed.
@@ -111,16 +108,13 @@ message ListOrgsRequest {
 
 // ListProjectsRequest specifies list projects request
 message ListProjectsRequest {
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     uint32 Limit = 1 [json_name = "Limit"];
-    // Offset specifies offset for the offset-based pagination.
-    // Which is limited to 10000.
-    // To paginate for large number of records, use cursor-based pagination
-    // instead.
-    uint32 Offset = 2 [json_name = "Offset"];
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    reserved 2;
+    reserved "Offset";
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     string Cursor = 3 [json_name = "Cursor"];
     // Status specifies on optional status of the item to filter by.
     // If not specified, all items will be listed.
@@ -131,13 +125,13 @@ message ListProjectsRequest {
 
 // ListAllIssuersRequest specifies a paginated list of issuers across orgs
 message ListAllIssuersRequest {
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     uint32 Limit = 1 [json_name = "Limit"];
-    // Offset specifies offset for the offset-based pagination
-    uint32 Offset = 2 [json_name = "Offset"];
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    reserved 2;
+    reserved "Offset";
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     string Cursor = 3 [json_name = "Cursor"];
     // OrgID limits the result to the org. Empty lists the issuers of every
     // org and of the platform, or of the platform only with Platform.
@@ -165,13 +159,13 @@ message ListAllIssuersRequest {
 // ListAllCertificatesRequest specifies a paginated list of certificates across
 // orgs, newest first
 message ListAllCertificatesRequest {
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     uint32 Limit = 1 [json_name = "Limit"];
-    // Offset specifies offset for the offset-based pagination
-    uint32 Offset = 2 [json_name = "Offset"];
-    // Cursor specifies cursor for the cursor-based pagination.
-    // Use "initial" to start the pagination or pass the cursor returned from
-    // the previous request.
+    reserved 2;
+    reserved "Offset";
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     string Cursor = 3 [json_name = "Cursor"];
     // OrgID limits the result to the org. Empty lists the certificates of
     // every org and of the platform, or of the platform only with Platform.

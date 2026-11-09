@@ -101,18 +101,13 @@ type ListCrlsRequest struct {
 	ExpiringBefore *time.Time
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Offset specifies the offset for offset pagination
-	Offset uint32
-	// Cursor specifies the position for cursor pagination
+	// Cursor specifies the position of the page, zero for the first
 	Cursor Cursor
 }
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListCrlsRequest) Validate() error {
-	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
-		return err
-	}
-	return r.Cursor.checkKey(keyID)
+	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
 }
 
 // QueryParams returns the query params builder
@@ -123,7 +118,7 @@ func (r *ListCrlsRequest) QueryParams() xdb.QueryParams {
 	if r.ExpiringBefore != nil {
 		b.Set(schema.Crl.NextUpdate.Position, r.ExpiringBefore.UTC())
 	}
-	setPage(b, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Cursor)
 	return b
 }
 
@@ -161,7 +156,7 @@ type ListCrlStatesRequest struct {
 	Statuses []pb.IssuerStatus_Enum
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Cursor specifies the position for cursor pagination
+	// Cursor specifies the position of the page, zero for the first
 	Cursor Cursor
 }
 
@@ -175,7 +170,7 @@ func (r *ListCrlStatesRequest) Validate() error {
 	if len(r.Statuses) == 0 {
 		return errors.New("issuer statuses are required")
 	}
-	return r.Cursor.checkKey(keyID)
+	return nil
 }
 
 // QueryParams returns the query params builder
@@ -189,7 +184,7 @@ func (r *ListCrlStatesRequest) QueryParams() xdb.QueryParams {
 		statuses[i] = int32(status)
 	}
 	b.Set(schema.Issuer.Status.Position, statuses)
-	setPage(b, r.Limit, 0, r.Cursor)
+	setPage(b, r.Limit, r.Cursor)
 	return b
 }
 

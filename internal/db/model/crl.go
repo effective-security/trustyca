@@ -57,13 +57,7 @@ func (m *Crl) Pb() *pb.Crl {
 
 // NextPage returns the next page of the result
 func (v *CrlResult) NextPage() *pb.NextPage {
-	if v.HasNextPage {
-		return &pb.NextPage{
-			Offset: v.NextOffset,
-			Cursor: v.Cursor,
-		}
-	}
-	return nil
+	return nextPage(v.HasNextPage, v.Cursor)
 }
 
 // Pb converts model to proto; pb.CrlsResponse carries no pagination,

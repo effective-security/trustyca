@@ -1679,11 +1679,11 @@ type ListProjectsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Status filters by status; Unknown returns all
 	Status ItemStatus_Enum `protobuf:"varint,1,opt,name=Status,proto3,enum=pb.ItemStatus_Enum" json:"Status,omitempty"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,2,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,3,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor        string `protobuf:"bytes,4,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1729,13 +1729,6 @@ func (x *ListProjectsRequest) GetStatus() ItemStatus_Enum {
 func (x *ListProjectsRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListProjectsRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
 	}
 	return 0
 }
@@ -1793,8 +1786,7 @@ func (x *DeleteProjectRequest) GetProjectID() string {
 }
 
 // ListEventsRequest specifies a page of the audit events of the org
-// selected in the token, newest first (Orgs.ListEvents); the list pages by
-// cursor only
+// selected in the token, newest first (Orgs.ListEvents)
 type ListEventsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// ProjectID limits the result to the events of the project, in which
@@ -1809,7 +1801,8 @@ type ListEventsRequest struct {
 	// Before is the exclusive end of the CreatedAt range in RFC3339 format,
 	// later than After; empty is unbounded
 	Before string `protobuf:"bytes,4,opt,name=Before,proto3" json:"Before,omitempty"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,5,opt,name=Limit,proto3" json:"Limit,omitempty"`
 	// Cursor continues the listing: empty or "initial" returns the first
 	// page, the Cursor of the previous NextPage the page after it
@@ -2214,8 +2207,14 @@ type ListAPIKeysRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// ProjectID is optional for project scope.
 	// If not provided, will use Org scope for the current token.
-	ProjectID     string          `protobuf:"bytes,1,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
-	Status        ItemStatus_Enum `protobuf:"varint,2,opt,name=Status,proto3,enum=pb.ItemStatus_Enum" json:"Status,omitempty"`
+	ProjectID string          `protobuf:"bytes,1,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
+	Status    ItemStatus_Enum `protobuf:"varint,2,opt,name=Status,proto3,enum=pb.ItemStatus_Enum" json:"Status,omitempty"`
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
+	Limit uint32 `protobuf:"varint,3,opt,name=Limit,proto3" json:"Limit,omitempty"`
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
+	Cursor        string `protobuf:"bytes,4,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2262,6 +2261,20 @@ func (x *ListAPIKeysRequest) GetStatus() ItemStatus_Enum {
 		return x.Status
 	}
 	return ItemStatus_Unknown
+}
+
+func (x *ListAPIKeysRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListAPIKeysRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
 }
 
 type APIKeyRequest struct {
@@ -2450,12 +2463,11 @@ const file_orgs_proto_rawDesc = "" +
 	"\vDescription\x18\x03 \x01(\tR\vDescription\"a\n" +
 	"\x11GetProjectRequest\x12'\n" +
 	"\tProjectID\x18\x01 \x01(\tB\t\xf2\xf3\x18\x05AliasR\tProjectID\x12#\n" +
-	"\x05Alias\x18\x02 \x01(\tB\r\xf2\xf3\x18\tProjectIDR\x05Alias\"\x88\x01\n" +
+	"\x05Alias\x18\x02 \x01(\tB\r\xf2\xf3\x18\tProjectIDR\x05Alias\"~\n" +
 	"\x13ListProjectsRequest\x12+\n" +
 	"\x06Status\x18\x01 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\x12\x14\n" +
 	"\x05Limit\x18\x02 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x03 \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\x04 \x01(\tR\x06Cursor\":\n" +
+	"\x06Cursor\x18\x04 \x01(\tR\x06CursorJ\x04\b\x03\x10\x04R\x06Offset\":\n" +
 	"\x14DeleteProjectRequest\x12\"\n" +
 	"\tProjectID\x18\x01 \x01(\tB\x04\xe8\xf3\x18\x01R\tProjectID\"\xb5\x01\n" +
 	"\x11ListEventsRequest\x12\x1c\n" +
@@ -2492,10 +2504,12 @@ const file_orgs_proto_rawDesc = "" +
 	"\tProjectID\x18\x01 \x01(\tR\tProjectID\x12\x1f\n" +
 	"\x05Label\x18\x02 \x01(\tB\t\xe8\xf3\x18\x01\x80\xf4\x18\x84\x02R\x05Label\x12\x1c\n" +
 	"\x06Scopes\x18\x03 \x03(\tB\x04\xe8\xf3\x18\x01R\x06Scopes\x12\x1c\n" +
-	"\tExpiresAt\x18\x04 \x01(\tR\tExpiresAt\"_\n" +
+	"\tExpiresAt\x18\x04 \x01(\tR\tExpiresAt\"\x8d\x01\n" +
 	"\x12ListAPIKeysRequest\x12\x1c\n" +
 	"\tProjectID\x18\x01 \x01(\tR\tProjectID\x12+\n" +
-	"\x06Status\x18\x02 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\"C\n" +
+	"\x06Status\x18\x02 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\x12\x14\n" +
+	"\x05Limit\x18\x03 \x01(\rR\x05Limit\x12\x16\n" +
+	"\x06Cursor\x18\x04 \x01(\tR\x06Cursor\"C\n" +
 	"\rAPIKeyRequest\x12\x1c\n" +
 	"\tProjectID\x18\x01 \x01(\tR\tProjectID\x12\x14\n" +
 	"\x02ID\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x02ID2\xa7\x12\n" +

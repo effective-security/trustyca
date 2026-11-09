@@ -97,11 +97,10 @@ func TestService_ListEvents(t *testing.T) {
 		CreatedAt: at,
 	}
 	next := query.EncodeTimeCursor(at, row.ID)
-	first := query.NewCursor(0)
 
 	// an org Admin lists every event of the org; an empty cursor is the
-	// first page of cursor pagination
-	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, Limit: xdb.DefaultPageSize, Cursor: first}).Return(&model.EventResult{
+	// first page
+	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, Limit: xdb.DefaultPageSize}).Return(&model.EventResult{
 		Rows:        model.EventSlice{row},
 		HasNextPage: true,
 		Cursor:      next,
@@ -114,7 +113,6 @@ func TestService_ListEvents(t *testing.T) {
 	assert.Equal(t, testCallerEmail, list.Events[0].Email)
 	require.NotNil(t, list.NextPage)
 	assert.Equal(t, next, list.NextPage.Cursor)
-	assert.Zero(t, list.NextPage.Offset)
 
 	// the cursor of the previous page continues the listing, with the filters
 	cursor, err := query.ParseTimeCursor(next)
@@ -142,7 +140,7 @@ func TestService_ListEvents(t *testing.T) {
 
 	// a member with project grants only sees the org-wide events and those
 	// of its projects
-	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, ProjectIDs: []uint64{201}, Limit: xdb.DefaultPageSize, Cursor: first}).Return(&model.EventResult{
+	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, ProjectIDs: []uint64{201}, Limit: xdb.DefaultPageSize}).Return(&model.EventResult{
 		Rows: model.EventSlice{row},
 	}, nil)
 	list, err = svc.ListEvents(member, &pb.ListEventsRequest{Cursor: query.InitialCursor})
@@ -150,7 +148,7 @@ func TestService_ListEvents(t *testing.T) {
 	require.Len(t, list.Events, 1)
 
 	// the events of one project when the request names it
-	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, ProjectID: 201, Limit: xdb.DefaultPageSize, Cursor: first}).Return(&model.EventResult{}, nil)
+	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, ProjectID: 201, Limit: xdb.DefaultPageSize}).Return(&model.EventResult{}, nil)
 	_, err = svc.ListEvents(member, &pb.ListEventsRequest{ProjectID: "201"})
 	require.NoError(t, err)
 
@@ -184,10 +182,10 @@ func TestService_ListEvents(t *testing.T) {
 
 	// an org-wide API key lists every event of the org, a restricted key
 	// the events of its project only
-	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, Limit: xdb.DefaultPageSize, Cursor: first}).Return(&model.EventResult{}, nil)
+	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, Limit: xdb.DefaultPageSize}).Return(&model.EventResult{}, nil)
 	_, err = svc.ListEvents(apiKeyCtx("1", "", "org:read"), &pb.ListEventsRequest{})
 	require.NoError(t, err)
-	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, ProjectID: 201, Limit: xdb.DefaultPageSize, Cursor: first}).Return(&model.EventResult{}, nil)
+	db.EXPECT().ListEvents(gomock.Any(), &query.ListEventsRequest{OrgID: 1, ProjectID: 201, Limit: xdb.DefaultPageSize}).Return(&model.EventResult{}, nil)
 	_, err = svc.ListEvents(apiKeyCtx("1", "201", "org:read"), &pb.ListEventsRequest{})
 	require.NoError(t, err)
 	_, err = svc.ListEvents(apiKeyCtx("1", "201", "org:read"), &pb.ListEventsRequest{ProjectID: "203"})

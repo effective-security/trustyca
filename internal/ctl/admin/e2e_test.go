@@ -5,7 +5,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
@@ -161,7 +163,7 @@ func TestCA_EndToEnd(t *testing.T) {
 			OcspProfile: "ocsp",
 		},
 	})
-	assert.Contains(t, printed, "4 profiles registered")
+	assert.Contains(t, printed, "5 profiles registered")
 	issuer, err := client.GetIssuer(ctx, &privpb.GetIssuerRequest{OrgID: orgID, Label: e2eIssuerLabel})
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -188,7 +190,7 @@ func TestCA_EndToEnd(t *testing.T) {
 
 	profiles, err := client.ListProfiles(ctx, &privpb.ListProfilesRequest{OrgID: orgID})
 	require.NoError(t, err)
-	require.Len(t, profiles.Profiles, 4)
+	require.Len(t, profiles.Profiles, 5)
 	t.Cleanup(func() {
 		for _, p := range profiles.Profiles {
 			_, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, p.ID))
@@ -199,10 +201,11 @@ func TestCA_EndToEnd(t *testing.T) {
 		byLabel[p.Label] = p.IssuerLabel
 	}
 	assert.Equal(t, map[string]string{
-		"client": e2eIssuerLabel,
-		"ocsp":   model.AnyIssuerLabel,
-		"peer":   e2eIssuerLabel,
-		"server": e2eIssuerLabel,
+		"client":          e2eIssuerLabel,
+		"data_encryption": e2eIssuerLabel,
+		"ocsp":            model.AnyIssuerLabel,
+		"peer":            e2eIssuerLabel,
+		"server":          e2eIssuerLabel,
 	}, byLabel)
 	printed = run(&admin.ProfileListCmd{OrgScope: admin.OrgScope{Org: orgID}})
 	assert.Contains(t, printed, "server")
@@ -266,6 +269,8 @@ func TestCA_EndToEnd(t *testing.T) {
 	assert.Equal(t, ocsp.KeyCompromise, parsed.RevocationReason)
 	require.NotNil(t, parsed.Certificate, "signed by the delegated responder of the ocsp template")
 	assert.NotEqual(t, issuerCert.SubjectKeyId, parsed.Certificate.SubjectKeyId)
+	assert.Equal(t, x509.KeyUsageDigitalSignature, parsed.Certificate.KeyUsage)
+	assert.Equal(t, []x509.ExtKeyUsage{x509.ExtKeyUsageOCSPSigning}, parsed.Certificate.ExtKeyUsage)
 
 	// the CRL through the commands
 	var crls pb.CrlsResponse
@@ -302,6 +307,74 @@ func TestCA_EndToEnd(t *testing.T) {
 	assert.NotEmpty(t, roots.Roots, "the platform anchors")
 	runJSON(&admin.RootListCmd{Org: orgID}, &roots)
 	assert.Empty(t, roots.Roots, "the org has no root of its own")
+
+	// the usages of the templates: a TLS identity only signs, for any key, and
+	// only data_encryption enciphers, for an RSA key
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	mldsaKey, err := mldsa.GenerateKey(mldsa.MLDSA65())
+	require.NoError(t, err)
+	sign := func(profile string, key any) (*pb.CertificateResponse, error) {
+		const cn = "usages.ctl.example.com"
+		return client.SignCertificate(ctx, &privpb.SignCertificateRequest{
+			OrgID:   orgID,
+			Profile: profile,
+			Request: csrFor(t, cn, key),
+			SAN:     []string{cn},
+		})
+	}
+	issued := []struct {
+		profile string
+		key     any
+		ku      x509.KeyUsage
+		eku     []x509.ExtKeyUsage
+	}{
+		{"server", ecKey, x509.KeyUsageDigitalSignature, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}},
+		{"client", ecKey, x509.KeyUsageDigitalSignature, []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}},
+		{"peer", ecKey, x509.KeyUsageDigitalSignature, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}},
+		{"server", rsaKey, x509.KeyUsageDigitalSignature, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}},
+		{"server", mldsaKey, x509.KeyUsageDigitalSignature, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}},
+		{"data_encryption", rsaKey, x509.KeyUsageKeyEncipherment | x509.KeyUsageDataEncipherment, nil},
+	}
+	for _, tc := range issued {
+		res, err := sign(tc.profile, tc.key)
+		require.NoError(t, err, tc.profile)
+		certID := res.Certificate.ID
+		t.Cleanup(func() { _, _ = provider.DeleteCertificate(ctx, org.ID.UInt64(), mustID(t, certID)) })
+		crt, err := certutil.ParseFromPEM([]byte(res.Certificate.Pem))
+		require.NoError(t, err)
+		assert.Equal(t, tc.ku, crt.KeyUsage, tc.profile)
+		assert.Equal(t, tc.eku, crt.ExtKeyUsage, tc.profile)
+	}
+	// a profile that enciphers refuses a key that cannot, as a request error;
+	// without allowed_key_algorithms, xpki refuses the ML-DSA key by its usage
+	encipher, err := client.RegisterProfile(ctx, &privpb.RegisterProfileRequest{
+		OrgID: orgID,
+		Profile: &pb.CertProfile{
+			Label:       "encipher_any",
+			IssuerLabel: e2eIssuerLabel,
+			Expiry:      "8760h",
+			Backdate:    "30m",
+			Usages:      []string{"key encipherment"},
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, encipher.ID)) })
+	refused := []struct {
+		profile string
+		key     any
+		err     string
+	}{
+		{"data_encryption", ecKey, "rpc error: code = InvalidArgument desc = failed to sign certificate: public key algorithm ECDSA is not allowed by profile data_encryption"},
+		{"data_encryption", mldsaKey, "rpc error: code = InvalidArgument desc = failed to sign certificate: public key algorithm ML-DSA is not allowed by profile data_encryption"},
+		{"encipher_any", mldsaKey, "rpc error: code = InvalidArgument desc = failed to sign certificate: profile encipher_any: key usage not allowed for an ML-DSA key: key encipherment"},
+	}
+	for _, tc := range refused {
+		_, err := sign(tc.profile, tc.key)
+		assert.EqualError(t, err, tc.err, tc.profile)
+	}
 
 	// archive and destroy
 	printed = run(&admin.IssuerArchiveCmd{Org: orgID, ID: issuer.ID})
@@ -342,6 +415,12 @@ func newCSR(t *testing.T, cn string) []byte {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
+	return csrFor(t, cn, key)
+}
+
+// csrFor returns the PEM encoding of a certificate request for the key
+func csrFor(t *testing.T, cn string, key any) []byte {
+	t.Helper()
 	der, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{
 		Subject: pkix.Name{CommonName: cn},
 	}, key)

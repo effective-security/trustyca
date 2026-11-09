@@ -102,7 +102,7 @@ func Test_Root(t *testing.T) {
 	assert.Contains(t, allIDs, ra.ID.UInt64())
 
 	// cursor pagination
-	list, err = provider.ListRoots(ctx, &query.ListRootsRequest{OrgID: orgA.ID.UInt64(), Limit: 1, Cursor: query.NewCursor(0)})
+	list, err = provider.ListRoots(ctx, &query.ListRootsRequest{OrgID: orgA.ID.UInt64(), Limit: 1})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 1)
 	assert.Equal(t, rb.ID.UInt64(), list.Rows[0].ID.UInt64())

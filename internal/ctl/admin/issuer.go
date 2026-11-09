@@ -55,7 +55,6 @@ func (a *IssuerListCmd) Run(app App) error {
 		IDs:       a.IDs,
 		IKIDs:     a.IKIDs,
 		Limit:     a.Limit,
-		Offset:    a.Offset,
 		Cursor:    a.Cursor,
 	})
 	if err != nil {

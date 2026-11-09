@@ -82,8 +82,8 @@ func Test_Revoked(t *testing.T) {
 	require.Len(t, pres.RevokedCertificates, 1)
 	assert.Equal(t, "c", pres.NextPage.Cursor)
 
-	rres := &model.RevokedResult{Rows: model.RevokedSlice{r}, HasNextPage: true, NextOffset: 5}
-	assert.EqualValues(t, 5, rres.NextPage().Offset)
+	rres := &model.RevokedResult{Rows: model.RevokedSlice{r}, HasNextPage: true, Cursor: "next"}
+	assert.Equal(t, "next", rres.NextPage().Cursor)
 	rres.HasNextPage = false
 	assert.Nil(t, rres.NextPage())
 }

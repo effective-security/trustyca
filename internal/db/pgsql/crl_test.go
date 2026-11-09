@@ -178,7 +178,7 @@ func Test_Crl(t *testing.T) {
 	assert.Equal(t, "other", got.Pem, "the other issuer's CRL is unchanged")
 	assert.Equal(t, other.ID.UInt64(), got.IssuerID.UInt64())
 
-	list, err = provider.ListCrls(ctx, &query.ListCrlsRequest{OrgID: org.ID.UInt64(), Limit: 1, Cursor: query.NewCursor(0)})
+	list, err = provider.ListCrls(ctx, &query.ListCrlsRequest{OrgID: org.ID.UInt64(), Limit: 1})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 1)
 	assert.Equal(t, oc.ID.UInt64(), list.Rows[0].ID.UInt64())

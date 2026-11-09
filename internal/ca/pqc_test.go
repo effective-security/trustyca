@@ -122,6 +122,7 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 	assert.Equal(t, x509.MLDSA87, rootCert.SignatureAlgorithm)
 	assert.True(t, certutil.IsPostQuantumCertificate(rootCert))
 	assert.True(t, ca.IsSelfSigned(rootCert))
+	assert.Equal(t, x509.KeyUsageCertSign|x509.KeyUsageCRLSign, rootCert.KeyUsage)
 	assert.Equal(t, ca.SoftwareKeyProvider, rootRow.KeyProvider)
 	assert.NotEmpty(t, rootRow.KeyProtected, "the inmem key is stored wrapped")
 	skid, err := ca.SubjectKeyID(rootCert.PublicKey)
@@ -130,9 +131,6 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 	rootSigner, err := f.keys.Signer(f.ctx, rootRow)
 	require.NoError(t, err)
 	assert.True(t, ca.PublicKeysEqual(rootCert.PublicKey, rootSigner.Public()), "the wrapped key loads")
-	postQuantum, err := ca.IsPostQuantumIssuer(rootRow)
-	require.NoError(t, err)
-	assert.True(t, postQuantum)
 	rootRow, err = f.db.RegisterIssuer(f.ctx, rootRow, model.NewRootCertificate(rootCert, org, pb.Trust_Private, rootRow.Pem))
 	require.NoError(t, err)
 
@@ -153,6 +151,7 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, x509.MLDSA, issuerCert.PublicKeyAlgorithm)
 	assert.Equal(t, x509.MLDSA87, issuerCert.SignatureAlgorithm, "signed by the root")
+	assert.Equal(t, x509.KeyUsageCertSign|x509.KeyUsageCRLSign, issuerCert.KeyUsage)
 	require.NoError(t, issuerCert.CheckSignatureFrom(rootCert))
 	assert.Equal(t, rootRow.Skid, issuerRow.Ikid)
 	issuerRow, err = f.db.RegisterIssuer(f.ctx, issuerRow, nil)
@@ -169,6 +168,7 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, x509.MLDSA, leaf.PublicKeyAlgorithm)
 	assert.Equal(t, x509.MLDSA65, leaf.SignatureAlgorithm)
+	assert.Equal(t, x509.KeyUsageDigitalSignature, leaf.KeyUsage)
 	require.NoError(t, leaf.CheckSignatureFrom(issuerCert))
 	assert.Equal(t, issuerRow.Skid, certutil.GetAuthorityKeyID(leaf))
 	_, _, err = pq.Issuer.Sign(csr.SignRequest{Request: newCSR(t, "classic.example.com"), Profile: pq.ProfileName})
@@ -195,6 +195,8 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 	require.NotNil(t, resp.Certificate, "a delegated responder certificate")
 	assert.Equal(t, x509.ECDSA, resp.Certificate.PublicKeyAlgorithm)
 	assert.Equal(t, x509.MLDSA65, resp.Certificate.SignatureAlgorithm, "the issuer signed the responder certificate")
+	assert.Equal(t, x509.KeyUsageDigitalSignature, resp.Certificate.KeyUsage)
+	assert.Equal(t, []x509.ExtKeyUsage{x509.ExtKeyUsageOCSPSigning}, resp.Certificate.ExtKeyUsage)
 	assert.Equal(t, ocsp.Good, resp.Status)
 
 	// the issuer signs its CRL
@@ -206,16 +208,16 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 	assert.Equal(t, x509.MLDSA65, list.SignatureAlgorithm)
 	assert.EqualValues(t, 1, list.Number.Int64())
 
-	// a classical issuer the ML-DSA root signs keeps signing OCSP itself:
-	// its certificate carries an ML-DSA signature, but its key is ECDSA
-	selfOCSP := &pb.IssuerConfig{OcspURL: pqOCSPURL}
+	// a classical issuer the ML-DSA root signs: its certificate carries an
+	// ML-DSA signature, but its key is ECDSA, and its responder signs OCSP
+	ecOCSP := ocspConfig()
 	pending, err := f.keys.NewPendingIssuer(f.ctx, &ca.IssuerRequest{
 		OrgID:    org,
 		Label:    "EC_UNDER_PQ",
 		Type:     pb.AuthorityType_Issuing,
 		Subject:  &csr.X509Subject{CommonName: "EC under PQ"},
 		Provider: f.prov,
-		Config:   selfOCSP,
+		Config:   ecOCSP,
 	})
 	require.NoError(t, err)
 	pending, err = f.db.RegisterIssuer(f.ctx, pending, nil)
@@ -226,10 +228,7 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 	assert.Equal(t, x509.MLDSA87, ecCert.SignatureAlgorithm)
 	assert.True(t, certutil.IsPostQuantumCertificate(ecCert), "the chain is mixed")
 	activated, err := f.keys.ActivatedIssuer(f.ctx, pending, string(ecPEM), "", rootRow.Pem)
-	require.NoError(t, err, "the ECDSA key signs OCSP: no responder is needed")
-	postQuantum, err = ca.IsPostQuantumIssuer(activated)
 	require.NoError(t, err)
-	assert.False(t, postQuantum)
 	_, err = f.db.ActivateIssuer(f.ctx, activated)
 	require.NoError(t, err)
 	f.profile(org, xdb.ID(0), peerProfileDef("ec-peer", "EC_UNDER_PQ", "1h"))
@@ -243,7 +242,8 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 	require.NoError(t, err)
 	resp, err = ocsp.ParseResponse(der, ecCert)
 	require.NoError(t, err)
-	assert.Nil(t, resp.Certificate, "the issuer key signed the response")
+	require.NotNil(t, resp.Certificate, "the delegated responder signed the response")
+	assert.Equal(t, x509.KeyUsageCertSign|x509.KeyUsageCRLSign, ecCert.KeyUsage, "the CA key signs no OCSP response")
 
 	// the same for an import of such an issuer
 	ecKey := newECDSAKey(t)
@@ -261,15 +261,15 @@ func TestPostQuantum_Hierarchy(t *testing.T) {
 		Certificate: string(byoPEM),
 		Root:        rootRow.Pem,
 		KeyPEM:      keyPEM(t, ecKey),
-		Config:      selfOCSP,
+		Config:      ecOCSP,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, rootRow.Skid, imported.Ikid)
 }
 
-// TestPostQuantum_OCSPSigner checks that an ML-DSA issuer with an OCSP URL
-// and no delegated responder is refused when it is created, imported or
-// activated, before its key exists, and accepted with the responder
+// TestPostQuantum_OCSPSigner checks that an issuer with an OCSP URL and no
+// delegated responder is refused when it is created, imported or activated,
+// before its key exists, and accepted with the responder
 func TestPostQuantum_OCSPSigner(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
@@ -299,13 +299,13 @@ func TestPostQuantum_OCSPSigner(t *testing.T) {
 	assert.ErrorIs(t, err, ca.ErrOCSPSignerRequired)
 	_, err = f.keys.NewPendingIssuer(f.ctx, request("PQ_EXT", pb.AuthorityType_Issuing, noResponder))
 	assert.ErrorIs(t, err, ca.ErrOCSPSignerRequired)
-	assert.EqualError(t, err, "an ML-DSA key cannot sign OCSP responses: set DelegatedOcspProfile or remove OcspURL")
+	assert.EqualError(t, err, "an issuer with an OCSP URL needs a delegated responder: set DelegatedOcspProfile or remove OcspURL")
 
-	// a classical key signs OCSP itself
+	// nor does a classical key sign OCSP
 	classic := request("EC_EXT", pb.AuthorityType_Issuing, noResponder)
 	classic.KeySpec = nil
 	_, err = f.keys.NewPendingIssuer(f.ctx, classic)
-	require.NoError(t, err)
+	assert.ErrorIs(t, err, ca.ErrOCSPSignerRequired)
 
 	// without an OCSP URL no responder is needed
 	noOCSP := request("PQ_NO_OCSP", pb.AuthorityType_Issuing, &pb.IssuerConfig{CrlExpiry: "24h"})
@@ -317,9 +317,6 @@ func TestPostQuantum_OCSPSigner(t *testing.T) {
 	// activation verifies the chain without it
 	pending, err := f.keys.NewPendingIssuer(f.ctx, request("PQ_EXT", pb.AuthorityType_Issuing, ocspConfig()))
 	require.NoError(t, err)
-	postQuantum, err := ca.IsPostQuantumIssuer(pending)
-	require.NoError(t, err)
-	assert.True(t, postQuantum, "from the request of a pending issuer")
 	pending, err = f.db.RegisterIssuer(f.ctx, pending, nil)
 	require.NoError(t, err)
 	crt, certPEM, err := parent.Issuer.Sign(csr.SignRequest{Request: pending.CsrPem, Profile: parent.ProfileName})
@@ -346,7 +343,6 @@ func TestPostQuantum_OCSPSigner(t *testing.T) {
 	require.NoError(t, err)
 	_, err = f.keys.ActivatedIssuer(f.ctx, pending2, string(certPEM), "", h.platformRoot.Pem)
 	assert.ErrorIs(t, err, ca.ErrOCSPSignerRequired)
-
 	// an imported ML-DSA root
 	key := newMLDSAKey(t)
 	rootPEM := newSelfSignedCA(t, key, "PQ Import Root")
@@ -370,9 +366,6 @@ func TestPostQuantum_OCSPSigner(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, imported.Pem, imported.RootPem)
 	assert.Equal(t, ca.SoftwareKeyProvider, imported.KeyProvider)
-	postQuantum, err = ca.IsPostQuantumIssuer(imported)
-	require.NoError(t, err)
-	assert.True(t, postQuantum)
 	importedCert, err := certutil.ParseFromPEM([]byte(imported.Pem))
 	require.NoError(t, err)
 	imported, err = f.db.RegisterIssuer(f.ctx, imported, model.NewRootCertificate(importedCert, org, pb.Trust_Private, imported.Pem))
@@ -381,6 +374,7 @@ func TestPostQuantum_OCSPSigner(t *testing.T) {
 	byo, err := f.registry.Resolve(f.ctx, &ca.ResolveRequest{OrgID: org, Profile: pqPeerProfile, IssuerLabel: "PQ_BYO"})
 	require.NoError(t, err)
 	assert.Equal(t, imported.ID.UInt64(), byo.Row.ID.UInt64())
+
 	leaf, _, err = byo.Issuer.Sign(csr.SignRequest{Request: newMLDSACSR(t, "byo.example.com"), Profile: byo.ProfileName})
 	require.NoError(t, err)
 	assert.Equal(t, x509.MLDSA65, leaf.SignatureAlgorithm)
@@ -390,20 +384,18 @@ func TestPostQuantum_OCSPSigner(t *testing.T) {
 func TestCheckOCSPSigner(t *testing.T) {
 	t.Parallel()
 	tcases := []struct {
-		name        string
-		postQuantum bool
-		cfg         *pb.IssuerConfig
-		err         error
+		name string
+		cfg  *pb.IssuerConfig
+		err  error
 	}{
-		{name: "classical", cfg: &pb.IssuerConfig{OcspURL: pqOCSPURL}},
-		{name: "nil config", postQuantum: true},
-		{name: "no ocsp", postQuantum: true, cfg: &pb.IssuerConfig{CrlExpiry: "24h"}},
-		{name: "delegated", postQuantum: true, cfg: &pb.IssuerConfig{OcspURL: pqOCSPURL, DelegatedOcspProfile: ocspProfile}},
-		{name: "self-signed ocsp", postQuantum: true, cfg: &pb.IssuerConfig{OcspURL: pqOCSPURL}, err: ca.ErrOCSPSignerRequired},
+		{name: "nil config"},
+		{name: "no ocsp", cfg: &pb.IssuerConfig{CrlExpiry: "24h"}},
+		{name: "delegated", cfg: &pb.IssuerConfig{OcspURL: pqOCSPURL, DelegatedOcspProfile: ocspProfile}},
+		{name: "self-signed ocsp", cfg: &pb.IssuerConfig{OcspURL: pqOCSPURL}, err: ca.ErrOCSPSignerRequired},
 	}
 	for _, tc := range tcases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := ca.CheckOCSPSigner(tc.postQuantum, tc.cfg)
+			err := ca.CheckOCSPSigner(tc.cfg)
 			if tc.err != nil {
 				assert.ErrorIs(t, err, tc.err)
 				return
@@ -411,26 +403,4 @@ func TestCheckOCSPSigner(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
-}
-
-func TestIsPostQuantumIssuer(t *testing.T) {
-	t.Parallel()
-	_, err := ca.IsPostQuantumIssuer(nil)
-	assert.EqualError(t, err, "issuer is required")
-	_, err = ca.IsPostQuantumIssuer(&model.Issuer{ID: xdbID(5)})
-	assert.EqualError(t, err, "issuer 5 has no certificate")
-	_, err = ca.IsPostQuantumIssuer(&model.Issuer{ID: xdbID(5), Pem: "junk"})
-	assert.ErrorContains(t, err, "invalid certificate of issuer 5")
-	_, err = ca.IsPostQuantumIssuer(&model.Issuer{ID: xdbID(5), CsrPem: "junk"})
-	assert.ErrorContains(t, err, "invalid request of issuer 5")
-
-	classic, err := ca.IsPostQuantumIssuer(&model.Issuer{CsrPem: newCSR(t, "ec")})
-	require.NoError(t, err)
-	assert.False(t, classic)
-	pq, err := ca.IsPostQuantumIssuer(&model.Issuer{CsrPem: newMLDSACSR(t, "pq")})
-	require.NoError(t, err)
-	assert.True(t, pq)
-	pq, err = ca.IsPostQuantumIssuer(&model.Issuer{Pem: newSelfSignedCA(t, newMLDSAKey(t), "PQ"), CsrPem: "ignored"})
-	require.NoError(t, err)
-	assert.True(t, pq, "the certificate wins over the request")
 }

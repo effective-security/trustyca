@@ -14,8 +14,7 @@ type OrgCmd struct {
 type OrgListCmd struct {
 	Status string `help:"the status to filter by"`
 	Limit  uint32 `help:"the maximum number of records to return"`
-	Offset uint32 `help:"the offset for the offset-based pagination"`
-	Cursor string `help:"the cursor for the cursor-based pagination: initial, or the one of the previous page"`
+	Cursor string `help:"the cursor of the previous page; empty for the first page"`
 }
 
 // Run the command
@@ -27,7 +26,6 @@ func (a *OrgListCmd) Run(app App) error {
 
 	req := &privpb.ListOrgsRequest{
 		Limit:  a.Limit,
-		Offset: a.Offset,
 		Cursor: a.Cursor,
 	}
 	if a.Status != "" {

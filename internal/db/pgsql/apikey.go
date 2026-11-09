@@ -59,11 +59,16 @@ func (p *Provider) ListAPIKeys(ctx context.Context, r *query.ListAPIKeysRequest)
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.APIKeyResult
-	err := xdb.ExecuteQueryWithPagination(ctx, p, &rs, q, qp)
+	err := xdb.ExecuteQueryWithCursor(ctx, p, apiKeyCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}
 	return &rs, nil
+}
+
+// apiKeyCursor returns the cursor of the page after the row
+func apiKeyCursor(last *model.APIKey) string {
+	return query.EncodeTimeCursor(last.CreatedAt, last.ID)
 }
 
 // GetAPIKey returns an API key of the org by ID

@@ -72,8 +72,8 @@ func Test_APIKey_Pb(t *testing.T) {
 	k.ExpiresAt = xdb.Time{}
 	assert.False(t, k.IsExpired(time.Now()), "no expiry never expires")
 
-	res := (&model.APIKeyResult{Rows: model.APIKeySlice{k}, HasNextPage: true, NextOffset: 10}).Pb()
+	res := (&model.APIKeyResult{Rows: model.APIKeySlice{k}, HasNextPage: true, Cursor: "next"}).Pb()
 	require.Len(t, res.APIKeys, 1)
 	require.NotNil(t, res.NextPage)
-	assert.EqualValues(t, 10, res.NextPage.Offset)
+	assert.Equal(t, "next", res.NextPage.Cursor)
 }

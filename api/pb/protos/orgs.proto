@@ -506,11 +506,13 @@ message GetProjectRequest {
 message ListProjectsRequest {
     // Status filters by status; Unknown returns all
     ItemStatus.Enum Status = 1 [json_name = "Status"];
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     uint32 Limit = 2 [json_name = "Limit"];
-    // Offset specifies offset for the offset-based pagination
-    uint32 Offset = 3 [json_name = "Offset"];
-    // Cursor specifies cursor for the cursor-based pagination
+    reserved 3;
+    reserved "Offset";
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
     string Cursor = 4 [json_name = "Cursor"];
 }
 
@@ -520,8 +522,7 @@ message DeleteProjectRequest {
 }
 
 // ListEventsRequest specifies a page of the audit events of the org
-// selected in the token, newest first (Orgs.ListEvents); the list pages by
-// cursor only
+// selected in the token, newest first (Orgs.ListEvents)
 message ListEventsRequest {
     // ProjectID limits the result to the events of the project, in which
     // the caller needs a role; empty lists the events of the org the caller
@@ -535,7 +536,8 @@ message ListEventsRequest {
     // Before is the exclusive end of the CreatedAt range in RFC3339 format,
     // later than After; empty is unbounded
     string Before = 4 [json_name = "Before"];
-    // Limit specifies maximum number of records to return
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
     uint32 Limit = 5 [json_name = "Limit"];
     // Cursor continues the listing: empty or "initial" returns the first
     // page, the Cursor of the previous NextPage the page after it
@@ -589,6 +591,12 @@ message ListAPIKeysRequest {
     // If not provided, will use Org scope for the current token.
     string ProjectID       = 1 [json_name = "ProjectID"];
     ItemStatus.Enum Status = 2 [json_name = "Status"];
+    // Limit specifies maximum number of records to return: 500 by default
+    // and at most
+    uint32 Limit = 3 [json_name = "Limit"];
+    // Cursor continues the listing: empty or "initial" returns the first
+    // page, the Cursor of the previous NextPage the page after it
+    string Cursor = 4 [json_name = "Cursor"];
 }
 
 message APIKeyRequest {

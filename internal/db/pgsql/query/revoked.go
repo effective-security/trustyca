@@ -121,18 +121,13 @@ type ListRevokedRequest struct {
 	ValidAfter *time.Time
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Offset specifies the offset for offset pagination
-	Offset uint32
-	// Cursor specifies the position for cursor pagination
+	// Cursor specifies the position of the page, zero for the first
 	Cursor Cursor
 }
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListRevokedRequest) Validate() error {
-	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
-		return err
-	}
-	return r.Cursor.checkKey(keyID)
+	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
 }
 
 // QueryParams returns the query params builder
@@ -146,7 +141,7 @@ func (r *ListRevokedRequest) QueryParams() xdb.QueryParams {
 	if r.ValidAfter != nil {
 		b.Set(schema.Revoked.NotAfter.Position, r.ValidAfter.UTC())
 	}
-	setPage(b, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Cursor)
 	return b
 }
 
@@ -194,18 +189,13 @@ type ListRevokedCertificatesRequest struct {
 	IKID string
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Offset specifies the offset for offset pagination
-	Offset uint32
-	// Cursor specifies the position for cursor pagination
+	// Cursor specifies the position of the page, zero for the first
 	Cursor Cursor
 }
 
 // Validate returns ErrOrgScopeRequired when the request names no org scope
 func (r *ListRevokedCertificatesRequest) Validate() error {
-	if err := checkListScope(r.OrgID, r.Platform, r.AllOrgs); err != nil {
-		return err
-	}
-	return r.Cursor.checkKey(keyID)
+	return checkListScope(r.OrgID, r.Platform, r.AllOrgs)
 }
 
 // QueryParams returns the query params builder
@@ -217,7 +207,7 @@ func (r *ListRevokedCertificatesRequest) QueryParams() xdb.QueryParams {
 	if r.IKID != "" {
 		b.Set(schema.RevokedCertificate.Ikid.Position, r.IKID)
 	}
-	setPage(b, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Cursor)
 	return b
 }
 

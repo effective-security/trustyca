@@ -5,7 +5,6 @@ expiry: 2160h
 backdate: 30m
 usages:
   - signing
-  - key encipherment
   - client auth
 allowed_extensions:
   - 2.5.29.17 # SAN

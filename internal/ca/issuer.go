@@ -70,16 +70,6 @@ func (q *IssuerRequest) keyLabel() string {
 	return KeyLabel(q.OrgID, q.ProjectID, q.Label)
 }
 
-// checkOCSPSigner refuses the settings when the key to generate cannot sign
-// OCSP responses (CheckOCSPSigner), before the key is generated
-func (q *IssuerRequest) checkOCSPSigner() error {
-	algo, _, err := KeySpec(q.KeySpec)
-	if err != nil {
-		return err
-	}
-	return CheckOCSPSigner(csr.IsPostQuantumAlgo(algo), q.Config)
-}
-
 // certificateRequest returns the request of the issuer certificate, without
 // its key request
 func (q *IssuerRequest) certificateRequest() *csr.CertificateRequest {
@@ -130,7 +120,7 @@ func (k *Keys) NewRootIssuer(ctx context.Context, req *IssuerRequest, profileNam
 	if err != nil {
 		return nil, err
 	}
-	err = CheckOCSPSigner(csr.IsPostQuantumAlgo(algo), req.Config)
+	err = CheckOCSPSigner(req.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +183,7 @@ func (k *Keys) NewSignedIssuer(ctx context.Context, req *IssuerRequest, parent *
 	if err != nil {
 		return nil, err
 	}
-	err = req.checkOCSPSigner()
+	err = CheckOCSPSigner(req.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +281,7 @@ func (k *Keys) NewPendingIssuer(ctx context.Context, req *IssuerRequest) (*model
 	if req.Type == pb.AuthorityType_Root {
 		return nil, errors.New("a Root issuer is self-signed, not pending")
 	}
-	err = req.checkOCSPSigner()
+	err = CheckOCSPSigner(req.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +352,7 @@ func (k *Keys) ImportIssuer(ctx context.Context, req *ImportRequest) (*model.Iss
 	if req.Type == pb.AuthorityType_Root && !IsSelfSigned(crt) {
 		return nil, errors.New("a Root issuer certificate is self-signed")
 	}
-	err = CheckOCSPSigner(isPostQuantumKeyCertificate(crt), req.Config)
+	err = CheckOCSPSigner(req.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +404,7 @@ func (k *Keys) ActivatedIssuer(ctx context.Context, row *model.Issuer, certPEM, 
 	if err != nil {
 		return nil, err
 	}
-	err = CheckOCSPSigner(isPostQuantumKeyCertificate(crt), cfg)
+	err = CheckOCSPSigner(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -437,9 +427,8 @@ func IsSelfSigned(crt *x509.Certificate) bool {
 // registry builds the issuer, and sets the certificate columns of the row
 // with the chain and the root the verification found; a self-signed
 // certificate is its own root. The OCSP settings are not checked here: the
-// registry resolves the delegated OCSP profile when it builds the issuer,
-// and without the profile the authority would refuse an ML-DSA key with an
-// OCSP URL (CheckOCSPSigner is the check of the caller).
+// registry resolves the delegated OCSP profile when it builds the issuer
+// (CheckOCSPSigner is the check of the caller).
 func setVerifiedCertificate(m *model.Issuer, cfg *pb.IssuerConfig, crt *x509.Certificate, intermediates, rootPEM string, signer crypto.Signer) error {
 	certPEM, err := certutil.EncodeToPEMString(false, crt)
 	if err != nil {

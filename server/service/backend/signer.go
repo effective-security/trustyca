@@ -273,12 +273,13 @@ func (s *Service) resolve(ctx context.Context, orgID, projectID xdb.ID, profile,
 // or of its name
 func (s *Service) ocspIssuer(ctx context.Context, ocspReq *ocsp.Request) (*authority.Issuer, error) {
 	var issuer *authority.Issuer
+	var row *model.Issuer
 	var err error
 	switch {
 	case len(ocspReq.IssuerKeyHash) > 0:
-		issuer, _, err = s.registry.IssuerByKeyHash(ctx, ocspReq.HashAlgorithm, ocspReq.IssuerKeyHash)
+		issuer, row, err = s.registry.IssuerByKeyHash(ctx, ocspReq.HashAlgorithm, ocspReq.IssuerKeyHash)
 	case len(ocspReq.IssuerNameHash) > 0:
-		issuer, _, err = s.registry.IssuerByNameHash(ctx, ocspReq.HashAlgorithm, ocspReq.IssuerNameHash)
+		issuer, row, err = s.registry.IssuerByNameHash(ctx, ocspReq.HashAlgorithm, ocspReq.IssuerNameHash)
 	default:
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "issuer not specified")
 	}
@@ -290,6 +291,17 @@ func (s *Service) ocspIssuer(ctx context.Context, ocspReq *ocsp.Request) (*autho
 			"reason", "load_issuer",
 			"err", err.Error())
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.Internal, "unable to load issuer")
+	}
+	cfg, err := row.GetConfig()
+	if err != nil {
+		logger.ContextKV(ctx, xlog.ERROR,
+			"reason", "load_issuer",
+			"err", err.Error())
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.Internal, "unable to load issuer")
+	}
+	// the key of an issuer signs no OCSP response, and the AIA routes are public
+	if cfg.DelegatedOcspProfile == "" {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.NotFound, "issuer not found")
 	}
 	return issuer, nil
 }

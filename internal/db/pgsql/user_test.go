@@ -6,7 +6,6 @@ import (
 
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/model"
-	"github.com/effective-security/xdb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -82,14 +81,6 @@ func TestLoginUser(t *testing.T) {
 	list, err := provider.GetLoginsByEmail(ctx, user2.Email)
 	require.NoError(t, err)
 	assert.Len(t, list, 2)
-
-	// TODO: this test fails as soon as there are more than 500 users
-	// The users/logins are not cleaned up after some tests properly.
-	// make drop-sql start-sql
-	list2, next, err := provider.ListLogins(ctx, xdb.DefaultPageSize, 0)
-	require.NoError(t, err)
-	assert.GreaterOrEqual(t, len(list2), len(list))
-	assert.Equal(t, uint32(0), next)
 }
 
 func TestGetUsersByEmail(t *testing.T) {

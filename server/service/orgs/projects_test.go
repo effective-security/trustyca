@@ -1,7 +1,9 @@
 package orgs
 
 import (
+	"math"
 	"testing"
+	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/effective-security/trustyca/api/pb"
@@ -156,15 +158,20 @@ func TestService_Projects(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list.NextPage)
 	assert.Equal(t, next, list.NextPage.Cursor)
-	assert.Zero(t, list.NextPage.Offset)
 
-	// list: initial starts cursor pagination
-	db.EXPECT().ListProjects(gomock.Any(), &query.ListProjectsRequest{OrgID: 1, Limit: xdb.DefaultPageSize, Cursor: query.NewCursor(0)}).Return(&model.ProjectResult{}, nil)
+	// list: initial is the first page, as an empty cursor
+	db.EXPECT().ListProjects(gomock.Any(), &query.ListProjectsRequest{OrgID: 1, Limit: xdb.DefaultPageSize}).Return(&model.ProjectResult{}, nil)
 	list, err = svc.ListProjects(ctx, &pb.ListProjectsRequest{Cursor: query.InitialCursor})
 	require.NoError(t, err)
 	assert.Nil(t, list.NextPage)
 
 	_, err = svc.ListProjects(ctx, &pb.ListProjectsRequest{Cursor: "not a cursor"})
+	assert.EqualError(t, err, "bad_request: invalid cursor")
+	// the token of another list, of a key with as many values
+	_, err = svc.ListProjects(ctx, &pb.ListProjectsRequest{Cursor: query.EncodeTimeCursor(xdb.Time(time.Now()), xdb.NewID(201))})
+	assert.EqualError(t, err, "bad_request: invalid cursor")
+	// an id beyond the bigint column
+	_, err = svc.ListProjects(ctx, &pb.ListProjectsRequest{Cursor: query.EncodeNameCursor("Test", xdb.NewID(math.MaxUint64))})
 	assert.EqualError(t, err, "bad_request: invalid cursor")
 
 	// delete deactivates

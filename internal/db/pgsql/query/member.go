@@ -78,8 +78,6 @@ type ListMembershipsRequest struct {
 	// xdb.DefaultPageSize, the bound of the callers that read the whole
 	// scope (the grants of a user, the members of an org)
 	Limit uint32
-	// Offset specifies the offset for pagination
-	Offset uint32
 }
 
 // QueryParams returns the query params builder
@@ -98,7 +96,7 @@ func (r *ListMembershipsRequest) QueryParams() xdb.QueryParams {
 	if r.Role != pb.Role_None {
 		b.Set(schema.MembershipInfo.Role.Position, r.Role)
 	}
-	b.SetPage(r.Limit, r.Offset)
+	b.SetPage(r.Limit, 0)
 	return b
 }
 

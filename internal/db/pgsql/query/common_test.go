@@ -56,22 +56,6 @@ FROM trustyca.user
 WHERE name = $1`,
 		},
 		{
-			query.ListAllColumns, []any{&schema.UserTableInfo},
-			`SELECT ` + schema.UserTableInfo.AllColumns() + ` 
-FROM trustyca.user 
-ORDER BY id ASC 
-LIMIT $1 
-OFFSET $2`,
-		},
-		{
-			query.ListAllColumns, []any{&schema.LoginTableInfo},
-			`SELECT ` + schema.LoginTableInfo.AllColumns() + ` 
-FROM trustyca.login 
-ORDER BY id ASC 
-LIMIT $1 
-OFFSET $2`,
-		},
-		{
 			query.DeleteRowByID, []any{&schema.LoginTableInfo},
 			`DELETE FROM trustyca.login 
 WHERE id = $1`,

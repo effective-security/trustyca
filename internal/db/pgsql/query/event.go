@@ -34,7 +34,7 @@ func CreateEvent(args ...any) (string, string) {
 
 // ListEventsRequest defines request for Events, newest first: the events
 // are sorted by created_at DESC, id DESC, served by the org-led indexes of
-// the event table, and page by offset or by a cursor on that key
+// the event table, and page by a cursor on that key
 // (ParseTimeCursor, EncodeTimeCursor)
 type ListEventsRequest struct {
 	// OrgID specifies the org
@@ -60,16 +60,9 @@ type ListEventsRequest struct {
 	Source string
 	// Limit specifies maximum number of records to return
 	Limit uint32
-	// Offset specifies the offset for offset pagination
-	Offset uint32
-	// Cursor specifies the position for cursor pagination, decoded by
+	// Cursor specifies the position of the page, zero for the first; decoded by
 	// ParseTimeCursor
 	Cursor Cursor
-}
-
-// Validate fails a request that carries the cursor of another list
-func (r *ListEventsRequest) Validate() error {
-	return r.Cursor.checkKey(keyTime)
 }
 
 // QueryParams returns the query params builder
@@ -101,7 +94,7 @@ func (r *ListEventsRequest) QueryParams() xdb.QueryParams {
 		b.Set(schema.Event.Source.Position, r.Source)
 	}
 
-	setPage(b, r.Limit, r.Offset, r.Cursor)
+	setPage(b, r.Limit, r.Cursor)
 	return b
 }
 

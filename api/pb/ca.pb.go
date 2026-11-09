@@ -451,13 +451,11 @@ type ListIssuersRequest struct {
 	Status IssuerStatus_Enum `protobuf:"varint,3,opt,name=Status,proto3,enum=pb.IssuerStatus_Enum" json:"Status,omitempty"`
 	// Type filters by authority type; Unknown returns all
 	Type AuthorityType_Enum `protobuf:"varint,4,opt,name=Type,proto3,enum=pb.AuthorityType_Enum" json:"Type,omitempty"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,5,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,6,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination.
-	// Use "initial" to start the pagination or pass the cursor returned from
-	// the previous request.
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor string `protobuf:"bytes,7,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	// IDs limits the result to the issuers with the IDs, at most 500: the
 	// issuers of a page of certificates in one call. An issuer outside the
@@ -526,13 +524,6 @@ func (x *ListIssuersRequest) GetType() AuthorityType_Enum {
 func (x *ListIssuersRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListIssuersRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
 	}
 	return 0
 }
@@ -746,11 +737,11 @@ func (x *RegisterRootRequest) GetTrust() Trust_Enum {
 // ListRootsRequest specifies a list of trust anchors
 type ListRootsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,2,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,3,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor        string `protobuf:"bytes,4,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -789,13 +780,6 @@ func (*ListRootsRequest) Descriptor() ([]byte, []int) {
 func (x *ListRootsRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListRootsRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
 	}
 	return 0
 }
@@ -990,11 +974,11 @@ type ListProfilesRequest struct {
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// IssuerLabel filters by issuer label
 	IssuerLabel string `protobuf:"bytes,3,opt,name=IssuerLabel,proto3" json:"IssuerLabel,omitempty"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,4,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,5,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	// IDs limits the result to the profiles with the IDs, at most 500. A
 	// profile outside the scope of the request is not returned.
@@ -1054,13 +1038,6 @@ func (x *ListProfilesRequest) GetIssuerLabel() string {
 func (x *ListProfilesRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListProfilesRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
 	}
 	return 0
 }
@@ -1513,13 +1490,11 @@ type ListCertificatesRequest struct {
 	// ExpiringBefore filters certificates with NotAfter before the time,
 	// in RFC3339 format
 	ExpiringBefore string `protobuf:"bytes,6,opt,name=ExpiringBefore,proto3" json:"ExpiringBefore,omitempty"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,7,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,8,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination.
-	// Use "initial" to start the pagination or pass the cursor returned from
-	// the previous request.
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor        string `protobuf:"bytes,9,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1597,13 +1572,6 @@ func (x *ListCertificatesRequest) GetLimit() uint32 {
 	return 0
 }
 
-func (x *ListCertificatesRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
-	}
-	return 0
-}
-
 func (x *ListCertificatesRequest) GetCursor() string {
 	if x != nil {
 		return x.Cursor
@@ -1619,11 +1587,11 @@ type ListRevokedCertificatesRequest struct {
 	ProjectID string `protobuf:"bytes,2,opt,name=ProjectID,proto3" json:"ProjectID,omitempty"`
 	// IKID filters by issuer
 	IKID string `protobuf:"bytes,3,opt,name=IKID,proto3" json:"IKID,omitempty"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,4,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,5,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor        string `protobuf:"bytes,6,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1676,13 +1644,6 @@ func (x *ListRevokedCertificatesRequest) GetIKID() string {
 func (x *ListRevokedCertificatesRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListRevokedCertificatesRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
 	}
 	return 0
 }
@@ -2721,16 +2682,15 @@ const file_ca_proto_rawDesc = "" +
 	"\x02ID\x18\x03 \x01(\tB\x0e\xf2\xf3\x18\n" +
 	"Label,IKIDR\x02ID\x12!\n" +
 	"\x05Label\x18\x04 \x01(\tB\v\xf2\xf3\x18\aID,IKIDR\x05Label\x12 \n" +
-	"\x04IKID\x18\x05 \x01(\tB\f\xf2\xf3\x18\bID,LabelR\x04IKIDJ\x04\b\x01\x10\x02R\x05OrgID\"\x88\x02\n" +
+	"\x04IKID\x18\x05 \x01(\tB\f\xf2\xf3\x18\bID,LabelR\x04IKIDJ\x04\b\x01\x10\x02R\x05OrgID\"\xfe\x01\n" +
 	"\x12ListIssuersRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12-\n" +
 	"\x06Status\x18\x03 \x01(\x0e2\x15.pb.IssuerStatus.EnumR\x06Status\x12*\n" +
 	"\x04Type\x18\x04 \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\x12\x14\n" +
 	"\x05Limit\x18\x05 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x06 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\a \x01(\tR\x06Cursor\x12\x10\n" +
 	"\x03IDs\x18\b \x03(\tR\x03IDs\x12\x14\n" +
-	"\x05IKIDs\x18\t \x03(\tR\x05IKIDsJ\x04\b\x01\x10\x02R\x05OrgID\"a\n" +
+	"\x05IKIDs\x18\t \x03(\tR\x05IKIDsJ\x04\b\x01\x10\x02J\x04\b\x06\x10\aR\x05OrgIDR\x06Offset\"a\n" +
 	"\x0fIssuersResponse\x12$\n" +
 	"\aIssuers\x18\x01 \x03(\v2\n" +
 	".pb.IssuerR\aIssuers\x12(\n" +
@@ -2742,11 +2702,10 @@ const file_ca_proto_rawDesc = "" +
 	"\tProjectID\x18\x05 \x01(\tR\tProjectIDJ\x04\b\x01\x10\x02R\x05OrgID\"`\n" +
 	"\x13RegisterRootRequest\x12\x16\n" +
 	"\x03Pem\x18\x02 \x01(\tB\x04\xe8\xf3\x18\x01R\x03Pem\x12$\n" +
-	"\x05Trust\x18\x03 \x01(\x0e2\x0e.pb.Trust.EnumR\x05TrustJ\x04\b\x01\x10\x02R\x05OrgID\"e\n" +
+	"\x05Trust\x18\x03 \x01(\x0e2\x0e.pb.Trust.EnumR\x05TrustJ\x04\b\x01\x10\x02R\x05OrgID\"[\n" +
 	"\x10ListRootsRequest\x12\x14\n" +
 	"\x05Limit\x18\x02 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x03 \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\x04 \x01(\tR\x06CursorJ\x04\b\x01\x10\x02R\x05OrgID\"d\n" +
+	"\x06Cursor\x18\x04 \x01(\tR\x06CursorJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04R\x05OrgIDR\x06Offset\"d\n" +
 	"\rRootsResponse\x12)\n" +
 	"\x05Roots\x18\x01 \x03(\v2\x13.pb.RootCertificateR\x05Roots\x12(\n" +
 	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"t\n" +
@@ -2756,15 +2715,14 @@ const file_ca_proto_rawDesc = "" +
 	"\x11GetProfileRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x19\n" +
 	"\x02ID\x18\x03 \x01(\tB\t\xf2\xf3\x18\x05LabelR\x02ID\x12\x1c\n" +
-	"\x05Label\x18\x04 \x01(\tB\x06\xf2\xf3\x18\x02IDR\x05LabelJ\x04\b\x01\x10\x02R\x05OrgID\"\xd2\x01\n" +
+	"\x05Label\x18\x04 \x01(\tB\x06\xf2\xf3\x18\x02IDR\x05LabelJ\x04\b\x01\x10\x02R\x05OrgID\"\xc8\x01\n" +
 	"\x13ListProfilesRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12 \n" +
 	"\vIssuerLabel\x18\x03 \x01(\tR\vIssuerLabel\x12\x14\n" +
 	"\x05Limit\x18\x04 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x05 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x06 \x01(\tR\x06Cursor\x12\x10\n" +
 	"\x03IDs\x18\a \x03(\tR\x03IDs\x12\x16\n" +
-	"\x06Labels\x18\b \x03(\tR\x06LabelsJ\x04\b\x01\x10\x02R\x05OrgID\"i\n" +
+	"\x06Labels\x18\b \x03(\tR\x06LabelsJ\x04\b\x01\x10\x02J\x04\b\x05\x10\x06R\x05OrgIDR\x06Offset\"i\n" +
 	"\x10ProfilesResponse\x12+\n" +
 	"\bProfiles\x18\x01 \x03(\v2\x0f.pb.CertProfileR\bProfiles\x12(\n" +
 	"\bNextPage\x18\x02 \x01(\v2\f.pb.NextPageR\bNextPage\"W\n" +
@@ -2802,7 +2760,7 @@ const file_ca_proto_rawDesc = "" +
 	"\x02ID\x18\x02 \x01(\tB\x1c\xf2\xf3\x18\x18SKID,Sha256,IssuerSerialR\x02ID\x12.\n" +
 	"\x04SKID\x18\x03 \x01(\tB\x1a\xf2\xf3\x18\x16ID,Sha256,IssuerSerialR\x04SKID\x120\n" +
 	"\x06Sha256\x18\x04 \x01(\tB\x18\xf2\xf3\x18\x14ID,SKID,IssuerSerialR\x06Sha256\x12H\n" +
-	"\fIssuerSerial\x18\x05 \x01(\v2\x10.pb.IssuerSerialB\x12\xf2\xf3\x18\x0eID,SKID,Sha256R\fIssuerSerialJ\x04\b\x01\x10\x02R\x05OrgID\"\x94\x02\n" +
+	"\fIssuerSerial\x18\x05 \x01(\v2\x10.pb.IssuerSerialB\x12\xf2\xf3\x18\x0eID,SKID,Sha256R\fIssuerSerialJ\x04\b\x01\x10\x02R\x05OrgID\"\x8a\x02\n" +
 	"\x17ListCertificatesRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x12\n" +
 	"\x04IKID\x18\x03 \x01(\tR\x04IKID\x12\x18\n" +
@@ -2810,14 +2768,12 @@ const file_ca_proto_rawDesc = "" +
 	"\x06Status\x18\x05 \x01(\x0e2\x1a.pb.CertificateStatus.EnumR\x06Status\x12&\n" +
 	"\x0eExpiringBefore\x18\x06 \x01(\tR\x0eExpiringBefore\x12\x14\n" +
 	"\x05Limit\x18\a \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\b \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\t \x01(\tR\x06CursorJ\x04\b\x01\x10\x02R\x05OrgID\"\xa5\x01\n" +
+	"\x06Cursor\x18\t \x01(\tR\x06CursorJ\x04\b\x01\x10\x02J\x04\b\b\x10\tR\x05OrgIDR\x06Offset\"\x9b\x01\n" +
 	"\x1eListRevokedCertificatesRequest\x12\x1c\n" +
 	"\tProjectID\x18\x02 \x01(\tR\tProjectID\x12\x12\n" +
 	"\x04IKID\x18\x03 \x01(\tR\x04IKID\x12\x14\n" +
 	"\x05Limit\x18\x04 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x05 \x01(\rR\x06Offset\x12\x16\n" +
-	"\x06Cursor\x18\x06 \x01(\tR\x06CursorJ\x04\b\x01\x10\x02R\x05OrgID\"\xac\x02\n" +
+	"\x06Cursor\x18\x06 \x01(\tR\x06CursorJ\x04\b\x01\x10\x02J\x04\b\x05\x10\x06R\x05OrgIDR\x06Offset\"\xac\x02\n" +
 	"\x18RevokeCertificateRequest\x12%\n" +
 	"\x02ID\x18\x02 \x01(\tB\x15\xf2\xf3\x18\x11SKID,IssuerSerialR\x02ID\x12'\n" +
 	"\x04SKID\x18\x03 \x01(\tB\x13\xf2\xf3\x18\x0fID,IssuerSerialR\x04SKID\x12A\n" +

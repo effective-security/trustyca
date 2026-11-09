@@ -110,8 +110,8 @@ func (s *Service) CreateAPIKey(ctx context.Context, req *pb.CreateAPIKeyRequest)
 	return res, nil
 }
 
-// ListAPIKeys lists the API keys of the org selected in the token, or of a
-// project when ProjectID is set
+// ListAPIKeys lists a page of the API keys of the org selected in the token,
+// or of a project when ProjectID is set, newest first
 func (s *Service) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (*pb.APIKeysResponse, error) {
 	orgID, err := tokenOrg(ctx)
 	if err != nil {
@@ -122,11 +122,16 @@ func (s *Service) ListAPIKeys(ctx context.Context, req *pb.ListAPIKeysRequest) (
 		return nil, err
 	}
 
+	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseTimeCursor)
+	if err != nil {
+		return nil, err
+	}
 	lreq := &query.ListAPIKeysRequest{
 		OrgID:     orgID.UInt64(),
 		ProjectID: projectID.UInt64(),
 		Status:    req.Status,
-		Limit:     xdb.DefaultPageSize,
+		Limit:     query.Limit(req.Limit),
+		Cursor:    cursor,
 	}
 
 	lres, err := s.db.ListAPIKeys(ctx, lreq)

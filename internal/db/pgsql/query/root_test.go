@@ -28,7 +28,7 @@ ON CONFLICT ON CONSTRAINT unique_root_certificate_sha256 DO UPDATE SET
 RETURNING ` + schema.RootCertificateTableInfo.AllColumns(),
 		},
 		{
-			query.ListRoots, []any{&query.ListRootsRequest{OrgID: 1, Limit: 10, Offset: 20}},
+			query.ListRoots, []any{&query.ListRootsRequest{OrgID: 1, Limit: 10}},
 			`SELECT ` + schema.RootCertificateTableInfo.AllColumns() + ` 
 FROM trustyca.root_certificate 
 WHERE org_id = $1 

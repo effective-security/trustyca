@@ -74,7 +74,6 @@ func (s *Service) ListRoots(ctx context.Context, req *privpb.ListRootsRequest) (
 	}
 	q := &query.ListRootsRequest{
 		Limit:  query.Limit(req.Limit),
-		Offset: req.Offset,
 		Cursor: cursor,
 	}
 	tctx := authctx.FromContext(ctx)

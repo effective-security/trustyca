@@ -29,16 +29,11 @@ const (
 // ListOrgsRequest specifies list orgs request
 type ListOrgsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination.
-	// Which is limited to 10000.
-	// To paginate for large number of records, use cursor-based pagination
-	// instead.
-	Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination.
-	// Use "initial" to start the pagination or pass the cursor returned from
-	// the previous request.
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	// Status specifies on optional status of the item to filter by.
 	// If not specified, all items will be listed.
@@ -84,13 +79,6 @@ func (x *ListOrgsRequest) GetLimit() uint32 {
 	return 0
 }
 
-func (x *ListOrgsRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
-	}
-	return 0
-}
-
 func (x *ListOrgsRequest) GetCursor() string {
 	if x != nil {
 		return x.Cursor
@@ -108,16 +96,11 @@ func (x *ListOrgsRequest) GetStatus() pb.ItemStatus_Enum {
 // ListProjectsRequest specifies list projects request
 type ListProjectsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination.
-	// Which is limited to 10000.
-	// To paginate for large number of records, use cursor-based pagination
-	// instead.
-	Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination.
-	// Use "initial" to start the pagination or pass the cursor returned from
-	// the previous request.
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	// Status specifies on optional status of the item to filter by.
 	// If not specified, all items will be listed.
@@ -165,13 +148,6 @@ func (x *ListProjectsRequest) GetLimit() uint32 {
 	return 0
 }
 
-func (x *ListProjectsRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
-	}
-	return 0
-}
-
 func (x *ListProjectsRequest) GetCursor() string {
 	if x != nil {
 		return x.Cursor
@@ -196,13 +172,11 @@ func (x *ListProjectsRequest) GetOrgID() string {
 // ListAllIssuersRequest specifies a paginated list of issuers across orgs
 type ListAllIssuersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination.
-	// Use "initial" to start the pagination or pass the cursor returned from
-	// the previous request.
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	// OrgID limits the result to the org. Empty lists the issuers of every
 	// org and of the platform, or of the platform only with Platform.
@@ -262,13 +236,6 @@ func (*ListAllIssuersRequest) Descriptor() ([]byte, []int) {
 func (x *ListAllIssuersRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListAllIssuersRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
 	}
 	return 0
 }
@@ -340,13 +307,11 @@ func (x *ListAllIssuersRequest) GetIKIDs() []string {
 // orgs, newest first
 type ListAllCertificatesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Limit specifies maximum number of records to return
+	// Limit specifies maximum number of records to return: 500 by default
+	// and at most
 	Limit uint32 `protobuf:"varint,1,opt,name=Limit,proto3" json:"Limit,omitempty"`
-	// Offset specifies offset for the offset-based pagination
-	Offset uint32 `protobuf:"varint,2,opt,name=Offset,proto3" json:"Offset,omitempty"`
-	// Cursor specifies cursor for the cursor-based pagination.
-	// Use "initial" to start the pagination or pass the cursor returned from
-	// the previous request.
+	// Cursor continues the listing: empty or "initial" returns the first
+	// page, the Cursor of the previous NextPage the page after it
 	Cursor string `protobuf:"bytes,3,opt,name=Cursor,proto3" json:"Cursor,omitempty"`
 	// OrgID limits the result to the org. Empty lists the certificates of
 	// every org and of the platform, or of the platform only with Platform.
@@ -402,13 +367,6 @@ func (*ListAllCertificatesRequest) Descriptor() ([]byte, []int) {
 func (x *ListAllCertificatesRequest) GetLimit() uint32 {
 	if x != nil {
 		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListAllCertificatesRequest) GetOffset() uint32 {
-	if x != nil {
-		return x.Offset
 	}
 	return 0
 }
@@ -475,21 +433,18 @@ const file_admin_proto_rawDesc = "" +
 	"\n" +
 	"\vadmin.proto\x12\x06privpb\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x18es/api/annotations.proto\x1a\vtypes.proto\x1a\n" +
 	"orgs.proto\x1a\n" +
-	"pkix.proto\x1a\bca.proto\"\x84\x01\n" +
+	"pkix.proto\x1a\bca.proto\"z\n" +
 	"\x0fListOrgsRequest\x12\x14\n" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12+\n" +
-	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\"\x9e\x01\n" +
+	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06StatusJ\x04\b\x02\x10\x03R\x06Offset\"\x94\x01\n" +
 	"\x13ListProjectsRequest\x12\x14\n" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12+\n" +
 	"\x06Status\x18\x04 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\x12\x14\n" +
-	"\x05OrgID\x18\x05 \x01(\tR\x05OrgID\"\xc6\x02\n" +
+	"\x05OrgID\x18\x05 \x01(\tR\x05OrgIDJ\x04\b\x02\x10\x03R\x06Offset\"\xbc\x02\n" +
 	"\x15ListAllIssuersRequest\x12\x14\n" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12\x14\n" +
 	"\x05OrgID\x18\x04 \x01(\tR\x05OrgID\x12\x1a\n" +
 	"\bPlatform\x18\x05 \x01(\bR\bPlatform\x12\x1c\n" +
@@ -499,10 +454,9 @@ const file_admin_proto_rawDesc = "" +
 	"\x04Type\x18\t \x01(\x0e2\x16.pb.AuthorityType.EnumR\x04Type\x12\x10\n" +
 	"\x03IDs\x18\n" +
 	" \x03(\tR\x03IDs\x12\x14\n" +
-	"\x05IKIDs\x18\v \x03(\tR\x05IKIDs\"\xbc\x02\n" +
+	"\x05IKIDs\x18\v \x03(\tR\x05IKIDsJ\x04\b\x02\x10\x03R\x06Offset\"\xb2\x02\n" +
 	"\x1aListAllCertificatesRequest\x12\x14\n" +
 	"\x05Limit\x18\x01 \x01(\rR\x05Limit\x12\x16\n" +
-	"\x06Offset\x18\x02 \x01(\rR\x06Offset\x12\x16\n" +
 	"\x06Cursor\x18\x03 \x01(\tR\x06Cursor\x12\x14\n" +
 	"\x05OrgID\x18\x04 \x01(\tR\x05OrgID\x12\x1a\n" +
 	"\bPlatform\x18\x05 \x01(\bR\bPlatform\x12\x1c\n" +
@@ -511,7 +465,7 @@ const file_admin_proto_rawDesc = "" +
 	"\aProfile\x18\b \x01(\tR\aProfile\x122\n" +
 	"\x06Status\x18\t \x01(\x0e2\x1a.pb.CertificateStatus.EnumR\x06Status\x12&\n" +
 	"\x0eExpiringBefore\x18\n" +
-	" \x01(\tR\x0eExpiringBefore2\xec\x03\n" +
+	" \x01(\tR\x0eExpiringBeforeJ\x04\b\x02\x10\x03R\x06Offset2\xec\x03\n" +
 	"\x05Admin\x12c\n" +
 	"\bListOrgs\x12\x17.privpb.ListOrgsRequest\x1a\x10.pb.OrgsResponse\",\x82C\borg list\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/privpb.Admin/ListOrgs\x12w\n" +
 	"\fListProjects\x12\x1b.privpb.ListProjectsRequest\x1a\x14.pb.ProjectsResponse\"4\x82C\fproject list\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/privpb.Admin/ListProjects\x12x\n" +

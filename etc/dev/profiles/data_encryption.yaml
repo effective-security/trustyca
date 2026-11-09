@@ -1,0 +1,16 @@
+---
+# Data encryption certificate: the key of the subject wraps keys and encrypts
+# data and signs nothing, apart from the server, client and peer identities,
+# whose keys only sign. The profile binds to the issuing CA of the org at
+# onboarding. Only an RSA key can encipher: RFC 5480 forbids it for an EC key,
+# which agrees on a key instead, and RFC 9881 for an ML-DSA key.
+description: Data encryption certificate
+expiry: 8760h
+backdate: 30m
+usages:
+  - key encipherment
+  - data encipherment
+allowed_key_algorithms:
+  - rsa
+allowed_extensions:
+  - 2.5.29.17 # SAN

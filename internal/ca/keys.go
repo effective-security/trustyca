@@ -17,7 +17,6 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/xdb"
-	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/cryptoprov"
 	"github.com/effective-security/xpki/csr"
 	"github.com/effective-security/xpki/dataprotection"
@@ -93,15 +92,15 @@ func KeySpec(spec *pb.KeySpec) (string, int, error) {
 	return algo, size, nil
 }
 
-// CheckOCSPSigner refuses the settings of an issuer whose key cannot sign
-// OCSP responses: an ML-DSA key with an OcspURL needs a DelegatedOcspProfile,
-// since the OCSP responder (golang.org/x/crypto/ocsp) signs with RSA and
-// ECDSA keys only and the authority refuses to load such an issuer. It is
-// checked when the issuer is registered, imported or activated, before a
-// key is generated, so that the operator learns of it from the request and
-// not from the first load of the row.
-func CheckOCSPSigner(postQuantum bool, cfg *pb.IssuerConfig) error {
-	if postQuantum && cfg != nil && cfg.OcspURL != "" && cfg.DelegatedOcspProfile == "" {
+// CheckOCSPSigner refuses the settings of an issuer with an OcspURL and no
+// DelegatedOcspProfile: the key of an issuer signs no OCSP response, whatever
+// its algorithm, so that a CA certificate needs no digital signature usage
+// (RFC 5280 section 4.2.1.3) and the CA key stays off the public OCSP path. It
+// is checked when the issuer is registered, imported, activated or its settings
+// change, before a key is generated, so that the operator learns of it from the
+// request and not from the first OCSP request.
+func CheckOCSPSigner(cfg *pb.IssuerConfig) error {
+	if cfg != nil && cfg.OcspURL != "" && cfg.DelegatedOcspProfile == "" {
 		return errors.WithStack(ErrOCSPSignerRequired)
 	}
 	return nil
@@ -392,39 +391,6 @@ func (k *Keys) Destroy(_ context.Context, m *model.Issuer) error {
 		return errors.WithMessagef(err, "unable to destroy key of issuer %s", idString(m.ID))
 	}
 	return nil
-}
-
-// isPostQuantumKeyCertificate reports whether the key of a certificate is
-// an ML-DSA key. The signature of the certificate does not matter: a
-// classical issuer signed by an ML-DSA parent signs OCSP responses itself,
-// which is why certutil.IsPostQuantumCertificate, true at either end of a
-// mixed chain, is not the test here.
-func isPostQuantumKeyCertificate(crt *x509.Certificate) bool {
-	return crt != nil && crt.PublicKeyAlgorithm == x509.MLDSA
-}
-
-// IsPostQuantumIssuer reports whether the key of an issuer row is an ML-DSA
-// key, from its certificate, or from its request while it is Pending; the
-// signature of the certificate, by the parent, does not count
-func IsPostQuantumIssuer(m *model.Issuer) (bool, error) {
-	switch {
-	case m == nil:
-		return false, errors.New("issuer is required")
-	case m.Pem != "":
-		crt, err := certutil.ParseFromPEM([]byte(m.Pem))
-		if err != nil {
-			return false, errors.WithMessagef(err, "invalid certificate of issuer %s", idString(m.ID))
-		}
-		return isPostQuantumKeyCertificate(crt), nil
-	case m.CsrPem != "":
-		req, err := csr.ParsePEM([]byte(m.CsrPem))
-		if err != nil {
-			return false, errors.WithMessagef(err, "invalid request of issuer %s", idString(m.ID))
-		}
-		return req.PublicKeyAlgorithm == x509.MLDSA, nil
-	default:
-		return false, errors.Errorf("issuer %s has no certificate", idString(m.ID))
-	}
 }
 
 // PublicKeysEqual reports whether the two public keys are the same key

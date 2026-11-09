@@ -148,13 +148,7 @@ func (m *Issuer) Pb() (*pb.Issuer, error) {
 
 // NextPage returns the next page of the result
 func (v *IssuerResult) NextPage() *pb.NextPage {
-	if v.HasNextPage {
-		return &pb.NextPage{
-			Offset: v.NextOffset,
-			Cursor: v.Cursor,
-		}
-	}
-	return nil
+	return nextPage(v.HasNextPage, v.Cursor)
 }
 
 // Pb converts model to proto

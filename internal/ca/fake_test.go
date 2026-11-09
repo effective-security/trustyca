@@ -453,7 +453,7 @@ func (f *fakeDb) ListRevoked(_ context.Context, req *query.ListRevokedRequest) (
 }
 
 // page sorts the rows newest first and returns the page of the cursor and
-// limit, setting the next cursor when the page is full, as listRows does
+// limit, setting the next cursor when the page is full
 func page[T any](rows []*T, id func(*T) uint64, limit uint32, cursor query.Cursor, hasNext *bool, next *string) []*T {
 	slices.SortFunc(rows, func(a, b *T) int {
 		return cmp.Compare(id(b), id(a))
@@ -464,7 +464,7 @@ func page[T any](rows []*T, id func(*T) uint64, limit uint32, cursor query.Curso
 	if limit != 0 && uint32(len(rows)) > limit {
 		rows = rows[:limit]
 	}
-	if limit != 0 && uint32(len(rows)) == limit && cursor.IsSet() {
+	if limit != 0 && uint32(len(rows)) == limit {
 		*hasNext = true
 		*next = query.EncodeCursor(xdb.NewID(id(rows[len(rows)-1])))
 	}

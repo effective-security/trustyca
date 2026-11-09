@@ -11,7 +11,7 @@ import (
 )
 
 // ListProjects lists the projects of an org, or of every org, by name,
-// paged by offset or by cursor
+// paged by cursor
 func (s *Service) ListProjects(ctx context.Context, req *privpb.ListProjectsRequest) (*pb.ProjectsResponse, error) {
 	cursor, err := query.ListCursor(ctx, req.Cursor, query.ParseNameCursor)
 	if err != nil {
@@ -19,8 +19,7 @@ func (s *Service) ListProjects(ctx context.Context, req *privpb.ListProjectsRequ
 	}
 	lreq := &query.ListProjectsRequest{
 		Status: req.Status,
-		Limit:  req.Limit,
-		Offset: req.Offset,
+		Limit:  query.Limit(req.Limit),
 		Cursor: cursor,
 	}
 	if req.OrgID != "" {

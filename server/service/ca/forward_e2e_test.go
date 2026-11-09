@@ -41,6 +41,7 @@ import (
 const (
 	fwdRootLabel   = "FWD_ROOT"
 	fwdRootProfile = "fwd_root"
+	fwdOCSPProfile = "fwd_ocsp"
 	fwdPeerProfile = "fwd_peer"
 )
 
@@ -162,11 +163,27 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, rootProfile.ID)) })
+	ocspResponder, err := wfe.RegisterProfile(ownerCtx, &pb.RegisterProfileRequest{
+		Profile: &pb.CertProfile{
+			Label:       fwdOCSPProfile,
+			IssuerLabel: model.AnyIssuerLabel,
+			Expiry:      "168h",
+			Backdate:    "30m",
+			Usages:      []string{"digital signature", "ocsp signing"},
+			OcspNoCheck: true,
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _, _ = provider.DeleteProfile(ctx, org.ID.UInt64(), mustID(t, ocspResponder.ID)) })
 	rootReq := &pb.RegisterIssuerRequest{
 		Label:   fwdRootLabel,
 		Type:    pb.AuthorityType_Root,
 		Subject: &pb.X509Subject{CommonName: "Forward Root"},
 		Profile: fwdRootProfile,
+		Config: &pb.IssuerConfig{
+			AllowedProfiles:      []string{fwdOCSPProfile},
+			DelegatedOcspProfile: fwdOCSPProfile,
+		},
 	}
 
 	// the backend refuses a forwarded caller without a role in the org
@@ -208,7 +225,7 @@ func TestService_ForwardOverMTLS(t *testing.T) {
 			IssuerLabel:       fwdRootLabel,
 			Expiry:            "168h",
 			Backdate:          "30m",
-			Usages:            []string{"signing", "key encipherment", "server auth"},
+			Usages:            []string{"signing", "server auth"},
 			AllowedExtensions: []string{"2.5.29.17"},
 		},
 	})

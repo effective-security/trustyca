@@ -274,7 +274,7 @@ func (p *Provider) ListCertificates(ctx context.Context, req *query.ListCertific
 	defer DbMeasureQuerySince(name, time.Now())
 
 	var rs model.CertificateResult
-	err = listRows(ctx, p, req.Cursor, certificateCursor, &rs, q, qp)
+	err = xdb.ExecuteQueryWithCursor(ctx, p, certificateCursor, &rs, q, qp)
 	if err != nil {
 		return nil, err
 	}

@@ -81,7 +81,7 @@ grants, silently loses the rest. A member beyond the cap is not found, an
 Owner beyond it is not counted, and the cached grants of a user omit it
 (fails closed: fewer permissions). The order is deterministic
 (`email ASC, id ASC`), so the dropped rows are the last by email.
-Options: page `GetMembers` (`MembersResponse` has no `NextPage`; RM-009), or
+Options: page `GetMembers` (`MembersResponse` has no `NextPage`), or
 let the callers that need every row (the authorizer, `checkLastOwner`) loop
 over the pages in the DB layer.
 
@@ -147,3 +147,28 @@ puts that name in its errors ("public key algorithm ECDSA is not allowed by
 profile 1006@1794204553931"). `SignCertificate` now replaces it with the
 label of the request before answering; the issuer creation errors
 (`NewSignedIssuer` through `issuerError`) still carry it. ROADMAP RM-010.
+
+### F-037: ListLogins is the last list with an offset
+
+`ListLogins(ctx, limit, offset)` still runs `xdb.ExecuteQueryWithPagination`
+over `query.ListAllColumns`, after RM-009 moved every list request to the
+cursor. No service calls it, only `TestLoginUser`, whose comment says it
+fails beyond 500 rows. Options: delete the method and `ListAllColumns`, or give
+it a request with a `Cursor` by id when something needs the logins.
+
+FIXED: both deleted.
+
+### F-038: A CA that signs OCSP itself has no digital signature usage
+
+`CheckOCSPSigner` lets a classical issuer with an `OcspURL` and no
+`DelegatedOcspProfile` sign OCSP responses with the CA key, while the CA
+profiles (`tenant_ca`, `ROOT`, `L1_CA`, `L2_CA`) set `cert sign` and `crl sign`
+only. RFC 5280 4.2.1.3 asks for `digitalSignature` on a key that verifies other
+signatures than certificates and CRLs: `TestPostQuantum_Hierarchy` issues such
+a CA (`EC_UNDER_PQ`), with key usage 96. Options: require a delegated responder
+for every issuer, which also keeps the CA key off the online OCSP path but
+changes `CheckOCSPSigner` and the imports that rely on it, or a CA profile with
+`digital signature` for the issuers that sign OCSP.
+
+FIXED: `CheckOCSPSigner` requires the delegated responder for every issuer, and
+`SignOCSP` answers an issuer without one as not found.

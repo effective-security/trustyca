@@ -39,14 +39,14 @@ func TestService_ListProjects(t *testing.T) {
 			},
 		},
 		HasNextPage: true,
-		NextOffset:  1,
+		Cursor:      "first",
 	}, nil)
 
 	res, err := svc.ListProjects(ctx, &privpb.ListProjectsRequest{})
 	assert.NoError(t, err)
 	assert.Equal(t, len(res.Projects), 2)
 	require.NotNil(t, res.NextPage)
-	assert.Equal(t, 1, int(res.NextPage.Offset))
+	assert.Equal(t, "first", res.NextPage.Cursor)
 
 	// the cursor of the previous page continues the listing by name
 	next := query.EncodeNameCursor("Project 2", xdb.NewID(2))
@@ -60,7 +60,6 @@ func TestService_ListProjects(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res.NextPage)
 	assert.Equal(t, next, res.NextPage.Cursor)
-	assert.Zero(t, res.NextPage.Offset)
 
 	_, err = svc.ListProjects(ctx, &privpb.ListProjectsRequest{Cursor: "not a cursor"})
 	assert.EqualError(t, err, "bad_request: invalid cursor")

@@ -574,7 +574,6 @@ func explain(ctx context.Context, sqlDB *sql.DB, provider db.Provider, o *option
 	lists := []listCase{
 		{"big org, first page", &query.ListCertificatesRequest{OrgID: bigOrg, Limit: pageSize}},
 		{"big org, cursor page (1000 rows in)", &query.ListCertificatesRequest{OrgID: bigOrg, Limit: pageSize, Cursor: cursor}},
-		{"big org, offset page 10000", &query.ListCertificatesRequest{OrgID: bigOrg, Limit: pageSize, Offset: 10000}},
 		{"big org, project, first page", &query.ListCertificatesRequest{OrgID: bigOrg, ProjectID: bigProject, Limit: pageSize}},
 		{"big org, org scope only", &query.ListCertificatesRequest{OrgID: bigOrg, Scope: pb.Scope_Org, Limit: pageSize}},
 		{"big org, visible projects", &query.ListCertificatesRequest{OrgID: bigOrg, ProjectIDs: []uint64{bigProject, bigProject + 1}, Limit: pageSize}},
@@ -692,7 +691,7 @@ func explain(ctx context.Context, sqlDB *sql.DB, provider db.Provider, o *option
 
 	r.section("CRL entries (ListRevoked by issuer, valid now)")
 	now := s.now
-	revReq := &query.ListRevokedRequest{AllOrgs: true, IKID: bigIKID, ValidAfter: &now, Limit: crlPageSize, Cursor: query.NewCursor(0)}
+	revReq := &query.ListRevokedRequest{AllOrgs: true, IKID: bigIKID, ValidAfter: &now, Limit: crlPageSize}
 	pages := 0
 	var total int
 	elapsed, err := timeIt(1, func() error {
@@ -730,7 +729,7 @@ func explain(ctx context.Context, sqlDB *sql.DB, provider db.Provider, o *option
 	if err != nil {
 		return err
 	}
-	smallRev := &query.ListRevokedRequest{AllOrgs: true, IKID: smallIKID, ValidAfter: &now, Limit: crlPageSize, Cursor: query.NewCursor(0)}
+	smallRev := &query.ListRevokedRequest{AllOrgs: true, IKID: smallIKID, ValidAfter: &now, Limit: crlPageSize}
 	elapsed, err = timeIt(3, func() error {
 		_, err := provider.ListRevoked(ctx, smallRev)
 		return err

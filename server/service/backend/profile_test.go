@@ -320,13 +320,16 @@ func TestService_ListProfiles(t *testing.T) {
 	require.NotNil(t, res.NextPage)
 	assert.Equal(t, "next", res.NextPage.Cursor)
 
+	next := query.EncodeCursor(xdb.NewID(10))
+	cursor, err := query.ParseCursor(next)
+	require.NoError(t, err)
 	tca.cadb.EXPECT().ListProfiles(gomock.Any(), &query.ListProfilesRequest{
 		OrgID:     1,
 		ProjectID: 201,
 		Limit:     5,
-		Offset:    10,
+		Cursor:    cursor,
 	}).Return(&model.CertificateProfileResult{}, nil)
-	res, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{ProjectID: "201", Limit: 5, Offset: 10})
+	res, err = svc.ListProfiles(ctx, &privpb.ListProfilesRequest{ProjectID: "201", Limit: 5, Cursor: next})
 	require.NoError(t, err)
 	assert.Empty(t, res.Profiles)
 

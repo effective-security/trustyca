@@ -35,8 +35,7 @@ type OrgScope struct {
 // PageFlags are the pagination flags of a list
 type PageFlags struct {
 	Limit  uint32 `help:"the maximum number of records to return"`
-	Offset uint32 `help:"the offset for the offset-based pagination"`
-	Cursor string `help:"the cursor for the cursor-based pagination: initial, or the one of the previous page"`
+	Cursor string `help:"the cursor of the previous page; empty for the first page"`
 }
 
 // IssuerSettings are the runtime settings of an issuer: the URL templates
@@ -49,7 +48,7 @@ type IssuerSettings struct {
 	CrlExpiry              string   `help:"the validity of a CRL, e.g. 48h"`
 	CrlRenewal             string   `help:"how long before its next update a CRL is renewed, e.g. 12h"`
 	OcspExpiry             string   `help:"the validity of an OCSP response, e.g. 1h"`
-	OcspProfile            string   `help:"the profile of the delegated OCSP responder certificate; empty signs OCSP with the issuer key"`
+	OcspProfile            string   `help:"the profile of the delegated OCSP responder certificate; required with the OCSP URL"`
 	AllowedProfiles        []string `help:"the profiles the issuer may sign; required for the profiles bound to any issuer"`
 	OmitDisabledExtensions bool     `help:"drop the extensions a profile does not allow instead of failing the request"`
 }

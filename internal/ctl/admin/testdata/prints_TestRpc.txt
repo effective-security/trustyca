@@ -793,15 +793,16 @@ MIIBtest
 MIIBtest
 -----END CERTIFICATE-----
 
-4 profiles registered
-┌────┬────────┬────────────┬────────┬─────────┬────────┬──────────────────────────────────────┬────────┐
-│ ID │ ORG ID │ PROJECT ID │ LABEL  │ ISSUER  │ EXPIRY │                USAGES                │ STATUS │
-├────┼────────┼────────────┼────────┼─────────┼────────┼──────────────────────────────────────┼────────┤
-│ 20 │ 5      │            │ client │ issuing │ 2160h  │ signing,key encipherment,server auth │ Active │
-│ 20 │ 5      │            │ ocsp   │ *       │ 2160h  │ signing,key encipherment,server auth │ Active │
-│ 20 │ 5      │            │ peer   │ issuing │ 2160h  │ signing,key encipherment,server auth │ Active │
-│ 20 │ 5      │            │ server │ issuing │ 2160h  │ signing,key encipherment,server auth │ Active │
-└────┴────────┴────────────┴────────┴─────────┴────────┴──────────────────────────────────────┴────────┘
+5 profiles registered
+┌────┬────────┬────────────┬─────────────────┬─────────┬────────┬─────────────────────┬────────┐
+│ ID │ ORG ID │ PROJECT ID │      LABEL      │ ISSUER  │ EXPIRY │       USAGES        │ STATUS │
+├────┼────────┼────────────┼─────────────────┼─────────┼────────┼─────────────────────┼────────┤
+│ 20 │ 5      │            │ client          │ issuing │ 2160h  │ signing,server auth │ Active │
+│ 20 │ 5      │            │ data_encryption │ issuing │ 2160h  │ signing,server auth │ Active │
+│ 20 │ 5      │            │ ocsp            │ *       │ 2160h  │ signing,server auth │ Active │
+│ 20 │ 5      │            │ peer            │ issuing │ 2160h  │ signing,server auth │ Active │
+│ 20 │ 5      │            │ server          │ issuing │ 2160h  │ signing,server auth │ Active │
+└────┴────────┴────────────┴─────────────────┴─────────┴────────┴─────────────────────┴────────┘
 
 
 - TestRpc/Test_ProfileGetCmd/json:
@@ -813,7 +814,6 @@ MIIBtest
 	"Description": "TLS server certificate",
 	"Usages": [
 		"signing",
-		"key encipherment",
 		"server auth"
 	],
 	"Expiry": "2160h",
@@ -826,23 +826,23 @@ MIIBtest
 }
 
 - TestRpc/Test_ProfileGetCmd/txt:
- ID                 │ 20                                   
- Org ID             │ 5                                    
- Project ID         │                                      
- Label              │ server                               
- Issuer             │ issuing                              
- Description        │ TLS server certificate               
- Usages             │ signing,key encipherment,server auth 
- Expiry             │ 2160h                                
- Backdate           │ 30m                                  
- Allowed Extensions │ 2.5.29.17                            
- Allowed Names      │                                      
- Allowed DNS        │                                      
- Allowed Email      │                                      
- Allowed URI        │                                      
- Status             │ Active                               
- Created            │ 2026-01-01T00:00:00Z                 
- Updated            │                                      
+ ID                 │ 20                     
+ Org ID             │ 5                      
+ Project ID         │                        
+ Label              │ server                 
+ Issuer             │ issuing                
+ Description        │ TLS server certificate 
+ Usages             │ signing,server auth    
+ Expiry             │ 2160h                  
+ Backdate           │ 30m                    
+ Allowed Extensions │ 2.5.29.17              
+ Allowed Names      │                        
+ Allowed DNS        │                        
+ Allowed Email      │                        
+ Allowed URI        │                        
+ Status             │ Active                 
+ Created            │ 2026-01-01T00:00:00Z   
+ Updated            │                        
 
 
 - TestRpc/Test_ProfileListCmd/json:
@@ -856,7 +856,6 @@ MIIBtest
 			"Description": "TLS server certificate",
 			"Usages": [
 				"signing",
-				"key encipherment",
 				"server auth"
 			],
 			"Expiry": "2160h",
@@ -875,7 +874,6 @@ MIIBtest
 			"Description": "TLS server certificate",
 			"Usages": [
 				"signing",
-				"key encipherment",
 				"server auth"
 			],
 			"Expiry": "2160h",
@@ -888,19 +886,19 @@ MIIBtest
 		}
 	],
 	"NextPage": {
-		"Offset": 2
+		"Cursor": "next-profile"
 	}
 }
 
 - TestRpc/Test_ProfileListCmd/txt:
-┌────┬────────┬────────────┬────────┬─────────┬────────┬──────────────────────────────────────┬────────┐
-│ ID │ ORG ID │ PROJECT ID │ LABEL  │ ISSUER  │ EXPIRY │                USAGES                │ STATUS │
-├────┼────────┼────────────┼────────┼─────────┼────────┼──────────────────────────────────────┼────────┤
-│ 20 │ 5      │            │ server │ issuing │ 2160h  │ signing,key encipherment,server auth │ Active │
-│ 20 │ 5      │            │ ocsp   │ *       │ 2160h  │ signing,key encipherment,server auth │ Active │
-└────┴────────┴────────────┴────────┴─────────┴────────┴──────────────────────────────────────┴────────┘
+┌────┬────────┬────────────┬────────┬─────────┬────────┬─────────────────────┬────────┐
+│ ID │ ORG ID │ PROJECT ID │ LABEL  │ ISSUER  │ EXPIRY │       USAGES        │ STATUS │
+├────┼────────┼────────────┼────────┼─────────┼────────┼─────────────────────┼────────┤
+│ 20 │ 5      │            │ server │ issuing │ 2160h  │ signing,server auth │ Active │
+│ 20 │ 5      │            │ ocsp   │ *       │ 2160h  │ signing,server auth │ Active │
+└────┴────────┴────────────┴────────┴─────────┴────────┴─────────────────────┴────────┘
 
-Next page: --offset 2
+Next page: --cursor next-profile
 
 
 - TestRpc/Test_ProfileRegisterCmd/json:
@@ -912,7 +910,6 @@ Next page: --offset 2
 	"Description": "TLS server certificate",
 	"Usages": [
 		"signing",
-		"key encipherment",
 		"server auth"
 	],
 	"Expiry": "2160h",
@@ -925,23 +922,23 @@ Next page: --offset 2
 }
 
 - TestRpc/Test_ProfileRegisterCmd/txt:
- ID                 │ 20                                   
- Org ID             │ 5                                    
- Project ID         │                                      
- Label              │ server                               
- Issuer             │ issuing                              
- Description        │ TLS server certificate               
- Usages             │ signing,key encipherment,server auth 
- Expiry             │ 2160h                                
- Backdate           │ 30m                                  
- Allowed Extensions │ 2.5.29.17                            
- Allowed Names      │                                      
- Allowed DNS        │                                      
- Allowed Email      │                                      
- Allowed URI        │                                      
- Status             │ Active                               
- Created            │ 2026-01-01T00:00:00Z                 
- Updated            │                                      
+ ID                 │ 20                     
+ Org ID             │ 5                      
+ Project ID         │                        
+ Label              │ server                 
+ Issuer             │ issuing                
+ Description        │ TLS server certificate 
+ Usages             │ signing,server auth    
+ Expiry             │ 2160h                  
+ Backdate           │ 30m                    
+ Allowed Extensions │ 2.5.29.17              
+ Allowed Names      │                        
+ Allowed DNS        │                        
+ Allowed Email      │                        
+ Allowed URI        │                        
+ Status             │ Active                 
+ Created            │ 2026-01-01T00:00:00Z   
+ Updated            │                        
 
 
 - TestRpc/Test_RootCmds/json:

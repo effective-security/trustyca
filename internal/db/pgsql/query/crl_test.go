@@ -111,7 +111,7 @@ ORDER BY id DESC
 LIMIT $5`,
 		},
 		{
-			query.ListCrlStates, []any{&query.ListCrlStatesRequest{OrgID: 1, ProjectIDs: []uint64{2}, Statuses: statuses, Limit: 10, Cursor: query.NewCursor(0)}},
+			query.ListCrlStates, []any{&query.ListCrlStatesRequest{OrgID: 1, ProjectIDs: []uint64{2}, Statuses: statuses, Limit: 10}},
 			`SELECT ` + cols + ` 
 FROM trustyca.issuer 
 WHERE org_id = $1 AND (project_id IS NULL OR project_id = ANY($2)) AND status = ANY($3) 

@@ -186,14 +186,13 @@ func Test_Issuer(t *testing.T) {
 	assert.Contains(t, allIDs, orgIssuer.ID.UInt64())
 
 	// cursor pagination
-	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Limit: 2, Cursor: query.NewCursor(0)})
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Limit: 2})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 2)
 	assert.Equal(t, otherScope.ID.UInt64(), list.Rows[0].ID.UInt64())
 	assert.Equal(t, prjIssuer.ID.UInt64(), list.Rows[1].ID.UInt64())
 	require.True(t, list.HasNextPage)
 	require.NotEmpty(t, list.Cursor)
-	assert.EqualValues(t, 0, list.NextOffset, "cursor pagination carries no offset")
 	next, err := query.ParseCursor(list.Cursor)
 	require.NoError(t, err)
 	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Limit: 2, Cursor: next})
@@ -204,7 +203,7 @@ func Test_Issuer(t *testing.T) {
 	assert.Empty(t, list.Cursor)
 
 	// a page that ends exactly at the limit reports a next page, which is empty
-	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Limit: 2, Cursor: query.NewCursor(0)})
+	list, err = provider.ListIssuers(ctx, &query.ListIssuersRequest{OrgID: org.ID.UInt64(), Limit: 2})
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 2)
 	require.True(t, list.HasNextPage)

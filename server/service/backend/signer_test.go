@@ -297,6 +297,16 @@ func TestService_SignOCSP(t *testing.T) {
 	leaf := tca.sign(t, "ocsp.example.com")
 	der, err := ocsp.CreateRequest(leaf, tca.issuerCert, &ocsp.RequestOptions{Hash: crypto.SHA256})
 	require.NoError(t, err)
+
+	// an issuer without a delegated responder answers nothing: its key signs
+	// no OCSP response, also for a request the AIA routes pass on
+	selfSigning := tca.newChild(t, tca.root, testCAProfile, testOrgID(), xdb.ID(0), "NO_RESPONDER", pb.AuthorityType_Issuing, nil)
+	selfSigningCert, err := certutil.ParseFromPEM([]byte(selfSigning.Pem))
+	require.NoError(t, err)
+	selfDer, err := ocsp.CreateRequest(leaf, selfSigningCert, nil)
+	require.NoError(t, err)
+	_, err = svc.SignOCSP(ctx, &pb.OCSPRequest{Der: selfDer})
+	assert.EqualError(t, err, "not_found: issuer not found")
 	ikid := tca.issuer.Skid
 	serial := leaf.SerialNumber.String()
 	certID := xdb.NewID(5)

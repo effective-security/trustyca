@@ -95,6 +95,37 @@ func Test_APIKey(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, list.Rows, 1)
 
+	// list: the pages continue past (created_at, id), newest first; a key
+	// created between the pages neither shifts nor repeats a row
+	first, err := provider.ListAPIKeys(ctx, &query.ListAPIKeysRequest{OrgID: org.ID.UInt64(), Limit: 1})
+	require.NoError(t, err)
+	require.Len(t, first.Rows, 1)
+	require.True(t, first.HasNextPage)
+	require.NotEmpty(t, first.Cursor)
+	assert.Equal(t, projectKey.ID.UInt64(), first.Rows[0].ID.UInt64(), "the newest key")
+
+	inserted, err := provider.RegisterAPIKey(ctx, &model.APIKey{
+		OrgID:  org.ID,
+		Label:  "created between the pages",
+		Key:    certutil.RandomString(32),
+		Secret: certutil.RandomString(32),
+		Scopes: []string{"org:read"},
+	})
+	require.NoError(t, err)
+
+	cursor, err := query.ParseTimeCursor(first.Cursor)
+	require.NoError(t, err)
+	second, err := provider.ListAPIKeys(ctx, &query.ListAPIKeysRequest{OrgID: org.ID.UInt64(), Limit: 1, Cursor: cursor})
+	require.NoError(t, err)
+	require.Len(t, second.Rows, 1)
+	assert.Equal(t, orgKey.ID.UInt64(), second.Rows[0].ID.UInt64(), "the next key, past the cursor")
+	assert.False(t, second.HasNextPage)
+	assert.Empty(t, second.Cursor)
+
+	deleted, err := provider.DeleteAPIKey(ctx, org.ID.UInt64(), inserted.ID.UInt64())
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, deleted)
+
 	// use increments the counter
 	used, err := provider.UseAPIKey(ctx, org.ID.UInt64(), orgKey.ID.UInt64())
 	require.NoError(t, err)
