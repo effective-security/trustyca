@@ -17,6 +17,7 @@ import (
 	"github.com/effective-security/trustyca/api/pb"
 	"github.com/effective-security/trustyca/internal/db/model"
 	"github.com/effective-security/xdb"
+	"github.com/effective-security/xpki/certutil"
 	"github.com/effective-security/xpki/cryptoprov"
 	"github.com/effective-security/xpki/csr"
 	"github.com/effective-security/xpki/dataprotection"
@@ -32,7 +33,15 @@ const (
 
 	// DefaultKeyAlgo is the algorithm of a generated key when the request
 	// names none
-	DefaultKeyAlgo = "ECDSA"
+	DefaultKeyAlgo = csr.AlgoECDSA
+	// KeyAlgoRSA, KeyAlgoECDSA and KeyAlgoMLDSA are the algorithms a KeySpec
+	// accepts, as csr.KeyRequest spells them; "MLDSA" is accepted for
+	// KeyAlgoMLDSA
+	KeyAlgoRSA   = csr.AlgoRSA
+	KeyAlgoECDSA = csr.AlgoECDSA
+	KeyAlgoMLDSA = csr.AlgoMLDSA
+	// keyAlgoMLDSAAlias is the spelling of KeyAlgoMLDSA without the hyphen
+	keyAlgoMLDSAAlias = "MLDSA"
 	// DefaultKeySize is the curve of a generated key when the request names
 	// none
 	DefaultKeySize = 256
@@ -47,21 +56,28 @@ const (
 	providerModelSeparator = "/"
 )
 
-// allowedKeySizes lists the accepted sizes per key algorithm
+// allowedKeySizes lists the accepted sizes per key algorithm: the RSA
+// modulus in bits, the ECDSA curve size, or the ML-DSA (FIPS 204)
+// parameter set
 var allowedKeySizes = map[string][]int{
-	"RSA":   {2048, 3072, 4096},
-	"ECDSA": {256, 384},
+	KeyAlgoRSA:   {2048, 3072, 4096},
+	KeyAlgoECDSA: {csr.CurveP256, csr.CurveP384},
+	KeyAlgoMLDSA: {csr.MLDSA44, csr.MLDSA65, csr.MLDSA87},
 }
 
 // KeySpec returns the algorithm and size of the key to generate for a
 // request; a nil or empty specification takes the defaults, and a size the
-// algorithm does not accept is an error
+// algorithm does not accept is an error. The algorithm is returned in the
+// spelling of csr.KeyRequest: RSA, ECDSA or ML-DSA.
 func KeySpec(spec *pb.KeySpec) (string, int, error) {
 	algo := DefaultKeyAlgo
 	size := DefaultKeySize
 	if spec != nil {
 		if spec.Algo != "" {
-			algo = strings.ToUpper(spec.Algo)
+			algo = strings.ToUpper(strings.TrimSpace(spec.Algo))
+			if algo == keyAlgoMLDSAAlias {
+				algo = KeyAlgoMLDSA
+			}
 		}
 		if spec.Size != 0 {
 			size = int(spec.Size)
@@ -75,6 +91,20 @@ func KeySpec(spec *pb.KeySpec) (string, int, error) {
 		return "", 0, errors.Errorf("unsupported %s key size: %d", algo, size)
 	}
 	return algo, size, nil
+}
+
+// CheckOCSPSigner refuses the settings of an issuer whose key cannot sign
+// OCSP responses: an ML-DSA key with an OcspURL needs a DelegatedOcspProfile,
+// since the OCSP responder (golang.org/x/crypto/ocsp) signs with RSA and
+// ECDSA keys only and the authority refuses to load such an issuer. It is
+// checked when the issuer is registered, imported or activated, before a
+// key is generated, so that the operator learns of it from the request and
+// not from the first load of the row.
+func CheckOCSPSigner(postQuantum bool, cfg *pb.IssuerConfig) error {
+	if postQuantum && cfg != nil && cfg.OcspURL != "" && cfg.DelegatedOcspProfile == "" {
+		return errors.WithStack(ErrOCSPSignerRequired)
+	}
+	return nil
 }
 
 // KeyLabel returns the label of the key of an issuer in its crypto provider:
@@ -362,6 +392,39 @@ func (k *Keys) Destroy(_ context.Context, m *model.Issuer) error {
 		return errors.WithMessagef(err, "unable to destroy key of issuer %s", idString(m.ID))
 	}
 	return nil
+}
+
+// isPostQuantumKeyCertificate reports whether the key of a certificate is
+// an ML-DSA key. The signature of the certificate does not matter: a
+// classical issuer signed by an ML-DSA parent signs OCSP responses itself,
+// which is why certutil.IsPostQuantumCertificate, true at either end of a
+// mixed chain, is not the test here.
+func isPostQuantumKeyCertificate(crt *x509.Certificate) bool {
+	return crt != nil && crt.PublicKeyAlgorithm == x509.MLDSA
+}
+
+// IsPostQuantumIssuer reports whether the key of an issuer row is an ML-DSA
+// key, from its certificate, or from its request while it is Pending; the
+// signature of the certificate, by the parent, does not count
+func IsPostQuantumIssuer(m *model.Issuer) (bool, error) {
+	switch {
+	case m == nil:
+		return false, errors.New("issuer is required")
+	case m.Pem != "":
+		crt, err := certutil.ParseFromPEM([]byte(m.Pem))
+		if err != nil {
+			return false, errors.WithMessagef(err, "invalid certificate of issuer %s", idString(m.ID))
+		}
+		return isPostQuantumKeyCertificate(crt), nil
+	case m.CsrPem != "":
+		req, err := csr.ParsePEM([]byte(m.CsrPem))
+		if err != nil {
+			return false, errors.WithMessagef(err, "invalid request of issuer %s", idString(m.ID))
+		}
+		return req.PublicKeyAlgorithm == x509.MLDSA, nil
+	default:
+		return false, errors.Errorf("issuer %s has no certificate", idString(m.ID))
+	}
 }
 
 // PublicKeysEqual reports whether the two public keys are the same key

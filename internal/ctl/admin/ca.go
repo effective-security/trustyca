@@ -108,8 +108,8 @@ func (f *SubjectFlags) Subject() *pb.X509Subject {
 
 // KeyFlags select the key of a new issuer
 type KeyFlags struct {
-	KeyAlgo     string `help:"the key algorithm: ECDSA|RSA; empty for the server default, ECDSA P-256"`
-	KeySize     int32  `help:"the RSA key size in bits, or the ECDSA curve size: 256|384|521"`
+	KeyAlgo     string `help:"the key algorithm: ECDSA|RSA|ML-DSA; empty for the server default, ECDSA P-256"`
+	KeySize     int32  `help:"the RSA key size in bits: 2048|3072|4096, the ECDSA curve size: 256|384, or the ML-DSA parameter set: 44|65|87"`
 	KeyProvider string `help:"the crypto provider of the key; empty for the server default"`
 }
 

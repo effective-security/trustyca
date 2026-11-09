@@ -81,6 +81,9 @@ func ProfileFromPb(p *pb.CertProfile) (*authority.CertProfile, error) {
 		AllowedRoles:      slices.Clone(p.AllowedRoles),
 		DeniedRoles:       slices.Clone(p.DeniedRoles),
 	}
+	if len(p.AllowedKeyAlgorithms) > 0 {
+		res.AllowedKeyAlgorithms = slices.Clone(p.AllowedKeyAlgorithms)
+	}
 	if p.CAConstraint != nil {
 		res.CAConstraint = authority.CAConstraint{
 			IsCA:       p.CAConstraint.IsCA,
@@ -123,6 +126,9 @@ func ProfileToPb(label string, p *authority.CertProfile) *pb.CertProfile {
 		PoliciesCritical:  p.PoliciesCritical,
 		AllowedRoles:      slices.Clone(p.AllowedRoles),
 		DeniedRoles:       slices.Clone(p.DeniedRoles),
+	}
+	if len(p.AllowedKeyAlgorithms) > 0 {
+		res.AllowedKeyAlgorithms = slices.Clone(p.AllowedKeyAlgorithms)
 	}
 	if p.CAConstraint.IsCA || p.CAConstraint.MaxPathLen != 0 {
 		res.CAConstraint = &pb.CAConstraint{

@@ -105,6 +105,11 @@ func TestService_RegisterIssuer(t *testing.T) {
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, `bad_request: invalid config: invalid CrlExpiry: "x" is not a duration`)
 	req = valid()
+	req.KeySpec = &pb.KeySpec{Algo: "ML-DSA", Size: 65}
+	req.Config = &pb.IssuerConfig{OcspURL: "http://cis.example.com/v1/ocsp/${ISSUER_ID}"}
+	_, err = svc.RegisterIssuer(ctx, req)
+	assert.EqualError(t, err, "bad_request: invalid config: an ML-DSA key cannot sign OCSP responses: set DelegatedOcspProfile or remove OcspURL")
+	req = valid()
 	req.Extensions = []*pb.X509Extension{{ID: "x"}}
 	_, err = svc.RegisterIssuer(ctx, req)
 	assert.EqualError(t, err, "bad_request: invalid extension OID: x")
@@ -631,6 +636,9 @@ func TestService_UpdateIssuer(t *testing.T) {
 	// the settings
 	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: tca.issuer.ID.String(), Config: &pb.IssuerConfig{CrlExpiry: "x"}})
 	assert.EqualError(t, err, `bad_request: invalid config: invalid CrlExpiry: "x" is not a duration`)
+	pqRoot := tca.newMLDSARoot(t, testOrgID(), xdb.ID(0), "PQ_ROOT")
+	_, err = svc.UpdateIssuer(ctx, &privpb.UpdateIssuerRequest{ID: pqRoot.ID.String(), Config: &pb.IssuerConfig{OcspURL: "http://cis.example.com/v1/ocsp/${ISSUER_ID}"}})
+	assert.EqualError(t, err, "bad_request: invalid config: an ML-DSA key cannot sign OCSP responses: set DelegatedOcspProfile or remove OcspURL", "an ML-DSA issuer cannot take an OCSP URL without a responder")
 	before, err := tca.registry.Resolve(tca.ctx, &core.ResolveRequest{OrgID: testOrgID(), Profile: testProfile})
 	require.NoError(t, err)
 	assert.Equal(t, 8*time.Hour, before.Issuer.OcspExpiry())

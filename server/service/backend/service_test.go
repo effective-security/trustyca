@@ -590,6 +590,24 @@ func (tca *testCA) newRoot(t testing.TB, orgID, projectID xdb.ID, label string) 
 	return tca.rows.addIssuer(m)
 }
 
+// newMLDSARoot creates and stores a self-signed root with an ML-DSA-44 key
+func (tca *testCA) newMLDSARoot(t testing.TB, orgID, projectID xdb.ID, label string) *model.Issuer {
+	t.Helper()
+	profile, err := pbconv.ProfileFromPb(rootProfileDef(testRootProfile))
+	require.NoError(t, err)
+	m, err := tca.keys.NewRootIssuer(tca.ctx, &core.IssuerRequest{
+		OrgID:     orgID,
+		ProjectID: projectID,
+		Label:     label,
+		Type:      pb.AuthorityType_Root,
+		Subject:   &csr.X509Subject{CommonName: label + " Root"},
+		KeySpec:   &pb.KeySpec{Algo: core.KeyAlgoMLDSA, Size: csr.MLDSA44},
+		Provider:  tca.prov,
+	}, testRootProfile, profile)
+	require.NoError(t, err)
+	return tca.rows.addIssuer(m)
+}
+
 // newChild creates and stores an issuer signed by the parent with the CA
 // profile of the parent's scope
 func (tca *testCA) newChild(t testing.TB, parent *model.Issuer, caProfile string, orgID, projectID xdb.ID, label string, typ pb.AuthorityType_Enum, cfg *pb.IssuerConfig) *model.Issuer {

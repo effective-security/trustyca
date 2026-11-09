@@ -51,10 +51,11 @@ func fullProfile() *pb.CertProfile {
 				{Type: csr.CpsQualifierType, Value: "https://example.com/cps"},
 			},
 		}},
-		PoliciesCritical: true,
-		AllowedRoles:     []string{"ra"},
-		DeniedRoles:      []string{"guest"},
-		Status:           pb.ItemStatus_Active,
+		PoliciesCritical:     true,
+		AllowedRoles:         []string{"ra"},
+		DeniedRoles:          []string{"guest"},
+		AllowedKeyAlgorithms: []string{"ecdsa", "ML-DSA"},
+		Status:               pb.ItemStatus_Active,
 	}
 }
 
@@ -87,6 +88,7 @@ func TestProfileFromPb(t *testing.T) {
 	assert.True(t, p.PoliciesCritical)
 	assert.Equal(t, []string{"ra"}, p.AllowedRoles)
 	assert.Equal(t, []string{"guest"}, p.DeniedRoles)
+	assert.Equal(t, []string{"ecdsa", "ML-DSA"}, p.AllowedKeyAlgorithms, "the names are kept as given; the authority normalizes them")
 
 	// a CA profile
 	cap, err := pbconv.ProfileFromPb(caProfileDef("CA", "ROOT"))
@@ -94,6 +96,7 @@ func TestProfileFromPb(t *testing.T) {
 	assert.True(t, cap.CAConstraint.IsCA)
 	assert.Equal(t, 0, cap.CAConstraint.MaxPathLen)
 	assert.Nil(t, cap.AllowedCSRFields, "absent means every field may be copied")
+	assert.Nil(t, cap.AllowedKeyAlgorithms, "absent means every key algorithm")
 
 	tcases := []struct {
 		name string
@@ -111,6 +114,7 @@ func TestProfileFromPb(t *testing.T) {
 		{name: "bad policy", mod: func(p *pb.CertProfile) { p.Policies = []*pb.CertificatePolicy{{ID: "nope"}} }, err: "invalid Policies OID: nope"},
 		{name: "bad qualifier", mod: func(p *pb.CertProfile) { p.Policies[0].Qualifiers[0].Type = "id-qt-other" }, err: "invalid profile: invalid policy qualifier type: id-qt-other"},
 		{name: "bad regex", mod: func(p *pb.CertProfile) { p.AllowedDns = "(" }, err: "invalid profile: failed to compile AllowedDNS"},
+		{name: "bad key algorithm", mod: func(p *pb.CertProfile) { p.AllowedKeyAlgorithms = []string{"dsa"} }, err: "invalid profile: unknown key algorithm: dsa"},
 	}
 	for _, tc := range tcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -151,6 +155,7 @@ func TestProfileToPb(t *testing.T) {
 	assert.Equal(t, def.PoliciesCritical, back.PoliciesCritical)
 	assert.Equal(t, def.AllowedRoles, back.AllowedRoles)
 	assert.Equal(t, def.DeniedRoles, back.DeniedRoles)
+	assert.Equal(t, def.AllowedKeyAlgorithms, back.AllowedKeyAlgorithms)
 	assert.Empty(t, back.ID, "the identity is the row's")
 	assert.Equal(t, pb.ItemStatus_Unknown, back.Status)
 
@@ -170,6 +175,7 @@ func TestProfileToPb(t *testing.T) {
 	assert.Empty(t, cap.IssuerLabel)
 	assert.Nil(t, cap.Extensions)
 	assert.Nil(t, cap.AllowedFields)
+	assert.Nil(t, cap.AllowedKeyAlgorithms)
 
 	// stored and restored by the row
 	m, err := model.NewCertificateProfile(xdb.NewID(1), xdb.ID(0), back)
@@ -178,6 +184,7 @@ func TestProfileToPb(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, back.Expiry, stored.Expiry)
 	assert.Equal(t, fmt.Sprint(back.Policies), fmt.Sprint(stored.Policies))
+	assert.Equal(t, back.AllowedKeyAlgorithms, stored.AllowedKeyAlgorithms)
 }
 
 func TestExtensionsFromPb(t *testing.T) {

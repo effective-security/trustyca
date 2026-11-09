@@ -358,6 +358,11 @@ message CertProfile {
     repeated string AllowedRoles = 21 [json_name = "AllowedRoles"];
     // DeniedRoles specifies caller roles denied to request the profile
     repeated string DeniedRoles = 22 [json_name = "DeniedRoles"];
+    // AllowedKeyAlgorithms restricts the public key algorithms of the
+    // requests the profile signs: rsa, ecdsa, ed25519, ml-dsa (case-insensitive).
+    // Empty allows every algorithm the CA can sign for. It lets a profile
+    // issue only post-quantum, or only classical, certificates.
+    repeated string AllowedKeyAlgorithms = 26 [json_name = "AllowedKeyAlgorithms"];
 
     // Status of the profile
     ItemStatus.Enum Status = 23 [json_name = "Status"];
@@ -376,11 +381,16 @@ message IssuerSerial {
     string SerialNumber = 2 [json_name = "SerialNumber"];
 }
 
-// KeySpec specifies the key to generate for an issuer
+// KeySpec specifies the key to generate for an issuer.
+// The default is ECDSA P-256.
 message KeySpec {
-    // Algo specifies the key algorithm: RSA|ECDSA
+    // Algo specifies the key algorithm: RSA|ECDSA|ML-DSA (case-insensitive;
+    // MLDSA is accepted). ML-DSA is the post-quantum signature scheme of
+    // FIPS 204; an ML-DSA issuer with an OcspURL needs a DelegatedOcspProfile,
+    // since ML-DSA keys do not sign OCSP responses.
     string Algo = 1 [json_name = "Algo"];
-    // Size specifies RSA key size in bits or ECDSA curve size: 256|384|521
+    // Size specifies the RSA key size in bits: 2048|3072|4096, the ECDSA
+    // curve size: 256|384, or the ML-DSA parameter set: 44|65|87
     int32 Size = 2 [json_name = "Size"];
 }
 
