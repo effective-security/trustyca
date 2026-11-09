@@ -113,7 +113,10 @@ func (s *Service) SignCertificate(ctx context.Context, req *privpb.SignCertifica
 		metricskey.CAFailSignCert.IncrCounter(1, issuer.Label(), req.Profile, orgID.String())
 
 		if isSignRequestError(err) {
-			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "failed to sign certificate: %s", err.Error())
+			// the authority names the profile by the name the registry
+			// registered it under; the caller knows its label
+			msg := strings.ReplaceAll(err.Error(), res.ProfileName, req.Profile)
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "failed to sign certificate: %s", msg)
 		}
 		return nil, httperror.WrapWithCtx(ctx, err, "failed to sign certificate")
 	}

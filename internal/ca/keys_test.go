@@ -43,6 +43,11 @@ func TestKeySpec(t *testing.T) {
 		{name: "rsa default size", spec: &pb.KeySpec{Algo: "RSA"}, err: "unsupported RSA key size: 256"},
 		{name: "rsa small", spec: &pb.KeySpec{Algo: "RSA", Size: 1024}, err: "unsupported RSA key size: 1024"},
 		{name: "p521", spec: &pb.KeySpec{Algo: "ECDSA", Size: 521}, err: "unsupported ECDSA key size: 521"},
+		{name: "ml-dsa", spec: &pb.KeySpec{Algo: "ML-DSA", Size: 65}, algo: "ML-DSA", size: 65},
+		{name: "ml-dsa lower", spec: &pb.KeySpec{Algo: "ml-dsa", Size: 87}, algo: "ML-DSA", size: 87},
+		{name: "mldsa alias", spec: &pb.KeySpec{Algo: " mldsa ", Size: 44}, algo: "ML-DSA", size: 44},
+		{name: "ml-dsa default size", spec: &pb.KeySpec{Algo: "ML-DSA"}, err: "unsupported ML-DSA key size: 256"},
+		{name: "ml-dsa unknown set", spec: &pb.KeySpec{Algo: "ML-DSA", Size: 128}, err: "unsupported ML-DSA key size: 128"},
 		{name: "dsa", spec: &pb.KeySpec{Algo: "DSA", Size: 2048}, err: "unsupported key algorithm: DSA"},
 	}
 	for _, tc := range tcases {

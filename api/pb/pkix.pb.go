@@ -1674,6 +1674,11 @@ type CertProfile struct {
 	AllowedRoles []string `protobuf:"bytes,21,rep,name=AllowedRoles,proto3" json:"AllowedRoles,omitempty"`
 	// DeniedRoles specifies caller roles denied to request the profile
 	DeniedRoles []string `protobuf:"bytes,22,rep,name=DeniedRoles,proto3" json:"DeniedRoles,omitempty"`
+	// AllowedKeyAlgorithms restricts the public key algorithms of the
+	// requests the profile signs: rsa, ecdsa, ed25519, ml-dsa (case-insensitive).
+	// Empty allows every algorithm the CA can sign for. It lets a profile
+	// issue only post-quantum, or only classical, certificates.
+	AllowedKeyAlgorithms []string `protobuf:"bytes,26,rep,name=AllowedKeyAlgorithms,proto3" json:"AllowedKeyAlgorithms,omitempty"`
 	// Status of the profile
 	Status ItemStatus_Enum `protobuf:"varint,23,opt,name=Status,proto3,enum=pb.ItemStatus_Enum" json:"Status,omitempty"`
 	// CreatedAt in RFC3339 format
@@ -1868,6 +1873,13 @@ func (x *CertProfile) GetDeniedRoles() []string {
 	return nil
 }
 
+func (x *CertProfile) GetAllowedKeyAlgorithms() []string {
+	if x != nil {
+		return x.AllowedKeyAlgorithms
+	}
+	return nil
+}
+
 func (x *CertProfile) GetStatus() ItemStatus_Enum {
 	if x != nil {
 		return x.Status
@@ -1944,12 +1956,17 @@ func (x *IssuerSerial) GetSerialNumber() string {
 	return ""
 }
 
-// KeySpec specifies the key to generate for an issuer
+// KeySpec specifies the key to generate for an issuer.
+// The default is ECDSA P-256.
 type KeySpec struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Algo specifies the key algorithm: RSA|ECDSA
+	// Algo specifies the key algorithm: RSA|ECDSA|ML-DSA (case-insensitive;
+	// MLDSA is accepted). ML-DSA is the post-quantum signature scheme of
+	// FIPS 204; an ML-DSA issuer with an OcspURL needs a DelegatedOcspProfile,
+	// since ML-DSA keys do not sign OCSP responses.
 	Algo string `protobuf:"bytes,1,opt,name=Algo,proto3" json:"Algo,omitempty"`
-	// Size specifies RSA key size in bits or ECDSA curve size: 256|384|521
+	// Size specifies the RSA key size in bits: 2048|3072|4096, the ECDSA
+	// curve size: 256|384, or the ML-DSA parameter set: 44|65|87
 	Size          int32 `protobuf:"varint,2,opt,name=Size,proto3" json:"Size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2542,7 +2559,7 @@ const file_pkix_proto_rawDesc = "" +
 	"\rX509Extension\x12\x0e\n" +
 	"\x02ID\x18\x01 \x01(\tR\x02ID\x12\x1a\n" +
 	"\bCritical\x18\x02 \x01(\bR\bCritical\x12\x14\n" +
-	"\x05Value\x18\x03 \x01(\tR\x05Value\"\x82\a\n" +
+	"\x05Value\x18\x03 \x01(\tR\x05Value\"\xb6\a\n" +
 	"\vCertProfile\x12\x0e\n" +
 	"\x02ID\x18\x01 \x01(\tR\x02ID\x12\x14\n" +
 	"\x05OrgID\x18\x02 \x01(\tR\x05OrgID\x12\x1c\n" +
@@ -2572,7 +2589,8 @@ const file_pkix_proto_rawDesc = "" +
 	"\bPolicies\x18\x13 \x03(\v2\x15.pb.CertificatePolicyR\bPolicies\x12*\n" +
 	"\x10PoliciesCritical\x18\x14 \x01(\bR\x10PoliciesCritical\x12\"\n" +
 	"\fAllowedRoles\x18\x15 \x03(\tR\fAllowedRoles\x12 \n" +
-	"\vDeniedRoles\x18\x16 \x03(\tR\vDeniedRoles\x12+\n" +
+	"\vDeniedRoles\x18\x16 \x03(\tR\vDeniedRoles\x122\n" +
+	"\x14AllowedKeyAlgorithms\x18\x1a \x03(\tR\x14AllowedKeyAlgorithms\x12+\n" +
 	"\x06Status\x18\x17 \x01(\x0e2\x13.pb.ItemStatus.EnumR\x06Status\x12\x1c\n" +
 	"\tCreatedAt\x18\x18 \x01(\tR\tCreatedAt\x12\x1c\n" +
 	"\tUpdatedAt\x18\x19 \x01(\tR\tUpdatedAt\"F\n" +

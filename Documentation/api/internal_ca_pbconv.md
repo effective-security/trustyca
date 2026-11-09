@@ -57,7 +57,7 @@ func ExpandIssuerURL(template, skid string) string
 ExpandIssuerURL returns the URL of an AIA, CRL or OCSP template of an issuer with its Subject Key Identifier in place of the placeholders, as the authority puts it in the certificates it issues
 
 <a name="ExtensionsFromPb"></a>
-## func [ExtensionsFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/pbconv/profile.go#L159>)
+## func [ExtensionsFromPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/pbconv/profile.go#L165>)
 
 ```go
 func ExtensionsFromPb(list []*pb.X509Extension) ([]csr.X509Extension, error)
@@ -66,7 +66,7 @@ func ExtensionsFromPb(list []*pb.X509Extension) ([]csr.X509Extension, error)
 ExtensionsFromPb converts the extensions of a request or a profile; the value stays encoded, as csr.X509Extension expects it
 
 <a name="ExtensionsToPb"></a>
-## func [ExtensionsToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/pbconv/profile.go#L182>)
+## func [ExtensionsToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/pbconv/profile.go#L188>)
 
 ```go
 func ExtensionsToPb(list []csr.X509Extension) []*pb.X509Extension
@@ -102,7 +102,7 @@ func ProfileFromPb(p *pb.CertProfile) (*authority.CertProfile, error)
 ProfileFromPb converts a profile definition to the authority profile that signs with it and validates it with authority.CertProfile.Validate, which also compiles the allowed name patterns. The identity fields of the definition \(ID, scope, status and timestamps\) are not part of the result.
 
 <a name="ProfileToPb"></a>
-## func [ProfileToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/pbconv/profile.go#L108>)
+## func [ProfileToPb](<https://github.com/effective-security/trustyca/blob/main/internal/ca/pbconv/profile.go#L111>)
 
 ```go
 func ProfileToPb(label string, p *authority.CertProfile) *pb.CertProfile

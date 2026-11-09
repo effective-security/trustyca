@@ -981,6 +981,18 @@ through the API are not subject to validation through this mechanism.`,
             Documentation: `DeniedRoles specifies caller roles denied to request the profile`,
         },
         {
+            Name:          "AllowedKeyAlgorithms",
+            FullName:      "pb.CertProfile.AllowedKeyAlgorithms",
+            Display:       "Allowed Key Algorithms",
+            Type:          "[]string",
+            SearchType:    "keyword",
+            SearchOptions: api.SearchOption_Sortable,
+            Documentation: `AllowedKeyAlgorithms restricts the public key algorithms of the
+requests the profile signs: rsa, ecdsa, ed25519, ml-dsa (case-insensitive).
+Empty allows every algorithm the CA can sign for. It lets a profile
+issue only post-quantum, or only classical, certificates.`,
+        },
+        {
             Name:            "Status",
             FullName:        "pb.CertProfile.Status",
             Type:            "int32",
@@ -2450,10 +2462,11 @@ var JsonUnmarshalOptions = protojson.UnmarshalOptions{
 
 ```go
 var KeySpec_MessageDescription = &api.MessageDescription{
-    Name:          "KeySpec",
-    Display:       "Key Spec",
-    FullName:      "pb.KeySpec",
-    Documentation: `KeySpec specifies the key to generate for an issuer`,
+    Name:     "KeySpec",
+    Display:  "Key Spec",
+    FullName: "pb.KeySpec",
+    Documentation: `KeySpec specifies the key to generate for an issuer.
+The default is ECDSA P-256.`,
     Fields: []*api.FieldMeta{
         {
             Name:          "Algo",
@@ -2461,7 +2474,10 @@ var KeySpec_MessageDescription = &api.MessageDescription{
             Type:          "string",
             SearchType:    "keyword",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Algo specifies the key algorithm: RSA|ECDSA`,
+            Documentation: `Algo specifies the key algorithm: RSA|ECDSA|ML-DSA (case-insensitive;
+MLDSA is accepted). ML-DSA is the post-quantum signature scheme of
+FIPS 204; an ML-DSA issuer with an OcspURL needs a DelegatedOcspProfile,
+since ML-DSA keys do not sign OCSP responses.`,
         },
         {
             Name:          "Size",
@@ -2469,7 +2485,8 @@ var KeySpec_MessageDescription = &api.MessageDescription{
             Type:          "int32",
             SearchType:    "integer",
             SearchOptions: api.SearchOption_Sortable,
-            Documentation: `Size specifies RSA key size in bits or ECDSA curve size: 256|384|521`,
+            Documentation: `Size specifies the RSA key size in bits: 2048|3072|4096, the ECDSA
+curve size: 256|384, or the ML-DSA parameter set: 44|65|87`,
         },
     },
 }
@@ -4575,7 +4592,7 @@ var X509Subject_MessageDescription = &api.MessageDescription{
 ```
 
 <a name="CreateMessage"></a>
-## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3906>)
+## func [CreateMessage](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3923>)
 
 ```go
 func CreateMessage(fullname string) any
@@ -4593,7 +4610,7 @@ func GetAdminMethodsInfo() map[string]*MethodInfo
 GetAdminMethodsInfo returns the methods info for the admin service. It filters out the methods that are not prefixed with "/privpb.Admin/".
 
 <a name="GetMessageDescription"></a>
-## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3914>)
+## func [GetMessageDescription](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3931>)
 
 ```go
 func GetMessageDescription(fullname string) *api.MessageDescription
@@ -4602,7 +4619,7 @@ func GetMessageDescription(fullname string) *api.MessageDescription
 
 
 <a name="GetMessageDescriptions"></a>
-## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3890>)
+## func [GetMessageDescriptions](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3907>)
 
 ```go
 func GetMessageDescriptions() map[string]*api.MessageDescription
@@ -4800,7 +4817,7 @@ func (msg *ActivateIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ActivateIssuerRequest.Validate"></a>
-### func \(\*ActivateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3814>)
+### func \(\*ActivateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3831>)
 
 ```go
 func (m *ActivateIssuerRequest) Validate(ctx context.Context) error
@@ -5213,7 +5230,7 @@ func (msg *DeleteProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="DeleteProfileRequest.Validate"></a>
-### func \(\*DeleteProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3817>)
+### func \(\*DeleteProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3834>)
 
 ```go
 func (m *DeleteProfileRequest) Validate(ctx context.Context) error
@@ -5353,7 +5370,7 @@ func (msg *GetCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCertificateRequest.Validate"></a>
-### func \(\*GetCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3820>)
+### func \(\*GetCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3837>)
 
 ```go
 func (m *GetCertificateRequest) Validate(ctx context.Context) error
@@ -5460,7 +5477,7 @@ func (msg *GetCrlRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetCrlRequest.Validate"></a>
-### func \(\*GetCrlRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3823>)
+### func \(\*GetCrlRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3840>)
 
 ```go
 func (m *GetCrlRequest) Validate(ctx context.Context) error
@@ -5600,7 +5617,7 @@ func (msg *GetIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetIssuerRequest.Validate"></a>
-### func \(\*GetIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3826>)
+### func \(\*GetIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3843>)
 
 ```go
 func (m *GetIssuerRequest) Validate(ctx context.Context) error
@@ -5729,7 +5746,7 @@ func (msg *GetProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetProfileRequest.Validate"></a>
-### func \(\*GetProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3829>)
+### func \(\*GetProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3846>)
 
 ```go
 func (m *GetProfileRequest) Validate(ctx context.Context) error
@@ -5837,7 +5854,7 @@ func (msg *GetSummaryRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="GetSummaryRequest.Validate"></a>
-### func \(\*GetSummaryRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3832>)
+### func \(\*GetSummaryRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3849>)
 
 ```go
 func (m *GetSummaryRequest) Validate(ctx context.Context) error
@@ -6034,7 +6051,7 @@ func (msg *ImportIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ImportIssuerRequest.Validate"></a>
-### func \(\*ImportIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3835>)
+### func \(\*ImportIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3852>)
 
 ```go
 func (m *ImportIssuerRequest) Validate(ctx context.Context) error
@@ -6233,7 +6250,7 @@ func (msg *ListAllCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListAllCertificatesRequest.Validate"></a>
-### func \(\*ListAllCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3838>)
+### func \(\*ListAllCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3855>)
 
 ```go
 func (m *ListAllCertificatesRequest) Validate(ctx context.Context) error
@@ -6445,7 +6462,7 @@ func (msg *ListAllIssuersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListAllIssuersRequest.Validate"></a>
-### func \(\*ListAllIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3841>)
+### func \(\*ListAllIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3858>)
 
 ```go
 func (m *ListAllIssuersRequest) Validate(ctx context.Context) error
@@ -6633,7 +6650,7 @@ func (msg *ListCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListCertificatesRequest.Validate"></a>
-### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3844>)
+### func \(\*ListCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3861>)
 
 ```go
 func (m *ListCertificatesRequest) Validate(ctx context.Context) error
@@ -6822,7 +6839,7 @@ func (msg *ListIssuersRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListIssuersRequest.Validate"></a>
-### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3847>)
+### func \(\*ListIssuersRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3864>)
 
 ```go
 func (m *ListIssuersRequest) Validate(ctx context.Context) error
@@ -6956,7 +6973,7 @@ func (msg *ListOrgsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListOrgsRequest.Validate"></a>
-### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3850>)
+### func \(\*ListOrgsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3867>)
 
 ```go
 func (m *ListOrgsRequest) Validate(ctx context.Context) error
@@ -7131,7 +7148,7 @@ func (msg *ListProfilesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProfilesRequest.Validate"></a>
-### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3853>)
+### func \(\*ListProfilesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3870>)
 
 ```go
 func (m *ListProfilesRequest) Validate(ctx context.Context) error
@@ -7276,7 +7293,7 @@ func (msg *ListProjectsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListProjectsRequest.Validate"></a>
-### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3856>)
+### func \(\*ListProjectsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3873>)
 
 ```go
 func (m *ListProjectsRequest) Validate(ctx context.Context) error
@@ -7427,7 +7444,7 @@ func (msg *ListRevokedCertificatesRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListRevokedCertificatesRequest.Validate"></a>
-### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3859>)
+### func \(\*ListRevokedCertificatesRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3876>)
 
 ```go
 func (m *ListRevokedCertificatesRequest) Validate(ctx context.Context) error
@@ -7556,7 +7573,7 @@ func (msg *ListRootsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="ListRootsRequest.Validate"></a>
-### func \(\*ListRootsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3862>)
+### func \(\*ListRootsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3879>)
 
 ```go
 func (m *ListRootsRequest) Validate(ctx context.Context) error
@@ -7565,7 +7582,7 @@ func (m *ListRootsRequest) Validate(ctx context.Context) error
 
 
 <a name="MessageAllocator"></a>
-## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3671>)
+## type [MessageAllocator](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3688>)
 
 MessageAllocator defines constructor to allocate Protobuf message
 
@@ -7731,7 +7748,7 @@ func (msg *PublishCrlsRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="PublishCrlsRequest.Validate"></a>
-### func \(\*PublishCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3865>)
+### func \(\*PublishCrlsRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3882>)
 
 ```go
 func (m *PublishCrlsRequest) Validate(ctx context.Context) error
@@ -7951,7 +7968,7 @@ func (msg *RegisterIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterIssuerRequest.Validate"></a>
-### func \(\*RegisterIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3868>)
+### func \(\*RegisterIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3885>)
 
 ```go
 func (m *RegisterIssuerRequest) Validate(ctx context.Context) error
@@ -8070,7 +8087,7 @@ func (msg *RegisterProfileRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterProfileRequest.Validate"></a>
-### func \(\*RegisterProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3871>)
+### func \(\*RegisterProfileRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3888>)
 
 ```go
 func (m *RegisterProfileRequest) Validate(ctx context.Context) error
@@ -8188,7 +8205,7 @@ func (msg *RegisterRootRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RegisterRootRequest.Validate"></a>
-### func \(\*RegisterRootRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3874>)
+### func \(\*RegisterRootRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3891>)
 
 ```go
 func (m *RegisterRootRequest) Validate(ctx context.Context) error
@@ -8362,7 +8379,7 @@ func (msg *RevokeCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="RevokeCertificateRequest.Validate"></a>
-### func \(\*RevokeCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3877>)
+### func \(\*RevokeCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3894>)
 
 ```go
 func (m *RevokeCertificateRequest) Validate(ctx context.Context) error
@@ -8595,7 +8612,7 @@ func (msg *SignCertificateRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="SignCertificateRequest.Validate"></a>
-### func \(\*SignCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3880>)
+### func \(\*SignCertificateRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3897>)
 
 ```go
 func (m *SignCertificateRequest) Validate(ctx context.Context) error
@@ -9015,7 +9032,7 @@ func (msg *UpdateCertificateLabelRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateCertificateLabelRequest.Validate"></a>
-### func \(\*UpdateCertificateLabelRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3883>)
+### func \(\*UpdateCertificateLabelRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3900>)
 
 ```go
 func (m *UpdateCertificateLabelRequest) Validate(ctx context.Context) error
@@ -9157,7 +9174,7 @@ func (msg *UpdateIssuerRequest) UnmarshalJSON(b []byte) error
 UnmarshalJSON implements json.Unmarshaler
 
 <a name="UpdateIssuerRequest.Validate"></a>
-### func \(\*UpdateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3886>)
+### func \(\*UpdateIssuerRequest\) [Validate](<https://github.com/effective-security/trustyca/blob/main/privpb/messages.pb.go#L3903>)
 
 ```go
 func (m *UpdateIssuerRequest) Validate(ctx context.Context) error

@@ -808,6 +808,18 @@ through the API are not subject to validation through this mechanism.`,
 			Documentation: `DeniedRoles specifies caller roles denied to request the profile`,
 		},
 		{
+			Name:          "AllowedKeyAlgorithms",
+			FullName:      "pb.CertProfile.AllowedKeyAlgorithms",
+			Display:       "Allowed Key Algorithms",
+			Type:          "[]string",
+			SearchType:    "keyword",
+			SearchOptions: api.SearchOption_Sortable,
+			Documentation: `AllowedKeyAlgorithms restricts the public key algorithms of the
+requests the profile signs: rsa, ecdsa, ed25519, ml-dsa (case-insensitive).
+Empty allows every algorithm the CA can sign for. It lets a profile
+issue only post-quantum, or only classical, certificates.`,
+		},
+		{
 			Name:            "Status",
 			FullName:        "pb.CertProfile.Status",
 			Type:            "int32",
@@ -2846,10 +2858,11 @@ var KVSet_MessageDescription = &api.MessageDescription{
 }
 
 var KeySpec_MessageDescription = &api.MessageDescription{
-	Name:          "KeySpec",
-	Display:       "Key Spec",
-	FullName:      "pb.KeySpec",
-	Documentation: `KeySpec specifies the key to generate for an issuer`,
+	Name:     "KeySpec",
+	Display:  "Key Spec",
+	FullName: "pb.KeySpec",
+	Documentation: `KeySpec specifies the key to generate for an issuer.
+The default is ECDSA P-256.`,
 	Fields: []*api.FieldMeta{
 		{
 			Name:          "Algo",
@@ -2857,7 +2870,10 @@ var KeySpec_MessageDescription = &api.MessageDescription{
 			Type:          "string",
 			SearchType:    "keyword",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Algo specifies the key algorithm: RSA|ECDSA`,
+			Documentation: `Algo specifies the key algorithm: RSA|ECDSA|ML-DSA (case-insensitive;
+MLDSA is accepted). ML-DSA is the post-quantum signature scheme of
+FIPS 204; an ML-DSA issuer with an OcspURL needs a DelegatedOcspProfile,
+since ML-DSA keys do not sign OCSP responses.`,
 		},
 		{
 			Name:          "Size",
@@ -2865,7 +2881,8 @@ var KeySpec_MessageDescription = &api.MessageDescription{
 			Type:          "int32",
 			SearchType:    "integer",
 			SearchOptions: api.SearchOption_Sortable,
-			Documentation: `Size specifies RSA key size in bits or ECDSA curve size: 256|384|521`,
+			Documentation: `Size specifies the RSA key size in bits: 2048|3072|4096, the ECDSA
+curve size: 256|384, or the ML-DSA parameter set: 44|65|87`,
 		},
 	},
 }

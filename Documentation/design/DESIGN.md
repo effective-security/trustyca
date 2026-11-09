@@ -592,7 +592,21 @@ self-signed issuer is its own root. Stored PEM has no trailing newline.
 
 ### 5.3 Keys
 
-- Default `KeySpec` is ECDSA P-256. RSA 2048 to 4096 and P-384 are accepted.
+- Default `KeySpec` is ECDSA P-256. RSA 2048 to 4096, P-384 and the ML-DSA
+  (FIPS 204) parameter sets 44, 65 and 87 are accepted (`Algo: ML-DSA`, or
+  `MLDSA`). An ML-DSA key signs certificates and CRLs but no OCSP response
+  (`golang.org/x/crypto/ocsp` is classical), so an ML-DSA issuer with an
+  `OcspURL` must name a `DelegatedOcspProfile`; the CA refuses the request,
+  import, activation or settings update otherwise (`CheckOCSPSigner`), and
+  the delegated responder gets a P-256 key, so the responder profile must
+  not restrict keys to `ml-dsa`. The ML-DSA key of a software issuer is the
+  PKCS#8 seed form, wrapped like any other.
+- `CertProfile.AllowedKeyAlgorithms` (`rsa`, `ecdsa`, `ed25519`, `ml-dsa`)
+  restricts the public key algorithm of the requests a profile signs; empty
+  allows every algorithm. It lets a profile issue only post-quantum, or
+  only classical, certificates from an issuer of either kind.
+- JWT and DPoP keys stay classical: xpki's `jwt` and porto's DPoP key store
+  reject ML-DSA until RFC 9964 lands there.
 - The key provider is chosen per issuer (`KeyProvider`, a `manufacturer` or
   `manufacturer/model` of `crypto_provider`); empty is the default provider.
   Production defaults to a KMS provider; `inmem` is for tests and

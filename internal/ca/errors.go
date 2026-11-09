@@ -32,4 +32,9 @@ var (
 	// import or of a bootstrap key file) is refused: the configuration
 	// allows keys of the crypto providers only (ca.allow_software_keys)
 	ErrSoftwareKeysDisabled = errors.New("software keys are not allowed: use a key of a crypto provider")
+	// ErrOCSPSignerRequired is returned by Keys when an issuer with an
+	// ML-DSA key sets an OcspURL without a DelegatedOcspProfile: an ML-DSA
+	// key cannot sign OCSP responses, so the responses need a delegated
+	// responder with a classical key (CheckOCSPSigner)
+	ErrOCSPSignerRequired = errors.New("an ML-DSA key cannot sign OCSP responses: set DelegatedOcspProfile or remove OcspURL")
 )

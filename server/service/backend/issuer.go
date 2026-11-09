@@ -20,6 +20,7 @@ import (
 	"github.com/effective-security/xlog"
 	"github.com/effective-security/xpki/authority"
 	"github.com/effective-security/xpki/certutil"
+	"github.com/effective-security/xpki/csr"
 	"google.golang.org/grpc/codes"
 )
 
@@ -62,10 +63,14 @@ func (s *Service) RegisterIssuer(ctx context.Context, req *privpb.RegisterIssuer
 	if req.Subject == nil || (req.Subject.CommonName == "" && len(req.Subject.Names) == 0) {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "missing subject")
 	}
-	if _, _, err := core.KeySpec(req.KeySpec); err != nil {
+	algo, _, err := core.KeySpec(req.KeySpec)
+	if err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "%s", err.Error())
 	}
 	if _, err := pbconv.IssuerConfigFromPb(label, req.Config); err != nil {
+		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
+	}
+	if err := core.CheckOCSPSigner(csr.IsPostQuantumAlgo(algo), req.Config); err != nil {
 		return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
 	}
 	extensions, err := pbconv.ExtensionsFromPb(req.Extensions)
@@ -331,6 +336,13 @@ func (s *Service) UpdateIssuer(ctx context.Context, req *privpb.UpdateIssuerRequ
 		if err != nil {
 			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
 		}
+		postQuantum, err := core.IsPostQuantumIssuer(row)
+		if err != nil {
+			return nil, httperror.WrapWithCtx(ctx, err, "invalid issuer")
+		}
+		if err := core.CheckOCSPSigner(postQuantum, req.Config); err != nil {
+			return nil, httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "invalid config: %s", err.Error())
+		}
 		j, err := model.MarshalJSONValue(req.Config)
 		if err != nil {
 			return nil, httperror.WrapWithCtx(ctx, err, "invalid config")
@@ -443,7 +455,7 @@ func (s *Service) caProfile(ctx context.Context, orgID, projectID xdb.ID, label 
 // issuerError maps a failure to create an issuer: a signing error the
 // request causes is the client's, any other is the server's
 func (s *Service) issuerError(ctx context.Context, err error) error {
-	if isSignRequestError(err) || errors.Is(err, core.ErrSoftwareKeysDisabled) {
+	if isSignRequestError(err) || errors.Is(err, core.ErrSoftwareKeysDisabled) || errors.Is(err, core.ErrOCSPSignerRequired) {
 		return httperror.NewGrpcFromCtx(ctx, codes.InvalidArgument, "failed to create issuer: %s", err.Error())
 	}
 	logger.ContextKV(ctx, xlog.ERROR,
